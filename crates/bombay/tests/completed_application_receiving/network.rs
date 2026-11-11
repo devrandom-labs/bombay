@@ -3,6 +3,7 @@ use super::{
     AccountAdmission, AccountsRole, LiveAccountCommand, LiveAccountNotice, LiveAccountReply,
     LiveAccounts, ReceivingAccount, assert_completed_account, live_application,
 };
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, EventLayer, Never, NoSends, Step, User};
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
@@ -178,12 +179,15 @@ async fn node_keeps_live_family_receiving_and_caller_local_work() {
             .as_ref()
             .unwrap_or_else(|_| panic!("the actual account task joins"));
         let (custody, interpretation, source) = match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody,
-                settlements,
-                completion,
-                interpretation,
-                source,
+                outcome:
+                    RetirementOutcome::Completed {
+                        settlements,
+                        completion,
+                        interpretation,
+                        source,
+                    },
             } => {
                 assert_eq!(settlements.len(), 1);
                 assert_eq!(settlements[0].creations.len(), 0);
@@ -195,11 +199,14 @@ async fn node_keeps_live_family_receiving_and_caller_local_work() {
                 // Completed permits both existing unread cancellation alternatives.
                 (custody, interpretation, source)
             }
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody,
-                settlements,
-                interpretation,
-                source,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        settlements,
+                        interpretation,
+                        source,
+                    },
             } => {
                 assert!(settlements.is_empty());
                 assert!(matches!(custody.control.as_slice(), [EventLayer::Owned(_)]));

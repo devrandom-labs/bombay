@@ -82,6 +82,435 @@ was already included in the authorized rename set.
 
 ## Verification and remaining work
 
+### Owned retirement recovery, before implementation (2026-11-11)
+
+Resume Stage1/DX04 against actual main2b7acf1266968e87595fae568bd0d2dc053011c2.
+The selected contracts are registry Behavior/Actors0.29.0, Macros0.16.0,
+Address0.3.0, Communication0.1.6 and Timers0.2.0, plus this revision's Engine
+and Observe. No Behavior patches are selected. The selected Behavior instruction
+revision is55dbac2d1068b29907498b3a7fa32b3080e0cd30. Source, documented teardown,
+publication and affine-return contracts are inspected before the experiment.
+Bombay Codex owns the separate030 registry adoption after its PR412 gate.
+
+The derived custody law is D-RETIRE-1: consuming an available actor retirement
+must move its original actor, queues, descendants and failures together with
+the exact primary outcome and phase-specific unfinished operations. Selecting
+custody does not certify successful execution or cleanup. A non-custody case
+returns the entire original retirement. No actor clone, default replacement,
+fabricated report, lifecycle authority or disposal policy is supplied by the
+library. Application work, root report, receiving, notifications and families
+remain independently owned. This changes result access, not actor semantics;
+the concrete interface is Bombay policy rather than an Agha guarantee.
+
+First establish a source-selected native control with the existing phase match:
+completed work beside a genuine behavior failure, and an actual shutdown wrapper
+returning a whole non-Clone/non-Default actor. Then write the consuming caller
+syntax and capture its failure before any production edit. The existing
+ActorCustody product already owns14 coexisting fields in20 of24 terminal cases;
+an extra mutable getter cannot by itself move the whole wrapped actor out.
+The first control has two fixture-only E0277 errors: ProjectTerminal owns a
+vector of descendant-schema failures; the leaf's schema failure is Never.
+Keep the required absence of child failures and check the existing vector's
+emptiness. No production bound, type or constructor changes to repair this.
+The overflow control then passes; orderly shutdown rejects the fixture's
+empty-settlements assumption. D-TERM-1 retains final Actions beside Stop, and
+the existing native consumer pins one terminal product. Require exactly that
+one accepted settlement, as application_outcome's current control does, rather
+than discarding it. The failed source/logs are preserved; no production fix or
+weakened original test is involved.
+Allocation rejection and three executor cases retain their current distinct
+ownership. No new representation or public type is retained at this point.
+
+Both corrected native controls pass1.99 debug and optimized against the exact
+selected graph, preserving actor/command/output allocations, all custody lanes,
+original report, cleanup, notifications and the real shutdown policy. The next
+pre-edit caller asks for `retirement.try_into_custody()`: success transfers
+`(ActorCustody, RetirementOutcome)`; lack of native custody returns the complete
+original retirement. The outcome must own every original primary cause and
+phase-specific unfinished operation, so extracting the actor never requires a
+clone, a replacement, or dropping its cause. The proposed protocol name is not
+an accepted representation: trace all20 custody-bearing cases before defining
+its complete sum, and reject a duplicate or untruthful phase model.
+
+The static-regression capture changes no production state: ActorRetirement has
+24 alternatives,20 own the14-field custody product, and four lack that product.
+Driver transitions and all current generic bounds remain unchanged. The two
+candidate production owners currently contain3093 physical lines and terminal.rs
+has90 `=>` spellings and12 public type/trait declarations. No production edit
+may precede the complete new-symbol/protocol/aggregate checkpoint. Forecast for
+the later focused implementation is at most120 net production lines, one public
+protocol type, terminal.rs/lib.rs plus its focused native test, this PRD and the
+existing backlog row; the owning Behavior PRD remains the sole requirement
+checklist. With those five new native paths, the resumed cross-repository task
+would have30 unique paths. The user's2026-11-11 standing scope approval applies;
+it does not waive the semantic, ownership, review or gate requirements. Bulk
+caller migration is a separate stage after the focused law and interpreter path.
+
+The six-case consuming caller is now written before production and fails with
+exactly one E0432 (missing RetirementOutcome) and six E0599 errors (missing
+try_into_custody), exit101. It reuses both native controls without reducing their
+assertions, and adds allocation refusal with both actual reasons, unreturned
+panic/cancellation and a real executor JoinError whose task identity survives.
+Receipts: `retirement-recovery-before.log/.exit` in the existing restart evidence.
+The old phase-match control remains independently executable and passes both
+profiles. These tests establish the absent ownership port, not completeness of
+a new retirement representation. No production symbol or caller migration is
+retained until its full phase/custody map and checkpoint are recorded.
+
+Two author test reviews accompany this pre-edit capture. The first maps actor,
+command and business allocations, every custody lane, report and notification
+to the ownership law; the stopped control also requires the accepted final
+Actions product. The second challenges a success-only selector, failure
+reclassification, terminal-action loss and fabricated state on the four
+non-custody alternatives. No independent reviewer is claimed. Nonempty partial
+interpretations, descendant failures and family disposal remain unproved by
+these focused cases; preserve their existing tests and qualify that coverage
+before crediting complete recovery or whole DX04 acceptance.
+
+Rust's ownership/enumeration rules support moving existing products without
+copying payloads; mem::replace still requires a real replacement value:
+<https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html>,
+<https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html>,
+<https://doc.rust-lang.org/std/mem/fn.replace.html>.
+The focused caller remains outside production under the existing restart
+evidence directory. Its exact failing regression is captured. The following
+pre-edit model permits only the focused design experiment; catalogue migration
+and acceptance remain separate. Existing tests and expected values stay intact.
+
+#### Recovery representation and provenance, before production
+
+The existing terminal sum has24 alternatives,20 with the same ActorCustody
+product. Factor those20 into `ActorRetirement::Retained { custody, outcome }`,
+where `RetirementOutcome<B>` owns their existing primary cause and unfinished
+operations. Keep AllocationRejected, ActorTaskFailed, Panicked and Cancelled
+unchanged. This is the distributive law for a sum of products with one shared
+factor:20 logical retained outcomes plus four unavailable cases remain24.
+It is a passive returned protocol, not a new actor or transition authority.
+
+`try_into_custody(self)` moves the existing `(custody, outcome)` product on
+Retained and returns `Err(self)` unchanged on the other four cases. Availability
+is independent of execution success. The two native pre-edit regressions require
+the same consuming operation for actual overflow and orderly wrapped shutdown;
+the four other tests require exact rejection. These six failures precede every
+new production symbol. No clone, replacement, new runtime operation, trait,
+constructor, policy input, associated type or generic default is needed.
+
+Complete outcome map below. `active` means the already-retired live residual;
+`prepared` means before initialization effects; `uncommitted` retains those
+initialization effects before host binding. P denotes the unchanged optional
+interpretation/source progress plus ordered settlement vector. All rows also
+retain the exact existing14-field custody, including malformed simultaneous
+received inputs/replies, cleanup failures and descendant failures.
+
+| Outcome | Existing producer and residual | Other retained values |
+| --- | --- | --- |
+| InitializationRejected | BehaviorFailed/prepared; startup SpawnError | original behavior error |
+| InitializationPanicked | InitializationPanicked/prepared; startup SpawnError | original panic payload |
+| HostCommitPanicked | ActivationPanicked or HostCommitPanicked rejection, prepared/uncommitted | original payload and optional initialization progress |
+| TransitionPanicked | TransitionPanicked/active | original payload and P |
+| HostExecutionPanicked | HostExecutionPanicked/active | original payload and P |
+| HostRejected | ActivationFailed/uncommitted; startup SpawnError | original ClaimError and initialization progress |
+| BindingAbandoned | ActivationFailed/uncommitted; startup SpawnError | initialization progress |
+| Completed | Completed/active with Stopped or Exhausted | exact Completion and P |
+| BehaviorFailed | BehaviorFailed/active | original behavior error and P |
+| EffectsFailed | SettlementFailed/active or uncommitted | original SettlementFailure, P and optional initialization progress |
+| OwnerCancelled | Completed/active with actual acquired owner request | P; no new cancellation authority |
+| CapabilityFailed | Completed/active with actual acquired capability failure | original JoinError and P |
+| PreparedRetirementPanicked | RetirementPanicked/prepared | original payload |
+| PreparedInterpreterContractFailed | InterpreterContractFailed/prepared | no additional payload |
+| InitializationRetirementPanicked | RetirementPanicked/uncommitted | original payload and initialization progress |
+| InitializationInterpreterContractFailed | InterpreterContractFailed/uncommitted | initialization progress |
+| ActiveRetirementPanicked | RetirementPanicked/active | original payload and P |
+| ActiveActivationPanicked | ActivationPanicked/active | original payload and P |
+| ActiveInterpreterContractFailed | InterpreterContractFailed/active | P |
+| PreparedEffectsFailed | SettlementFailed/prepared | original SettlementFailure |
+
+AllocationRejected still owns the original actor and actual allocation reason;
+it does not gain fabricated native custody. ActorTaskFailed retains its original
+JoinError. Panicked/Cancelled still report no returned actor. No interpretation,
+settlement, additional failure or report is recomputed by the consuming method.
+Phase names retain operation provenance required to interpret exact unfinished
+work; they are not newly stored arrival history.
+
+New-symbol provenance: Retained establishes common custody availability;
+RetirementOutcome owns the original complete primary/phase sum after custody
+is moved; try_into_custody owns the affine selection law. Existing completion,
+behavior and custody inspections retain their contracts and inspect the factored
+product. RetirementOutcome's single B parameter is needed for the already
+concrete error and interpreter products; the two real native actors exercise it.
+Root/ChildFailures remain only on ActorCustody/ActorRetirement. No generic or
+visibility change may be introduced from a compiler diagnostic. The canonical
+crate export is needed by the pre-edit ordinary consuming caller. No prelude
+expansion is required. The result tuple is the complete two-part owned product,
+not a new wrapper that restates Result or hides a structural route.
+
+This replaces the20 root alternatives rather than maintaining two competing
+copies. The four startup producers in launch.rs must construct the same new
+product; they are part of the smallest interpreter witness, not catalogue
+migration. This adds that existing path to the forecast:31 cumulative resumed
+cross-repository paths under standing scope approval, at most120 net production
+lines and one new public type. Engine, Behavior, ActorExecutionOutcome, Driver,
+Application's five axes, mailbox draining, Observe and family disposal stay
+owned by their existing contracts. No source compatibility shim is retained;
+the explicit pattern migration is a later measured stage after both profiles
+prove the focused law.
+
+Pre-edit aggregate checkpoint: runtime control states and authority do not
+change. Passive terminal alternatives24 become outer5 plus inner20 (25 raw
+tags, still24 inhabited logical outcomes); common custody has one owner.
+ActorCustody remains one14-field product. The outcome's current values are
+exactly the table's primary failures, completion, pending initialization,
+interpretation/source progress and accepted/rejected settlements; each is
+needed for disposal/recovery and failure inspection after moving the actor.
+Direct sum/product factoring expresses that invariant, with no subordinate
+dispatcher or lifecycle engine. There is no new cardinality, policy, semantic
+boolean, repeated cause, structural caller route or arrival-history field.
+Optional acquired lanes keep original malformed evidence rather than inventing
+a phase restriction. Cross-checks: D-RETIRE-1, D-TERM-1, authoritative-fact
+conservation, Application's independent axes and the selected Behavior's
+explicit Actions/custody law. No normalized actor transition is changed.
+
+Reproducible baseline: terminal.rs has2969 physical lines, of which2033 precede
+its test module, with56 `=>` spellings,12 public type/trait declarations and11
+public methods in that production prefix. Whole-file counts90 arms and2969
+lines include tests and are not production measurements. lib.rs has124 lines;
+launch.rs has7232 physical lines including tests. All three exact baseline
+files/hashes are preserved as retirement-recovery-before-*.rs. These lexical
+counts diagnose source growth, not semantic acceptance. Measure the retained
+diff, branches, modules and public surface after the experiment. Disposition:
+pass for the pre-edit hypothesis only; no retained-batch pass or DX04 completion
+is claimed until the focused checks, inversions and full custody coverage pass.
+
+The first strict library Clippy run rejects three diagnostics: the factored
+large enum, its complete original Err value, and missing Errors documentation.
+Document the exact error contract. Keep the already-proven allocation-free
+owned equation and locally explain the two representation lint expectations;
+do not box custody, add a generic or change the selection law to follow a
+diagnostic. These are explicit lint dispositions, not new architectural surface.
+The failed receipt remains retirement-recovery-clippy-lib.log/.exit=101; the
+corrected gate needs its own receipt before migration begins.
+
+#### Focused recovery result and migration prerequisite
+
+The six pre-edit consuming cases pass with the new representation on Rust1.99
+and1.96, each debug/release. The same six cases now live in the owning integration
+test retirement_recovery.rs and pass native1.99 debug/release. Its actor is local
+to that test target; it adds no production fixture module or helper API. The
+source/oracle review is repeated after moving it: all ownership assertions and
+actual native operations are conserved; the same failure and shutdown
+counterexamples apply. There is still no claim of an independent reviewer.
+
+Two deliberate source inversions fail exactly their intended native case in
+both profiles: accepting only Completed loses the failed overflow actor;
+discarding terminal settlements loses the one Accepted shutdown Actions product.
+Each run has five controls passing and one intended failure, exit101. Both
+inversions are removed and the exact candidate restored; all six pass again in
+both profiles. Logs/sources are retirement-recovery-{success-only,terminal-actions}-
+inversion-* and retirement-recovery-restored-* under the existing restart evidence.
+Minimum receipts are retirement-recovery-minimum-*. The initial restored-current
+wrapper had an unset RUSTC variable before executing any test; its corrected
+invocation uses the shell's pinned rustc. It receives no earlier test credit.
+Strict library Clippy now passes in retirement-recovery-clippy-lib-corrected.
+
+Full producer conservation independently checks22 terminal and four startup
+expressions in original order: all14 custody fields remain exact, and every
+other original field moves unchanged into its corresponding outcome. Only
+whitespace and rustfmt's optional final field comma are normalized. All20
+outcome payload declarations remain exact after removing their common custody
+field. Existing terminal test source and launch source after startup conversion
+remain byte-identical. Receipts are retirement-recovery-source-conservation.json
+and retirement-recovery-producer-conservation.json. These source checks support,
+but do not replace, running the existing nonempty progress/failure tests.
+
+Focused aggregate checkpoint, disposition `pass`: inhabited terminal cases
+remain24; raw tags24 become5+20. Driver control states, subordinate runtime
+states, descendant cardinality, interpretation/retirement ordering, and actor
+authority are unchanged. Every surviving outcome owns precisely the current
+values in the preceding table, rather than a second label for a cause. Common
+custody remains one14-field product. There are no new semantic booleans, arrival
+history, repeated causes, restrictive malformed-input phases, lifecycle engines
+or positional caller routes. The terminal production prefix2033 becomes2067
+physical lines; lexical arms56 become58 (two arms for affine selection), public
+type/trait declarations12 become13, public methods11 become12, modules unchanged.
+Root public spelling Retained and method try_into_custody are added; the20
+outcome variant names move to RetirementOutcome rather than being duplicated.
+Production across the three existing owners is +203/-167/net36; tests +263/-0;
+public types +1/-0. This is a new capability with positive source growth.
+
+Cross-checks include Bombay driver-law D-RETIRE-1/D-TERM-1 and capability/module
+ownership; Behavior atomic-runtime-settlement's terminal-custody and total-item
+laws; normalized atomic-actor-architecture's authority map/classification,
+atomic-actor-features' terminal transfer and exact final actions,
+atomic-actor-devx's complete rejection and application evidence, and
+atomic-actor-verification's provenance, inversion and unchanged-Driver rules.
+The five atomic transition aggregates are unchanged; no catalogue policy is
+inferred from this passive native protocol. Outcome extraction interprets none
+of their retained values. The new generic interpretation gate is not triggered:
+no interpreter, Behavior product, settlement law or wrapper order is changed.
+
+The design stage is now closed for the focused port. A separately measured
+mechanical stage must replace old root variant patterns with Retained plus the
+same RetirementOutcome variant, preserving every original custody binding,
+primary error, progress field, assertion, fixture denial and policy. The source
+scan finds108 Rust/document paths with the old qualified variants, including
+the already-counted terminal/launch paths. Record the exact path union before
+editing; the user's standing scope approval covers this expansion. The exact
+tracked-source scan and six owning stage paths form112 distinct native paths,
+137 with the25 earlier Behavior paths. The pre-edit source hashes/path union
+are retirement-recovery-migration-inputs.json. The nine known retirement aliases
+add no further old-case references; WorkerRetirement's test-local alternatives
+in fixed_supervisor_recovery.rs are a different domain enum and stay intact.
+No new
+semantic type, bound, constructor, visibility, default, wrapper or interpreter
+change is permitted during migration. Any such need reopens the design instead
+of becoming compiler fallout. Existing tests remain present and must run after
+their syntax is updated. The full DX04 custody/family surface, final matrix,
+resource costs, CI/review, merge and runtime publication remain open.
+
+#### Mechanical caller migration, local checkpoint
+
+The migration changes353 old variant sites across107 Rust files and introduces
+117 ordinary module imports. It adds no production semantic surface. The four
+already-factored startup constructions are also included in the independent
+357-case product comparison. Each original binding, primary cause, progress
+field and literal payload is preserved. Replacing each migrated pattern with
+its original and removing only the new imports yields byte-identical surrounding
+source after pinned rustfmt normalization in all107 files. This includes original
+feature attributes, assertions, fixture denials and every other Rust item.
+Receipt: retirement-recovery-migration-conservation-final.json, with exact
+current input hashes; retirement-recovery-migration-canonical-inputs.json binds
+the original/reversed pairs. The earlier raw token comparison passed before
+formatting; its post-format failure was the formatter's optional trailing comma
+after an expanded two-element tuple. Canonical pinned formatting checks that
+equivalence instead of weakening literal or ownership comparisons.
+
+The first migration check exposes a source-editing mistake: the inserted type
+import took an existing first import's cfg attribute. An attempted correction
+after formatting still leaves the attribute on a different existing import.
+Both failed checks are preserved as migration-check-tests and
+migration-check-tests-corrected, exit101; neither receives law credit. Restore
+all107 files from their exact pre-migration snapshots, then generate the same
+353 transformations with imports placed before the entire original attribute
+sequence. All original surrounding source and attributes now pass the canonical
+comparison; migration-check-tests-final passes the default native test targets.
+No bound, public type, default, wrapper, policy or visibility was invented to
+repair these editing errors. The one-off editing/comparison code remains only
+in external restart evidence, not repository tooling.
+
+The first review compares all complete old/new case products and native producer
+ownership; the second reverses the syntax and checks all original surrounding
+source against its frozen baseline, including literal bytes and feature guards.
+These are author reviews, not independent review credit. Runtime debug passes
+348 library cases and33 selected integration cases,381 total. The single existing
+ignored interpreter child is explicitly invoked with --exact/--ignored by its
+parent to isolate an abort; no test registration or expected value changes.
+Optimized execution also passes all381 outer cases. Strict all-target Clippy
+then rejects collect_documents at106 lines: its two retained-outcome patterns
+grew through nesting while the original recursive custody assertions stayed
+exact. Preserve the one coherent test and add a local source-size expectation
+with that ownership reason, rather than inventing another helper to hide the
+count. This changes no assertion, input, action or runtime policy. The failed
+lint receipt remains retirement-recovery-clippy-all-targets.log/.exit=101;
+the corrected gate is still required. Conservation after this disposition must
+exclude only that exact documented lint attribute and retain every other
+original item/literal. Later compiler/feature/full Nix gates remain required.
+
+The corrected all-target lint pass then exposes duplicated common custody in
+eight existing or-patterns, including child_service_stop's102-line collector.
+Apply the already-selected distributive representation to caller patterns:
+`Retained { custody: C, outcome: A } | Retained { custody: C, outcome: B }`
+is `Retained { custody: C, outcome: A | B }` only when C and every other common
+binding are identical. This preserves the original alternatives and bindings;
+it introduces no operation, public symbol, bound or policy. Establish equality
+of the common patterns before editing, retain every inner outcome field and
+assertion, and extend conservation to compare the expanded logical alternatives.
+Do not add another helper or suppress the redundant-pattern lint. This is the
+same pre-edit sum/product equation, not architecture invented from a diagnostic.
+The source comparison must also account explicitly for the one documented
+collect_documents source-size attribute; all other original items remain exact.
+
+All eight common products now compare against the original alternatives,
+including exact literal bytes and every binding. Six outer or-pattern parentheses
+become unnecessary after factoring and are removed. The canonical reversal
+restores the original grouping when comparing source. All107 files/357 logical
+cases pass the formatter-normalized comparison with exactly the one recorded
+metadata exception. The new regression's five empty-value checks use assert_eq
+with the same empty value, and four exact rejection selections use let-else;
+no new production bound or expected domain value is introduced. Final strict
+default/all-target Clippy passes: retirement-recovery-clippy-all-targets-final.
+Follow-up debug/release each pass54 cases across the five affected retirement,
+child, supervision, receiving and configured-descendant targets; receipts are
+retirement-recovery-patterns-*. The new integration source is259 lines after
+those style corrections. Its two author reviews preserve the same absence,
+pointer, failure, report, notification and original-self laws; the pre-edit
+external source and inversion inputs remain unchanged and available.
+
+Next preserve the existing static denials through the two compiler matrices.
+Run the actual topology-negative harness before changing any golden text;
+compare error codes, counts, trait/role causes and original invalid operations,
+not merely exit status. Any source-position changes must be disputed from the
+captured output and source mapping before editing expectations. Forecast up to
+five additional existing paths: three topology stderr files, the compiler
+manifest and minimum.patch, bringing planned resumed scope to142 (currently136
+actual paths). Standing scope approval applies, without changing the denial
+laws or adding a fixture. Archive all five originals before any update, preserve
+unrelated manifest/patch entries, and execute both pinned compilers. Feature,
+resource, full Nix and delivered-review gates remain open; DX04 is not complete.
+
+The actual pre-update topology harness fails exactly three of six snapshots,
+exit101 (retirement-recovery-topology-ui-before). Missing capabilities and forged
+construction still pass their existing negative expectations. The two role
+fixtures each retain exactly two E0277 errors; erased cold origins retain exactly
+two E0308 errors. For all three actual outputs, subtracting one from fixture
+locations and displayed source-line numbers reproduces the entire original
+stderr byte-for-byte. Columns, underlines, source text, concrete types, role
+causes, errors and counts are unchanged. The source change is the one new import;
+the invalid operations themselves are conserved by the full source comparison.
+Receipt retirement-recovery-topology-ui-shift-proof.json records this dispute
+before editing expectations, with each raw actual stderr separately preserved.
+
+Accept only this evidenced +1 location correction in the three canonical
+snapshots and their existing minimum-compiler patch sections. Preserve the
+minimum compiler's previously reviewed text differences, then execute that
+compiler; carrying source locations forward is not minimum-compiler pass credit.
+Update only the three existing snapshot/fixture hashes and patch checksum in
+the unchanged compiler manifest. All five original inputs were clean and are
+archived with hashes under retirement-recovery-diagnostics-before. No malformed
+fixture, denial, error cause, public contract or unrelated expectation changes.
+
+The corrected current-compiler topology harness passes all six original
+denials, with overwrite unset: retirement-recovery-topology-ui-after. Applying
+the updated existing minimum patch to a disposable copy succeeds without fuzz;
+all25 canonical, minimum and fixture hashes match the manifest. Exactly22 other
+patch sections and all unrelated manifest fields remain byte/data identical.
+This is patch/hash conservation, not execution of the minimum compiler. The
+next gate is the repository's existing pinned minimum-compiler Nix check, with
+the new native regression explicitly staged so Git-backed Nix source includes
+it. No new verifier, tool suite or fixture is added for this matrix.
+
+The existing minimum-compiler Nix gate now passes on the frozen native source
+tree e400fb235bae0282b25627e19305a31ca08a5b5c, base2b7acf12. Actual Rust1.96.0/
+Cargo1.96.0 execute114 outer cases and136 unique compiler fixtures with zero
+failures; one existing parent-controlled child registration remains ignored by
+the outer harness. The suite and target inventories stay unchanged; this
+execution prints28 Rust test summaries. Receipt retirement-recovery-minimum-nix
+is exit0, with full log and machine-readable summary. Its initial output becomes
+unavailable before hash inspection; exact xjq7zgyyqbsmbyvrrlzdxj3qdcg7k8l2
+derivation re-realization also passes, with a task-owned Nix root now retaining
+the output, its deriver, NAR metadata and target archive. No source/check changes
+or GC command are used to recover it. Both original and restored receipts remain.
+
+The final259-line owning recovery target separately passes all six cases on
+Rust1.96 debug/release (retirement-recovery-owner-minimum-*). Current1.99 also
+passes all five original positive application/custody compiler fixtures and
+their original child denial, without overwrite (retirement-recovery-positive-ui).
+These close the selected compiler blocker, not the full feature/resource/Nix
+matrix or delivery. A fresh fetch finds main3bf270cb (merged PR412): seven paths,
+with remote access tests and failure-log printing, no new ActorRetirement variant
+references in its changed Rust files. Preserve these completed base2b receipts
+and integrate current main before the final source freeze and review. Behavior
+main remains c5c5863. The paired programme and complete DX04 remain active.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The

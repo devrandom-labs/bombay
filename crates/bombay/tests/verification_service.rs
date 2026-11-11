@@ -1,5 +1,6 @@
 //! Local test evidence only: no cryptography, remote command admission or production provider.
 
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorSettlements, EstablishedDelivery, MessageProtocol, NoSends, Step, User,
 };
@@ -647,7 +648,7 @@ fn joined_native<B>(
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -665,10 +666,13 @@ where
                 retirement_failures,
                 terminal_report,
             },
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the original complete native state remains acquired")

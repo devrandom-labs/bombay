@@ -1,5 +1,6 @@
 //! Inferred recursive creation, exact refusal and borrowed/owned nominal role custody.
 
+use bombay::RetirementOutcome;
 use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::Children;
@@ -85,10 +86,7 @@ async fn nominal_recursive_creations() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("actual cleanup acquired");
-    let ActorRetirement::Completed {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::Completed { .. } } = retirement
     else {
         panic!("root completed");
     };
@@ -97,10 +95,7 @@ async fn nominal_recursive_creations() {
         .try_into()
         .unwrap_or_else(|_| panic!("one original direct child"));
     assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::OwnerCancelled {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = *retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
     else {
         panic!("original direct child custody");
     };
@@ -110,10 +105,7 @@ async fn nominal_recursive_creations() {
     {
         assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
         depth += 1;
-        let ActorRetirement::OwnerCancelled {
-            custody: ActorCustody { descendants, .. },
-            ..
-        } = *retirement
+        let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
         else {
             panic!("descendant retains parent retirement");
         };
@@ -189,16 +181,12 @@ async fn initialization_rejection_returns_the_original_child_and_work() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("joined root");
-    let ActorRetirement::Completed {
-        custody:
+    let ActorRetirement::Retained { custody:
             ActorCustody {
                 descendants,
                 child_failures,
                 ..
-            },
-        settlements,
-        ..
-    } = retirement
+            }, outcome: RetirementOutcome::Completed { settlements, .. } } = retirement
     else {
         panic!("child rejection does not invent a failed root");
     };
@@ -271,12 +259,9 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("joined root");
-    let ActorRetirement::Completed {
-        custody: ActorCustody {
+    let ActorRetirement::Retained { custody: ActorCustody {
             mut descendants, ..
-        },
-        ..
-    } = retirement
+        }, outcome: RetirementOutcome::Completed { .. } } = retirement
     else {
         panic!("parent completed");
     };
@@ -285,10 +270,7 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
     };
     assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
     assert!(descendants.is_empty());
-    let ActorRetirement::OwnerCancelled {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = *retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
     else {
         panic!("the child retains cancellation custody");
     };
@@ -296,14 +278,11 @@ async fn different_parent_keeps_its_role_and_recursive_descendants() {
     let mut descendants = descendants;
     while let Some(parent_application::NodeRetirements { origin, retirement }) = descendants.pop() {
         assert_ne!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::OwnerCancelled {
-            custody:
+        let ActorRetirement::Retained { custody:
                 ActorCustody {
                     descendants: children,
                     ..
-                },
-            ..
-        } = *retirement
+                }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
         else {
             panic!("the descendant retains cancellation custody");
         };
@@ -347,12 +326,9 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("complete parent retirement");
-    let ActorRetirement::Completed {
-        custody: ActorCustody {
+    let ActorRetirement::Retained { custody: ActorCustody {
             mut descendants, ..
-        },
-        ..
-    } = retirement
+        }, outcome: RetirementOutcome::Completed { .. } } = retirement
     else {
         panic!("parent completed");
     };
@@ -364,10 +340,7 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
     );
     let parent_application::RootRetirements { origin, retirement } = report;
     assert_eq!((origin, core::ptr::from_ref(retirement.as_ref())), before);
-    let ActorRetirement::OwnerCancelled {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = *retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
     else {
         panic!("the original child was cancelled by its owner");
     };
@@ -380,14 +353,11 @@ async fn born_roles_select_the_original_parent_and_recursive_retirement() {
         );
         let parent_application::NodeRetirements { origin, retirement } = report;
         assert_eq!((origin, core::ptr::from_ref(retirement.as_ref())), before);
-        let ActorRetirement::OwnerCancelled {
-            custody:
+        let ActorRetirement::Retained { custody:
                 ActorCustody {
                     descendants: children,
                     ..
-                },
-            ..
-        } = *retirement
+                }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
         else {
             panic!("recursive cancellation custody stays intact");
         };
@@ -473,10 +443,7 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("complete sibling retirement");
-    let ActorRetirement::Completed {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::Completed { .. } } = retirement
     else {
         panic!("parent completed");
     };
@@ -504,10 +471,7 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
                 );
                 assert!(replica_before.is_none());
                 primary_addresses.push(origin.address());
-                let ActorRetirement::OwnerCancelled {
-                    custody: ActorCustody { descendants, .. },
-                    ..
-                } = *retirement
+                let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
                 else {
                     panic!("the original primary was cancelled");
                 };
@@ -541,10 +505,7 @@ async fn born_roles_preserve_the_unmatched_sibling_with_the_same_actor_type() {
             Some((origin, core::ptr::from_ref(&*retirement)))
         );
         replica_addresses.push(origin.address());
-        let ActorRetirement::OwnerCancelled {
-            custody: ActorCustody { descendants, .. },
-            ..
-        } = *retirement
+        let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
         else {
             panic!("the original replica was cancelled");
         };

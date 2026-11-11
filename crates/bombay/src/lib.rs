@@ -70,7 +70,7 @@ pub(crate) use crate::retirement::Retirement;
 pub use crate::terminal::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement,
     ActorRetirementReport, ChildFailure, ChildOrigin, ProjectTerminal, RetirementAssessment,
-    RetirementNotificationError, RetirementSchema, RootOrigin,
+    RetirementNotificationError, RetirementOutcome, RetirementSchema, RootOrigin,
 };
 pub use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
 pub use crate::worker_preparation::{

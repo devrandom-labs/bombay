@@ -4,6 +4,7 @@ use super::{
     OpenFile, file_request, inspect_file,
 };
 use behavior_actors::ShutdownRequested;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ChildCreationOutcome, ClassifySettlement, CreateChild,
@@ -371,12 +372,15 @@ async fn entity_hydration_keeps_configured_services_and_original_constructor_fai
             .expect("root retirement publication");
         let (origin, root) = root.expect("independent native root retirement");
         assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody,
-            completion,
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    completion,
+                    settlements,
+                    interpretation,
+                    source,
+                },
         } = root
         else {
             panic!("the actual application root stops normally");
@@ -477,10 +481,13 @@ async fn entity_hydration_keeps_configured_services_and_original_constructor_fai
             retirement_report.failures(),
             ActorFailureAssessment::FailuresFound
         );
-        let ActorRetirement::HostCommitPanicked {
+        let ActorRetirement::Retained {
             custody,
-            initialization: Some(InterpretationProgress::Original(actions)),
-            payload,
+            outcome:
+                RetirementOutcome::HostCommitPanicked {
+                    initialization: Some(InterpretationProgress::Original(actions)),
+                    payload,
+                },
         } = retirement
         else {
             panic!("constructor panic occurs before binding ACK and all original actions survive");
@@ -583,11 +590,14 @@ fn inspect_ledger(
     command: usize,
     children: [(usize, u8); 2],
 ) {
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!(
@@ -662,11 +672,14 @@ fn inspect_ledger(
     let mut expected = children.into_iter();
     loop {
         let (custody, settlements) = match retirement {
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody,
-                settlements,
-                interpretation,
-                source,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        settlements,
+                        interpretation,
+                        source,
+                    },
             } => {
                 assert!(interpretation.is_none());
                 assert!(source.is_none());

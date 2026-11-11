@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::composition::replies::ExactReplies;
 use bombay::{ActorCustody, ActorNotificationReceipts};
@@ -643,7 +644,7 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
     };
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -661,10 +662,13 @@ fn shutdown_while_worker_source_is_held_avoids_replacement() {
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        settlements: _,
-        completion: _,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements: _,
+                completion: _,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = terminal
     else {
         panic!("the root completes its drain");
@@ -759,7 +763,7 @@ fn source_task_failure_terminates_the_active_pool() {
     assert_eq!(termination, Err(Crash::CapabilityFailed));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::CapabilityFailed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -777,10 +781,13 @@ fn source_task_failure_terminates_the_active_pool() {
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        settlements,
-        error,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::CapabilityFailed {
+                settlements,
+                error,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = terminal
     else {
         panic!("the failed source retains available pool state and the exact capability cause");
@@ -813,7 +820,7 @@ fn assert_recovered_pool_terminal(
     >,
 ) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -831,10 +838,13 @@ fn assert_recovered_pool_terminal(
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        completion,
-        settlements: _,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements: _,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
@@ -861,7 +871,7 @@ fn assert_recovered_pool_terminal(
         } = descendant;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         worker_nonces.push(origin.nonce());
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -879,10 +889,13 @@ fn assert_recovered_pool_terminal(
                     retirement_failures: retirement_native_failures,
                     terminal_report: retirement_terminal_report,
                 },
-            completion,
-            settlements: _,
-            interpretation: retirement_interpretation,
-            source: retirement_source,
+            outcome:
+                RetirementOutcome::Completed {
+                    completion,
+                    settlements: _,
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                },
         } = *terminal
         else {
             panic!("each worker completes rather than being cancelled");
@@ -1062,7 +1075,7 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(preparations.load(Ordering::SeqCst), 1);
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -1080,10 +1093,13 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        completion,
-        settlements: _,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements: _,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
@@ -1110,7 +1126,7 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
         } = descendant;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         worker_nonces.push(origin.nonce());
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -1128,10 +1144,13 @@ fn fifo_factory_replaces_workers_and_drains_the_complete_graph() {
                     retirement_failures: retirement_native_failures,
                     terminal_report: retirement_terminal_report,
                 },
-            completion,
-            settlements: _,
-            interpretation: retirement_interpretation,
-            source: retirement_source,
+            outcome:
+                RetirementOutcome::Completed {
+                    completion,
+                    settlements: _,
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                },
         } = *terminal
         else {
             panic!("each worker completes rather than being cancelled");

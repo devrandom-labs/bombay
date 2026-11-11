@@ -1,4 +1,5 @@
 //! Public Node composition; listening on TLS is not a handshake witness.
+use bombay::RetirementOutcome;
 use super::stop_admission::{
     CounterChildren, CounterExports, CounterParent, CounterStopExport, counter_children_application,
 };
@@ -444,12 +445,7 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
         );
         assert!(matches!(termination, Ok(())));
         assert!(matches!(retirement, Ok(())));
-        let ActorRetirement::Completed {
-            interpretation,
-            source,
-            settlements,
-            ..
-        } = &native
+        let ActorRetirement::Retained { outcome: RetirementOutcome::Completed { interpretation, source, settlements, .. }, .. } = &native
         else {
             panic!("parent retirement must be complete");
         };
@@ -478,12 +474,7 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
         expected_addresses.sort();
         assert_eq!(child_addresses, expected_addresses);
         for child in &custody.descendants {
-            let ActorRetirement::Completed {
-                interpretation,
-                source,
-                settlements,
-                ..
-            } = child.retirement.as_ref()
+            let ActorRetirement::Retained { outcome: RetirementOutcome::Completed { interpretation, source, settlements, .. }, .. } = child.retirement.as_ref()
             else {
                 panic!("child retirement must be complete");
             };

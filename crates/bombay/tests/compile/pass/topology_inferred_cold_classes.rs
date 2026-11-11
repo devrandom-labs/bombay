@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::Never;
 
@@ -34,14 +35,10 @@ async fn main() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("root acquired");
-    let bombay::ActorRetirement::Completed {
-        custody: bombay::ActorCustody { descendants, child_failures, .. }, ..
-    } = retirement else { panic!("root completed"); };
+    let bombay::ActorRetirement::Retained { custody: bombay::ActorCustody { descendants, child_failures, .. }, outcome: RetirementOutcome::Completed { .. } } = retirement else { panic!("root completed"); };
     assert!(child_failures.is_empty());
     let [application::RootRetirements { retirement, .. }] = <[_; 1]>::try_from(descendants).unwrap_or_else(|original| { drop(original); panic!("original child"); });
-    let bombay::ActorRetirement::OwnerCancelled {
-        custody: bombay::ActorCustody { behavior, descendants, child_failures, .. }, ..
-    } = *retirement else { panic!("child cancellation custody"); };
+    let bombay::ActorRetirement::Retained { custody: bombay::ActorCustody { behavior, descendants, child_failures, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement else { panic!("child cancellation custody"); };
     assert!(descendants.is_empty());
     assert!(child_failures.is_empty());
     assert_eq!(behavior.into_inner().original.as_ptr(), allocation);

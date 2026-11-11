@@ -1,5 +1,6 @@
 //! One-way producer sharing does not duplicate reply or lifecycle authority.
 
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{ClassifySettlement, SettlementStatus};
 use bombay::prelude::{ActorRetirement, Application, Completion, MailAddr};
@@ -60,12 +61,15 @@ async fn two_threads_borrow_one_sender_and_the_actor_processes_both_commands() {
         .expect("native root returns");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                ..
+            },
     } = root
     else {
         panic!("the original counter stops normally");

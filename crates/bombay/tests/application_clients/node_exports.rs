@@ -2,6 +2,7 @@
 use super::counter::{CounterMessage, CounterProcessed, CounterValue};
 use super::ledger::{LedgerCommand, Receipts};
 use actors::{ActorExports, CounterReport, Counters, CountersRole, Creator, Exports, topology};
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     BehaviorBase, BehaviorSettlements, ChildChoice, ChildCreationOutcome, ClassifySettlement,
@@ -222,7 +223,10 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
                 assert_retirement(retirement);
                 assert!(matches!(
                     retirement.as_ref(),
-                    ActorRetirement::OwnerCancelled { .. }
+                    ActorRetirement::Retained {
+                        outcome: RetirementOutcome::OwnerCancelled { .. },
+                        ..
+                    }
                 ));
                 counter_origins.push(origin.address());
             }
@@ -297,17 +301,16 @@ fn assert_retirement<Actor, Descendants, Failure>(
     Actor: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     Actor::Settlements: ClassifySettlement,
 {
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion: Completion::Stopped,
-        settlements,
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody,
-        settlements,
-        ..
-    }) = retirement
+        outcome:
+            RetirementOutcome::Completed {
+                completion: Completion::Stopped,
+                settlements,
+                ..
+            }
+            | RetirementOutcome::OwnerCancelled { settlements, .. },
+    } = retirement
     else {
         panic!("only actual stopped or owner-cancelled native actors are selected");
     };

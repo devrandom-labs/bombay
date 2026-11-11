@@ -1,4 +1,5 @@
 //! Native absence and a supplied unit interpreter are distinct capabilities.
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActionItem, Actions, BehaviorActed, InterpretItem, InterpreterRequests, ItemSettlement, Never,
     SettledItem, Step,
@@ -106,13 +107,16 @@ async fn explicit_unit_interpreter_performs_real_io_and_retains_complete_rejecti
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original actor remains independently owned");
-    let ActorRetirement::EffectsFailed {
+    let ActorRetirement::Retained {
         custody,
-        initialization,
-        error,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::EffectsFailed {
+                initialization,
+                error,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("initialization rejection preserves both real outcomes and rejects readiness");

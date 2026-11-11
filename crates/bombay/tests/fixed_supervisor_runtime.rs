@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::convert::Infallible;
@@ -214,7 +215,7 @@ fn assert_orderly_supervisor_terminal(
     terminal: ActorRetirement<RootSupervisor, supervisor_application::RootRetirements<RootSupervisor>, Vec<<supervisor_application::RootRetirements<RootSupervisor> as bombay::RetirementSchema>::Failure>>,
 ) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -223,8 +224,7 @@ fn assert_orderly_supervisor_terminal(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the supervisor completes after its proxy tree");
@@ -242,7 +242,7 @@ fn assert_orderly_supervisor_terminal(
         .next()
         .expect("the declared role retains its proxy");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -251,8 +251,7 @@ fn assert_orderly_supervisor_terminal(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = *terminal
     else {
         panic!("the supervisor completes its proxy during shutdown");
@@ -270,7 +269,7 @@ fn assert_orderly_supervisor_terminal(
         .next()
         .expect("the activated worker remains in retirement custody");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -279,8 +278,7 @@ fn assert_orderly_supervisor_terminal(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = *terminal
     else {
         panic!("the proxy completes its worker during shutdown");

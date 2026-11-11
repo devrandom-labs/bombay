@@ -1069,6 +1069,7 @@ fn routed_creation<Child>(
 mod child_projection_panic {
     use crate::ActorCustody;
     use crate::MailboxCapacity;
+    use crate::RetirementOutcome;
 
     use std::any::Any;
     use std::future::Future;
@@ -1292,7 +1293,10 @@ mod child_projection_panic {
             retirement: ActorRetirement<StopOnShutdown<ProjectionChild>, Never, Vec<Never>>,
         ) -> Self {
             match retirement {
-                retirement @ ActorRetirement::Completed { .. } => {
+                retirement @ ActorRetirement::Retained {
+                    outcome: RetirementOutcome::Completed { .. },
+                    ..
+                } => {
                     let (publication, payload) = PROJECTION_CUSTODY
                         .lock()
                         .unwrap_or_else(PoisonError::into_inner)
@@ -1882,9 +1886,9 @@ mailbox_capacity: MailboxCapacity::default(),
         let [terminal] = retirement.descendants.0.as_slice() else {
             panic!("one complete original raw child survives");
         };
-        let ActorRetirement::BindingAbandoned {
+        let ActorRetirement::Retained {
             custody,
-            initialization,
+            outcome: RetirementOutcome::BindingAbandoned { initialization },
         } = &terminal.retirement
         else {
             panic!("the real unacknowledged private startup retains its full native disposition");
@@ -2048,7 +2052,7 @@ mailbox_capacity: MailboxCapacity::default(),
             .expect("the actual root join was acquired")
             .expect("the projector panic must not substitute for the parent task result");
         let retirement = ActorRetirement::from_local(outcome);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2066,10 +2070,13 @@ mailbox_capacity: MailboxCapacity::default(),
                     terminal_report,
                     unread_owner_cancellation,
                 },
-            interpretation,
-            source,
-            settlements,
-            completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation,
+                    source,
+                    settlements,
+                    completion,
+                },
         } = retirement
         else {
             panic!("explicit shutdown completes the original live parent");
@@ -2198,7 +2205,7 @@ mailbox_capacity: MailboxCapacity::default(),
                 terminal_report,
                 unread_owner_cancellation,
             ) = match &terminal.retirement {
-                ActorRetirement::Completed {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -2216,10 +2223,13 @@ mailbox_capacity: MailboxCapacity::default(),
                             terminal_report,
                             unread_owner_cancellation,
                         },
-                    interpretation,
-                    source,
-                    settlements,
-                    completion,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            interpretation,
+                            source,
+                            settlements,
+                            completion,
+                        },
                 } => {
                     assert_eq!(child_failures.as_slice(), []);
                     assert_eq!(*completion, Completion::Stopped);
@@ -2243,7 +2253,7 @@ mailbox_capacity: MailboxCapacity::default(),
                         unread_owner_cancellation,
                     )
                 }
-                ActorRetirement::OwnerCancelled {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -2261,9 +2271,12 @@ mailbox_capacity: MailboxCapacity::default(),
                             terminal_report,
                             unread_owner_cancellation,
                         },
-                    interpretation,
-                    source,
-                    settlements,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            interpretation,
+                            source,
+                            settlements,
+                        },
                 } => {
                     assert_eq!(child_failures.as_slice(), []);
                     assert_eq!(settlements.len(), 0);
@@ -2492,7 +2505,7 @@ mailbox_capacity: MailboxCapacity::default(),
         assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
         assert!(notification.is_ok());
         let native = ActorRetirement::from_local(joined.expect("actual original actor join"));
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2503,9 +2516,12 @@ mailbox_capacity: MailboxCapacity::default(),
                     retirement_failures,
                     ..
                 },
-            settlements,
-            completion,
-            ..
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    ..
+                },
         } = native
         else {
             panic!("the original parent completes its explicit stop");
@@ -2573,7 +2589,7 @@ mailbox_capacity: MailboxCapacity::default(),
             panic!("one actual joined later sibling");
         };
         assert_eq!(later_terminal.origin.address(), endpoint.address());
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2584,8 +2600,7 @@ mailbox_capacity: MailboxCapacity::default(),
                     retirement_failures,
                     ..
                 },
-            settlements,
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { settlements, .. },
         } = &later_terminal.retirement
         else {
             panic!("parent retirement joins the independent sibling");
@@ -2898,9 +2913,9 @@ mailbox_capacity: MailboxCapacity::default(),
             .behavior()
             .expect("original uncommitted child survives total projection");
         assert_eq!(first_child.base().entries.as_ptr(), first_allocation);
-        let ActorRetirement::BindingAbandoned {
+        let ActorRetirement::Retained {
             custody,
-            initialization,
+            outcome: RetirementOutcome::BindingAbandoned { initialization },
         } = &first_terminal.retirement
         else {
             panic!("projector panic must retain the complete original raw child disposition");
@@ -3178,6 +3193,7 @@ mailbox_capacity: MailboxCapacity::default(),
 
 #[cfg(test)]
 mod child_rejection_custody {
+    use crate::RetirementOutcome;
     use crate::actors::ActorExt;
     use crate::behavior::{
         Actions, BehaviorActed, BehaviorBase, CreateChild, CreationKind, CreationSequence,
@@ -3273,15 +3289,14 @@ mod child_rejection_custody {
         let notifications = notifications.expect("parent original notifications transferred");
         assert!(notifications.termination.is_ok());
         assert!(notifications.retirement.is_ok());
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     descendants,
                     child_failures: failures,
                     ..
                 },
-            settlements,
-            ..
+            outcome: RetirementOutcome::Completed { settlements, .. },
         } = retirement
         else {
             panic!("parent completed");

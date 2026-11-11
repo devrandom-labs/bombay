@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use core::time::Duration;
 
 use bombay::ActorCustody;
@@ -1091,12 +1092,15 @@ async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result(
     };
     assert_eq!(termination, Err(Crash::Panicked));
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::TransitionPanicked {
+    let ActorRetirement::Retained {
         custody,
-        payload,
-        interpretation,
-        source,
-        settlements,
+        outcome:
+            RetirementOutcome::TransitionPanicked {
+                payload,
+                interpretation,
+                source,
+                settlements,
+            },
     } = retirement
     else {
         panic!("finalization is one pure event transition, not an activation failure");
@@ -1161,7 +1165,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
     drop((work, startup_error));
     let terminal: ApplicationTerminal<_> = (origin, retirement);
     let (origin, retirement) = terminal;
-    let ActorRetirement::InitializationRejected {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -1179,7 +1183,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        error,
+        outcome: RetirementOutcome::InitializationRejected { error },
     } = retirement
     else {
         panic!("the exact initialization refusal remains a distinct root outcome");
@@ -1254,7 +1258,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
 
     let (
         origin,
-        ActorRetirement::BehaviorFailed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -1272,10 +1276,13 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
                     user,
                     descendants,
                 },
-            interpretation,
-            source,
-            settlements,
-            error: RootFailure,
+            outcome:
+                RetirementOutcome::BehaviorFailed {
+                    interpretation,
+                    source,
+                    settlements,
+                    error: RootFailure,
+                },
         },
     ) = terminal
     else {
@@ -1433,7 +1440,7 @@ fn assert_blocking_root_retirement(
     retirement: ActorRetirement<StopOnShutdown<BlockingRoot>, Never, Vec<Never>>,
     allocation: *const u64,
 ) {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -1451,10 +1458,13 @@ fn assert_blocking_root_retirement(
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = retirement
     else {
         panic!("the original finite root must return its complete stopped retirement");

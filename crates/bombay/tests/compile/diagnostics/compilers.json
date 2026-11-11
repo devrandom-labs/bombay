@@ -11,7 +11,7 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "1ff1697424e63d5028c4e9cfca9d5a6a1bd770dd13c12fb5db2194e180db2743",
+  "patch_sha256": "185bfbb37a385a82c33f34843a61a92ff4ec4beec2453d7365775a98125a1070",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
       "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
@@ -34,14 +34,14 @@
       "fixture_sha256": "1328afe4cf04bc945bc1e0cbaf15c12b68b0279effa3ac27ee32c02758351f53"
     },
     "crates/bombay/tests/compile/fail/topology_duplicate_roles.stderr": {
-      "canonical_sha256": "8f03cd257435f412d429c496eed0a7f2b3f8f44cb1ec87286119ae5b1383c3f8",
-      "minimum_sha256": "73b6893c117e50ccdb8e7bca7349b56127a69b7a3fea4a637302a0ad2be65244",
-      "fixture_sha256": "ceaf793dc6617864ca6bad6cfeb9e8a74071e7f5f806a1f932c2b6c4b233fe09"
+      "canonical_sha256": "2753ec0e6cfb06b268c5792438fd3145542bd82436cfd9a8666f4c3677aa0c3f",
+      "minimum_sha256": "8be255bdd266b4e52e0f589721ea841d465eacf362b7289d72551cd3f3369aff",
+      "fixture_sha256": "28ae38325fbdd17c71dbf7cea5963989df7ff9035a6f11acb477d16b6df5657d"
     },
     "crates/bombay/tests/compile/fail/topology_erased_cold_origin.stderr": {
-      "canonical_sha256": "1a82ff5b49a5721013408c9579c2fb6dfc7247308e233ddd3cebeacc571f37c7",
-      "minimum_sha256": "1b3f9669266dd677806d42f97a019a5189da411993f60720bef14e5b65967528",
-      "fixture_sha256": "2c4f9c01881193e6b4e160b0821968ebdc2dfd01198fcf0622f9b607b082aab5"
+      "canonical_sha256": "ee16fae68a914f9b1d7cc5b09f40a6286de95d0a005caaa5cb3b77964f40dea8",
+      "minimum_sha256": "162ffe14e0d24b481db0df1552396f7fe00f579e5fde7607abd53bd7241ae3e7",
+      "fixture_sha256": "5f67e22e47a2a7e7e58879c96862c3315db415be4452b4601bc6c9d26eef7e4e"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr": {
       "canonical_sha256": "381298fd1fb41be7b6e19c234c3e039d9840fdb7eb6ff19068098043c7bc3058",
@@ -69,9 +69,9 @@
       "fixture_sha256": "f07f122b9853377b3b07fcf48db3f5f1bac6a8a9d92a50064f7486284a278860"
     },
     "crates/bombay/tests/compile/fail/topology_swapped_roles.stderr": {
-      "canonical_sha256": "dcd9df98c886e4e83d3754bab6b428565ea213458a0f7607e722290944440bf5",
-      "minimum_sha256": "48d6eeea1102f65b78d7c71102dc6a16e8a5a0dbc799f408ff65706a3185ae2d",
-      "fixture_sha256": "87a7e3cb699538c4387fd085b43bd49e223e18b884c7a82a15c60c6636912ca5"
+      "canonical_sha256": "bc558efbe7269a31f636910d7edf9bf6237f5954c53e9bc557804bc4ebfd7634",
+      "minimum_sha256": "6a664ce9a82fb7f4aefef778075d1b414735902371a89521d27a9154131e0a18",
+      "fixture_sha256": "fa9b7f99f434c28567a18879b1537f7f19b0821555c41270ec7acc9d4d342f01"
     },
     "crates/bombay/tests/compile/fail/worker_factory_not_callable.stderr": {
       "canonical_sha256": "df0f015bb3e2c67168334356bab6488d7cdc9f0a6daddbf4f112c62d4f7b0109",

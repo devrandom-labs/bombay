@@ -3,6 +3,7 @@ use super::super::request::{Custody, Identity, Request};
 use super::super::tests::counter::{Counter, CounterMessage, CounterValue};
 use super::super::{Attempt, Export, ExportLimits, RefusalRetention, submission};
 use super::Exports;
+use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::remote::json;
 use crate::remote::verification::poll_verification;
@@ -443,12 +444,15 @@ async fn incoming_requests() {
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert_eq!(native.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                ..
+            },
     } = native
     else {
         panic!("the Counter retains its original normal native retirement");

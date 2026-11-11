@@ -1,5 +1,6 @@
 //! An explicit startup refusal retains Work before owner cancellation and join.
 use super::ledger_custody;
+use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
 use crate::application::work::invoke;
@@ -117,7 +118,13 @@ async fn refused_binding_returns_original_work_after_joined_cancellation() {
     );
     assert_eq!(origin.address(), application.root().address());
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
-    assert!(matches!(&native, ActorRetirement::OwnerCancelled { .. }));
+    assert!(matches!(
+        &native,
+        ActorRetirement::Retained {
+            outcome: RetirementOutcome::OwnerCancelled { .. },
+            ..
+        }
+    ));
     assert!(refused.is_pending());
     assert!(matches!(fallback, Some(Ok(()))));
     let custody = ledger_custody(&native);

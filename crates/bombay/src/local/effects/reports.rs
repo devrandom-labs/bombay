@@ -247,6 +247,7 @@ pub(crate) struct LocalParentReports<Event, Child, Position> {
 mod parent_conversion_custody {
     use crate::ActorCustody;
     use crate::MailboxCapacity;
+    use crate::RetirementOutcome;
 
     use core::ptr;
     use std::panic::resume_unwind;
@@ -528,7 +529,7 @@ mod parent_conversion_custody {
                 .expect("the original child owns its verification publication");
             // The acknowledgement closes if any complete retirement oracle panics.
             let (publication, allocation) = observation;
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         received_interpretation: retirement_received_interpretation,
@@ -546,10 +547,13 @@ mod parent_conversion_custody {
                         capability_failures,
                         unread_owner_cancellation,
                     },
-                interpretation: retirement_interpretation,
-                source: retirement_source,
-                settlements,
-                completion,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation: retirement_interpretation,
+                        source: retirement_source,
+                        settlements,
+                        completion,
+                    },
             } = &retirement
             else {
                 panic!("the pure child stops in its ordinary initialization");
@@ -1040,7 +1044,7 @@ mailbox_capacity: MailboxCapacity::default(),
         let terminal = &descendants[0];
         assert_eq!(terminal.origin.address(), origin.address());
         assert_eq!(terminal.origin, origin);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     received_interpretation: child_retirement_received_interpretation,
@@ -1058,10 +1062,13 @@ mailbox_capacity: MailboxCapacity::default(),
                     capability_failures: child_failures,
                     unread_owner_cancellation: child_unread,
                 },
-            interpretation: child_retirement_interpretation,
-            source: child_retirement_source,
-            settlements: child_settlements,
-            completion: child_completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation: child_retirement_interpretation,
+                    source: child_retirement_source,
+                    settlements: child_settlements,
+                    completion: child_completion,
+                },
         } = &terminal.retirement
         else {
             panic!("the original full child terminal remains available");
@@ -1124,7 +1131,7 @@ mailbox_capacity: MailboxCapacity::default(),
             unread_owner_cancellation,
             payload,
         ) = match ActorRetirement::from_local(outcome) {
-            ActorRetirement::HostCommitPanicked {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -1142,8 +1149,11 @@ mailbox_capacity: MailboxCapacity::default(),
                         terminal_report,
                         unread_owner_cancellation,
                     },
-                initialization: Some(current),
-                payload,
+                outcome:
+                    RetirementOutcome::HostCommitPanicked {
+                        initialization: Some(current),
+                        payload,
+                    },
             } => (
                 current,
                 Vec::new(),
@@ -1163,7 +1173,7 @@ mailbox_capacity: MailboxCapacity::default(),
                 unread_owner_cancellation,
                 payload,
             ),
-            ActorRetirement::HostExecutionPanicked {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -1181,10 +1191,13 @@ mailbox_capacity: MailboxCapacity::default(),
                         terminal_report,
                         unread_owner_cancellation,
                     },
-                interpretation: Some(current),
-                source: None,
-                settlements: prior,
-                payload,
+                outcome:
+                    RetirementOutcome::HostExecutionPanicked {
+                        interpretation: Some(current),
+                        source: None,
+                        settlements: prior,
+                        payload,
+                    },
             } => (
                 current,
                 prior,

@@ -1,5 +1,6 @@
 //! Early external endpoints and one root share one affine application scope.
 
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, EstablishedDelivery, EstablishedRecipient,
@@ -330,7 +331,11 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
     let (origin, retirement) = native.expect("joined root cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody, .. } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { .. },
+    } = retirement
+    else {
         drop(retirement);
         panic!("root completed");
     };
@@ -340,7 +345,11 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
     let mut workers = BTreeMap::new();
     for proxy in custody.descendants {
         assert_eq!(proxy.retirement.completion(), Some(&Completion::Stopped));
-        let ActorRetirement::Completed { custody, .. } = *proxy.retirement else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::Completed { .. },
+        } = *proxy.retirement
+        else {
             panic!("proxy completed");
         };
         assert!(custody.capability_failures.is_empty());
@@ -348,7 +357,11 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         assert_eq!(custody.descendants.len(), 1);
         let worker = custody.descendants.into_iter().next().expect("one worker");
         assert_eq!(worker.retirement.completion(), Some(&Completion::Stopped));
-        let ActorRetirement::Completed { custody, .. } = *worker.retirement else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::Completed { .. },
+        } = *worker.retirement
+        else {
             panic!("worker completed");
         };
         let value = custody.behavior.base().value.as_ref();

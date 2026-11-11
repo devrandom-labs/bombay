@@ -1,4 +1,5 @@
 //! Finite assignment/deadline evidence; raw serial equality is not caller authentication or KERI proof.
+use bombay::RetirementOutcome;
 use bombay::behavior::{Behavior, BehaviorBase, EstablishedDelivery, MessageProtocol, User};
 use bombay::prelude::*;
 use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
@@ -305,9 +306,9 @@ fn authorized_assignments_survive_application_replacement() {
                 drained,
                 drained_barrier,
             ) = observed;
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             } = &terminal
             else {
                 panic!("first native state");
@@ -400,9 +401,9 @@ fn authorized_assignments_survive_application_replacement() {
                 snapshot,
                 shutdown,
             ) = observed;
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             } = &terminal
             else {
                 panic!("replacement native state");
@@ -542,9 +543,9 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
         snapshot,
         shutdown,
     ) = observed;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { behavior, .. },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = &terminal
     else {
         panic!("expiry native state");
@@ -633,9 +634,9 @@ async fn export_assignment(
         panic!("complete startup export native and both notifications");
     };
     let (serial, allocation, sender, admitted, barrier, snapshot, shutdown) = observed;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { behavior, .. },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = &terminal
     else {
         panic!("native authorized export");

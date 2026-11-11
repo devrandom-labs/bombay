@@ -1,4 +1,5 @@
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::composition::replies::ExactReplies;
 use core::convert::Infallible;
@@ -241,12 +242,15 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
     assert_eq!(&*work, "source refusal preserves caller work");
     assert_eq!(termination, Ok(Exit::Normal));
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        mut settlements,
-        interpretation,
-        source,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                mut settlements,
+                interpretation,
+                source,
+                completion,
+            },
     } = retirement
     else {
         panic!("source refusal follows normal configured pool shutdown");
@@ -308,7 +312,11 @@ async fn closed_replacement_source_preserves_original_request_actor_work_and_cle
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         assert_eq!(origin.creation_id(), previous.creation());
         assert_eq!(origin.creation_kind(), CreationKind::Birth);
-        let ActorRetirement::Completed { custody, .. } = *terminal else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::Completed { .. },
+        } = *terminal
+        else {
             panic!("original worker joined");
         };
         assert_eq!(custody.behavior.base().payload.as_ptr(), first_allocation);

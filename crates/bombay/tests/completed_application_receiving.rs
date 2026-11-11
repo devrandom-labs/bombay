@@ -1,5 +1,6 @@
 use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use core::future::{Future, poll_fn};
 use core::mem;
 use core::num::NonZeroUsize;
@@ -107,7 +108,10 @@ impl AccountConclusion {
         terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, Vec<Never>>,
     ) -> Self {
         match terminal {
-            completed @ ActorRetirement::Completed { .. } => {
+            completed @ ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { .. },
+                ..
+            } => {
                 drop(completed);
                 panic!("the application terminal conversion failed");
             }
@@ -178,7 +182,7 @@ impl EntityDefinition for Accounts {
 
 fn assert_rejected_root(outcome: &AccountConclusion) {
     let AccountConclusion::Root { origin, terminal } = outcome;
-    let ActorRetirement::InitializationRejected {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -196,7 +200,7 @@ fn assert_rejected_root(outcome: &AccountConclusion) {
                 retirement_failures,
                 terminal_report,
             },
-        error,
+        outcome: RetirementOutcome::InitializationRejected { error },
     } = terminal
     else {
         panic!("the complete actual initialization refusal remains owned");
@@ -269,7 +273,7 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
         panic!("completed original output and both actual cleanup boundaries are acquired");
     };
     let retirement = joined;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -287,10 +291,13 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
                 retirement_failures,
                 terminal_report,
             },
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = &retirement
     else {
         panic!("same standard root completed normally");
@@ -566,7 +573,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
     let returned = (origin, retirement);
     let (
         origin,
-        ActorRetirement::InitializationRejected {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -584,7 +591,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
                     retirement_failures,
                     terminal_report,
                 },
-            error,
+            outcome: RetirementOutcome::InitializationRejected { error },
         },
     ) = &returned
     else {
@@ -666,7 +673,7 @@ fn assert_completed_account(
 ) {
     let Ok((
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -684,10 +691,13 @@ fn assert_completed_account(
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     )) = root_receipt
     else {
@@ -739,7 +749,7 @@ fn assert_cancelled_account(
 ) {
     let Ok((
         origin,
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -757,9 +767,12 @@ fn assert_cancelled_account(
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation,
+                    source,
+                },
         },
     )) = root_receipt
     else {
@@ -893,9 +906,9 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
         assert_completed_account(&root_receipt);
         let Ok((
             _,
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             },
         )) = &root_receipt
         else {
@@ -1266,7 +1279,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         };
         let Ok((
             origin,
-            ActorRetirement::InitializationRejected {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -1284,7 +1297,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                         retirement_failures,
                         terminal_report,
                     },
-                error,
+                outcome: RetirementOutcome::InitializationRejected { error },
             },
         )) = &root_receipt
         else {
@@ -1674,7 +1687,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             _root_report,
             Ok((
                 origin,
-                ActorRetirement::Completed {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -1692,10 +1705,13 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 },
             )),
             Ok(ActorNotificationReceipts {
@@ -2050,7 +2066,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     let complete_refusal = match joined_refusal.as_ref() {
         Some((
             origin,
-            ActorRetirement::InitializationRejected {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -2068,7 +2084,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                         retirement_failures,
                         terminal_report,
                     },
-                error,
+                outcome: RetirementOutcome::InitializationRejected { error },
             },
         )) => {
             assert!(matches!(
@@ -2329,7 +2345,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
         };
         let Ok((
             origin,
-            ActorRetirement::InitializationRejected {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -2347,7 +2363,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
                         retirement_failures,
                         terminal_report,
                     },
-                error,
+                outcome: RetirementOutcome::InitializationRejected { error },
             },
         )) = &root_receipt
         else {
@@ -2862,7 +2878,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     let retirement =
         joined.unwrap_or_else(|_| panic!("the original active account joins successfully"));
     match &retirement {
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2880,10 +2896,13 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         } => {
             assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
@@ -2913,7 +2932,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             assert_eq!(capability_failures.len(), 0);
             assert_eq!(*completion, Completion::Stopped);
         }
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2931,9 +2950,12 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation,
+                    source,
+                },
         } => {
             assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
@@ -2964,13 +2986,10 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     let account_exact = original_account
         .upgrade()
         .is_some_and(|original| match &retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
-            }
-            | ActorRetirement::OwnerCancelled {
-                custody: ActorCustody { behavior, .. },
-                ..
+                outcome:
+                    RetirementOutcome::Completed { .. } | RetirementOutcome::OwnerCancelled { .. },
             } => Arc::ptr_eq(&original, &behavior.base().original),
             _ => false,
         });
@@ -2987,7 +3006,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             _root_report,
             Ok((
                 origin,
-                ActorRetirement::Completed {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -3005,10 +3024,13 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 },
             )),
             Ok(ActorNotificationReceipts {
@@ -3394,7 +3416,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             else {
                 panic!("the raw root is projected as the original root");
             };
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -3412,10 +3434,13 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                         unread_owner_cancellation,
                         mut descendants,
                     },
-                interpretation,
-                source,
-                settlements,
-                completion,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements,
+                        completion,
+                    },
             } = terminal
             else {
                 panic!("the explicit root shutdown retains its complete ordinary retirement");
@@ -3497,7 +3522,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                 panic!("the original declared child uses its total child projection");
             };
             drop(committed);
-            let ActorRetirement::OwnerCancelled {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior: child_behavior,
@@ -3515,9 +3540,12 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                         terminal_report,
                         unread_owner_cancellation,
                     },
-                interpretation,
-                source,
-                settlements,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        interpretation,
+                        source,
+                        settlements,
+                    },
             } = child_terminal
             else {
                 panic!("root retirement joins its actually cancelled declared child");
@@ -3796,9 +3824,9 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
     assert_cancelled_account(&root_receipt);
     let Ok((
         _,
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         },
     )) = &root_receipt
     else {
@@ -3886,9 +3914,9 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     assert_cancelled_account(&root_receipt);
     let Ok((
         _,
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         },
     )) = &root_receipt
     else {
@@ -4152,9 +4180,9 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         assert_completed_account(&root_receipt);
         let Ok((
             _,
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             },
         )) = &root_receipt
         else {
@@ -4314,9 +4342,9 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         assert_completed_account(&root_receipt);
         let Ok((
             _,
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             },
         )) = &root_receipt
         else {
@@ -4366,6 +4394,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
 
 mod family_cleanup {
     use bombay::ActorCustody;
+    use bombay::RetirementOutcome;
 
     use core::future::{Future, poll_fn};
     use core::num::NonZeroUsize;
@@ -4541,16 +4570,19 @@ mod family_cleanup {
         // accepted shutdown either folds to Stop, or remains the sole control input
         // when the distinct owner-cancellation source was acquired first.
         match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         control,
                         unread_owner_cancellation,
                         ..
                     },
-                completion,
-                settlements,
-                ..
+                outcome:
+                    RetirementOutcome::Completed {
+                        completion,
+                        settlements,
+                        ..
+                    },
             } => {
                 let expected_settlements = vec![ActionSettlement {
                     creations: Creations::empty(),
@@ -4566,15 +4598,14 @@ mod family_cleanup {
                     None | Some(()) => {}
                 }
             }
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         control,
                         unread_owner_cancellation,
                         ..
                     },
-                settlements,
-                ..
+                outcome: RetirementOutcome::OwnerCancelled { settlements, .. },
             } => {
                 assert_eq!(settlements.as_slice(), []);
                 assert_eq!(*unread_owner_cancellation, None);
@@ -4603,7 +4634,7 @@ mod family_cleanup {
             terminal_report,
             unread_owner_cancellation,
         ) = match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -4621,32 +4652,18 @@ mod family_cleanup {
                         terminal_report,
                         unread_owner_cancellation,
                     },
-                interpretation,
-                source,
-                settlements: _,
-                completion: _,
-            }
-            | ActorRetirement::OwnerCancelled {
-                custody:
-                    ActorCustody {
-                        behavior,
-                        control: _,
-                        user,
-                        descendants,
-                        child_failures,
-                        capability_failures,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
-                        terminal_report,
-                        unread_owner_cancellation,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements: _,
+                        completion: _,
+                    }
+                    | RetirementOutcome::OwnerCancelled {
+                        interpretation,
+                        source,
+                        settlements: _,
                     },
-                interpretation,
-                source,
-                settlements: _,
             } => (
                 behavior,
                 interpretation,

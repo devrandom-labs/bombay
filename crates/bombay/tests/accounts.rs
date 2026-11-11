@@ -6,6 +6,7 @@
 //! explicit `StableProxy` worker-replacement policy.
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use core::future::{Future, poll_fn};
 use core::num::NonZeroUsize;
 use core::pin::pin;
@@ -262,7 +263,7 @@ where
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -280,10 +281,13 @@ where
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     ) = terminal
     else {
@@ -324,7 +328,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
             assert_eq!(report.retirement(), RetirementAssessment::Established);
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             let (behavior, settlements, user, descendants, capability_failures) = match retirement {
-                Ok(ActorRetirement::Completed {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -342,10 +346,13 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert_eq!(child_failures, &[]);
                     assert!(interpretation.is_none());
@@ -369,7 +376,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                         capability_failures,
                     )
                 }
-                Ok(ActorRetirement::OwnerCancelled {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -387,9 +394,12 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            settlements,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert_eq!(child_failures, &[]);
                     assert!(interpretation.is_none());
@@ -713,7 +723,10 @@ fn entity_retirement_preserves_the_forced_fence_reason() {
     assert_eq!(records.len(), 1);
     assert!(matches!(
         &records[0].0,
-        Ok(ActorRetirement::TransitionPanicked { .. })
+        Ok(ActorRetirement::Retained {
+            outcome: RetirementOutcome::TransitionPanicked { .. },
+            ..
+        })
     ));
     assert_eq!(
         records[0].1.failures(),

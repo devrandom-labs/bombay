@@ -3,6 +3,7 @@
 #[path = "../../../../examples/counter/src/counter.rs"]
 mod counter;
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, CreateChild, CreationSequence, Creations, Never};
 use bombay::lifecycle::StopOnShutdown;
@@ -104,7 +105,7 @@ async fn cold_recursive_creation_retains_every_original_descendant() {
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     let (_, retirement) = native.expect("root joined");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -112,7 +113,7 @@ async fn cold_recursive_creation_retains_every_original_descendant() {
                 child_failures,
                 ..
             },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = retirement
     else {
         panic!("root completed");
@@ -133,7 +134,7 @@ async fn cold_recursive_creation_retains_every_original_descendant() {
     addresses.insert(origin.address());
     let mut depth = 0;
     while let Some(retirement) = remaining.pop() {
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -141,7 +142,7 @@ async fn cold_recursive_creation_retains_every_original_descendant() {
                     child_failures,
                     ..
                 },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         } = retirement
         else {
             panic!("original node cancellation retained");
@@ -217,15 +218,14 @@ async fn cold_initialization_refusal_returns_the_original_definition_and_indepen
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     let (_, retirement) = native.expect("joined root");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 descendants,
                 child_failures,
                 ..
             },
-        settlements,
-        ..
+        outcome: RetirementOutcome::Completed { settlements, .. },
     } = retirement
     else {
         panic!("child refusal does not replace root completion");

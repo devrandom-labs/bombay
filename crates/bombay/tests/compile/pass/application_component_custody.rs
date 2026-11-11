@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
@@ -104,10 +105,7 @@ async fn main() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("the complete component custody is joined");
-    let ActorRetirement::Completed {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::Completed { .. } } = retirement
     else {
         panic!("the actual root retires");
     };
@@ -120,10 +118,7 @@ async fn main() {
         origin: _,
         retirement,
     } = report;
-    let ActorRetirement::OwnerCancelled {
-        custody: ActorCustody { behavior, .. },
-        ..
-    } = *retirement
+    let ActorRetirement::Retained { custody: ActorCustody { behavior, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
     else {
         panic!("the owner cancelled the component after startup");
     };

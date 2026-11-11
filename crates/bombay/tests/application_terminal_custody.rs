@@ -1,4 +1,5 @@
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::{ActorFailureAssessment, ActorNotificationReceipts, RetirementAssessment};
 use core::ptr;
 use std::panic::resume_unwind;
@@ -140,7 +141,7 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -158,10 +159,13 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
                 terminal_report: retirement_terminal_report,
                 mut descendants,
             },
-        settlements,
-        completion,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = retirement
     else {
         panic!("the root must preserve its completed state and child custody")
@@ -189,7 +193,7 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
     let mut nonces = Vec::new();
     for descendant in descendants.drain(..) {
         let ordered_children::RootRetirements { origin, retirement } = descendant;
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -207,9 +211,12 @@ async fn root_returns_only_after_owning_ordered_direct_child_terminals() {
                     retirement_failures: retirement_native_failures,
                     terminal_report: retirement_terminal_report,
                 },
-            settlements,
-            interpretation: retirement_interpretation,
-            source: retirement_source,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                },
         } = *retirement
         else {
             panic!("parent retirement must preserve each exact child cancellation")
@@ -292,7 +299,7 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -310,10 +317,13 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        settlements,
-        completion,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = retirement
     else {
         panic!("the application root must retain its declared child")
@@ -342,7 +352,7 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
     for descendant in descendants {
         match descendant {
             declared_children::RootRetirements::BackgroundWorker { origin, retirement } => {
-                let ActorRetirement::OwnerCancelled {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -360,9 +370,12 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
                             retirement_failures: retirement_native_failures,
                             terminal_report: retirement_terminal_report,
                         },
-                    settlements,
-                    interpretation: retirement_interpretation,
-                    source: retirement_source,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            settlements,
+                            interpretation: retirement_interpretation,
+                            source: retirement_source,
+                        },
                 } = *retirement
                 else {
                     panic!("the cold child preserves its exact owner cancellation");
@@ -387,7 +400,7 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
                 assert_eq!(previous_background, None);
             }
             declared_children::RootRetirements::AuditWorker { origin, retirement } => {
-                let ActorRetirement::OwnerCancelled {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -405,9 +418,12 @@ async fn heterogeneous_application_children_are_owned_by_their_declared_roles() 
                             retirement_failures: retirement_native_failures,
                             terminal_report: retirement_terminal_report,
                         },
-                    settlements,
-                    interpretation: retirement_interpretation,
-                    source: retirement_source,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            settlements,
+                            interpretation: retirement_interpretation,
+                            source: retirement_source,
+                        },
                 } = *retirement
                 else {
                     panic!("the cold child preserves its exact owner cancellation");
@@ -611,7 +627,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
         termination.expect("the child report must complete before the watchdog");
     assert_eq!(child_termination, Ok(Exit::Normal));
 
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -629,10 +645,13 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        settlements,
-        completion,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = retirement
     else {
         panic!("the root must retain its completed retirement")
@@ -667,7 +686,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
     let [nested_children::RootRetirements { origin, retirement }] = descendants.as_slice() else {
         panic!("the root retains its exact descendant retirement");
     };
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -685,9 +704,12 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        settlements,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = retirement.as_ref()
     else {
         panic!("the descendant retains its exact owner cancellation");
@@ -716,7 +738,7 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
     let [nested_children::ChildRetirements { origin, retirement }] = descendants.as_slice() else {
         panic!("the child retains its exact descendant retirement");
     };
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -734,9 +756,12 @@ async fn privately_bound_child_reports_its_nested_creation_before_parent_retirem
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        settlements,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = retirement.as_ref()
     else {
         panic!("the descendant retains its exact owner cancellation");
@@ -921,7 +946,7 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -939,10 +964,13 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
                 terminal_report: retirement_terminal_report,
                 mut descendants,
             },
-        settlements,
-        completion,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = retirement
     else {
         panic!("the parent completes after joining every surviving child");
@@ -1023,7 +1051,7 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
     // address getter or inferring an incarnation generation from this address.
     let survivor_recipient = actor.into_recipient();
     assert!(survivors.resolve(&survivor_origin.address()).is_none());
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior: survivor,
@@ -1041,9 +1069,12 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
                 retirement_failures: retirement_native_failures,
                 terminal_report: retirement_terminal_report,
             },
-        settlements: survivor_settlements,
-        interpretation: retirement_interpretation,
-        source: retirement_source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements: survivor_settlements,
+                interpretation: retirement_interpretation,
+                source: retirement_source,
+            },
     } = *survivor_retirement
     else {
         panic!("the sibling preserves the actual acquired owner cancellation");

@@ -20,8 +20,8 @@ use crate::local::effects::timers::LocalTimers;
 use crate::observe;
 use crate::terminal::{
     ActorCustody, ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, LocalOutcome,
-    ProjectTerminal, RetirementNotificationError, RetirementSchema, publish_retirement_report,
-    retirement_ingress,
+    ProjectTerminal, RetirementNotificationError, RetirementOutcome, RetirementSchema,
+    publish_retirement_report, retirement_ingress,
 };
 use crate::{ActorExecutionOutcome, Retirement};
 #[cfg(test)]
@@ -503,7 +503,7 @@ where
                 source_index,
                 acquired_ingress,
             } => Ok((
-                ActorRetirement::InitializationRejected {
+                ActorRetirement::Retained {
                     custody: ActorCustody {
                         behavior,
                         control,
@@ -520,7 +520,7 @@ where
                         source_index,
                         acquired_ingress: retirement_ingress(acquired_ingress),
                     },
-                    error,
+                    outcome: RetirementOutcome::InitializationRejected { error },
                 },
                 retirement_report,
                 termination_notification,
@@ -543,7 +543,7 @@ where
                 source_index,
                 acquired_ingress,
             } => Ok((
-                ActorRetirement::InitializationPanicked {
+                ActorRetirement::Retained {
                     custody: ActorCustody {
                         behavior,
                         control,
@@ -560,7 +560,7 @@ where
                         source_index,
                         acquired_ingress: retirement_ingress(acquired_ingress),
                     },
-                    payload,
+                    outcome: RetirementOutcome::InitializationPanicked { payload },
                 },
                 retirement_report,
                 termination_notification,
@@ -584,7 +584,7 @@ where
                 source_index,
                 acquired_ingress,
             } => Ok((
-                ActorRetirement::HostRejected {
+                ActorRetirement::Retained {
                     custody: ActorCustody {
                         behavior,
                         control,
@@ -601,8 +601,10 @@ where
                         source_index,
                         acquired_ingress: retirement_ingress(acquired_ingress),
                     },
-                    initialization,
-                    error,
+                    outcome: RetirementOutcome::HostRejected {
+                        initialization,
+                        error,
+                    },
                 },
                 retirement_report,
                 termination_notification,
@@ -625,7 +627,7 @@ where
                 source_index,
                 acquired_ingress,
             } => Ok((
-                ActorRetirement::BindingAbandoned {
+                ActorRetirement::Retained {
                     custody: ActorCustody {
                         behavior,
                         control,
@@ -642,7 +644,7 @@ where
                         source_index,
                         acquired_ingress: retirement_ingress(acquired_ingress),
                     },
-                    initialization,
+                    outcome: RetirementOutcome::BindingAbandoned { initialization },
                 },
                 retirement_report,
                 termination_notification,
@@ -1800,6 +1802,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::ActorCustody;
+    use crate::RetirementOutcome;
     use crate::terminal::{ActorFailureAssessment, ChildOrigin, RetirementAssessment};
     use std::any::Any;
     use std::convert::Infallible;
@@ -2687,7 +2690,7 @@ mod tests {
         let rejected = closed_parent_admission(terminal)
             .expect_err("closed parent admission returns the exact terminal value");
         let ProbeTerminal::Probe { origin, terminal } = rejected;
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     received_interpretation,
@@ -2705,10 +2708,13 @@ mod tests {
                     descendants,
                     child_failures,
                 },
-            interpretation,
-            source,
-            settlements,
-            completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation,
+                    source,
+                    settlements,
+                    completion,
+                },
         } = terminal
         else {
             panic!("the projected child must preserve its completed disposition")
@@ -2906,6 +2912,7 @@ mod ordinary_owner_retirement {
 mod transitive_source_cancellation {
     use crate::ActorCustody;
     use crate::MailboxCapacity;
+    use crate::RetirementOutcome;
 
     use super::ActorExecution;
     use crate::ActorExecutionOutcome;
@@ -3286,7 +3293,7 @@ mod transitive_source_cancellation {
             );
         };
         assert!(activation_tasks.is_empty());
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     received_interpretation,
@@ -3304,9 +3311,12 @@ mod transitive_source_cancellation {
                     user,
                     descendants,
                 },
-            interpretation,
-            source,
-            settlements,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    interpretation,
+                    source,
+                    settlements,
+                },
         } = ActorRetirement::<SourceCycleActor, Never, Vec<Never>>::from_local(retirement)
         else {
             panic!("the public exact projection preserves the same selected owner fact");
@@ -3372,6 +3382,7 @@ mod transitive_source_cancellation {
 #[cfg(all(test, tokio_unstable))]
 mod independent_actor_execution {
     use crate::ActorCustody;
+    use crate::RetirementOutcome;
 
     use crate::actor_execution::tests::{
         allocations_during, begin_allocations, current_allocations, finish_allocations,
@@ -4953,7 +4964,7 @@ mod independent_actor_execution {
             .expect("the actual joined retirement notification succeeded");
         assert_eq!(termination, Ok(Exit::Normal));
         assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -4971,10 +4982,13 @@ mod independent_actor_execution {
                     acquired_ingress,
                     unread_owner_cancellation,
                 },
-            interpretation,
-            source,
-            settlements,
-            completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation,
+                    source,
+                    settlements,
+                    completion,
+                },
         } = retirement
         else {
             panic!("the parent stopped after its complete workload");
@@ -5042,7 +5056,7 @@ mod independent_actor_execution {
             .unwrap_or_else(|_| panic!("one whole projected child remains"));
         assert_eq!(child_origin, projected_origin);
         assert_ne!(child_origin.address(), origin.address());
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -5060,10 +5074,13 @@ mod independent_actor_execution {
                     acquired_ingress,
                     unread_owner_cancellation,
                 },
-            interpretation,
-            source,
-            settlements,
-            completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation,
+                    source,
+                    settlements,
+                    completion,
+                },
         } = terminal
         else {
             panic!("the actual child completed its original computation batch");
@@ -5192,6 +5209,7 @@ mod independent_actor_execution {
 
 #[cfg(test)]
 mod root_join_custody {
+    use crate::RetirementOutcome;
     use crate::address::MailAddr;
     use crate::launch::{
         InertCapabilities, LocalRetirement, ObserveActionsWithRetirement, ObserveInertActions,
@@ -6505,10 +6523,7 @@ mod root_join_custody {
             retirement_failures,
         ) = match (retirement, expected_completion) {
             (
-                ActorRetirement::Completed {
-                    interpretation,
-                    source,
-                    settlements,
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -6526,7 +6541,13 @@ mod root_join_custody {
                             terminal_report,
                             retirement_failures,
                         },
-                    completion,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            interpretation,
+                            source,
+                            settlements,
+                            completion,
+                        },
                 },
                 ChildCompletion::Stopped,
             ) => {
@@ -6552,10 +6573,7 @@ mod root_join_custody {
                 )
             }
             (
-                ActorRetirement::OwnerCancelled {
-                    interpretation,
-                    source,
-                    settlements,
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -6572,6 +6590,12 @@ mod root_join_custody {
                             additional_failures,
                             terminal_report,
                             retirement_failures,
+                        },
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            interpretation,
+                            source,
+                            settlements,
                         },
                 },
                 ChildCompletion::OwnerCancelled,

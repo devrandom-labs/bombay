@@ -1,5 +1,6 @@
 //! Exact child capability isolation across two actual Applications.
 //! Client association is selected; authentication and network publication remain open.
+use bombay::RetirementOutcome;
 use super::counter_children_application;
 use super::{
     Counter, CounterChildren, CounterExports, CounterMessage, CounterParent, CounterStopExport,
@@ -294,12 +295,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
             (native_b, root_address_b, [address_b, sibling_address_b]),
         ] {
             assert_eq!(origin.address(), root_address);
-            let ActorRetirement::Completed {
-                interpretation,
-                source,
-                settlements,
-                ..
-            } = &retirement
+            let ActorRetirement::Retained { outcome: RetirementOutcome::Completed { interpretation, source, settlements, .. }, .. } = &retirement
             else {
                 panic!("actual parent must retire completely");
             };
@@ -329,12 +325,7 @@ fn same_address_foreign_child_keeps_its_owning_application() {
             assert_ne!(expected_children[0], expected_children[1]);
             assert_eq!(observed, expected);
             for child in &custody.descendants {
-                let ActorRetirement::OwnerCancelled {
-                    interpretation,
-                    source,
-                    settlements,
-                    ..
-                } = child.retirement.as_ref()
+                let ActorRetirement::Retained { outcome: RetirementOutcome::OwnerCancelled { interpretation, source, settlements, .. }, .. } = child.retirement.as_ref()
                 else {
                     panic!("actual child must retain its joined owner retirement");
                 };
@@ -635,12 +626,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
             (native_b, root_address_b, [address_b, sibling_address_b]),
         ] {
             assert_eq!(origin.address(), root_address);
-            let ActorRetirement::Completed {
-                interpretation,
-                source,
-                settlements,
-                ..
-            } = &retirement
+            let ActorRetirement::Retained { outcome: RetirementOutcome::Completed { interpretation, source, settlements, .. }, .. } = &retirement
             else {
                 panic!("actual parent must retire completely");
             };
@@ -670,12 +656,7 @@ fn unhosted_export_clients_preserve_exact_application_ownership() {
             assert_ne!(expected_children[0], expected_children[1]);
             assert_eq!(observed, expected);
             for child in &custody.descendants {
-                let ActorRetirement::OwnerCancelled {
-                    interpretation,
-                    source,
-                    settlements,
-                    ..
-                } = child.retirement.as_ref()
+                let ActorRetirement::Retained { outcome: RetirementOutcome::OwnerCancelled { interpretation, source, settlements, .. }, .. } = child.retirement.as_ref()
                 else {
                     panic!("actual child must retain its joined owner retirement");
                 };

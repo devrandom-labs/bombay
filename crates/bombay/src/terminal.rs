@@ -543,7 +543,7 @@ where
 ///
 /// This product owns the original actor, unread communications, descendants,
 /// child failures and every acquired runtime lane. Primary outcomes and
-/// phase-specific unfinished actions remain in [`ActorRetirement`]. No field
+/// phase-specific unfinished actions remain in [`RetirementOutcome`]. No field
 /// classifies success or grants new lifecycle authority.
 #[must_use = "retained actor custody must be inspected or explicitly discharged"]
 pub struct ActorCustody<BehaviorState, Root, ChildFailures>
@@ -572,37 +572,58 @@ where
     pub acquired_ingress: Option<ControlFlow<Result<(), JoinError>, Option<BehaviorState::Event>>>,
     pub retirement_failures: Vec<Box<dyn Any + Send>>,
     pub terminal_report: Option<Result<(), Termination<MailAddr>>>,
+    /// An accepted owner request not acquired by execution. Unit preserves all
+    /// fields of the private request without granting cancellation authority.
     pub unread_owner_cancellation: Option<()>,
 }
 
 /// Complete retirement of one local actor.
 ///
-/// Every variant either retains final owned state or names the executor event
-/// that made such custody unavailable. `CapabilityFailed` owns the first task
-/// failure acquired as the primary cause. `capability_failures` retains other
-/// task failures joined during cleanup without changing that cause.
-/// `unread_owner_cancellation` records an accepted owner request not acquired by
-/// execution. Its unit carries every field of the private zero-field request;
-/// the report conveys no further cancellation authority.
+/// Retained custody coexists with its exact primary outcome and unfinished
+/// operations. Availability does not certify successful execution or cleanup.
+/// Allocation refusal precedes runtime custody; executor failure, panic and
+/// cancellation can leave no returned actor. No case grants lifecycle authority.
 #[must_use = "the exact actor retirement must be inspected or explicitly discharged"]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "retained actor custody and its original outcome move together; boxing would add an allocation solely to change the returned representation"
+)]
 pub enum ActorRetirement<BehaviorState, Root, ChildFailures>
 where
     BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
 {
+    Retained {
+        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
+        outcome: RetirementOutcome<BehaviorState>,
+    },
     AllocationRejected {
         behavior: BehaviorState,
         reason: behavior::AllocationRejection,
     },
+    /// The executor returned no actor state or residual; the original task failure survives.
+    ActorTaskFailed(JoinError),
+    Panicked,
+    Cancelled,
+}
+
+/// The exact primary outcome and unfinished operations beside retained custody.
+///
+/// This passive protocol preserves the original cause independently of cleanup
+/// failures, which remain in [`ActorCustody`]. `CapabilityFailed` owns the first
+/// acquired task failure; other joined task failures remain in custody.
+/// Taking custody neither changes this outcome nor interprets pending effects.
+#[must_use = "the original retirement outcome must be inspected or explicitly discharged"]
+pub enum RetirementOutcome<BehaviorState>
+where
+    BehaviorState: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = behavior::Never>,
+{
     InitializationRejected {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         error: BehaviorState::Error,
     },
     InitializationPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
     },
     HostCommitPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -613,7 +634,6 @@ where
         payload: Box<dyn Any + Send>,
     },
     TransitionPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
         interpretation: Option<
             InterpretationProgress<
@@ -626,7 +646,6 @@ where
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
     },
     HostExecutionPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
         interpretation: Option<
             InterpretationProgress<
@@ -639,7 +658,6 @@ where
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
     },
     HostRejected {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
@@ -648,7 +666,6 @@ where
         error: ClaimError<MailAddr>,
     },
     BindingAbandoned {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
@@ -656,7 +673,6 @@ where
         >,
     },
     Completed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -669,7 +685,6 @@ where
         completion: Completion,
     },
     BehaviorFailed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -682,7 +697,6 @@ where
         error: BehaviorState::Error,
     },
     EffectsFailed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -702,7 +716,6 @@ where
         error: SettlementFailure,
     },
     OwnerCancelled {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -715,7 +728,6 @@ where
     },
     /// Live execution acquired this exact capability task failure as its primary cause.
     CapabilityFailed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -728,14 +740,10 @@ where
         error: JoinError,
     },
     PreparedRetirementPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         payload: Box<dyn Any + Send>,
     },
-    PreparedInterpreterContractFailed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
-    },
+    PreparedInterpreterContractFailed,
     InitializationRetirementPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
@@ -744,7 +752,6 @@ where
         payload: Box<dyn Any + Send>,
     },
     InitializationInterpreterContractFailed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         initialization: InterpretationProgress<
             ActionsOf<BehaviorState>,
             BehaviorState::InterpretationCustody,
@@ -752,7 +759,6 @@ where
         >,
     },
     ActiveRetirementPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -765,7 +771,6 @@ where
         payload: Box<dyn Any + Send>,
     },
     ActiveActivationPanicked {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -778,7 +783,6 @@ where
         payload: Box<dyn Any + Send>,
     },
     ActiveInterpreterContractFailed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         interpretation: Option<
             InterpretationProgress<
                 ActionsOf<BehaviorState>,
@@ -790,13 +794,8 @@ where
         settlements: Vec<ActionSettlementOf<BehaviorState>>,
     },
     PreparedEffectsFailed {
-        custody: ActorCustody<BehaviorState, Root, ChildFailures>,
         error: SettlementFailure,
     },
-    /// The executor returned no actor state or residual; the original task failure survives.
-    ActorTaskFailed(JoinError),
-    Panicked,
-    Cancelled,
 }
 
 /// Project the exact private request into a passive existing standard sum.
@@ -828,27 +827,12 @@ where
     #[must_use]
     pub const fn completion(&self) -> Option<&Completion> {
         match self {
-            Self::Completed { completion, .. } => Some(completion),
-            Self::AllocationRejected { .. }
-            | Self::InitializationRejected { .. }
-            | Self::InitializationPanicked { .. }
-            | Self::HostCommitPanicked { .. }
-            | Self::TransitionPanicked { .. }
-            | Self::HostExecutionPanicked { .. }
-            | Self::HostRejected { .. }
-            | Self::BindingAbandoned { .. }
-            | Self::BehaviorFailed { .. }
-            | Self::EffectsFailed { .. }
-            | Self::OwnerCancelled { .. }
-            | Self::CapabilityFailed { .. }
-            | Self::PreparedRetirementPanicked { .. }
-            | Self::PreparedInterpreterContractFailed { .. }
-            | Self::InitializationRetirementPanicked { .. }
-            | Self::InitializationInterpreterContractFailed { .. }
-            | Self::ActiveRetirementPanicked { .. }
-            | Self::ActiveActivationPanicked { .. }
-            | Self::ActiveInterpreterContractFailed { .. }
-            | Self::PreparedEffectsFailed { .. }
+            Self::Retained {
+                outcome: RetirementOutcome::Completed { completion, .. },
+                ..
+            } => Some(completion),
+            Self::Retained { .. }
+            | Self::AllocationRejected { .. }
             | Self::ActorTaskFailed(_)
             | Self::Panicked
             | Self::Cancelled => None,
@@ -898,30 +882,47 @@ where
     #[must_use]
     pub const fn custody(&self) -> Option<&ActorCustody<BehaviorState, Root, ChildFailures>> {
         match self {
-            Self::InitializationRejected { custody, .. }
-            | Self::InitializationPanicked { custody, .. }
-            | Self::HostCommitPanicked { custody, .. }
-            | Self::TransitionPanicked { custody, .. }
-            | Self::HostExecutionPanicked { custody, .. }
-            | Self::HostRejected { custody, .. }
-            | Self::BindingAbandoned { custody, .. }
-            | Self::Completed { custody, .. }
-            | Self::BehaviorFailed { custody, .. }
-            | Self::EffectsFailed { custody, .. }
-            | Self::OwnerCancelled { custody, .. }
-            | Self::CapabilityFailed { custody, .. }
-            | Self::PreparedRetirementPanicked { custody, .. }
-            | Self::PreparedInterpreterContractFailed { custody, .. }
-            | Self::InitializationRetirementPanicked { custody, .. }
-            | Self::InitializationInterpreterContractFailed { custody, .. }
-            | Self::ActiveRetirementPanicked { custody, .. }
-            | Self::ActiveActivationPanicked { custody, .. }
-            | Self::ActiveInterpreterContractFailed { custody, .. }
-            | Self::PreparedEffectsFailed { custody, .. } => Some(custody),
+            Self::Retained { custody, .. } => Some(custody),
             Self::AllocationRejected { .. }
             | Self::ActorTaskFailed(_)
             | Self::Panicked
             | Self::Cancelled => None,
+        }
+    }
+
+    /// Move all available actor custody together with its exact outcome.
+    ///
+    /// Success means custody is available, including after execution or cleanup
+    /// failure. Allocation refusal and executor outcomes without returned
+    /// custody return the entire original retirement unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(self)` if allocation was refused or the executor returned
+    /// no custody. The original actor or task failure remains owned by `self`.
+    #[expect(
+        clippy::type_complexity,
+        reason = "the complete owned custody and its independent primary outcome coexist; another wrapper would only rename this product"
+    )]
+    #[expect(
+        clippy::result_large_err,
+        reason = "unavailable custody returns the complete original retirement without allocating or changing its ownership contract"
+    )]
+    pub fn try_into_custody(
+        self,
+    ) -> Result<
+        (
+            ActorCustody<BehaviorState, Root, ChildFailures>,
+            RetirementOutcome<BehaviorState>,
+        ),
+        Self,
+    > {
+        match self {
+            Self::Retained { custody, outcome } => Ok((custody, outcome)),
+            unavailable @ (Self::AllocationRejected { .. }
+            | Self::ActorTaskFailed(_)
+            | Self::Panicked
+            | Self::Cancelled) => Err(unavailable),
         }
     }
 
@@ -970,7 +971,7 @@ where
             Completion::RetirementRequested(LocalRetirementRequest::OwnerCancellation(
                 OwnerCancellation,
             )) => {
-                return Self::OwnerCancelled {
+                return Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -987,13 +988,15 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
+                    outcome: RetirementOutcome::OwnerCancelled {
+                        interpretation,
+                        source,
+                        settlements,
+                    },
                 };
             }
             Completion::RetirementRequested(LocalRetirementRequest::CapabilityFailed(error)) => {
-                return Self::CapabilityFailed {
+                return Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1010,14 +1013,16 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
-                    error,
+                    outcome: RetirementOutcome::CapabilityFailed {
+                        interpretation,
+                        source,
+                        settlements,
+                        error,
+                    },
                 };
             }
         };
-        Self::Completed {
+        Self::Retained {
             custody: ActorCustody {
                 behavior,
                 control: ingress.control,
@@ -1034,10 +1039,12 @@ where
                 acquired_ingress: retirement_ingress(acquired_ingress),
                 unread_owner_cancellation,
             },
-            interpretation,
-            source,
-            settlements,
-            completion,
+            outcome: RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
         }
     }
     /// Project each actual received residual phase without discarding current
@@ -1081,7 +1088,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::InitializationRejected {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1098,7 +1105,7 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    error,
+                    outcome: RetirementOutcome::InitializationRejected { error },
                 }
             }
             ActorExecutionOutcome::BehaviorFailed {
@@ -1129,7 +1136,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::BehaviorFailed {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1146,10 +1153,12 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
-                    error,
+                    outcome: RetirementOutcome::BehaviorFailed {
+                        interpretation,
+                        source,
+                        settlements,
+                        error,
+                    },
                 }
             }
             ActorExecutionOutcome::InitializationPanicked {
@@ -1177,7 +1186,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::InitializationPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1194,7 +1203,7 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    payload,
+                    outcome: RetirementOutcome::InitializationPanicked { payload },
                 }
             }
             ActorExecutionOutcome::TransitionPanicked {
@@ -1225,7 +1234,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::TransitionPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1242,10 +1251,12 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
-                    payload,
+                    outcome: RetirementOutcome::TransitionPanicked {
+                        interpretation,
+                        source,
+                        settlements,
+                        payload,
+                    },
                 }
             }
             ActorExecutionOutcome::HostExecutionPanicked {
@@ -1276,7 +1287,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::HostExecutionPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1293,10 +1304,12 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
-                    payload,
+                    outcome: RetirementOutcome::HostExecutionPanicked {
+                        interpretation,
+                        source,
+                        settlements,
+                        payload,
+                    },
                 }
             }
             ActorExecutionOutcome::ActivationPanicked {
@@ -1345,7 +1358,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::HostCommitPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1362,8 +1375,10 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    initialization: None,
-                    payload,
+                    outcome: RetirementOutcome::HostCommitPanicked {
+                        initialization: None,
+                        payload,
+                    },
                 }
             }
             ActorExecutionOutcome::ActivationPanicked {
@@ -1414,7 +1429,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::HostCommitPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1431,8 +1446,10 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    initialization: Some(initialization),
-                    payload,
+                    outcome: RetirementOutcome::HostCommitPanicked {
+                        initialization: Some(initialization),
+                        payload,
+                    },
                 }
             }
             ActorExecutionOutcome::ActivationFailed {
@@ -1461,7 +1478,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::HostRejected {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1478,8 +1495,10 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    initialization,
-                    error,
+                    outcome: RetirementOutcome::HostRejected {
+                        initialization,
+                        error,
+                    },
                 }
             }
             ActorExecutionOutcome::ActivationFailed {
@@ -1508,7 +1527,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::BindingAbandoned {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1525,7 +1544,7 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    initialization,
+                    outcome: RetirementOutcome::BindingAbandoned { initialization },
                 }
             }
             ActorExecutionOutcome::SettlementFailed {
@@ -1556,7 +1575,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::EffectsFailed {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1573,11 +1592,13 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
-                    initialization: None,
-                    error,
+                    outcome: RetirementOutcome::EffectsFailed {
+                        interpretation,
+                        source,
+                        settlements,
+                        initialization: None,
+                        error,
+                    },
                 }
             }
             ActorExecutionOutcome::SettlementFailed {
@@ -1606,7 +1627,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::EffectsFailed {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1623,11 +1644,13 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation: None,
-                    source: None,
-                    settlements: Vec::new(),
-                    initialization: Some(initialization),
-                    error,
+                    outcome: RetirementOutcome::EffectsFailed {
+                        interpretation: None,
+                        source: None,
+                        settlements: Vec::new(),
+                        initialization: Some(initialization),
+                        error,
+                    },
                 }
             }
             ActorExecutionOutcome::SettlementFailed {
@@ -1655,7 +1678,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::PreparedEffectsFailed {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1672,7 +1695,7 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    error,
+                    outcome: RetirementOutcome::PreparedEffectsFailed { error },
                 }
             }
             ActorExecutionOutcome::InterpreterContractFailed {
@@ -1699,7 +1722,7 @@ where
                     activation_tasks.is_empty(),
                     "capability tasks must join before terminal projection"
                 );
-                Self::PreparedInterpreterContractFailed {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1716,6 +1739,7 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
+                    outcome: RetirementOutcome::PreparedInterpreterContractFailed,
                 }
             }
             ActorExecutionOutcome::InterpreterContractFailed {
@@ -1743,7 +1767,7 @@ where
                     activation_tasks.is_empty(),
                     "capability tasks must join before terminal projection"
                 );
-                Self::InitializationInterpreterContractFailed {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1760,7 +1784,9 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    initialization,
+                    outcome: RetirementOutcome::InitializationInterpreterContractFailed {
+                        initialization,
+                    },
                 }
             }
             ActorExecutionOutcome::InterpreterContractFailed {
@@ -1790,7 +1816,7 @@ where
                     activation_tasks.is_empty(),
                     "capability tasks must join before terminal projection"
                 );
-                Self::ActiveInterpreterContractFailed {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1807,9 +1833,11 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
+                    outcome: RetirementOutcome::ActiveInterpreterContractFailed {
+                        interpretation,
+                        source,
+                        settlements,
+                    },
                 }
             }
             ActorExecutionOutcome::RetirementPanicked {
@@ -1837,7 +1865,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::PreparedRetirementPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1854,7 +1882,7 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    payload,
+                    outcome: RetirementOutcome::PreparedRetirementPanicked { payload },
                 }
             }
             ActorExecutionOutcome::RetirementPanicked {
@@ -1883,7 +1911,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::InitializationRetirementPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1900,8 +1928,10 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    initialization,
-                    payload,
+                    outcome: RetirementOutcome::InitializationRetirementPanicked {
+                        initialization,
+                        payload,
+                    },
                 }
             }
             ActorExecutionOutcome::RetirementPanicked {
@@ -1932,7 +1962,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::ActiveRetirementPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -1949,10 +1979,12 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
-                    payload,
+                    outcome: RetirementOutcome::ActiveRetirementPanicked {
+                        interpretation,
+                        source,
+                        settlements,
+                        payload,
+                    },
                 }
             }
             ActorExecutionOutcome::ActivationPanicked {
@@ -1983,7 +2015,7 @@ where
                     activation_tasks.is_empty(),
                     "terminal projection follows every original capability task join"
                 );
-                Self::ActiveActivationPanicked {
+                Self::Retained {
                     custody: ActorCustody {
                         behavior,
                         control: ingress.control,
@@ -2000,10 +2032,12 @@ where
                         acquired_ingress: retirement_ingress(acquired_ingress),
                         unread_owner_cancellation,
                     },
-                    interpretation,
-                    source,
-                    settlements,
-                    payload,
+                    outcome: RetirementOutcome::ActiveActivationPanicked {
+                        interpretation,
+                        source,
+                        settlements,
+                        payload,
+                    },
                 }
             }
             ActorExecutionOutcome::Panicked => Self::Panicked,
@@ -2245,6 +2279,7 @@ mod tests {
 #[cfg(test)]
 mod capability_retirement_projection {
     use crate::ActorCustody;
+    use crate::RetirementOutcome;
 
     use std::panic::panic_any;
 
@@ -2339,8 +2374,7 @@ mod capability_retirement_projection {
             panic!("the assessed native outcome remains acquired");
         };
         let native = ActorRetirement::from_local(local);
-        let ActorRetirement::CapabilityFailed {
-            error,
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2348,7 +2382,7 @@ mod capability_retirement_projection {
                     additional_failures,
                     ..
                 },
-            ..
+            outcome: RetirementOutcome::CapabilityFailed { error, .. },
         } = native
         else {
             panic!("the original primary capability failure remains a separate native cause");
@@ -2528,7 +2562,7 @@ mod capability_retirement_projection {
             }
             let (behavior, control, user, descendants, mut failures, terminal_report, unread) =
                 match retirement {
-                    ActorRetirement::InitializationPanicked {
+                    ActorRetirement::Retained {
                         custody:
                             ActorCustody {
                                 behavior,
@@ -2546,7 +2580,7 @@ mod capability_retirement_projection {
                                 acquired_ingress,
                                 retirement_failures,
                             },
-                        payload: _,
+                        outcome: RetirementOutcome::InitializationPanicked { payload: _ },
                     } => {
                         assert!(additional_failures.is_empty());
                         assert!(received_interpretation.is_none());
@@ -2565,7 +2599,7 @@ mod capability_retirement_projection {
                             unread_owner_cancellation,
                         )
                     }
-                    ActorRetirement::BindingAbandoned {
+                    ActorRetirement::Retained {
                         custody:
                             ActorCustody {
                                 behavior,
@@ -2583,7 +2617,7 @@ mod capability_retirement_projection {
                                 acquired_ingress,
                                 retirement_failures,
                             },
-                        initialization,
+                        outcome: RetirementOutcome::BindingAbandoned { initialization },
                     } => {
                         assert!(additional_failures.is_empty());
                         assert!(received_interpretation.is_none());
@@ -2609,7 +2643,7 @@ mod capability_retirement_projection {
                             unread_owner_cancellation,
                         )
                     }
-                    ActorRetirement::Completed {
+                    ActorRetirement::Retained {
                         custody:
                             ActorCustody {
                                 behavior,
@@ -2627,10 +2661,13 @@ mod capability_retirement_projection {
                                 acquired_ingress,
                                 retirement_failures,
                             },
-                        settlements,
-                        completion,
-                        interpretation,
-                        source,
+                        outcome:
+                            RetirementOutcome::Completed {
+                                settlements,
+                                completion,
+                                interpretation,
+                                source,
+                            },
                     } => {
                         assert!(interpretation.is_none());
                         assert!(source.is_none());
@@ -2656,7 +2693,7 @@ mod capability_retirement_projection {
                             unread_owner_cancellation,
                         )
                     }
-                    ActorRetirement::OwnerCancelled {
+                    ActorRetirement::Retained {
                         custody:
                             ActorCustody {
                                 behavior,
@@ -2674,9 +2711,12 @@ mod capability_retirement_projection {
                                 acquired_ingress,
                                 retirement_failures,
                             },
-                        settlements,
-                        interpretation,
-                        source,
+                        outcome:
+                            RetirementOutcome::OwnerCancelled {
+                                settlements,
+                                interpretation,
+                                source,
+                            },
                     } => {
                         assert!(interpretation.is_none());
                         assert!(source.is_none());
@@ -2698,7 +2738,7 @@ mod capability_retirement_projection {
                             unread_owner_cancellation,
                         )
                     }
-                    ActorRetirement::CapabilityFailed {
+                    ActorRetirement::Retained {
                         custody:
                             ActorCustody {
                                 behavior,
@@ -2716,10 +2756,13 @@ mod capability_retirement_projection {
                                 acquired_ingress,
                                 retirement_failures,
                             },
-                        settlements,
-                        error,
-                        interpretation,
-                        source,
+                        outcome:
+                            RetirementOutcome::CapabilityFailed {
+                                settlements,
+                                error,
+                                interpretation,
+                                source,
+                            },
                     } => {
                         assert!(interpretation.is_none());
                         assert!(source.is_none());

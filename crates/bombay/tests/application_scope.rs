@@ -5,6 +5,7 @@
 //! is a fresh incarnation after fenced retirement; it is not Behavior Actors'
 //! explicit `StableProxy` worker-replacement policy.
 
+use bombay::RetirementOutcome;
 use bombay::behavior::{Behavior, ChildCons, ChildHead, NoChildren};
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport,
@@ -349,7 +350,7 @@ fn assert_application_stopped<R, Descendants>(
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -367,10 +368,13 @@ fn assert_application_stopped<R, Descendants>(
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     ) = terminal
     else {
@@ -449,7 +453,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
             assert_eq!(report.retirement(), RetirementAssessment::Established);
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             let (behavior, settlements, user, descendants, capability_failures) = match retirement {
-                Ok(ActorRetirement::Completed {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -467,10 +471,13 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert!(interpretation.is_none());
                     assert!(source.is_none());
@@ -494,7 +501,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                         capability_failures,
                     )
                 }
-                Ok(ActorRetirement::OwnerCancelled {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -512,9 +519,12 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            settlements,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert!(interpretation.is_none());
                     assert!(source.is_none());
@@ -911,7 +921,11 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     let (origin, retirement) = root.expect("actual complete refused root retirement");
-    let ActorRetirement::InitializationRejected { custody, error } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::InitializationRejected { error },
+    } = retirement
+    else {
         panic!("actual pure root error remains classified")
     };
     assert!(matches!(

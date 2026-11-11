@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, Interpretation, InterpretationProgress,
@@ -130,12 +131,15 @@ async fn file_and_environment_services_compose_beside_native_timers() {
     termination.expect("termination publication succeeds");
     retirement.expect("retirement publication succeeds");
     let (_, retirement) = native.expect("the complete native retirement remains available");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the native timer stops the actor after both lanes execute");
@@ -291,12 +295,15 @@ async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both
         .retirement
         .expect("retirement publication succeeds");
     let (_, retirement) = native.expect("the failed actor is independently acquired");
-    let ActorRetirement::HostExecutionPanicked {
-        payload,
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::HostExecutionPanicked {
+                payload,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the guarded interpreter panic must preserve its complete partial action");
@@ -464,11 +471,14 @@ async fn owner_cancellation_waits_for_the_inflight_effect_and_keeps_its_complete
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the joined actor is independently acquired");
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the queued owner request is observed after effect settlement");
@@ -567,12 +577,15 @@ async fn timer_outside_shutdown_keeps_io_receipts_and_unemitted_requests() {
     termination.expect("termination publication succeeds");
     retirement.expect("retirement publication succeeds");
     let (_, retirement) = native.expect("the complete native retirement remains available");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the native timer stops the actor after both lanes execute");

@@ -1,6 +1,7 @@
 //! Real elapsed reports establish readiness in both timer/shutdown orders.
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, BirthMode, ChildReport,
@@ -198,14 +199,14 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     let (_, retirement) = native.expect("joined root and exact child custody");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
                 descendants,
                 ..
             },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = retirement
     else {
         panic!("the reunion completed the root");
@@ -217,7 +218,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         let retirement = match report {
             timed_application::RootRetirements::Timer { origin, retirement } => {
                 assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-                let ActorRetirement::OwnerCancelled {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -225,7 +226,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                             child_failures,
                             ..
                         },
-                    ..
+                    outcome: RetirementOutcome::OwnerCancelled { .. },
                 } = *retirement
                 else {
                     panic!("timer reaction continued, so owner cancellation returns its actor");
@@ -242,7 +243,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                 retirement
             }
         };
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -250,7 +251,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                     child_failures,
                     ..
                 },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         } = *retirement
         else {
             panic!("shutdown outside preserves the same cancellation custody");

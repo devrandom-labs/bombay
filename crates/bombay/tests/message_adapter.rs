@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{
     BehaviorBase, ExactDeliveryReason, ItemSettlement, MessageProtocol, NoSends, SendLayer,
@@ -79,7 +80,7 @@ async fn one_adapter_name_maps_an_invoice_to_its_established_recipient() {
         .as_ref()
         .expect("the original actor retirement was acquired");
     assert_eq!(actor.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior: _,
@@ -97,10 +98,13 @@ async fn one_adapter_name_maps_an_invoice_to_its_established_recipient() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion: _,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion: _,
+            },
     } = actor
     else {
         panic!("the exact adapter stopped normally");
@@ -241,7 +245,7 @@ async fn closed_payment_recipient_preserves_mapped_rejections_and_unread_invoice
     };
     let (origin, native) = native.expect("the exact native retirement survives");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -259,10 +263,13 @@ async fn closed_payment_recipient_preserves_mapped_rejections_and_unread_invoice
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = native
     else {
         panic!("the selected shutdown policy stops the ordinary adapter");
