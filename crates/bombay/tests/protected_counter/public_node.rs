@@ -1,9 +1,9 @@
 //! Public Node composition; listening on TLS is not a handshake witness.
-use bombay::RetirementOutcome;
 use super::stop_admission::{
     CounterChildren, CounterExports, CounterParent, CounterStopExport, counter_children_application,
 };
 use super::{Counter, CounterMessage, CounterValue, completed_actor};
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Behavior, ClassifySettlement, Here, Ingress, SettlementStatus};
 use bombay::prelude::{Application, Completion, StopOnShutdown};
@@ -445,7 +445,16 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
         );
         assert!(matches!(termination, Ok(())));
         assert!(matches!(retirement, Ok(())));
-        let ActorRetirement::Retained { outcome: RetirementOutcome::Completed { interpretation, source, settlements, .. }, .. } = &native
+        let ActorRetirement::Retained {
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation,
+                    source,
+                    settlements,
+                    ..
+                },
+            ..
+        } = &native
         else {
             panic!("parent retirement must be complete");
         };
@@ -474,7 +483,16 @@ fn public_node_child_keeps_installed_target_and_complete_descendant_receipts() {
         expected_addresses.sort();
         assert_eq!(child_addresses, expected_addresses);
         for child in &custody.descendants {
-            let ActorRetirement::Retained { outcome: RetirementOutcome::Completed { interpretation, source, settlements, .. }, .. } = child.retirement.as_ref()
+            let ActorRetirement::Retained {
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements,
+                        ..
+                    },
+                ..
+            } = child.retirement.as_ref()
             else {
                 panic!("child retirement must be complete");
             };

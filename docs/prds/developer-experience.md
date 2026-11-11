@@ -511,6 +511,42 @@ references in its changed Rust files. Preserve these completed base2b receipts
 and integrate current main before the final source freeze and review. Behavior
 main remains c5c5863. The paired programme and complete DX04 remain active.
 
+#### Protected Counter formatting correction
+
+The post-integration full Nix run at18f266b completes27 of28 checks, including
+minimum remote and optimized workspace/all-target tests. The latter reports122
+Rust summaries and983 passes, with all six owning recovery cases present. Its
+six existing ignored registrations remain unchanged. Protected Counter completes
+its configured test commands, then fails its existing nested-manifest formatting
+check; the final flake command is therefore not reached. Session49267 is
+terminal1, not a running build or a passing full gate.
+
+The formatting diff names five existing migrated modules under
+crates/bombay/tests/protected_counter: hosting, mod, public_node, retirement and
+transport. Ordinary workspace formatting does not cover this separate test
+manifest. Preserve the failed log and these five exact inputs before correction;
+27 successful outputs now have explicit task-owned Nix roots. Apply the pinned
+formatter through the existing transport-custody manifest, then compare the
+complete source and ownership products against the retained migration proof.
+Expected scope is these five test files and this existing record, with no new
+production code, public API, test assertion or expected domain value. The
+formatting failure itself is the pre-edit regression; no semantic law changes.
+Run the affected format/lint gate and the authoritative full flake check before
+crediting this stage. Full recovery/family-disposal acceptance remains open.
+
+The pinned nested-manifest format check now passes. Exactly the five forecast
+test modules change: +156/-37/net119 physical test lines, solely formatting and
+import order; production +0/-0, public types +0/-0. Repeating the complete107-file,
+357-product conservation check preserves every field, literal and surrounding
+source after reversing the accepted migration and pinned formatting. The one
+previously documented lint attribute remains the sole metadata exception.
+Both author checks pass: original assertions and custody products are retained,
+and the complete source comparison rejects changes outside that equation. No
+independent review is claimed. Both standalone Clippy commands skipped by the
+format failure now pass through the pinned shell: default and protected-transport,
+with their original strict warning policy. The corrected full Nix gate remains
+required; the27 successful earlier outputs stay qualified to18f266b.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
