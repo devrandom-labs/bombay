@@ -1,9 +1,11 @@
 # Original request bytes
 
-Status: active verification within Static remote actors R02. Paired healthy,
-counterfactual and restoration controls pass. Retained-source owning tests,
-formatting and strict Clippy pass. Final record review, submitted-head CI and
-main delivery remain pending; full R02 and controller retirement remain open.
+Status: merged through PR406 as `937fecc3f7b7bc5efe5dd7519e1bf223af76c350`
+on 2026-11-11. All six submitted-head checks and fresh independent source,
+archived-outcome and actual Nix-log reviews pass. Reviewed, tested and merged
+trees equal `4372d9d7ba057a16143415aa3c98e1db4e6d3101`. Full R02 remains
+open; controller retirement is a separate scoped change. Dated preparation
+and pending-delivery statements below preserve their original source epochs.
 
 Source baseline:2d858b9b4ef812e08c14439ce682ed4ee2f63148,
 tree01a875f802a13f7a37d6cb8ba41bcb57aa13026e. Inherited PR404/405 must

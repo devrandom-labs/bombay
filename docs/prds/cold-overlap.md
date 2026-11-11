@@ -1,8 +1,11 @@
 # Cold overlapping command owners
 
-Status: active verification within Static remote actors QUERY-01/QUERY-02/R22.
-Source review, paired healthy/counterfactual/restoration and final owning
-checks pass. Full R22 and submitted-head CI/delivery remain open.
+Status: merged through PR405 as `e6d43a638fa09212ef98995e9659dee43e936368`
+on 2026-11-11. All six submitted-head checks and fresh independent source,
+archived-outcome and actual Nix-log reviews pass. Reviewed, tested and merged
+trees equal `01a875f802a13f7a37d6cb8ba41bcb57aa13026e`. This delivers the
+scoped QUERY-01/QUERY-02/R22 witness; full R22 remains open. Dated preparation
+and pending-delivery statements below preserve their original source epochs.
 Source baseline is
 4820f705de7c993dc4d3f86fb4a397341d006935/treecbc4f851, the reviewed recovery
 branch; PR404 must pass its own CI and merge before this
