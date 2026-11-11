@@ -1,5 +1,76 @@
 # Static remote actors and typed admission
 
+## Loom maintenance prerequisite — 2026-11-11
+
+PR407's Deny check fails on unchanged main937fecc3 dependencies because
+RustSec RUSTSEC-2026-0441, issued November5, marks pin-utils unmaintained.
+Actual failed run43010616646/job130488988166 retains the original failure.
+The only root-lock edge is Loom0.7.2's optional futures support, selected by
+Observe's model tests. Those tests genuinely call loom::future::block_on;
+removing the feature or substituting a non-model executor would weaken them.
+
+Fresh primary-source research finds released Loom0.7.3 (November8), after an
+initial stale release search returned0.7.2. The downloaded registry archive
+matches checksum `f1611ddbf89dc6ae42cfbd51fc207836140130257646eab8d6d2fb16577db2d2`
+and VCS `9d549cd5357a5485900f4c53951fc1726319659f`. Its futures feature uses
+standard pin! and has no pin-utils dependency. MIT licensing and existing
+dependency ranges remain; minimum Rust1.73 fits this workspace's1.96 floor.
+Release notes also identify atomic additions, RwLock and32-bit fixes; existing
+model tests must execute against the new owner, rather than assuming equivalence.
+See the [upstream release](https://github.com/tokio-rs/loom/releases/tag/v0.7.3)
+and [advisory](https://rustsec.org/advisories/RUSTSEC-2026-0441.html).
+
+Pre-edit choice: use Cargo's narrow update to0.7.3 in root and isolated
+transport locks. Existing semver manifests permit it. No advisory exception,
+fork, executor, test removal, Rust source or public API change. Keep this
+delivery blocker separate from PR407's research retirement. Expected scope:
+two locks, this PRD and its reciprocal backlog status; production/tests/API0.
+Preserve every unrelated resolved record. Run current Deny, actual Observe
+and Entity Loom cases, affected native/current consumers and required CI.
+Review source/graph changes independently and record actual final results.
+
+Fresh six-owner selections are unchanged: Behavior/Actors0.29.0 at55dbac2d,
+Address0.3.0, Communication0.1.6, local Observe including PR403 and Timers0.2.0.
+Their selected source, APIs/tests and full760-line Behavior instructions were
+read during resumption. Loom's released source and the current model consumers
+are freshly inspected for this prerequisite. No actor/runtime owner changes.
+The first local cargo-deny attempt finds no installed subcommand; it is a
+tool-availability failure, not a reproduced advisory check. Use the existing
+pinned nixpkgs package for that one-off command, without adding project tooling.
+
+### Loom correction — actual qualification
+
+Cargo's precise update selects0.7.3 in both locks and removes pin-utils only
+from the root graph. Two independent Nix fromTOML comparisons prove all398
+unrelated root records and323 isolated records remain exact. Root package
+count400 becomes399; isolated324 remains324. No manifest, policy, runtime,
+test, fixture, toolchain or Nix source changes. Public types remain +0/-0.
+The complete published owner-source comparison finds no compatibility veto;
+its existing block_on poll/Notify/waker/parking body retains the same owner,
+while standard pin! replaces the old macro. No model executor is replaced.
+
+Actual original pinned-Nix cargo-deny fails the maintenance advisory; the
+corrected complete check passes advisories, bans, licenses and sources.
+The package comes from pinned nixpkgs through a one-off nix shell, without a
+project setup change. Observe's existing optimized --cfg loom suite passes
+28/0/0 with LOOM_MAX_PREEMPTIONS=3, including both future races. Entity's
+existing optimized --cfg bombay_entity_loom target passes6/0/0. Independent
+source/graph/outcome reviews retain these actual scopes.
+
+The current public remote-counter package passes in debug and optimized:
+eight process parent cases, four deliberately isolated registrations invoked
+by those parents, and three pure protocol cases per profile. The main target
+contains zero cases and supplies no test credit. Actual separate programs
+exercise Increment/Read/Stop, pressure, refusal and uncertainty on the new
+lock. These are compatibility controls, not new complete remote-row evidence.
+Raw commands/logs retain their actual source/lock epochs. Required exact-head
+CI, independent final delivery review and protected merge remain pending.
+
+The inherited preparation summaries below retain their October24 source
+epochs; actual PR405/406 delivery reconciliation is proposed separately in PR407.
+Complete tracked/untracked census: four paths; production/tests/API +0/-0.
+Locks +4/-11/net-7; records +79/-0/net79; total +83/-11/net72.
+
 ## Resumed delivery — 2026-11-11
 
 The original delivery goal resumes without reducing R01–R25, AUTH1 or NET1.
@@ -113,6 +184,13 @@ owners. Resolve only overlapping delivery prose; no runtime, test, API,
 manifest, policy or further dependency choice. The scoped retirement delta
 remains measured against immutable899b4572; the earlier937-based census above
 retains its original epoch. Record the complete integrated census after merge.
+
+### Loom integration — retained checkpoint
+
+Against immutable899b4572: eleven paths; production/tests/public API0.
+Research -2297, workflow -18, documents +182/-36/net146; total +182/-2351.
+Against actual main937fecc3: thirteen paths, locks +4/-11, documents +261/-36.
+The combined tree needs fresh CI; no old result is relabelled as its execution.
 
 The [cold command ownership witness](cold-overlap.md) owns the fresh R22
 comparison of two real public Nodes under one overlapping selector. It reuses

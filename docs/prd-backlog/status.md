@@ -1,5 +1,13 @@
 # Backlog status and dependencies
 
+The current Loom maintenance prerequisite is locally qualified on
+`fix/loom-maintenance`: the released compatible owner removes pin-utils,
+full dependency policy and all 28 Observe/6 Entity model cases pass. Public
+Counter debug/optimized checks and actual PR delivery are recorded in the
+[remote PRD](../prds/static-remote-actors.md#loom-maintenance-prerequisite--2026-11-11).
+PR407's research retirement remains separate and cannot merge with its failed
+dependency-policy check. Full remote acceptance remains open.
+
 Updated: 2026-11-11 UTC. Current main is `937fecc3`. The original remote PRD
 goal is resumed with the user's approved choices, parallel work and removed
 implementation budgets. The scoped legacy transport-research retirement is
