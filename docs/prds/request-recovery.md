@@ -1,11 +1,13 @@
 # Recovery after invalid requests
 
-Status: active recovery implementation within Static remote actors R09
-(ID-10/AUTH-03). This record owns the narrow liveness conflict; the parent
+Status: merged through PR404 as `9f542c180771e3b782565c658e807a2230b6cf5e`
+on 2026-10-24 after all six submitted-head checks passed. This record owns
+the narrow R09 (ID-10/AUTH-03) liveness conflict; the parent
 remote PRD and literal acceptance row retain every broader requirement.
 Original source baselineb19ca648cec41a9f971b6a74e4fcbdec13990568 is a
-research checkpoint. Current main50e0de42 contains delivered PR397–403;
-this recovery implementation still awaits its own delivery.
+research checkpoint. The actual merge tree equals the reviewed submitted
+tree `cbc4f85119a57adc8402285cbb1a5d11472bf69b`. Dated pending-delivery
+statements below retain their original source epochs; full R09 remains open.
 Those independent delivery receipts supply no additional recovery evidence.
 
 ## Problem and retained contract

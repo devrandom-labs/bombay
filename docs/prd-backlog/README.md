@@ -79,9 +79,9 @@ first release at all.
 | [Core integration and upstream changes](core-integration.md) | Source-level supervisor/pool diagnosis, reproduced contract failures and repository-by-repository implementation handoff. |
 | [Execution ownership PRD](../prds/execution-ownership.md) | Compact execution preservation contract, eight gates, source witnesses and pinned historical decisions. |
 | [Observation disposal](../prds/observation-disposal.md) | Merged: PR403/50e0de42; minimal repair, local acceptance and six exact-head CI checks pass. |
-| [Request recovery](../prds/request-recovery.md) | Active R09 implementation: restored full workspace tests pass in both profiles, with strict Clippy and formatting; PR404 awaits required CI and delivery. |
-| [Cold command ownership](../prds/cold-overlap.md) | Active R22 verification: real two-Node trace and intended grant-omission failure qualified in both profiles; owning49-case suites and lint pass; PR/CI/delivery remain. |
-| [Original request bytes](../prds/request-bytes.md) | Active R02 verification: real native byte/proof and Ledger trace, intended paired failures and restorations qualify; final owning50-case suites, formatting and strict Clippy pass; submitted-head CI/delivery remain. |
+| [Request recovery](../prds/request-recovery.md) | Merged through PR404/9f542c18 after six passing checks; invalid-request recovery is delivered, full R09 remains open. |
+| [Cold command ownership](../prds/cold-overlap.md) | Merged through PR405/e6d43a63 after six passing checks and independent review; real two-Node trace and intended grant-omission failure qualify the finite witness, full R22 remains open. |
+| [Original request bytes](../prds/request-bytes.md) | Merged through PR406/937fecc3 after six passing checks and independent review; original bytes/proof survive actual Ledger processing, full R02 remains open. |
 | [Developer experience](../prds/developer-experience.md) | Paired Behavior PRD: one application path, inferred topology and native terminal custody. Integration and fresh combined checks remain required. |
 | [Static remote actor PRD](../prds/static-remote-actors.md) | Selected NET1/AUTH1 scope, dependency verification, correctness gates and parallel work plan; [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records the selection rationale. |
 | [Networking](networking.md) | Wire contracts, Zenoh sessions, remote delivery, discovery, queries and subscriptions. |
@@ -111,8 +111,8 @@ verification and actual PR326 merge are recorded in the EXEC PRD. The optional
 `remote` feature now supplies Node-owned Zenoh sessions and cold inbound Export
 composition. The current outbound Client slice interprets typed actor requests
 through the same Node lifecycle; its local evidence and delivery state belong
-to the static remote actor PRD. The ordinary two-process remote-counter and
-full remote acceptance remain incomplete. Production identity, distributed
+to the static remote actor PRD. PR392 delivered the ordinary two-process
+remote-counter; full remote acceptance remains incomplete. Production identity, distributed
 placement and Mnesis-backed execution retain their separate backlog scopes;
 neighboring source is not evidence of a completed integration here.
 

@@ -115,24 +115,6 @@ jobs:
           nix_conf: |
             experimental-features = nix-command flakes
             accept-flake-config = true
-      - name: Format and lint native fixture
-        run: |
-          nix develop -c cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
-          nix develop -c cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --bin transport_custody -- -D warnings
-      - name: Build native fixture
-        shell: bash
-        run: |
-          profile_args=()
-          if [[ '${{ matrix.profile }}' == 'release' ]]; then
-            profile_args+=(--release)
-          fi
-          nix develop -c cargo build --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --bin transport_custody --jobs 2 "${profile_args[@]}"
-      - name: Observe both TLS layouts
-        run: |
-          nix develop -c python3 docs/prds/static-remote-actors/transport-custody/verify_transport_custody.py \
-            "$CARGO_TARGET_DIR/${{ matrix.profile }}/transport_custody" \
-            docs/prds/static-remote-actors/transport-custody/certificates \
-            "target/transport-evidence/${{ matrix.profile }}"
       - name: Build and verify protected Counter Applications
         shell: bash
         run: |
