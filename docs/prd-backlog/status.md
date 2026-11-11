@@ -6,8 +6,9 @@ after all six checks and independent reviews passed. The
 preserves the paired registry adoption, three locks, local custody falsifiers,
 actual Linux runtime/minimum compiler/campaign scopes, matching delivery tree
 and normal worktree removal. Remaining remote acceptance is unchanged. R24's
-next exhaustive/generated schedule stage starts from this main and requires
-fresh feature-specific owner verification before authoring.
+next [exhaustive/generated schedule stage](../prds/network-schedule.md#exhaustive-and-generated-incoming-schedules--2026-11-11)
+starts from this main with fresh feature-specific owner verification and its
+pre-edit law recorded. Code and actual campaign qualification remain open.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.

@@ -1,15 +1,156 @@
 # Incoming request schedule
 
-Current checkpoint: PR411 delivers the qualified fixed incoming schedule with
-all six checks, independent reviews and a matching merged source tree.
-Shipping owners, request/declaration code, Counter and locks retain their
-qualified inputs. Earlier checkpoints preserve their original source epochs.
+Current checkpoint: PR411 delivers the fixed incoming schedule; PR413 now
+delivers the paired Behavior0.30 prerequisite. The exhaustive/generated stage
+below starts from main814c96d1 with fresh owner verification. No new schedule
+execution is claimed yet. Earlier checkpoints preserve their source epochs.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
 `937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. This contribution does not implement
 the complete network simulator, generated campaigns, restart or full R24.
 The user's complete R01–R25/AUTH1/NET1 goal remains unchanged.
+
+## Exhaustive and generated incoming schedules — 2026-11-11
+
+This pre-edit record follows reviewed PR413 delivery and normal worktree
+removal. Starting source is main814c96d16d23045065650080a9c7e82ed136680b;
+3d485fae records its independently reviewed delivery reconciliation only.
+No shipping or test source changed before this record. The selected host is
+crates/bombay/src/remote/export/schedule.rs, mounted as query::schedule.
+Its SHA256 isfa52c802b7f248a741c889c776ed4c8433388251086d6e7b0dcc59558555e4a6;
+request owner query.rs isdfaae0a0a533f2485dc8ae0dcbc1850cc807ed2be12b8781eeee200d3a46a4ed.
+Declaration source remains5dae08876623893b236a2d4487ed8063b4fb5ec7a6e69b10333d6a37e33f4eb9.
+
+### Fresh selected owners and eligibility
+
+Root Cargo.lock9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394
+selects registry Behavior/Actors0.30.0 at628649da014a527d47f21567a859c5c78494df13
+and Macros0.16.0. There are no patch overrides. Root and all three reviewers
+reread the complete selected775-line AGENTS before this feature's design;
+its SHA256 isaa5c4e70e38e52a1fbae8948ba30ee1c16fe88eddc3ec4fe8bfcf07f494a9207.
+Fresh source/API/test/document reads verify pure Behavior/complete Actions,
+Actors' existing shutdown composition and the real Counter's typed reply fold.
+No Machine or template policy is reproduced in the test scheduler.
+
+Fresh registry/archive/VCS inspection selects Address0.3.0/9f058dc03d1239e1ef5c3147a893b134a1e74a83,
+Communication0.1.6/963067e0e6bdef15549088966cde354fd820be7e and
+Timers0.2.0/9369d1f6c7fcda91e7de5bf3c19e6769f92145bd; none depends on Behavior.
+Address owns exact registrations/opaque resolution (reservations/semantics
+tests); Communication owns FIFO, closure and original refusals (mailbox
+retirement/lane lifecycle tests). Timers owns queue-specific generations and
+explicit clock inputs; this logical test clock supplies no native timer proof.
+Fresh local Observe at814c96d1 preserves exact-generation publication and
+independent cancellation through its contract/future-cancel tests. Engine's
+D-TURN-1/D-RETIRE-1 preserve causal work and surviving original custody.
+Relevant runtime/module/Driver contracts and actual preflight/request/tests
+were checked. Fresh primitive evidence is temporarily at
+/tmp/bombay-r24-owner-audit.FF5Ei1; it must be sealed with final source/results.
+
+Export::request remains the sole real verifier/canonical lookup/construction/
+final-permission/nonwaiting-admission owner. The existing test privately inserts
+query=None rows and uses actual Application/Counter ownership. It does not
+exercise native callback capacity, Query publication, Client or a Session.
+There is no owner-contract blocker to this scoped incoming campaign. The
+backlog AUTH1→NET1 dependency remains reciprocal and incomplete; source fitness
+does not unblock their entire release scope.
+
+### Law and ordinary-Rust experiment
+
+This is derived test policy, not a new actor-model law. Reuse the six externally
+named blocks Initial, Repeat, Expiring, Revoked, ConstructorExpired and Fresh.
+Initial precedes every Repeat; Expiring precedes ConstructorExpired. The latter
+two remain indivisible blocks setting time10 then20. Revoked may occur at0,
+10 or20. Every legal word must produce the independent FIFO Counter Read2
+after actual joined cleanup, before detailed trace/custody assertions.
+
+First parameterize the existing ordinary async host with borrowed delivery
+word and expected Event slice. Preserve the original test's complete literal
+word AND literal expected trace. Derive actual schedule blocks mechanically;
+derive expected release order from the input word before execution. Replace
+keys.first()/positional comparisons with an actual-key map named by Initial,
+Fresh and ConstructorExpired; every Repeat must equal Initial's actual key.
+Retain every original allocation/byte/proof, typed row, provider completion,
+attempt, refusal, panic slot, notification and native-retirement check.
+One authoritative bound8 governs issuer/limits and validation before row push:
+each non-Repeat label once, Repeat1..3, length6..8 and both precedence laws.
+No capacity increase, predicted nonce, copied interpreter or extra wrapper.
+
+Review this first extraction twice, then run its focused fixed regression in
+debug and optimized builds, plus both existing canonical/final-permission
+source cuts and byte-exact restored controls in both profiles, before adding
+campaign code. Root alone runs Rust
+through the existing pinned Nix environment/shared external target. Root owns
+locks, Nix, CI and records; acceptance owns schedule.rs; the existing two
+reviewers independently check source laws, counterexamples and actual results.
+
+Then enumerate all180 unique base words using ordinary bounded position loops:
+15 Initial/Repeat pairs ×6 Expiring/ConstructorExpired pairs ×2 remaining
+Revoked/Fresh orders. An independent180-cardinality/uniqueness/validity check
+must reject omission of one legal word. This proves finite grammar coverage,
+not arbitrary networking. A pure expected-trace function consumes only external
+chronology and authored block laws, never live grants/permission/admission
+outcomes. The original literal remains an independent control.
+
+Existing direct dev dependency proptest1.11.0, checksum4b45fcc2344c680f5025fe57779faef368840d0bd1f42f216291f0dc4ace4744,
+supports TestRunner, sample::select, sample::Index and Vec shrinking. Exact
+source/primary documentation confirms MIT/Apache2 and manifest Rust1.85;
+its README describes passive maintenance. No dependency/feature change is
+needed. Compatible itertools0.14 would add a direct dependency edge and generate
+720 vectors to filter180; the direct grammar construction is selected instead.
+Ordinary functions and supported combinators express the complete seam, so no
+simulator type, custom Strategy/ValueTree, macro or new production interface
+is eligible. Source clarity and actual costs still require measurement.
+
+Generate a legal base word plus0..2 extra repeats using sample::Index to choose
+post-Initial gaps, constructing the expanded word once. No semantic rejection
+or filtering may discard a failed case. Config::with_source_file(file!()) keeps
+ordinary environment case settings; select seed20261112 only when its seed is
+Random, preserving explicit Fixed choices. Require positive case/shrink counts;
+log actual algorithm, resolved seed, case/shrink/time limits and input/observed
+trace after cleanup. Default256 routine cases and proposed4096 weekly/manual
+cases retain their distinct scope; measure runtime/output before qualifying
+the larger count. Persisted replays and shrinking add work beyond fresh cases.
+
+### Falsification, replay and completion gates
+
+Against then-current real query.rs, suppress canonical lookup alone: the
+post-cleanup Read should become3+k for k extra repeats. Restore byte-exact
+source and healthy D/R before removing final permission revalidation alone:
+its Read should become3. These are proposed outcomes until actually executed.
+Retain actual TestError::Fail reason/minimized word, standard persisted case
+seed and literal Rust replay; replay the actual returned word with each cut
+and restored source in both profiles. Watchdog/setup/compiler failures supply
+no semantic-law credit. Coverage omission179 earns only coverage evidence.
+
+Standard SourceParallel persistence resolves to
+crates/bombay/proptest-regressions/remote/export/schedule.txt. Current Crane
+source excludes that .txt; later include only this owned path and prove actual
+saved-file/source-filter/replay behavior. A campaign u64 seed differs from its
+persisted algorithm-tagged case seed (for example cc/hex); strategy changes
+can alter either resulting word.
+Keep literal/source/lock/strategy identity with actual minimized evidence.
+Use the existing PR/routine and weekly/manual CI workflow, ordinary pinned
+Cargo commands and standard artifact upload; no new runner/controller.
+Seed inclusion and CI wiring follow semantic campaign qualification.
+
+Expected complete branch: the three prior delivery records, this PRD,
+schedule.rs, one standard regression file, flake.nix and checks.yml (eight
+paths, subject to measured final need). Shipping Rust +0/-0/net0; test forecast
+net250–450 lines; public types +0/-0. Existing six Delivery, six Scheduled,
+two Grant, five Refusal and nine Event alternatives remain test inputs only;
+actor control states, domain branches, interpreters and public spellings stay
+unchanged. This is additional verification, not production code reduction.
+Current checkpoint: shipping +0/-0, tests +0/-0, public +0/-0; only records
+changed. The user's removal of implementation budgets remains in force.
+
+Pre-edit owner/source/ordinary-syntax reviews by acceptance, review_bytes and
+review_cold pass; root agrees with the bounded grammar and independent Read
+oracle. Actual code, both-profile gates, negative executions, shrinking/replay,
+final minimization, reviewed CI and delivery remain required. Native incoming
+Query/Client combinations, arbitrary overlap, actual cancellation/crash,
+volatile restart and the rest of full R24 remain open; no original acceptance
+criterion is replaced by this bounded campaign.
 
 ## Delivery of the fixed schedule — 2026-11-11
 
