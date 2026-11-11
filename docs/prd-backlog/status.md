@@ -1,5 +1,12 @@
 # Backlog status and dependencies
 
+The [R01 protocol record](../prds/remote-protocols.md) assembles the separate-
+program Counter, complete Actions, unrelated local protocol and actual static
+denials. Current focused controls pass in both profiles; the isolated minimum
+compiler remote target passes and its retained Nix gate evaluates. Exact-head
+CI, final review and delivery after PR408/407/409 remain required. No full
+remote row, AUTH1 or NET1 is newly marked delivered.
+
 The current Loom maintenance prerequisite is locally qualified on
 `fix/loom-maintenance`: the released compatible owner removes pin-utils,
 full dependency policy and all 28 Observe/6 Entity model cases pass. Public
