@@ -361,3 +361,36 @@ production +0/-0/net0; tests +601/-2/net599; public types +0/-0;
 records +384/-0/net384; complete contribution +985/-2/net983.
 These are verification additions. Required combined-source CI, reviewed
 delivery, post-merge worktree removal and the remaining full R07 stay open.
+
+## Failed submitted gate and diagnostic correction — 2026-11-11
+
+Submitted head582bc964 fails CI run43045536333, Nix job130608371739, at
+`checks.x86_64-linux.bombay-remote-release`. Its Cargo/builder status is101.
+The four access controls actually pass in the separate Linux debug gate.
+Earlier visible allocation and Driver failures are expected inversion checks;
+they do not identify this optimized gate's cause.
+
+The optimized command redirects its output into remote-release.log and prints
+that file only after success. Nix's failing shell exits before printing it;
+the retained job log and available native artifacts contain no actual failing
+test or compiler diagnostic. Do not infer an optimized test defect or retry
+the unchanged head as a repair.
+
+Pre-edit scope is this record plus the existing flake.nix release command.
+Add a failure branch that prints the same captured output and exits with the
+original Cargo status. Keep the command, selected tests, success witnesses,
+expectations, dependencies and required gate unchanged. Expected production,
+test and public API deltas are all zero; Nix configuration adds four lines.
+This restores failure visibility, not remote acceptance. Validate the evaluated
+shell with a deliberately failing Cargo substitute and review the exact diff
+before submitting a new head for the required checks. The original failed
+head and its evidence remain distinct from that later diagnostic run.
+
+The actual evaluated Linux build phase runs under the pinned shell with a
+Cargo substitute returning73 and printing a unique failure line. It prints
+that captured line, returns exactly73 and never reaches postBuild; the wrapper
+checks pass. Independent source/outcome review confirms unchanged Cargo argv,
+success witnesses and all three qualified Rust file hashes. Nix evaluation,
+pinned `nixfmt --check flake.nix` and `git diff --check` exit0. No remote test
+result follows from this shell check. The diagnostic delta is configuration
++5/-1/net4 plus this record; production/tests/public types remain zero.
