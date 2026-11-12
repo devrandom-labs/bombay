@@ -30,33 +30,61 @@ still requires the selected source, consumer and delivery gates.
 
 ## Current delivery
 
-The isolated branch is `codex/retirement-recovery`, now integrating
-mainf09303c8 (PR414), including PR413's registry Behavior/Actors0.30.0 adoption
-and the subsequent fixed/exhaustive/generated incoming schedule coverage.
-The pre-adoption history is retained at codex/retirement-recovery-before-030-
-6cb916ac. The retained recovery port and subsequent test stages are local
-commits. Integrated030 source0da4c952 passes all28 host Nix checks and
-authoritative flake check, with exact output roots/hashes/derivers retained.
-Following test-only family and native source witnesses pass both supported
-compilers/profiles, source conservation and intended loss inversions. The later
-public Application witness also retains independent root/family cleanup causes
-in all four fault combinations, with all42 owner cases passing both compilers/
-profiles before and after selective loss inversions. Their
-focused receipts do not relabel the earlier full-gate source. CI, independent
-review and delivery remain open. Other AI worktrees remain untouched. The
-runtime now selects registry Behavior/Actors0.30.0 and unchanged macros0.16.0.
-Current030 consumers qualify as recorded below; source/Application inspection,
-remaining cost comparisons and final acceptance/delivery stay open. No029
-receipt is relabelled. Behavior0.30.0 is
-published and the release notice was acknowledged;
-the owning PRD holds those
-publication receipts. The earlier PR113/114 and reviewed release PR115 merged
-and normal publication delivered
-Behavior/Actors0.29.0 and macros0.16.0 from55dbac2. Registry checksums, clean
+The scoped retirement stage merged through [PR415](https://github.com/devrandom-labs/bombay/pull/415)
+as `d575c614418b19476bd0f5dc481ed76ccb4671c6` after all eight submitted-head
+checks passed. Reviewed/tested head `0c9ef555` and delivered main have identical
+tree `a1fc212d`; all 718 frozen inputs remain exact. This includes main PR414's
+schedule corpus and PR413's registry Behavior/Actors0.30.0 adoption. All 28
+aarch64-darwin checks and authoritative flake check pass; Linux CI also passes
+the flake gate, Driver 2,048-run campaign and four Observe 1,024-run campaigns.
+Miri is scheduled/manual only and was skipped in this PR run. Two author
+source/oracle reviews pass; no independent review is claimed. Active rules
+required zero approving reviews, and there were no unresolved review threads.
+
+The owning evidence merged through [Behavior PR121](https://github.com/devrandom-labs/bombay-behavior/pull/121)
+as `0e104494` after all 14 checks passed, including the strict mutation aggregate.
+Its delivered tree equals tested `f1e34025`; all 11 local owner checks, 1,051 optimized
+Nextest cases and 125 doctests pass. Runtime production net 53/tests net 1,581,
+one added public type and two added public methods retain the recorded 121-path
+scope. Complete traces, source conservation, archives, costs and loss inversions
+remain qualified below. `retirement-delivery-summary.json` in the restart
+handoff links exact merge trees, CI and final logs; earlier receipts keep their
+original revisions. Feature branches and pre-adoption backups remain preserved.
+
+DX01–DX28 remains active. Permanent root-transport fixtures, selected consumer
+and policy acceptance, broader costs and runtime registry delivery remain open.
+Engine 0.3.0/macros 0.2.0/runtime 0.2.0 candidates are unpublished; a merged PR is
+not publication. Main-push CI is separate from the completed PR gates. Other
+active worktrees remain untouched. Behavior 0.30.0 and unchanged macros 0.16.0
+are published; the owner release notice was acknowledged. The earlier
+PR113/114 and reviewed release PR115 merged and normal publication delivered
+Behavior/Actors0.29.0 and macros 0.16.0 from `55dbac2`. Registry checksums, clean
 archive provenance, tags and releases agree; all228 shipped Rust files match
 the tested candidate. The release passed14 GitHub checks,11 native Nix gates,
 1,035 owner tests,123 doctests and four-workspace package preflight. These owner
 results do not substitute for the remaining Bombay gates.
+
+### Next acceptance: transported roots
+
+From delivered main `d575c614`, DX05 needs permanent coverage of the existing
+Rust task-transfer contract: transported root state must be `Send`, while
+caller-local work retains its separate contract. The already-proven inferred
+`Application::new(Counter { value }).execute_with(...)` twins accept `Arc<u8>`
+and reject otherwise identical `Rc<u8>` state with E0277 naming Counter/Rc/Send,
+on 1.99/1.96 debug/release. This is a derived Rust ownership law, not new actor
+semantics; external counter-transport receipts retain the pre-edit proof.
+
+Register those twins in the existing run_with compile harness and compiler
+inventory: six to eight harness fixtures, 136 to 138 inventory cases. Preserve
+every existing source, expected diagnostic and minimum-compiler patch. Scope:
+two Rust fixtures, their required diagnostic expectations, harness/inventory and
+the existing three coordination records; at most nine native paths, production/
+public API0. No new bound, callback, marker, route or runtime abstraction.
+Check useful denial causes and the valid control on both compilers/profiles;
+invert the carriers to prove both registrations execute and reject the intended
+counterexamples. Existing host/cancellation/receiving witnesses stay unchanged.
+Runtime control states remain five outer/20 retained/24 logical alternatives
+with 14 custody fields; no new state, protocol or transition authority is needed.
 
 All three tracked root, protected-consumer and Engine-fuzz locks select the
 published owners without Behavior patches. The root preserves all396 complete

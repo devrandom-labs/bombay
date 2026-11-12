@@ -82,7 +82,7 @@ first release at all.
 | [Request recovery](../prds/request-recovery.md) | Merged through PR404/9f542c18 after six passing checks; invalid-request recovery is delivered, full R09 remains open. |
 | [Cold command ownership](../prds/cold-overlap.md) | Merged through PR405/e6d43a63 after six passing checks and independent review; real two-Node trace and intended grant-omission failure qualify the finite witness, full R22 remains open. |
 | [Original request bytes](../prds/request-bytes.md) | Merged through PR406/937fecc3 after six passing checks and independent review; original bytes/proof survive actual Ledger processing, full R02 remains open. |
-| [Developer experience](../prds/developer-experience.md) | Paired Behavior PRD: one application path, inferred topology and native terminal custody. Integration and fresh combined checks remain required. |
+| [Developer experience](../prds/developer-experience.md) | The retirement stage merged through PR415/d575c614 after eight checks passed; paired owner evidence merged through Behavior PR121. DX01–DX28 remains active, including permanent root-transport fixtures, selected acceptance/costs and runtime registry delivery. |
 | [Static remote actor PRD](../prds/static-remote-actors.md) | Selected NET1/AUTH1 scope, dependency verification, correctness gates and parallel work plan; [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records the selection rationale. |
 | [Networking](networking.md) | Wire contracts, Zenoh sessions, remote delivery, discovery, queries and subscriptions. |
 | [Identity and placement](identity-and-placement.md) | Mockable identity, permissions, placement, failover, simulation and downstream Selo. |
