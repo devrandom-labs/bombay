@@ -1,6 +1,23 @@
 # Static remote actors and typed admission
 
+## Incoming campaign qualification — 2026-11-12
+
+The [owning incoming record](network-schedule.md#verified-generated-orders-and-retained-replay--2026-11-12)
+qualifies all180 finite orders, bounded generated/shrunk/literal replay,
+independent duplicate/final-permission falsifiers and measured4096-case
+profiles. A narrow real Darwin Nix comparison proves the saved seed adds
+actual replay work. CI source and its zero-selected-test guard are reviewed;
+hosted CI, submitted-tree review and delivery remain open. No shipping Rust,
+public type or example changed. This advances scoped R24 evidence; native
+Query/Client, arbitrary overlap, crash/restart and the complete remote goal
+remain open. PR413's delivered dependency qualification below is unchanged.
+
 ## Published Behavior qualification — 2026-11-11
+
+Current checkpoint: PR413 delivers registry Behavior/Actors0.30.0 on main
+814c96d1 after all six checks and independent reviews pass. The dated pre-edit
+and local checkpoints below preserve their original scope; their pending CI
+wording is superseded by the delivery record at the end of this section.
 
 This prerequisite follows the delivered PR412 crossing; it does not replace
 the remaining remote-actor goal or close another acceptance row. The starting
@@ -229,6 +246,42 @@ The complete26-payload manifest verifies, SHA256
 4d3860304bd9792150fc89ab1031cfe2750f31be73d0aad95d25b76ff99be741.
 Author/root and two independent whole-change reviews pass source, ownership,
 interface, observable-law and evidence checks. Required CI and delivery remain open.
+
+### Delivery of Behavior qualification — 2026-11-11
+
+[PR413](https://github.com/devrandom-labs/bombay/pull/413) merged at23:48:26Z as
+814c96d16d23045065650080a9c7e82ed136680b after all six checks passed on
+9e7e9a2d36138ae99a8b7f7797c485905477be4d. Actual merge, submitted source and
+CI checkout b71afc40 share tree9bf3d812408b595938cadfccd1debc7421d5b9e6;
+parents are previous main3bf270cb and submitted9e7e9a2d.
+
+The [required Nix job](https://github.com/devrandom-labs/bombay/actions/runs/43103876708/job/130802019112)
+passes the existing Linux remote12-target/523-case selection in each profile.
+Machine's six cases execute separately in instrumented debug coverage and
+optimized workspace tests. The ordinary filtered debug probe executes zero
+Machine cases and earns no credit. Actual minimum1.96 diagnostics execute
+all136 manifest cases/32 suites; the separate minimum remote check executes
+all11 cases. Current workspace, models Observe28/Entity6, build, formatting,
+strict lint, documentation and existing example gates pass with their owning
+scopes. Local minimum Machine6 D/R remains separate from the minimum UI lane.
+
+Both native TLS jobs pass32 configurations/80 child roles per profile plus
+the2/2/1 auxiliary cases. Actual Driver2048 and Observe4×1024 ASan campaigns
+pass; these are primitive campaigns, not generated network schedules. Miri is
+skipped. Deny's configured groups pass. CodeQL succeeds with458 clean files
+and6 extraction errors; no complete extraction or zero-alert claim follows.
+
+Independent runtime/compiler/fuzz and whole-source reviews pass. Complete
+raw logs, four artifact ZIPs/corpora, API facts, matching Git trees and cleanup
+are sealed as513 payloads in common Git's
+session-archives/2026-11-11/ci-review/pr413/. Its independently verified
+manifest SHA256 is65e1a172d5b3febfb56d3e9b5dbf1048c1e35f16638242b679be9e7c48253217.
+After every reader released it, the fully clean upgrade worktree was removed
+normally. The original dirty checkout and independently owned devx checkout
+remain preserved. The delivered16-path census above is unchanged; this later
+record belongs to the next main-based stage. No remaining remote acceptance
+row closes from dependency qualification. R24's next schedule stage requires
+fresh verification of these now-selected owner contracts before authoring.
 
 ## Native access and application grants — 2026-11-11
 

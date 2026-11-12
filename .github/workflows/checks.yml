@@ -91,6 +91,89 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  incoming_schedules:
+    name: Incoming schedules (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [debug, release]
+    env:
+      CARGO_BUILD_JOBS: "2"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_PROFILE_RELEASE_DEBUG: "0"
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target/incoming-schedules
+      PROPTEST_CASES: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '4096' || '256' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
+        with:
+          nix_conf: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+      - name: Run incoming delivery orders
+        id: orders
+        shell: bash
+        run: |
+          nix develop -c env PROPTEST_CASES="$PROPTEST_CASES" bash -euo pipefail -c "$(cat <<'INCOMING_ORDERS'
+          profile_args=()
+          if [[ '${{ matrix.profile }}' == 'release' ]]; then
+            profile_args+=(--release)
+          fi
+          evidence="target/incoming-evidence/${{ matrix.profile }}"
+          mkdir -p "$evidence"
+          git rev-parse HEAD > "$evidence/revision.txt"
+          rustc --version > "$evidence/rustc.txt"
+          cargo --version > "$evidence/cargo.txt"
+          sha256sum Cargo.toml Cargo.lock flake.lock flake.nix \
+            crates/bombay/Cargo.toml examples/counter/src/counter.rs \
+            crates/bombay/src/remote/export/query.rs \
+            crates/bombay/src/remote/export/schedule.rs \
+            crates/bombay/proptest-regressions/remote/export/schedule.txt \
+            .github/workflows/checks.yml > "$evidence/inputs.sha256"
+          campaign=(cargo test --locked "${profile_args[@]}" -p bombay-rs
+            --all-features --lib remote::export::query::schedule
+            -- --nocapture --test-threads=1)
+          printf '%q ' "${campaign[@]}" > "$evidence/command.txt"
+          printf '\n' >> "$evidence/command.txt"
+          if "${campaign[@]}" > "$evidence/campaign.log" 2>&1; then
+            qualification_status=0
+          else
+            qualification_status=$?
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/cargo-exit.txt"
+          if [[ "$qualification_status" -eq 0 ]]; then
+            if ! {
+              grep -Eq '^test result: ok\. 5 passed; 0 failed; 0 ignored;' "$evidence/campaign.log" &&
+              [[ "$(grep -c 'generated incoming configuration:' "$evidence/campaign.log")" == 1 ]] &&
+              [[ "$(grep -c '^generated incoming observations:' "$evidence/campaign.log")" == 1 ]]
+            }; then
+              printf '%s\n' 'incoming campaign execution evidence is incomplete' >&2
+              qualification_status=1
+            fi
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/exit.txt"
+          cat "$evidence/campaign.log"
+          cp crates/bombay/proptest-regressions/remote/export/schedule.txt "$evidence/schedule.txt"
+          exit "$qualification_status"
+          INCOMING_ORDERS
+          )"
+      - name: Retain incoming schedules and saved cases
+        if: always() && (steps.orders.outcome == 'success' || steps.orders.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: incoming-schedules-${{ matrix.profile }}-${{ github.run_id }}
+          path: target/incoming-evidence/${{ matrix.profile }}/
+          if-no-files-found: error
+          retention-days: 14
+
   native_tls_research:
     name: Native TLS research (${{ matrix.profile }})
     runs-on: ubuntu-latest

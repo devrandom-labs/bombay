@@ -82,6 +82,7 @@
               ./.cargo/mutants.toml
               ./.config/nextest.toml
               ./docs/prds/static-remote-actors/transport-custody/certificates
+              (pkgs.lib.fileset.maybeMissing ./crates/bombay/proptest-regressions/remote/export/schedule.txt)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
               ./nix/references.sh
