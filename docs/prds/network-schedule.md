@@ -1,15 +1,339 @@
 # Incoming request schedule
 
-Current checkpoint: PR411 delivers the qualified fixed incoming schedule with
-all six checks, independent reviews and a matching merged source tree.
-Shipping owners, request/declaration code, Counter and locks retain their
-qualified inputs. Earlier checkpoints preserve their original source epochs.
+Current checkpoint: PR411 delivers the fixed incoming schedule; PR413 now
+delivers the paired Behavior0.30 prerequisite. The exhaustive/generated stage
+below starts from main814c96d1 with fresh owner verification. Host extraction,
+all180 finite orders, generated/shrunk replay and the narrow Nix seed proof
+qualify locally below. Routine/extended CI is source-reviewed; actual hosted
+CI and reviewed delivery remain open. Earlier checkpoints retain their epochs.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
-`937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. This contribution does not implement
-the complete network simulator, generated campaigns, restart or full R24.
+`937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. Complete network simulation,
+native Query/Client overlap, restart and full R24 remain open.
 The user's complete R01–R25/AUTH1/NET1 goal remains unchanged.
+
+## Exhaustive and generated incoming schedules — 2026-11-11
+
+This pre-edit record follows reviewed PR413 delivery and normal worktree
+removal. Starting source is main814c96d16d23045065650080a9c7e82ed136680b;
+3d485fae records its independently reviewed delivery reconciliation only.
+No shipping or test source changed before this record. The selected host is
+crates/bombay/src/remote/export/schedule.rs, mounted as query::schedule.
+Its SHA256 isfa52c802b7f248a741c889c776ed4c8433388251086d6e7b0dcc59558555e4a6;
+request owner query.rs isdfaae0a0a533f2485dc8ae0dcbc1850cc807ed2be12b8781eeee200d3a46a4ed.
+Declaration source remains5dae08876623893b236a2d4487ed8063b4fb5ec7a6e69b10333d6a37e33f4eb9.
+
+### Fresh selected owners and eligibility
+
+Root Cargo.lock9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394
+selects registry Behavior/Actors0.30.0 at628649da014a527d47f21567a859c5c78494df13
+and Macros0.16.0. There are no patch overrides. Root and all three reviewers
+reread the complete selected775-line AGENTS before this feature's design;
+its SHA256 isaa5c4e70e38e52a1fbae8948ba30ee1c16fe88eddc3ec4fe8bfcf07f494a9207.
+Fresh source/API/test/document reads verify pure Behavior/complete Actions,
+Actors' existing shutdown composition and the real Counter's typed reply fold.
+No Machine or template policy is reproduced in the test scheduler.
+
+Fresh registry/archive/VCS inspection selects Address0.3.0/9f058dc03d1239e1ef5c3147a893b134a1e74a83,
+Communication0.1.6/963067e0e6bdef15549088966cde354fd820be7e and
+Timers0.2.0/9369d1f6c7fcda91e7de5bf3c19e6769f92145bd; none depends on Behavior.
+Address owns exact registrations/opaque resolution (reservations/semantics
+tests); Communication owns FIFO, closure and original refusals (mailbox
+retirement/lane lifecycle tests). Timers owns queue-specific generations and
+explicit clock inputs; this logical test clock supplies no native timer proof.
+Fresh local Observe at814c96d1 preserves exact-generation publication and
+independent cancellation through its contract/future-cancel tests. Engine's
+D-TURN-1/D-RETIRE-1 preserve causal work and surviving original custody.
+Relevant runtime/module/Driver contracts and actual preflight/request/tests
+were checked. Fresh primitive evidence is temporarily at
+/tmp/bombay-r24-owner-audit.FF5Ei1; it must be sealed with final source/results.
+
+Export::request remains the sole real verifier/canonical lookup/construction/
+final-permission/nonwaiting-admission owner. The existing test privately inserts
+query=None rows and uses actual Application/Counter ownership. It does not
+exercise native callback capacity, Query publication, Client or a Session.
+There is no owner-contract blocker to this scoped incoming campaign. The
+backlog AUTH1→NET1 dependency remains reciprocal and incomplete; source fitness
+does not unblock their entire release scope.
+
+### Law and ordinary-Rust experiment
+
+This is derived test policy, not a new actor-model law. Reuse the six externally
+named blocks Initial, Repeat, Expiring, Revoked, ConstructorExpired and Fresh.
+Initial precedes every Repeat; Expiring precedes ConstructorExpired. The latter
+two remain indivisible blocks setting time10 then20. Revoked may occur at0,
+10 or20. Every legal word must produce the independent FIFO Counter Read2
+after actual joined cleanup, before detailed trace/custody assertions.
+
+First parameterize the existing ordinary async host with borrowed delivery
+word and expected Event slice. Preserve the original test's complete literal
+word AND literal expected trace. Derive actual schedule blocks mechanically;
+derive expected release order from the input word before execution. Replace
+keys.first()/positional comparisons with an actual-key map named by Initial,
+Fresh and ConstructorExpired; every Repeat must equal Initial's actual key.
+Retain every original allocation/byte/proof, typed row, provider completion,
+attempt, refusal, panic slot, notification and native-retirement check.
+One authoritative bound8 governs issuer/limits and validation before row push:
+each non-Repeat label once, Repeat1..3, length6..8 and both precedence laws.
+No capacity increase, predicted nonce, copied interpreter or extra wrapper.
+
+Review this first extraction twice, then run its focused fixed regression in
+debug and optimized builds, plus both existing canonical/final-permission
+source cuts and byte-exact restored controls in both profiles, before adding
+campaign code. Root alone runs Rust
+through the existing pinned Nix environment/shared external target. Root owns
+locks, Nix, CI and records; acceptance owns schedule.rs; the existing two
+reviewers independently check source laws, counterexamples and actual results.
+
+Then enumerate all180 unique base words using ordinary bounded position loops:
+15 Initial/Repeat pairs ×6 Expiring/ConstructorExpired pairs ×2 remaining
+Revoked/Fresh orders. An independent180-cardinality/uniqueness/validity check
+must reject omission of one legal word. This proves finite grammar coverage,
+not arbitrary networking. A pure expected-trace function consumes only external
+chronology and authored block laws, never live grants/permission/admission
+outcomes. The original literal remains an independent control.
+
+Existing direct dev dependency proptest1.11.0, checksum4b45fcc2344c680f5025fe57779faef368840d0bd1f42f216291f0dc4ace4744,
+supports TestRunner, sample::select, sample::Index and Vec shrinking. Exact
+source/primary documentation confirms MIT/Apache2 and manifest Rust1.85;
+its README describes passive maintenance. No dependency/feature change is
+needed. Compatible itertools0.14 would add a direct dependency edge and generate
+720 vectors to filter180; the direct grammar construction is selected instead.
+Ordinary functions and supported combinators express the complete seam, so no
+simulator type, custom Strategy/ValueTree, macro or new production interface
+is eligible. Source clarity and actual costs still require measurement.
+
+Generate a legal base word plus0..2 extra repeats using sample::Index to choose
+post-Initial gaps, constructing the expanded word once. No semantic rejection
+or filtering may discard a failed case. Config::with_source_file(file!()) keeps
+ordinary environment case settings; select seed20261112 only when its seed is
+Random, preserving explicit Fixed choices. Require positive case/shrink counts;
+log actual algorithm, resolved seed, case/shrink/time limits and input/observed
+trace after cleanup. Default256 routine cases and proposed4096 weekly/manual
+cases retain their distinct scope; measure runtime/output before qualifying
+the larger count. Persisted replays and shrinking add work beyond fresh cases.
+
+### Falsification, replay and completion gates
+
+Against then-current real query.rs, suppress canonical lookup alone: the
+post-cleanup Read should become3+k for k extra repeats. Restore byte-exact
+source and healthy D/R before removing final permission revalidation alone:
+its Read should become3. These are proposed outcomes until actually executed.
+Retain actual TestError::Fail reason/minimized word, standard persisted case
+seed and literal Rust replay; replay the actual returned word with each cut
+and restored source in both profiles. Watchdog/setup/compiler failures supply
+no semantic-law credit. Coverage omission179 earns only coverage evidence.
+
+Standard SourceParallel persistence resolves to
+crates/bombay/proptest-regressions/remote/export/schedule.txt. Current Crane
+source excludes that .txt; later include only this owned path and prove actual
+saved-file/source-filter/replay behavior. A campaign u64 seed differs from its
+persisted algorithm-tagged case seed (for example cc/hex); strategy changes
+can alter either resulting word.
+Keep literal/source/lock/strategy identity with actual minimized evidence.
+Use the existing PR/routine and weekly/manual CI workflow, ordinary pinned
+Cargo commands and standard artifact upload; no new runner/controller.
+Seed inclusion and CI wiring follow semantic campaign qualification.
+
+Expected complete branch: the three prior delivery records, this PRD,
+schedule.rs, one standard regression file, flake.nix and checks.yml (eight
+paths, subject to measured final need). Shipping Rust +0/-0/net0; test forecast
+net250–450 lines; public types +0/-0. Existing six Delivery, six Scheduled,
+two Grant, five Refusal and nine Event alternatives remain test inputs only;
+actor control states, domain branches, interpreters and public spellings stay
+unchanged. This is additional verification, not production code reduction.
+Current checkpoint: shipping +0/-0, tests +0/-0, public +0/-0; only records
+changed. The user's removal of implementation budgets remains in force.
+
+Pre-edit owner/source/ordinary-syntax reviews by acceptance, review_bytes and
+review_cold pass; root agrees with the bounded grammar and independent Read
+oracle. Actual code, both-profile gates, negative executions, shrinking/replay,
+final minimization, reviewed CI and delivery remain required. Native incoming
+Query/Client combinations, arbitrary overlap, actual cancellation/crash,
+volatile restart and the rest of full R24 remain open; no original acceptance
+criterion is replaced by this bounded campaign.
+
+### Verified host extraction — 2026-11-12
+
+The first ordinary-function experiment is locally qualified. The original
+fixed word and complete34-event literal are preserved; both independent
+reviews mechanically match the literal to bd7330e8. The host now borrows the
+delivery/expected slices, validates the bounded grammar before Application
+construction, uses one8 for validation/issuer/limits, derives release order
+from input chronology and retains actual keys by semantic delivery name.
+All original row, allocation, provider, native, refusal and retirement checks
+remain. Shipping owners, Counter, dependencies and public surface are unchanged.
+
+Formatted701-line source SHA256 is
+dd8868ce170ed8fa404de6cd42ebabe4fcdfb8f833c63acdc957b8ffe180dfe2.
+Actual pinned Rust1.99.0 b940084d7/Cargo1.99.0 5f94df478 Darwin runs execute the
+one named fixed case in both profiles. Canonical-lookup suppression then fails
+only the first post-cleanup Read oracle at553, actualUser3 versus required2,
+in both profiles; byte-exact restoration passes both. Removing only final
+permission revalidation independently fails that same intended oracle in
+both profiles; exact restoration again passes both. The ten runs therefore
+contain six healthy passes and four intended failures, each1 selected case,
+433 filtered and no ignored cases. Later negative assertions are unexecuted
+and uncredited. No timeout, setup failure or compiler denial earns law credit.
+Pinned formatting and strict owning all-feature library/test Clippy pass.
+
+Author/root and both independent two-pass source/outcome/nonvacuity reviews
+pass. The reviewed-only unformatted94db9f14 epoch is separate from all actual
+dd8868 executions. Current query source exactly restores dfaae0a0; root lock
+9bb2db13 is unchanged. The29-payload capsule in common Git's
+session-archives/2026-11-12/incoming-parameterization/ preserves Git base,
+patch/full source, both exact cuts, fresh owner audit, all13 logs and reviews.
+Its manifest SHA256 is267a90824531085bff839acbe902f3a3ee9cdfbf6d6d7de841a01b9c79e67a32.
+Command/status receipt explicitly transcribes observed terminal handles;
+raw logs contain stdout/stderr, not invented original exit wrappers.
+
+Complete five-path branch census against main814c96d1:
+shipping +0/-0/net0; tests +163/-76/net87; records +244/-11/net233;
+public types +0/-0; no untracked paths.
+This closes the extraction gate only. The180-word domain, generated/shrunk
+and persisted replay, new CI wiring, native Query/Client and restart work,
+full R24 and reviewed merge delivery remain open. Enumeration may now follow
+the recorded ordinary-Rust plan without changing shipping contracts.
+
+### Verified finite orders — 2026-11-12
+
+The next ordinary-function experiment qualifies all180 legal six-label orders.
+The measured std position construction is37 formatted lines, within the
+35–50-line forecast. It needs no dependency, new product or generic permuter;
+the recorded itertools alternative would add a direct dependency/lock edge.
+This is a source/ownership comparison, not a performance superiority claim.
+Separate coverage checks require180 total/unique words, all six labels and
+both precedences. Expected traces depend only on the supplied word and
+authored chronology. The original34-event literal remains the fixed host's
+input and calibrates the derived oracle without being replaced.
+
+Formatted857-line source SHA256 is
+223f0023146a537d378f65cfc976f0f6a3f1b8363359ff7c21ce9c1166bf7383.
+Actual pinned current Darwin debug/optimized runs and all three exact-restored
+pairs pass3 selected tests each, zero failures/ignored and433 filtered. Both
+independent reviewers enumerate the180 legal permutations separately and
+compare every actual positive word set. Each of the eight healthy logs has
+180 distinct completed words, each actual Counter2/full34-event trace, then
+one separate fixed control. These nested executions are not181 Cargo tests.
+
+Omitting one generated word fails only the coverage assertion215,179 versus
+180, in both profiles; it earns no actor/cleanup credit. Canonical lookup and
+final-permission omissions independently fail only the first post-cleanup
+Counter oracle709, actual3 versus required2, in both profiles. Their actual
+first word is Initial/Repeat/Expiring/ConstructorExpired/Revoked/Fresh.
+The other179 words and later assertions are unexecuted in those negatives
+and uncredited. All six negative commands return101 after the intended test;
+all restorations are byte-exact and their healthy D/R pairs return0. No
+compiler, setup or watchdog failure earns semantic credit. Formatting and
+strict owning all-feature library/test Clippy pass. Shipping querydfaae0a0,
+root lock9bb2db13, Counter and public surface remain unchanged.
+
+Author/root and both independent two-pass source/outcome/nonvacuity audits
+pass. All17 original command/log/exit sets, Git basec943bc61, full source,
+three isolated cuts, readbacks and reviews are sealed as79 payloads in common
+Git's session-archives/2026-11-12/incoming-orders/. Manifest SHA256 is
+b283cc775e27c0da85a09799deaf6334552e152c2b3531e0b8786bf8f8e85250.
+The unformattedd0674b8b review epoch remains separate from actual223f runs.
+Finite-stage tests +157/-1/net156; production/public types +0/-0.
+Complete five-path branch census against main814c96d1: shipping0;
+tests +319/-76/net243; records +291/-11/net280; public types +0/-0; no untracked paths.
+Generated cases, actual minimized/persisted replay, CI wiring and delivery
+remain open, together with native Query/Client, restart and the rest of R24.
+
+### Verified generated orders and retained replay — 2026-11-12
+
+The bounded generated stage qualifies locally on the same selected owners.
+Ordinary supported Proptest combinators select one legal base word and insert
+zero to two additional repeats after Initial. Every generated or shrunk word
+retains the grammar; no semantic rejection, custom strategy, new network
+framework or interpreter is needed. Environment configuration stays authoritative;
+only Random becomes default seed20261112. Zero cases/shrinking, fork/timeout
+and disabled persistence are refused before callbacks. An explicit seed42
+and16-case control actually completes16. These are configuration checks, not
+actor-law evidence.
+
+Final983-line source SHA256 is
+5dc152215ea96b5ff4e1eb0625e3cd195a7a59c1e2ec9650d7e8bed360539b6c.
+The fixed34-event literal and independent finite oracle are unchanged. Each
+callback owns an ordinary Tokio host, awaits real Application cleanup and
+asserts independent Counter Read2 before complete trace/row/original custody.
+Current Darwin debug/optimized controls pass5 selected tests, zero failed or
+ignored,433 filtered. Each has439 actual host executions:180 finite,
+257 generated (one saved plus256 fresh), actual minimized literal and fixed
+control. These nested executions are not439 Cargo tests.
+
+Canonical-only and final-permission-only source cuts fail the actual first
+post-cleanup Read in both profiles: respectively3+k for k extra repeats and
+3, instead of2. Proptest performs10 failing callbacks and returns the actual
+word Initial/Repeat/Expiring/ConstructorExpired/Revoked/Fresh. Its standard
+saved cc seed lives in crates/bombay/proptest-regressions/remote/export/schedule.txt;
+the actual word also has an ordinary literal Rust test. Changed campaign
+seed42 replays the saved case and returned minimum in both profiles. Original
+and current source epochs remain distinct in the evidence. Full-module cuts
+on final source each report one coverage pass/four semantic failures; only
+the first finite word executes before its failure. Later assertions and the
+other179 finite words receive no negative credit. Exact restorations and
+both healthy profiles pass. No setup/compiler/watchdog failure substitutes
+for the post-cleanup oracle. Formatting and strict owning Clippy pass.
+
+Measured4096-case D/R campaigns each pass5 tests with4097 generated callbacks
+completing,4279 total actual host executions and all complete traces. The
+ordered generated inputs match across profiles;1226 distinct extended words
+are observed, not exhaustive extended coverage. Actual test times are1.26s
+debug/0.41s optimized; logs are4,827,699/4,825,522bytes. Their test bodies are
+byte-identical; the2,177-byte size difference is pre-test Nix/Cargo output.
+Summary runtimes differ as reported; these are observations, not bounds.
+
+The seed was staged before Nix source inspection. Existing Crane filtering
+omitted it; one explicit maybeMissing path now includes exactly that file.
+Two temporary focused overrides of the existing Darwin remote-debug check
+run the same locked/offline exact generated test on immutable before/after
+sources. Both use Rust1.99/Cargo1.99 and identical9bb lock/dfaae query/5dc test
+inputs. Seed absent gives256 completed callbacks; exact seed present gives
+257 with the same256-case configuration. The saved prefix precedes identical
+256 fresh frames, all Counter2/full traces. Both commands pass one selected
+test,437 filtered. This proves focused Darwin debug Nix replay, not the full
+flake gate, Linux/MSRV, optimized Nix or native Query/Client behavior.
+
+The existing CI workflow now defines independent debug/release incoming jobs:
+256 fresh cases ordinarily and4096 on scheduled/manual runs, plus standard
+saved replay. A single Cargo argv owns execution and command recording.
+Artifacts retain actual revision/compiler/input hashes, words/traces, saved
+seed and separate raw Cargo/combined qualification exits on step success or
+failure. A source-review finding established real Cargo0/zero selected tests;
+the corrected output guard requires5 passes plus generated execution evidence.
+Verbatim old/current block controls prove zero-test acceptance0 becomes1,
+real routine/extended logs remain0, missing configuration becomes1 and an
+original Cargo101 remains101. Pinned actionlint1.7.12 passes. These are local
+source/fragment qualifications; hosted jobs/uploads remain unexecuted here.
+
+Root and both independent reviewers pass source, counterexample, outcome and
+scope reviews, resolving the initial CI vacuity finding. Ordinary functions,
+existing primitives and the one standard regression file own this complete
+scoped construction; no runtime/public interface or permanent tool is added.
+Exact commands, raw outputs, sources, isolated cuts and two-pass reviews are
+sealed in common Git's session-archives/2026-11-12/:
+
+- generated-canonical/:107 payloads; manifest
+  f4044410a4034230ed5d9eccc8705b65a346b8d76cc368d6566932e762b57d71;
+- generated-permission/:71 payloads; manifest
+  a2be89c5e1522aad4d0f2283de709e9cb4951211b834ca1a31b52ca68612c637;
+- incoming-ci/:69 payloads; manifest
+  1e1bfe11dee1cc5e5b654f09f155e9b1d252a0bb18b051ee8ebd115ee5c9af70.
+
+Both reviewers verify every payload hash and the exact hidden/ignored inventory.
+The source/lock/seed guards remain unchanged; no example or shipping Rust was
+edited. Scoped tests add126 source lines plus the seven-line standard seed
+since38241d4a; public types +0/-0.
+
+Local eight-path census against main814c96d1: shipping Rust +0/-0/net0;
+tests +452/-76/net376; verification configuration +84/-0/net84;
+records +409/-14/net395; public Rust types +0/-0; no untracked source paths.
+
+Actual hosted CI, final submitted-tree audit,
+reviewed PR/normal merge, native Query/Client, arbitrary overlap, cancellation,
+crash, volatile restart and the rest of R24 remain open.
 
 ## Delivery of the fixed schedule — 2026-11-11
 

@@ -30,8 +30,9 @@ still requires the selected source, consumer and delivery gates.
 
 ## Current delivery
 
-The isolated branch is `codex/retirement-recovery`, based on integrated
-main814c96d1 (PR413), now including registry Behavior/Actors0.30.0 adoption.
+The isolated branch is `codex/retirement-recovery`, now integrating
+mainf09303c8 (PR414), including PR413's registry Behavior/Actors0.30.0 adoption
+and the subsequent fixed/exhaustive/generated incoming schedule coverage.
 The pre-adoption history is retained at codex/retirement-recovery-before-030-
 6cb916ac. The retained recovery port and subsequent test stages are local
 commits. Integrated030 source0da4c952 passes all28 host Nix checks and
@@ -1393,6 +1394,16 @@ Run the existing five-case incoming owner corpus in both profiles through pinned
 Nix, including finite orders, generated cases and saved replay; retain exact
 configuration, source/seed hashes and results. Recheck affected owner gates for
 the reconciled source. Earlier full/SDK gates retain their original source limits.
+
+The merge is automatic. Whole-source comparison againstf09303c8 proves every
+schedule byte outside that one retained pattern/import unchanged; the six other
+independent upstream paths are byte-identical. Backlog status differs only in
+this feature's existing DX1 row. An initial Ruby encoding comparison incorrectly
+rejected a UTF-8 document; binary comparison repairs the checker without any
+source/oracle edit. Exact records are incoming-main-conservation.json. Runtime
+and public API delta0; no new transition authority, state, cause, flag or user
+plumbing. Existing tests/seed and CI configuration are retained, not recreated.
+Verification remains pending on the merged source.
 
 #### SDK-independent foreign error spelling
 

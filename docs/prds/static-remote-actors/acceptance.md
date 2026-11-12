@@ -17,6 +17,15 @@ minimum checks. This is no claim that every mapped inventory family is complete.
 PR411/2b7acf12 delivers one fixed incoming schedule; PR412/3bf270cb delivers
 the four native-access/application-grant rows. Their owning records preserve
 remaining R24 and R07 obligations; neither full row is closed.
+PR413/814c96d1 delivers paired registry Behavior/Actors0.30 qualification after
+all six checks and independent reviews. Its [owning delivery record](../static-remote-actors.md#delivery-of-behavior-qualification--2026-11-11)
+keeps local falsifiers, actual CI scopes and merged delivery separate; no
+remote acceptance row closes from this prerequisite.
+
+The [bounded incoming campaign](../network-schedule.md#verified-generated-orders-and-retained-replay--2026-11-12)
+now has local finite/generated/falsifier/replay and narrow Nix seed evidence.
+Its CI source is reviewed; actual hosted CI and delivery remain open. Native
+Query/Client, arbitrary overlap, crash/restart and full R24 are not closed.
 
 On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
 byte-preservation witnesses after all six checks passed. PR404's R09 recovery
