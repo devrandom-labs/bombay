@@ -1296,6 +1296,83 @@ This measures a healthy one-root/one-worker/one-job path, not error-path costs,
 remote/catalogue latency, macro cost or full DX26. Clean/incremental checks,
 binary/metadata diagnostics, remaining acceptance and delivery are still open.
 
+#### Comparable compiler costs, before measurement
+
+Retain the same immutable814c96d1/0da4c952 sources, pinned1.99/1.96 and exact
+consumer lock/work/18-field conservation. Use separate compiler/source copies
+of the verified external consumer so measured memory sources/binaries remain
+immutable. No production or repository test edit. Five rounds alternate source
+order within each compiler. Each clean check starts with an absent Cargo target;
+registry/source/Nix caches remain warm and are not called cold OS caches.
+
+For each clean target, measure five unchanged checks as Cargo/cache noise
+controls, then five genuine one-file edits alternating the Work input text
+between "bombay behavior" and "bombay behavior!". Both have the same accepted
+job and three matches; every oracle, policy and type stays unchanged. These
+are incremental business-input checks, not no-op checks or wrapper/child-addition
+costs. Restore exact consumer bytes after each round. Use the normal development
+check profile with incremental compilation enabled, debug info disabled and two
+Cargo jobs, identically in both sources. Preserve stdout JSON/artifacts, wall/
+user/system CPU, peak RSS and source hashes for every command.
+
+Record before/during/after process snapshots and the measured process ancestry;
+an unrelated compiler/linker invalidates comparative wall timing for that sample.
+Do not stop another project. Retain contended samples without performance credit;
+use paired controls/noise before interpreting a difference. Save dependency/
+native/macro metadata sizes from actual Cargo artifacts, and release binary
+sizes from the already verified immutable positive binaries as secondary facts.
+No invented percentage threshold, faster-build promise or broad compiler claim.
+This establishes one representative consumer's clean and small-edit costs;
+macro expansion, larger topology/wrapper edits and full DX26 remain open.
+
+Pre-measurement checkpoint: all runtime/control/subordinate alternatives,
+production branches/lines/modules/public spellings and custody owners stay
+unchanged. Only this existing PRD and isolated measurement inputs/receipts change.
+No generic, bound, actor, effect, protocol, no-op policy or new tooling enters
+the repository. Same D-RETIRE-1/D-TERM-1 and normalized laws apply. Record actual
+controls, restored input identities, reviews and bounded disposition afterward.
+
+Result: all220 checks pass: five fresh-target clean,25 unchanged controls and
+25 real edited checks per source/compiler. Cargo JSON confirms unchanged
+consumer artifacts are fresh and every clean/edited consumer is rebuilt.
+All source/lock identities restore exactly. Current1.99 clean wall medians are
+7.71s/upstream and7.39s/custody; edited0.20/0.19s; unchanged0.04/0.04s.
+Minimum1.96 clean7.81/7.67s, edited0.20/0.20s, unchanged0.04/0.04s. Clean CPU
+medians10.83/10.74s current and11.09/11.02s minimum overlap their sampled ranges.
+This shows no clear regression for this consumer, not a general speedup.
+
+Captured process ancestry shows no unrelated build worker. The collector
+captures before/during frames and one post-campaign frame, not a separate
+immediate post-exit frame for each short command; that limit stays explicit.
+Clean peak-RSS medians are about403MB/current or386MB/minimum for both sources;
+small-edit ranges and0.01s timing precision do not support a broader claim.
+All20 completed task-owned targets are removed after preserving raw evidence,
+artifact sizes/hashes and restored sources (2255316KiB total), without global GC.
+
+Secondary diagnostics: Native check metadata3481159→3467936 bytes current,
+3386091→3373755 minimum; Engine changes182591→182582 and176467→176458, with
+source-path spelling a known confounder. Macro binaries stay5214128/current or
+4792512/minimum. The consumer check artifact is zero bytes and is not called a
+meaningful binary size. Validated System release binaries4180464→4180592 bytes
+current and6140800→6112304 minimum; instrumented binaries remain separately
+recorded. These file facts do not stand in for runtime memory.
+
+Both author reviews pass: first verifies identical inputs, genuine rebuilds,
+fresh targets, source order and restored originals; second checks process-scope
+limits, no-op noise, overlapping timing/CPU/RSS ranges and secondary file-size
+confounders. No independent review is claimed. Exact220 command/JSON/resource/
+process/timing-HTML receipts, CSV, toolchains, cleanup and artifacts are
+retirement-costs/{check-inputs,check-progress,check-results,check-summary,
+artifact-sizes}.json and compiler-checks/*. Checkpoint `pass` for this bounded
+consumer comparison: no production/test/API delta, runtime/control/subordinate
+alternatives, transition branches, modules/public spellings or ownership change.
+The same normalized laws apply; no history, repeated cause, false cardinality,
+nested authority, semantic flag or user plumbing is introduced. Source scope
+and prior Rust counts remain117/142 paths,+3058/-1484/net1574, production net36,
+tests net1538, public types +1/-0. This is small business-edit compilation, not
+wrapper/child addition, macro expansion, latest tests or full-workspace costs.
+Remaining DX26 and whole-programme acceptance/delivery stay open.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
