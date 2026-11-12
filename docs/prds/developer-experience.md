@@ -1596,6 +1596,20 @@ inputs; use isolated task-owned caches and retire them after preserving evidence
 Older archive receipts retain their exact source/compiler limits and do not
 certify this candidate. Final repository/CI and full programme gates stay open.
 
+The initial clean e41da292 current-compiler package set passes all-feature
+verification, with all shipped src files exact: Engine3, macros2 and runtime108
+(including source-local test modules, not a production-line count). VCS records
+identify e41da292. Those exact archives/logs are preserved as the pre-guide
+preview. Inspection finds a concrete documentation defect: the packaged guide
+still teaches the removed ActorRetirement::Completed shape. Correct that prose
+to borrowed outcome inspection and consuming the complete custody/outcome pair;
+retain all 24 logical alternatives and exact unavailable return. Remove the
+redundant text-only Work sketch using an undefined boundary function; compiled
+examples/doctests and their assertions stay untouched. This adds the existing
+guide path to cumulative native121/paired146 within approved186, production/API0.
+Produce fresh final-source archives after the correction; the earlier set does
+not certify final documentation or package delivery.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
