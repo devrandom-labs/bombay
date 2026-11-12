@@ -462,15 +462,75 @@ commit; only this PRD's later census/erratum text differs. All runtime Rust,
 manifests and fixtures remain exact; flake.lock is separately guarded outside
 the copied Cargo source. This establishes executed-code equality, not whole
 documentation/Git-tree equality. The later read-only postcommit evaluation
-has no execution credit. Hosted CI must still qualify the submitted head.
+has no execution credit. At this local checkpoint hosted CI still needed to
+qualify the submitted head; the later old-source result is recorded below.
 
 Common Git session-archives/2026-11-12/client-overlap-gates retains both gates'
 commands, raw results, source comparisons and independent two-pass reviews.
 
-Final source census against mainf09303c8, including88dc44d7 and every
+Submitted fed2 census against mainf09303c8, including88dc44d7 and every
 tracked/untracked path: production +0/-0/net0; tests +994/-0/net994;
 public API types +0/-0; records +497/-29/net468. There are six paths.
 Manifests, locks, production Rust, examples and shared fixtures are unchanged.
+
+### Incoming custody API: prerequisites — 2026-11-12
+
+[PR416](https://github.com/devrandom-labs/bombay/pull/416)'s original
+fed2aabb/997b8de5 source passes all eight hosted checks. Its actual synthetic
+checkout b08ae5ef has parents f09303c8/fed2aabb and the same reviewed tree.
+The [Nix job](https://github.com/devrandom-labs/bombay/actions/runs/43216837675/job/131178118930)
+finishes successfully at15:10:29 UTC, including both new overlap tests in
+remote debug/release, workspace and coverage. Driver2048 and four Observe1024
+campaigns complete; routine Miri/upload are skipped. Root and both independent
+two-pass reviews pass. The separate sealed CI capsule at common Git
+session-archives/2026-11-12/ci-review/pr416/fed2aabb retains614 payloads;
+its final manifest/inventory checks pass independently. These are original
+source results, not a merged-delivery or current-main qualification.
+
+During that run PR415 merged as main d575c614 at14:37:16 UTC. Its121 changed
+paths/+4815/-1613 are delivered upstream work, not new PR416 production scope.
+Fresh merge inspection finds one text conflict, docs/prd-backlog/status.md.
+The new terminal representation also removes ActorRetirement::Completed,
+used by exactly two pre-oracle diagnostic predicates in this witness.
+
+Fresh verification resolves the same root lock9bb2db13, no patch/replace,
+Behavior/Actors0.30 at628649da and Macros0.16. All775 selected Behavior
+instructions are reread; the six-owner map above is freshly checked against
+304 exact registry/archive files and relevant source, public APIs, tests and
+docs. Engine, Observe, Client, query and Work/outcome contracts are unchanged.
+Source eligibility passes; no dependency upgrade or new owner is needed.
+The fresh owner and contract receipts are respectively df31cbff and64155e11;
+the ordinary-Rust author comparison is cc59ede0. Their full reports remain
+with the integration delivery evidence, separate from the sealed old epoch.
+
+The accepted migration preserves the entire heldA/B-ACK/replay-policy/release/
+three-ACK/FIFO-Read/cleanup order and every original payload, allocation,
+sender, report and notification oracle. Main's existing completed_actor already
+consumes the complete Retained custody and exact Completed outcome. For only
+the two diagnostic questions, completion().is_some() borrows precisely the
+same Completed-versus-other distinction as the old pattern; it never certifies
+failure-free cleanup. Both original native Results remain available for their
+later consuming checks. No Retained/custody-availability shortcut is accepted.
+
+Before edits: root records prerequisites, reconciles the one backlog conflict
+without losing either feature's status, and establishes the actual merged
+compile refusal. Only then may the author replace those two diagnostic
+expressions and remove the unused ActorRetirement import in overlap.rs.
+outbound.rs needs no further change. Expected owned source delta is about
++8/-4 test lines; production +0/-0, public API types +0/-0. No behavior state,
+phase, event/effect product, protocol, wrapper, alias, trait, macro, constructor,
+policy or interpreter is added. Original before/after state cardinalities and
+wire alternatives remain unchanged; the existing borrowed accessor is enough.
+
+Afterward, fresh source reviews, healthy/canonical-omission/exact-restored
+debug and optimized controls, owning cohort/lint/format and required combined
+source gates must pass. Preserve all original assertion values and complete
+custody checks; old fed2 CI cannot qualify the new main integration. No later
+network law, generated native scheduler or full R24/AUTH1/NET1 scope is selected.
+
+Pre-edit checkpoint against oldmainf09303c8, including all tracked/untracked
+paths: production +0/-0/net0; tests +994/-0/net994; public API types +0/-0;
+records +557/-29/net528. There are six owned paths before main integration.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11
 
