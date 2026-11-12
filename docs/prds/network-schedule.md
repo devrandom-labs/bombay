@@ -7,8 +7,8 @@ pending hosted-CI wording in the dated preparation checkpoints below. Earlier
 source, compiler and result epochs retain their original meanings.
 PR416's fixed public Client overlap passes hosted CI on34b0726a with main
 d575c614. [Integration with newer main402ff67f](#current-main-integration-records-and-transport-fixtures--2026-11-12)
-now requires a record conflict resolution and fresh combined qualification;
-merged delivery remains open. Earlier source epochs are kept separate.
+now passes resolved-source reviews and local combined qualification; fresh
+hosted CI and merged delivery remain open. Earlier source epochs stay separate.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
@@ -643,6 +643,46 @@ Premerge checkpoint against maind575c614, including all tracked/untracked
 paths: production +0/-0/net0; tests +997/-0/net997; public API types +0/-0;
 records +682/-30/net652. Six owned paths, no untracked files; incoming nine-path
 upstream delivery remains separate from this owned scope.
+
+The normal no-commit merge of402 into6bfd259f resolves only that record
+conflict. Incoming DX1 and the existing NET1 row are preserved verbatim.
+Resolved-source reviews3b4742f0/0f94ca14 pass. Every original runtime input
+and the126a witness remain exact; all six incoming test/config files equal402.
+The complete26-input guard matches before and after focused gates, Nextest,
+and independent review, including all26 retained source copies. No authored
+production or test source changed during this integration.
+
+Actual pinned local qualification on this pending combined source passes:
+
+- `cargo test --locked -p bombay-rs --all-features --test run_with
+  run_with_protocol_is_compile_checked -- --exact --nocapture --test-threads=1`,
+  once ordinary and once with `--release`: each one outer pass,22 filtered,
+  eight successful named UI cases including the Arc control and Rc denial.
+  Both outer profiles execute; trybuild's inner checks remain dev-profile
+  compiler evidence, not optimized fixture runtime.
+- `cargo clippy --locked -p bombay-rs --all-features --test run_with -- -D warnings`
+  and `cargo fmt --all -- --check`: both exit0.
+- `cargo nextest run --locked --workspace` and the matching JSON catalogue:
+  1001 distinct passes exactly equal the complete selected catalogue set,
+  across123 listed binaries;3 slow and6 existing child skips,90.363s.
+  Both overlap tests and the owning compiler harness actually pass. The six
+  skipped child names match the prior set, and their passing parents retain
+  exact child selection, status and nonzero-result checks. No standalone
+  child transcript or zero-skip claim is inferred.
+
+All commands above run through `nix develop -c` with the recorded task target
+and resource settings; complete command/log/exit triplets are retained in
+the common-Git `delivery/client-overlap/integration-402` evidence directory.
+Root's two-pass outcome review and independent reviews5b934247/78c46173
+pass. All readers are released. The unchanged canonical-omission controls
+keep their earlier source-bound failure/restore proof; no new inversion,
+minimum-native or hosted execution is claimed here. Fresh full hosted CI
+must qualify the submitted combined head before PR416 can merge.
+
+Complete owned scope against main402, including tracked/untracked paths:
+production +0/-0/net0; tests +997/-0/net997; public API types +0/-0;
+records +720/-29/net691. Six owned paths, no untracked files. The separately
+imported nine upstream paths remain upstream delivery rather than owned growth.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11
 

@@ -10,10 +10,11 @@ No shipping Rust, public type or example changed. This advances scoped R24
 evidence; native Query/Client overlap, crash/restart, production identity,
 remote-example simplification and the complete remote goal remain open.
 PR413's delivered dependency qualification below is unchanged.
-The [current public Client integration record](network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
-qualifies the fixed overlap witness locally against main's owned-retirement
-API. New-source full Nix/CI and PR416 delivery remain open; this closes no
-additional acceptance row.
+The [owned-retirement Client integration](network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
+passes hosted CI on34b0726a with maind575c614. [Newer main402 integration](network-schedule.md#current-main-integration-records-and-transport-fixtures--2026-11-12)
+conserves the witness while adding upstream compiler fixtures and records.
+Combined local gates pass; fresh hosted CI and PR416 delivery remain open.
+No additional row closes.
 
 ## Published Behavior qualification — 2026-11-11
 
