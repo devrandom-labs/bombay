@@ -225,7 +225,7 @@ pub struct Export<Inputs, Declarations, Entry> {
     inputs: Inputs,
     declarations: Declarations,
     startup: Option<Result<(), ExportError>>,
-    withdrawal: Option<Result<(), zenoh::Error>>,
+    withdrawal: Option<Result<(), Box<dyn Error + Send + Sync>>>,
     ingress: Arc<Mutex<Vec<ExportError>>>,
     entries: RefCell<Vec<Option<Entry>>>,
     declaration: RefCell<Option<Queryable<()>>>,
@@ -251,7 +251,7 @@ impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
         Inputs,
         Declarations,
         Option<Result<(), ExportError>>,
-        Option<Result<(), zenoh::Error>>,
+        Option<Result<(), Box<dyn Error + Send + Sync>>>,
         Vec<ExportError>,
         Vec<Entry>,
     ) {

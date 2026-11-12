@@ -3,6 +3,7 @@ use crate::address::MailAddr;
 use behavior::Protocol;
 use std::any::Any;
 use std::cell::RefCell;
+use std::error::Error;
 use std::rc::Rc;
 use tokio::sync::OwnedSemaphorePermit;
 use zenoh::query::Query;
@@ -68,7 +69,7 @@ pub(super) struct Custody<
     pub native: RefCell<Option<Native>>,
     pub encoding: RefCell<Option<Result<Box<[u8]>, EncodingError>>>,
     pub protection: RefCell<Option<Result<Box<[u8]>, ProtectionError>>>,
-    pub publications: RefCell<Vec<Result<(), zenoh::Error>>>,
+    pub publications: RefCell<Vec<Result<(), Box<dyn Error + Send + Sync>>>>,
     pub request_refusal: RefCell<Option<RequestError>>,
     pub reply_refusal: RefCell<Option<ReplyError>>,
     pub refusal: RefCell<Option<ExportError>>,
@@ -157,7 +158,7 @@ impl<
             Option<Native>,
             Option<Result<Box<[u8]>, EncodingError>>,
             Option<Result<Box<[u8]>, ProtectionError>>,
-            Vec<Result<(), zenoh::Error>>,
+            Vec<Result<(), Box<dyn Error + Send + Sync>>>,
             (
                 Option<RequestError>,
                 Option<ReplyError>,

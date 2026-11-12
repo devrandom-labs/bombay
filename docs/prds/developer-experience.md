@@ -23,9 +23,10 @@ Behavior owns the pure static transition/effect algebra; Actors owns reusable
 policies. Preserve affine ownership, fresh creation/provenance, accepted effect
 prefixes, initialization order, lifecycle authority and cancellation custody.
 Compiler friction cannot invent bounds, unused callbacks or structural caller
-work. Networking, durability, identity and deployment products remain separate;
-Zenoh stays internal and the remaining SDK configuration/query surface is an
-open interface obligation, not a transport extension port.
+work. Networking, durability, identity and deployment products remain separate.
+Zenoh stays internal: configuration conversion, sessions and queries are private;
+public foreign causes use the standard error contract. Final interface acceptance
+still requires the selected source, consumer and delivery gates.
 
 ## Current delivery
 
@@ -1372,6 +1373,85 @@ and prior Rust counts remain117/142 paths,+3058/-1484/net1574, production net36,
 tests net1538, public types +1/-0. This is small business-edit compilation, not
 wrapper/child addition, macro expansion, latest tests or full-workspace costs.
 Remaining DX26 and whole-programme acceptance/delivery stay open.
+
+#### SDK-independent foreign error spelling
+
+Before editing at95e2436c, retain the project policy that networking SDK types
+stay private, while native foreign causes remain their original owned values.
+Current public Request::try_into_parts, Export::into_parts and Node::into_parts
+still name zenoh::Error, also used in their three private storage fields. Exact
+selected zenoh-result1.10.1 defines that alias as Box<dyn IError+Send+Sync+'static>;
+the verified std feature makes IError std::error::Error. This is already the
+same standard boxed error used by ExportError and other native public causes.
+No new error wrapper, conversion, allocation, trait, phase or generic is needed.
+
+The frozen0da4c952 doc source matches all three current files byte-for-byte.
+Rendered signatures show an unlinked Error alias, not an SDK hyperlink; the
+initial hyperlink assumption was rejected and receives no regression credit.
+The observable documentation improvement is an explicit standard boxed error
+with its standard Error/Send/Sync links, and source signatures no longer name
+the SDK. A Rust compile-fail witness for changed type identity would be false:
+identity is deliberately unchanged. Keep the exact selected alias/feature
+source as that proof and add no source-mirroring test for this spelling edit.
+
+Change only those six type spellings to Box<dyn std::error::Error+Send+Sync>
+using module-scope imports (Error is already imported in two owners). Existing
+producer and consuming bodies stay exact; the new spelling's default object
+lifetime is the same 'static. Forecast three existing source paths plus this
+PRD, one import, public type/method additions0. Cumulative native120/paired145
+paths remain within approved186. No actor/runtime control or wrapper order is
+changed; all request/publication/withdrawal/close causes keep their owners.
+
+Verify reversible whole-source conservation and actual rendered method
+signatures, current/minimum remote owners and existing privacy/typed-completion
+denials, strict owning lint/format and no changed Rust oracle/diagnostic. No
+behavioral inversion is credited for an identity type spelling. Two author
+reviews must check exact alias equality, no conversion/reboxing and public
+surface/visibility conservation. Pre-edit checkpoint: all control/subordinate
+alternatives, production branches, modules and ownership equations unchanged;
+one import and the measured type-only line delta, no new historical state,
+repeated cause, false cardinality, nested authority, semantic boolean or caller
+plumbing. Same normalized actor/custody laws apply. Exact baseline/source/doc
+identities are sdk-privacy-before*. Remaining source/API inspection and final
+gates/delivery stay open; this edit alone does not certify all SDK privacy.
+
+The frozen717-input source passes all four existing host checks with
+`nix build --max-jobs 1 --cores 4 --no-link --json`
+`.#checks.aarch64-darwin.{bombay-remote-debug,bombay-remote-release,bombay-minimum-remote,bombay-doc}`
+(the four attribute arguments are expanded explicitly). Current1.99 debug and
+release each pass524 outer cases/12 summaries/31 UI fixtures, zero failures or
+ignores. Actual1.96 minimum-remote passes3 outer cases/11 UI fixtures; it does
+not execute the whole current remote corpus. Existing configuration/query and
+actor-only callback denials remain unchanged. Strict all-target remote Clippy,
+remote docs, workspace docs with denied warnings, pinned formatting and diff
+checks pass. Four output roots retain exact derivers, NAR hashes and raw logs
+under restart-2026-11-11/sdk-privacy-*. The earlier28-check full gate remains
+qualified to0da4c952; four focused checks do not replace final full-source gates.
+
+Rendered Request/Export/Node extraction signatures now show the exact standard
+boxed Error/Send/Sync product with standard-library links. The59 generated
+remote declaration/method pages expose no SDK handles, configuration or SDK links.
+Source inspection confirms Network conversion is pub(crate), Session fields and
+Queryable declarations are private, and Query custody belongs to a pub(super)
+owner; this corrects the older claim that raw configuration/query APIs remain
+public. This bounded declaration audit is separate from runtime/privacy policy.
+
+Author review one confirms selected alias/std-feature equality, identical static
+types/lifetimes, six type-only substitutions and exact producer/consumer bodies;
+there is no conversion, reboxing or additional erasure. Author review two checks
+all three rendered signatures, original cause ownership, visibility and existing
+denials, with no changed test/fixture/expected diagnostic. Neither is independent
+review. Retained checkpoint: actor/control/subordinate alternatives, transition
+branches, modules and public spellings unchanged; six representation-equivalent
+positions and one import only. Same normalized actor/custody laws apply; no
+arrival history, repeated cause, false cardinality, nested authority, semantic
+flag or structural caller syntax. Disposition pass for this spelling batch.
+The three owner files measure1452→1453 physical lines, three modules, nine named
+public types and eleven public methods before/after; their24 match sites and
+every transition body remain exact. These physical counts include documentation.
+Production +7/-6/net1, tests +0/-0, public types/methods +0/-0. Cumulative native120/
+paired145 paths, Rust113 +3065/-1490/net1575; production net37, tests net1538,
+public types +1/-0. Full programme, final registry runtime delivery and CI remain open.
 
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
