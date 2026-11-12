@@ -119,6 +119,23 @@ separate existing witnesses. Full repository, package and hosted delivery
 gates for this batch remain open. Receipts are execution-transport-* in the
 existing restart handoff.
 
+The first full run at46b34034 ends1:18 checks pass, nine are cancelled after
+remote-debug returns101, and authoritative flake verification is not reached.
+Its redirected Cargo log is hidden by `set -e` before the following `cat`;
+the original Cargo cause is unproven. The exact check is rerun with failed
+build-directory retention. A separate pinned Cargo missing-target control
+reproduces the logging defect: both recipes return101, but debug prints no
+error while the existing release recipe prints the original error. Reuse that
+release catch/print/exit sequence in debug, without changing its Cargo command
+or six execution markers. This adds flake.nix to the scoped change (nine paths);
+production Rust and public API remain unchanged. Logging proof is
+execution-transport-log-control.json; it does not claim the remote failure fixed.
+The exact original debug derivation then passes in isolation:528 tests across
+12 summaries, zero failures/ignores, followed by strict remote Clippy and docs.
+This does not recover the first Cargo error or establish a causal repair.
+Keep both attempts. The corrected full gate retains failed logs and bounds
+local build concurrency to two; it still runs every original check and marker.
+
 All three tracked root, protected-consumer and Engine-fuzz locks select the
 published owners without Behavior patches. The root preserves all396 complete
 unrelated package records, including the original four Windows-only dependency
