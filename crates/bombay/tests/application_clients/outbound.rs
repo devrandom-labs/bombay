@@ -27,5 +27,7 @@ mod requester;
 mod delivery;
 #[path = "outbound/disposal.rs"]
 mod disposal;
+#[path = "outbound/overlap.rs"]
+mod overlap;
 #[path = "outbound/reader.rs"]
 mod reader;

@@ -12,6 +12,15 @@ matching delivery trees and normal worktree removal. Finite/generated orders,
 persisted and literal replay, independent falsifiers, Nix seed inclusion and
 the empty-filter guard retain their scoped evidence. Native Query/Client,
 arbitrary overlap, crash/restart and complete R24 retain their own open gates.
+The next [public Client overlap](../prds/network-schedule.md#public-client-overlap-prerequisites-and-first-law--2026-11-12)
+has fresh verification of all six owners and a recorded native Counter law.
+The ordinary caller prototype now passes independent source/outcome reviews,
+paired intended receipt-loss failures and exact-restored debug/optimized controls.
+The [fixed native witness](../prds/network-schedule.md#fixed-public-client-overlap-executed-controls)
+now also passes paired healthy/canonical-cut/exact-restored runs and the complete
+52-case caller cohort in both profiles, with independent source/outcome reviews.
+Full Nix, hosted CI/review and main delivery remain open; this fixed witness
+does not close complete R24, AUTH1 or NET1.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.

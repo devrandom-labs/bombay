@@ -99,6 +99,339 @@ must precede the next implementation step.
 Delivery reconciliation census against f09303c8: four record paths,
 records +113/-29/net84; production/tests/API0. `git diff --check` passes.
 
+## Public Client overlap: prerequisites and first law — 2026-11-12
+
+This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
+commit only reconciles PR414 delivery; runtime, tests and dependencies remain
+byte-identical to that main. This is a missing combined verification witness,
+not evidence that the existing canonical implementation is defective.
+
+### Fresh selected owners
+
+Cargo.lock SHA256 is
+`9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394`;
+flake.lock is
+`13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`.
+No patch or replacement changes the selected contracts. Root and all three
+readers freshly read the complete775-line Behavior instructions at628649da,
+SHA256 `aa5c4e70e38e52a1fbae8948ba30ee1c16fe88eddc3ec4fe8bfcf07f494a9207`.
+
+| Owner | Exact selected source | Required boundary |
+| --- | --- | --- |
+| Behavior / Actors | Registry0.30.0 pair, VCS628649da014a527d47f21567a859c5c78494df13; Macros0.16.0 | Pure complete Actions, original User/sender, initialization, existing MessageAdapter and ActorExt shutdown; completed work is not rolled back. |
+| Address | Registry0.3.0, VCS9f058dc03d1239e1ef5c3147a893b134a1e74a83 | Exact lease and opaque endpoint snapshot; a surviving snapshot neither authenticates nor retargets. |
+| Communication | Registry0.1.6, VCS963067e0e6bdef15549088966cde354fd820be7e | Per-lane FIFO, exact nonwaiting Full/Closed originals, affine admission and drain. Capacity observation reserves nothing and grants no authority. |
+| Observe | Private workspace source at88dc44d7; mod.rs SHA2560e63b34d8ce960735ef5fa549af03bdcc3442e2006c59b66d5b8c3527ee95d21 | Independent captured completion, affine result transfer and actual joined-retirement facts; a dropped wait proves none of these. |
+| Timers | Registry0.2.0, VCS9369d1f6c7fcda91e7de5bf3c19e6769f92145bd | Branded generations and explicit now inputs, not a clock/task or native Get timeout. |
+
+Fresh source/API/test/document inspection covers all six owners. All283
+Core/Actors/Address/Communication archive files and11 Timers files match the
+selected archives, whose checksums match the lock. The Timers checkout lacks
+its selected Git object; the verified registry archive remains authority.
+Engine0.3.0 consumes Core only; its affine Driver commits local effects without
+waiting for business replies and preserves actual surviving custody. The
+primitives add no transport, second mailbox, correlator or permission policy.
+No owner API, version relationship or protocol-consumer blocker was found for
+this fixed witness. AUTH1→NET1 remains reciprocal and incomplete.
+
+The selected native owner is bombay-zenoh1.10.10, archive SHA256
+`611fed7315bbfdded3b624e225e688c23ed15cd486507b529bd6fcb6cf20578b`,
+VCS c34eb350faad3d8d103aa383091d85502b67a898, with default features disabled
+and transport_tls selected. Node owns both Sessions, binding, declarations,
+interpretation, withdrawal and close. Client owns matching observation,
+actual Gets, callback originals, decoded delivery and acquired EOF; Export
+owns received Query/charge, canonical lookup, admission, protected publication
+and Query disposal. The SDK's last QueryInner drop sends FINAL; that alone
+does not prove Client callback EOF or checked actor delivery. Public products
+do not expose permit counts. Existing private ingress tests retain that scope.
+
+The source bindings are query.rs
+`dfaae0a0a533f2485dc8ae0dcbc1850cc807ed2be12b8781eeee200d3a46a4ed`,
+client.rs `45282b54afa5c5b6d04aa689f0a20e4501ed16ccf398a656bbc761f0d7fafb0d`
+and declaration.rs
+`5dae08876623893b236a2d4487ed8063b4fb5ec7a6e69b10333d6a37e33f4eb9`.
+Fresh owner reports are /tmp/bombay-native-admission-owners-bytes-20261112.txt
+(SHA25693105f58e12c492ce33ebfb41516d7f1008f2475b523786fe2d80904a48f3dff)
+and /tmp/bombay-native-admission-owners-cold-20261112.txt
+(2160707b6bff1816abec6986b3a790c0afacc5f85c3cdab56b3e24ca24a8c909).
+The exact archived-file inventory remains beside the first report's extraction.
+Retain these inputs with final source/results before deleting temporary evidence.
+
+### Existing proof and selected gap
+
+The private incoming campaign uses query=None. Existing comparison and Node
+requests tests already exercise real Query replay/conflict during pending
+protection; their Gets are SessionLocal and bypass the public Client. Existing
+outbound delivery tests compose two real TLS Nodes and public Client/Export,
+but use a one-shot Reader. Repeating either witness would not close the gap.
+The fresh comparison is /tmp/bombay-native-admission-gap-20261112.txt,
+SHA25617e189c23950524035fa79723b886bb75b232f4a33fd8bb006710feab5b628ed.
+
+Select the existing public Node/Client/Export path across two actual TLS
+Sessions and the existing Counter IncrementAndReply/CounterProcessed. Admit A
+and hold its actual reply protection. Complete fresh B through the Client and
+an actual caller actor before releasing A. The replay uses byte-exact A under
+its same verified identity. After A's actual protection hold and B's checked
+actor consumption, arm a one-shot observation in the existing reply-policy
+callback for A's correlation, submit the replay, and acquire that observation
+before releasing the original provider unconditionally. Original A cannot
+publish while held and B has a different correlation. This observes only a
+reply-policy callback: return, duplicate identity assignment, operation
+completion and publication are later independent facts. Acquire all three
+checked actor outcomes.
+Read the Counter through an independent local FIFO reply port, retain that
+actual Read, finish both Node/Application/native cleanups, and assert Read2
+first after cleanup. This is derived runtime composition policy, not a new
+actor-model primitive or whole-turn rollback law.
+
+Preserve each actual source User/sender, original buffers, verification,
+canonical key, native attempt/reply, publication, response, completion and EOF.
+A and its replay share the actual canonical key; B differs. The replay must
+not construct/admit another increment or repeat encoding/protection. Checked
+acknowledgements carry the actual CounterIncremented sequence; no service
+label or predicted nonce substitutes for actor consumption. Completed reply
+delivery, Query publication, native EOF and joined cleanup remain independent.
+Client terminal drain may acquire callback EOF but does not verify/deliver an
+unread reply. Keep listener/Querier startup and withdrawal, both root native
+outcomes, retirement assessments and both notification results.
+
+### Ordinary Rust and containment before edits
+
+First compare the owning MessageAdapter construction with its ordinary
+function pointer and complete pure Actions against a handwritten Behavior,
+inherent construction and the one-shot Reader. The Reader's law cannot accept
+multiple outstanding operations. A new actor trait, macro, wrapper or generic
+framework is unnecessary. Any separate input/source protocols must preserve a
+real timing/provenance distinction, rather than rename the same sum; no
+signature-only identity mapper or discarded checked receipt is accepted.
+An actor-consumed acknowledgement may be a meaningful Client no-Get row, not
+an expected response manufactured by the encoder. Its complete payload must
+remain observable. The caller prototype/comparison gates the native host;
+compiler diagnostics may reject it but cannot invent plumbing. The first
+allowed test edit is that ordinary pure/compile consumer, before native-host
+authoring. Its two protocols distinguish input before actor consumption from
+the actual request/acknowledgement emitted afterward, preserving the complete
+returned CounterIncremented value. Do not create two renamed copies of one
+sum without that timing distinction or widen the one-shot requester fixture.
+MessageAdapter makes its actor the emitted sender: preserve Client's actual
+source User.from, without claiming that Work's earlier sender passed through.
+
+The selected first prototype uses existing
+`MessageAdapter::new(source.recipient(), consume)` and an ordinary
+`fn(Either<u64, CounterIncremented>) -> CounterServiceInput`. Left requests the
+fixture's explicitly configured increment through existing Verify(correlation).
+Right exhaustively consumes the actual CounterIncremented product and emits
+existing ProtectedConsumed with that returned request_sequence as correlation
+and IncrementProcessed purpose. Checked input precedes the caller fold;
+ProtectedConsumed is the resulting actual actor acknowledgement. The current
+CounterIncremented owns only that sequence, so the whole value survives the
+conversion. No new sum/product, stateful caller, one-shot Requester extension
+or identity mapper is needed. The source encoder must observe/retain that Ack
+User before its meaningful no-Get return, rather than manufacture the Ack.
+The pure/compile consumer and its measured ordinary-Rust comparison still
+precede native-host authoring and provide no native execution credit alone.
+
+Expected test paths are tests/application_clients/outbound/overlap.rs and its
+module declaration in outbound.rs, optionally importing the existing generic
+application_clients/protocol.rs fixture privately without changing its schema
+or read-only CounterOperation. Use an explicit Increment operation and the
+existing Processed purpose. Expected production +0/-0/net0; public types
++0/-0; fixed test witness approximately300–450 added lines, plus existing PRD
+and index updates. Reuse existing TLS inputs, finite provider records,
+ActorExt shutdown, typed reply endpoints, MessageAdapter and native owners.
+No dependency, Nix/workflow, example or shared Reader change is selected.
+
+Three real Gets and three actor-consumed acknowledgements require six source
+rows. Select retained_requests7, leaving a spare row so actual source EOF can
+be acquired after admission closes; quota exhaustion at6 would lawfully leave
+that observation absent. Each Get's native callback EOF remains separate.
+Select explicit concurrent/query bounds3 for the real originals and reuse
+the existing separate JSON limits; do not infer a byte or SDK timeout-task
+bound. The first gate holds one real provider once; an inverse that invokes
+it again must still finish normally. In that inverse, the replay reaches the
+same reply-policy callback after its extra actual increment/reply, so the
+fence still completes before A's release and finite Read3. No effect, ownership
+transfer or required call belongs inside an assertion.
+
+Root owns shared records, locks, interpreter source inversions, Nix execution
+and integration. After the caller comparison gate, the assigned acceptance
+author owns only the two test paths; bytes/cold readers independently review
+source, observable laws and actual outcomes. No new agent/tool framework or
+change to the existing example applications is selected.
+
+Start with a pure/compile consumer proving the selected caller syntax and
+complete Actions, then the fixed native host. Review every test twice and
+independently before qualification. Run focused healthy debug/optimized,
+discard only the actual canonical lookup result in query.rs, and require finite Read3 versus2
+after all cleanup. A watchdog, source panic, missing callback or setup failure
+earns no inversion credit. Restore query.rs byte-exactly and run paired healthy
+controls. Do not broaden to generated orders, other authority laws or CI
+configuration before that gate passes.
+
+Later publication-authority revocation needs its own finite termination oracle;
+it is not accepted here. Borrowed cancellation, provider disposal, graceful
+shutdown, actual crash and volatile restart stay distinct. This fixed witness
+cannot close arbitrary delivery/expiry/authority/crash schedules, generated
+native campaigns, production identity, SIM-04/SIM-05 external obligations,
+full R24 or AUTH1/NET1. Native-host implementation remains gated by the
+ordinary-caller prototype/comparison and independent review, not a missing
+owner dependency. The two independent plan reviews accept the fixed trace,
+quota7, actual emitted sender and acquired reply-policy callback fence; their
+reports are /tmp/bombay-native-admission-plan-bytes-20261112.txt and
+/tmp/bombay-native-admission-plan-cold-20261112.txt. No execution result is
+credited by this pre-edit record.
+
+### Ordinary caller: qualified source and outcomes
+
+The ordinary caller gate now passes. The existing MessageAdapter accepts one
+function pointer, with no new actor, protocol, wrapper, constructor, trait,
+macro or dependency. The mapper consumes the checked receipt and emits its
+actual sequence through the existing ProtectedConsumed message. A handwritten
+Behavior would duplicate the owning conversion; an inherent constructor would
+only forward its inputs; the existing Reader stops after one reply. Those
+alternatives add no required state or effect. The retained construction is one
+expression and its mapper is12 physical lines. No handwritten replacement is
+claimed compiled.
+
+The qualified caller snapshot of overlap.rs is85 lines, SHA256
+`0b5209e9ed4e0426fca08e5295bce8857ef86fe5440fb23b96c90d6c0bb3b75c`.
+Its pure test checks initialization and complete Actions for three supplied
+request/receipt pairs23/79,24/83 andMAX/0. Each transition precedes assertions;
+the whole one-element send lane, destination, message, empty births and
+Continue are observed. These supplied inputs prove conversion, not native
+verification, runtime sender identity or application processing.
+
+All commands run through pinned nix develop with locked Cargo inputs,
+Rust/Cargo1.99 on aarch64-darwin. The owning command is cargo test --locked
+-p bombay-rs --features remote --test application_clients followed by exact
+selection of outbound::overlap::caller_actions_preserve_submitted_and_processed_correlations;
+the optimized command adds --release. Healthy and exact-restored debug and
+optimized runs each execute1pass/0failed/0ignored/50filtered. Both intentional
+receipt-loss runs compile and fail solely at the first actual emitted0 versus
+returned79 comparison, with Cargo101. The mapper-only mutant SHA256 is
+`1d6269eead20a11a99f91cab3262850c46bd4b3ada09ac8f4f1f9b20a7655c6c`;
+assertions remain byte-identical. Later pairs and checks receive no negative
+credit. All eight guarded inputs match after exact restoration. That snapshot's
+workspace formatting and strict Clippy for the owning integration target pass.
+
+The earlier84-line bddadd8c source passed its runtime controls but failed strict
+Clippy's needless_pass_by_value check. Binding the whole non-Copy receipt before
+exhaustive field extraction corrected its ownership spelling without changing
+the API, outputs or test body. Its results retain that earlier source epoch;
+none are relabeled as current qualification.
+
+Root and both independent reviewers pass the invariant/outcome and
+counterexample/vacuity reviews of current source, actual cuts and restorations.
+Outcome reports have SHA256
+`033549dd0a79c69a53748d36000f8fbdfbd32cb12e5a6657add35ba7d33cbfa6`
+and `9e6527b52390ff3d9cc8b61f92325e57dafa368cf1b24d69dd4336b5ff169248`.
+The source, commands, raw logs, statuses, old epochs, owner reports and reviews
+are retained under common Git session-archives/2026-11-12/client-caller.
+This checkpoint is production +0/-0/net0; tests +87/-0/net87; public API types
++0/-0. PRD/index changes are counted separately. The selected fixed native
+host may now follow; its execution, canonical omission and restoration gates
+remain open. No CI, merged delivery, full R24 or AUTH1/NET1 is credited here.
+
+### Fixed public Client overlap: executed controls
+
+The selected fixed native witness now executes through two actual TLS Nodes,
+public Client/Export and the qualified MessageAdapter caller. It uses the
+existing Counter's IncrementAndReply processing receipt, explicit Increment
+wire operation and Processed purpose. No raw SDK Get, manual serving loop,
+query=None input or replacement Behavior is used.
+
+A23 reaches an actually pending first reply protector. Fresh B24 then reaches
+the caller actor and its emitted acknowledgement is acquired by Client's
+encoder. Only then does Work arm the A reply-policy observation and resubmit
+byte-exact A. The observation returns its actual finite Binding/sequence only
+after the callback obtains permission. Its original permission result still
+returns to Export. Work releases the first A protector unconditionally after
+that observation result, receives both remaining actual23 acknowledgements,
+and acquires an independent local FIFO Counter Read. Both Node futures and
+their original cleanup/native/close products return before the first semantic
+assertion, Read2. A borrowed diagnostic makes their actual classifications
+visible before that assertion without consuming the products.
+
+The healthy runs then check all three actual request keys, A=replay and A≠B;
+original source Users and sender distinctions; original request, proof and
+receipt allocations; two actual native increments and complete processing
+replies; distinct real reply ports and their final EOF; exactly two encoding/
+protection products and one publication per Query; actual Client Responses,
+checked delivery, provider causes, three native callback EOFs and source EOF.
+Both original native actors, reports and termination/retirement notifications
+are inspected. The six source rows use quota7 so source EOF can be acquired.
+Get/Ack operation-unit slots remain optional actual values; neither actor
+consumption nor EOF is relabeled as producer completion. No public permit
+count or private Export completion field is invented.
+
+The retained overlap.rs snapshot is992 lines, SHA256
+`a30ef9379be523205c8a203b1ce8e5dccbbf08a95229b52b73e59c463f6a47f8`.
+It contains the unchanged qualified pure caller and the new test
+outbound::overlap::overlapping_processed_increments_reuse_the_original_admission.
+All Rust execution uses pinned nix develop, locked Cargo inputs, Rust/Cargo1.99
+on aarch64-darwin and the same explicit profile inputs as the caller controls.
+The exact command files and raw outputs remain with their source snapshots.
+
+| Current-source gate | Debug | Optimized |
+| --- | --- | --- |
+| Exact healthy native test | 1pass/0failed/0ignored/51filtered | 1pass/0failed/0ignored/51filtered |
+| Canonical result discarded | Cargo101; first actual Read3 versus2 | Cargo101; first actual Read3 versus2 |
+| Exact-restored native test | 1pass/0failed/0ignored/51filtered | 1pass/0failed/0ignored/51filtered |
+| Complete application_clients target | 52pass/0failed/0ignored/0filtered | 52pass/0failed/0ignored/0filtered |
+
+Both intended failures compile and finish the native trace normally. Their
+pre-oracle observations show both cleanup/close results successful, no Node
+poll/disposal panic, both native Completed outcomes, Established/NoFailuresFound
+reports and both successful notification pairs. The only source cut makes
+the actual query.rs canonical candidate fail its branch predicate; verification,
+permissions, native admission, reply construction and publication remain intact.
+Its SHA256 is
+`4788ba45a86775c9db62d620e78a579749ef329e7099b58ffce3b5fb5f48877b`.
+The unchanged test first fails at Read3 versus2, not a compiler, watchdog,
+provider or missing-callback substitute. Later detailed custody/EOF assertions
+receive no negative credit. Restoring query.rs to dfaae0a0 and all16 guarded
+inputs precedes the paired healthy controls. Final workspace formatting and
+strict owning-target Clippy pass.
+
+The first formatted e2d26b25 draft failed14 lint diagnostics, with no runtime
+credit. The corrected source reuses the included fixture's existing TLS
+reexports, improves local names, removes a redundant async wrapper, and follows
+the existing scoped duplicate-module/large-future/large-error conventions.
+The owning selector requires Result<Constructor, Input>, so its whole original
+ReadRequest error is retained. No new interface, visibility, wrapper or boxed
+error was introduced in response to diagnostics. All assertions, values,
+Actions and causal order remain unchanged. Root and both independent readers
+pass the complete source and corrected-delta reviews; independent actual-outcome
+reviews also pass. Their report hashes are
+`a6ffa38bf23f4eeee02d1a66da10aa9119995a9b26d071a7cde83442baf0c393`
+and `d77c5d0dd4e5e681e00e495031e6f12bf2cd5f3c9967d20e912899902c31afae`.
+The full cohort also executes nine existing UI fixtures successfully per profile.
+The local fixed-law gate is closed; full Nix and hosted CI remain separate.
+
+This fixed witness adds907 formatted test lines beyond the qualified caller,
+rather than the original300–450 forecast. Complete retained test contribution
+is +994/-0/net994 across the new992-line file and two-line registration;
+production +0/-0/net0; public API types +0/-0. Its only new type is the private
+wire Operation::Increment. It retains existing concrete owners instead of a
+new generic host or fixture framework. Record changes are counted separately
+at final submission. This is verification growth, not production reduction.
+Native generated schedules, publication revocation, arbitrary expiry/authority,
+actual crash/volatile restart, external durable/crypto obligations, full R24,
+AUTH1/NET1, remote-example simplification and reviewed CI/main delivery remain open.
+
+The ordinary functions, existing MessageAdapter/ActorExt and concrete native
+products are sufficient. No new caller state, alternate protocol sums,
+projection wrapper, generic test host, visibility change or production adapter
+survives this scoped minimization. Common Git session-archives/2026-11-12/
+client-overlap retains source/results/reviews; its README correction is in sibling
+client-overlap-reviews/erratum.txt. The earlier caller epoch remains in client-caller.
+Neither capsule receives later delivery records.
+
+Final source census against mainf09303c8, including88dc44d7 and every
+tracked/untracked path: production +0/-0/net0; tests +994/-0/net994;
+public API types +0/-0; records +455/-29/net426. There are six paths.
+Manifests, locks, production Rust, examples and shared fixtures are unchanged.
+
 ## Exhaustive and generated incoming schedules — 2026-11-11
 
 This pre-edit record follows reviewed PR413 delivery and normal worktree
