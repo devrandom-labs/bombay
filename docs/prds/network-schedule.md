@@ -1,17 +1,103 @@
 # Incoming request schedule
 
-Current checkpoint: PR411 delivers the fixed incoming schedule; PR413 now
-delivers the paired Behavior0.30 prerequisite. The exhaustive/generated stage
-below starts from main814c96d1 with fresh owner verification. Host extraction,
-all180 finite orders, generated/shrunk replay and the narrow Nix seed proof
-qualify locally below. Routine/extended CI is source-reviewed; actual hosted
-CI and reviewed delivery remain open. Earlier checkpoints retain their epochs.
+Current checkpoint: PR414 delivers the bounded incoming campaign on main
+f09303c8 after successful routine/manual CI and independent reviews. The
+[delivery record](#delivery-of-the-bounded-campaign--2026-11-12) supersedes
+pending hosted-CI wording in the dated preparation checkpoints below. Earlier
+source, compiler and result epochs retain their original meanings.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
 `937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. Complete network simulation,
 native Query/Client overlap, restart and full R24 remain open.
 The user's complete R01–R25/AUTH1/NET1 goal remains unchanged.
+
+## Delivery of the bounded campaign — 2026-11-12
+
+[PR414](https://github.com/devrandom-labs/bombay/pull/414) merged normally at
+2026-11-12T07:21:59Z as
+`f09303c8dcd0e6e5ddc306d0a6391ee94ee7c762`. Its parents are main
+`814c96d16d23045065650080a9c7e82ed136680b` and reviewed head
+`51d8909a9a6ecd82f92da954d48c71ec74a0f11a`. Reviewed, routine synthetic,
+manual and actual merged trees are all
+`2e57f5d5aa64f7ee70631b52a5742d3745d6cbac`. GitHub reports MERGED and
+remote main identifies that actual merge; no administrative bypass was used.
+
+All eight reported PR checks pass: Nix, Deny, Rust analysis, CodeQL's aggregate,
+incoming debug/release and native TLS debug/release. The
+[routine run43155416794](https://github.com/devrandom-labs/bombay/actions/runs/43155416794)
+finishes successfully; its Nix job130974106585 runs04:32:04–07:03:23 UTC.
+The separately dispatched [manual run43155581794](https://github.com/devrandom-labs/bombay/actions/runs/43155581794)
+also succeeds; Nix job130974631914 runs04:33:35–06:43:35 UTC. Source and
+required branch rules were rechecked before the exact-head protected merge.
+
+Each incoming profile passes all five selected tests. Routine profiles execute
+257 completed generated callbacks including saved replay, with439 actual host
+frames; manual profiles execute4097 callbacks and4279 frames. Complete observed
+words and traces match across profiles. The180 legal base orders are exhaustive;
+the extended generated words are bounded sampling. Local source omissions,
+exact restorations, minimized literal, persisted replay, Nix seed inclusion and
+the empty-filter guard retain their separately reviewed source epochs below.
+
+Fresh full Nix logs each prove28 native Linux checks,527 selected remote test
+passes in each profile, minimum Rust1.96 diagnostic selection114 outer passes
+with136 UI cases, and the separate minimum remote selection3 passes/11 UI cases.
+Current optimized workspace and debug LLVM coverage each have125 executable
+headers:122 libtest summaries with987 outer passes and6 existing parent-owned
+child entrypoints ignored at top level, plus3 benchmark entrypoints without
+libtest summaries. Passing parents retain those child obligations. Both verify
+151 UI cases; one manual case has its success split by a libtest time notice.
+Quiet benchmark workloads and zero-skips are not inferred. Observe/Entity
+optimized Loom selections pass28/6. Routine Observe line coverage is504/526,
+manual506/526; both pass the owning floor. The other owner floors also pass.
+The other three Nix platforms are explicitly omitted from these Linux runs.
+
+Each of the four native TLS artifacts independently verifies32 configurations,
+80 native-role executions and5 auxiliary cases. Driver fuzz completes2048 ASan
+inputs in each run; Observe completes1024 for each of four targets. Actual
+seeds, compilers, retained corpus hashes and in-memory/retained count differences
+are reviewed. The scripts do not use --locked and their generated post-run
+locks are not archived; this does not prove a frozen complete fuzz graph.
+Routine Miri is skipped by event; manual Miri actually runs12 affine Observe
+cases for each seed0–3. Its legacy poll-inside-assert limitation is retained for
+later owning-test work, without new semantic-inversion credit. Deny's four
+configured groups pass with warnings/exceptions. CodeQL upload/processing
+passes with458 files extracted cleanly and6 with errors; no raw SARIF,
+zero-alert or full-compilation claim follows.
+
+The immutable CI capsule is common Git
+`session-archives/2026-11-12/ci-review/pr414/51d8909a/`:1141 payloads,
+INVENTORY SHA256
+`75005e4a8ab9df146e7174204d5b691c3926f5899d71cd16f0b8e6745dd6d272`,
+SHA256SUMS SHA256
+`1faf7b9e3178f4ffbe6252bfef38f27dde64ca52dd2c7163655f220bd97afc3f`.
+Both independent reviewers verify every payload hash and the fresh hidden,
+unignored inventory, with no symlinks, omissions or extras. Author/coordinator
+and both independent reviews accept the source, actual logs, corrected counts
+and limited claims. The five local capsules below remain independently sealed.
+Post-merge API/tree and cleanup evidence belongs separately in common Git
+`session-archives/2026-11-12/delivery/pr414/`; the CI capsule is not appended.
+
+Final PR414 census is eight files: production +0/-0/net0; tests
++452/-76/net376; verification configuration +84/-0/net84; records
++409/-14/net395; total +945/-90/net855; public types +0/-0. Scoped acceptance
+and minimization retain the existing host, pure oracle, Proptest and Crane
+capabilities without shipping machinery. The old worktree was fully clean,
+including ignored files; all readers released it, ordinary worktree removal
+returned0 and absence was verified. The user's dirty original checkout and
+independently owned worktree remain intact.
+
+This delivers the scoped campaign, not complete R24. Native Query/Client
+admission and publication overlap, arbitrary schedules, crash/restart,
+production identity, other remote rows and final remote-example simplification
+remain open. Delivery reconciliation starts from actual mainf09303c8 and
+changes only this PRD and its three existing parent/index records; expected
+production/tests/API delta is0. Its own record commit remains separate from
+the already verified PR414 source delivery. Fresh feature-owner verification
+must precede the next implementation step.
+
+Delivery reconciliation census against f09303c8: four record paths,
+records +113/-29/net84; production/tests/API0. `git diff --check` passes.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11
 

@@ -2,15 +2,14 @@
 
 ## Incoming campaign qualification — 2026-11-12
 
-The [owning incoming record](network-schedule.md#verified-generated-orders-and-retained-replay--2026-11-12)
-qualifies all180 finite orders, bounded generated/shrunk/literal replay,
-independent duplicate/final-permission falsifiers and measured4096-case
-profiles. A narrow real Darwin Nix comparison proves the saved seed adds
-actual replay work. CI source and its zero-selected-test guard are reviewed;
-hosted CI, submitted-tree review and delivery remain open. No shipping Rust,
-public type or example changed. This advances scoped R24 evidence; native
-Query/Client, arbitrary overlap, crash/restart and the complete remote goal
-remain open. PR413's delivered dependency qualification below is unchanged.
+The [owning delivery record](network-schedule.md#delivery-of-the-bounded-campaign--2026-11-12)
+records PR414/f09303c8: finite/generated incoming orders, falsifiers, retained
+replay and Nix seed inclusion now have passing routine/manual CI, independent
+source/evidence reviews, matching merge trees and normal worktree removal.
+No shipping Rust, public type or example changed. This advances scoped R24
+evidence; native Query/Client overlap, crash/restart, production identity,
+remote-example simplification and the complete remote goal remain open.
+PR413's delivered dependency qualification below is unchanged.
 
 ## Published Behavior qualification — 2026-11-11
 
