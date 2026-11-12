@@ -915,6 +915,94 @@ host Nix checks and authoritative flake check on the integrated graph, keeping
 the old029 full result bound to361d7728. Family/source-progress, cost and whole
 programme delivery acceptance remain open; these focused passes do not close it.
 
+#### Complete030 host gate and consuming family witness
+
+Immutable0da4c952 now passes all28 existing aarch64-darwin checks and the
+authoritative `nix flake check`, both exit0. All28 output roots, NAR hashes,
+sizes and derivers match the frozen manifest. Workspace/all-target optimized
+execution reports990 passes/123 summaries, zero failed summaries and six
+unchanged parent-controlled ignored registrations. Minimum1.96 executes114
+reported passes/136 compiler fixtures; minimum remote passes3 cases. The
+registered law artifacts match628649d: eight Driver positives/boundaries and
+killed inversions; execution has ten kill records, two ownership denials and
+four healthy/restored child-preparation controls. All four unchanged coverage
+floors pass. Exact receipts use retirement-recovery-main030-full-* in the
+existing restart evidence. Other platforms, independent review/CI/delivery and
+whole DX01–DX28 remain open. This receipt precedes the following test-only edits.
+
+Before editing, retain D-RETIRE-1's complete ownership transfer and Bombay's
+explicit family-disposal policy: acquired Work/root/family results survive a
+later family-definition destructor panic. This is native policy and a derived
+custody law, not an actor-model promise to reconstruct consumed values. The
+actual FamilyRetirement already owns shutdown, metrics and original disposal
+failure; its consuming triple needs no new API, wrapper, trait or state.
+
+Two existing completed_application_receiving.rs traces supply independent
+oracles: three families preserve the acquired prefix/tail and exact panic
+carrier, and an actually admitted live account preserves its join, callbacks,
+nonzero metrics and original family fault. Both currently borrow the returned
+family reports. The separate two-live-family consumer already consumes reports
+but exercises no disposal failure. Keep every existing assertion and snapshot;
+after borrowing, consume the original returned root through try_into_custody
+and every family through into_parts. Keep all owned products until the original
+final drop, with no cloning/reconstruction. In the live-account trace, compare
+owned shutdown/metrics/failure availability with the independently captured
+borrowed values as well as the existing final lifetime oracle. All original
+receiving errors and independent siblings must remain in their original lanes;
+do not short-circuit the product with `?`.
+
+Falsifier: only in FamilyRetirement::into_parts, return no disposal failure
+instead of the original one. Both fault cases must fail the retained-cause or
+owned-failure-availability assertions, while the two no-fault cases pass in
+debug/release. Original carrier/lifetime assertions remain unchanged.
+Restore the exact production source and repeat positives on actual1.99/1.96
+in both profiles plus strict target Clippy/formatting. Review the complete
+oracle before execution and against its actual falsifier. Forecast: this PRD
+and the one existing test path; production/API +0/-0, no new test registration.
+
+Pre-edit checkpoint:24 logical terminal cases/5+20 tags and one14-field custody
+product; all runtime/subordinate states/results, branches, production lines,
+modules and public spellings unchanged. The existing original Work, root,
+notifications, family shutdown/metrics/cause and typed receiving failures each
+retain their current owner. Direct products and Result::map transfer them; no
+new historical state, repeated cause, false cardinality, semantic flag, nested
+authority or structural caller input. Cross-check D-RETIRE-1/D-TERM-1, complete
+application-result and family-disposal laws, and the same normalized atomic
+documents. Source progress, combined root/family failures, costs and delivered
+acceptance remain open. Record actual test delta/conservation and disposition
+before retaining this witness.
+
+Result: all four existing cases pass on actual1.99/1.96 in debug/release,
+before and after the inversion; each compiler/profile reports four passes,
+zero failures/ignores. Strict current target Clippy and formatting pass. Returning
+None instead of the original disposal failure kills both fault cases in both
+current profiles; both healthy cases pass. The production source is restored
+byte-for-byte. The first evidence locator selected the earlier borrowed live
+assertion at3131; preserved raw logs prove the owned assertion at3169 failed.
+Correcting only that locator changes no source or expectation. Initial failed
+evidence processing remains recorded without credit.
+
+Two author reviews pass: first, the exact original Work/root/role/carrier,
+joined account, nonzero metrics and final lifetime oracles survive the consuming
+bridges; second, the actual cause-erasure inversion distinguishes both fault
+cases from their healthy controls. No independent review is claimed. Removing
+only the two bridges reproduces the complete original test byte-for-byte;
+there is no new clone, reconstruction, test registration or production behavior.
+
+Retained checkpoint: `pass`. Tests +45/-0/net45, production/API +0/-0. All
+pre-edit control/subordinate alternatives, transition branches, production
+lines, modules/public spellings and current-value owners remain unchanged;
+the same normalized laws apply. No arrival history, repeated cause, false
+cardinality, nested authority, semantic state boolean or new structural caller
+syntax. Complete diff:117 native/142 paired paths; Rust110 paths +2546/-1482/
+net1064, production net36, tests net1028, public types +1/-0. The external
+initial whole-src-file classifier included inline tests and receives no
+production-count credit. Exact receipts are retirement-recovery-family-
+{before,source-conservation,inversion,summary}.json and the owner/minimum/
+restored logs. This focused test-only batch follows the full0da4c952 gate;
+source progress, combined root/family failures, comparable costs, current-source
+CI/review/delivery and whole-programme acceptance remain open.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The

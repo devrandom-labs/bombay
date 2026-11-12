@@ -1839,6 +1839,25 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
         }
         _ => None,
     };
+    let returned = returned.map(|(work, report, root, notifications, families)| {
+        let root = root.map(|(origin, retirement)| {
+            let (custody, outcome) = retirement
+                .try_into_custody()
+                .unwrap_or_else(|_| panic!("the acquired root transfers complete custody"));
+            (origin, custody, outcome)
+        });
+        let (head, (middle, (tail, ()))) = families;
+        let head = head.map(|(role, family)| (role, family.into_parts()));
+        let middle = middle.map(|(role, family)| (role, family.into_parts()));
+        let tail = tail.map(|(role, family)| (role, family.into_parts()));
+        (
+            work,
+            report,
+            root,
+            notifications,
+            (head, (middle, (tail, ()))),
+        )
+    });
     let public_call_returned = caught.is_ok();
     let fault_retained = original_fault.as_ref().map(Weak::strong_count);
     drop(returned);
@@ -3126,6 +3145,32 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
         }
         _ => None,
     };
+    let returned = returned.map(|(work, report, root, notifications, families)| {
+        let root = root.map(|(origin, retirement)| {
+            let (custody, outcome) = retirement
+                .try_into_custody()
+                .unwrap_or_else(|_| panic!("the admitted root transfers complete custody"));
+            (origin, custody, outcome)
+        });
+        let (family, ()) = families;
+        let family = family.map(|(role, family)| {
+            let (shutdown, metrics, disposal_failure) = family.into_parts();
+            let expected = acquired.as_ref().expect("the borrowed family was acquired");
+            let EntityShutdown::Settled {
+                represented,
+                entities,
+            } = &shutdown
+            else {
+                panic!("consuming the family preserves its settled shutdown");
+            };
+            assert_eq!(*represented, expected.0);
+            assert_eq!(entities, &expected.1);
+            assert_eq!(metrics, expected.2);
+            assert_eq!(disposal_failure.is_some(), original_cause.is_some());
+            (role, (shutdown, metrics, disposal_failure))
+        });
+        (work, report, root, notifications, (family, ()))
+    });
     let retained = (
         original_root.strong_count(),
         original_role.strong_count(),
