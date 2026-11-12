@@ -1610,6 +1610,47 @@ guide path to cumulative native121/paired146 within approved186, production/API0
 Produce fresh final-source archives after the correction; the earlier set does
 not certify final documentation or package delivery.
 
+Corrected clean706810b8 passes the same joint all-feature package verification
+on actual1.99 and1.96. Both produce byte-identical archives with VCS706810b8:
+Engine28 files/3 src, macros7/2, runtime535/108. All shipped src and the runtime
+guide match the frozen source; source-local test modules are included in src
+counts. All718 original input hashes stay exact. Extracted570-file source sets
+remain immutable throughout the following consumers; no registry release occurs.
+
+The isolated workspace retains all28 current Rust files across eight canonical
+examples and the renamed consumer. Nine manifest adapters select exact0.2.0 via
+the actual three candidate archives; Core/Actors030 and macros016 remain registry
+packages. Native tests run an actual archive copy with its source/test/readme
+bytes unchanged. Initial CLI-only Engine/macros patches do not reach trybuild's
+child Cargo, causing a setup failure after Application42 and real IO pass.
+Keep that failure separate. Trybuild's existing manifest-patch propagation and
+Cargo's [standard patch configuration](https://doc.rust-lang.org/cargo/reference/config.html)
+support appending just those two unpublished candidate overrides to the isolated
+test manifest; production, fixture and expected-diagnostic source stay untouched.
+The original archives keep their original normalized manifests too.
+
+With that setup, both compilers pass all eight examples/all-targets, native51
+per debug/release profile (Application42, interpreter2, retirement7), including
+both original interpreter denials, renamed3, six terminating local examples and
+ten actual all-feature packaged doctests with zero ignores. Counter/pool output
+markers retain the actual1/3 business results. HTTP and remote examples compile;
+their server/process execution is not credited by this corpus. Minimum example
+checking reports the existing unfulfilled dead_code expectation in the unchanged
+remote process controller at processes.rs:26; no minimum warning-free claim or
+test/source suppression is made. Both prepared locks,570 extracted files,533
+native-copy source/test/diagnostic/readme files and28 caller Rust files stay exact.
+Only the native-copy manifest patches and prepared lock differ by design.
+
+Author review one checks VCS/source/guide and nominal dependency selection;
+review two checks all exact test/fixture counts, real outputs, unchanged inputs,
+setup-failure attribution and unexecuted HTTP/remote/platform limits. Both pass,
+without claiming independence. Production/API delta0; model/control states,
+branches, modules and all ownership laws unchanged, checkpoint pass. Receipts
+runtime-archive-{packages,consumer-inputs,consumer-locks} and runtime-consumer-
+{current,minimum}-summary retain exact inputs, commands/logs and qualifications.
+The frozen706810b8 archive/consumer proof does not replace final full-source
+Nix/CI/review/delivery or close every remaining DX01–DX28 criterion.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
