@@ -3,7 +3,8 @@
 Current checkpoint: PR411 delivers the fixed incoming schedule; PR413 now
 delivers the paired Behavior0.30 prerequisite. The exhaustive/generated stage
 below starts from main814c96d1 with fresh owner verification. No new schedule
-execution is claimed yet. Earlier checkpoints preserve their source epochs.
+campaign is qualified yet; the fixed host extraction is verified below.
+Earlier checkpoints preserve their source epochs.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
@@ -151,6 +152,48 @@ final minimization, reviewed CI and delivery remain required. Native incoming
 Query/Client combinations, arbitrary overlap, actual cancellation/crash,
 volatile restart and the rest of full R24 remain open; no original acceptance
 criterion is replaced by this bounded campaign.
+
+### Verified host extraction — 2026-11-12
+
+The first ordinary-function experiment is locally qualified. The original
+fixed word and complete34-event literal are preserved; both independent
+reviews mechanically match the literal to bd7330e8. The host now borrows the
+delivery/expected slices, validates the bounded grammar before Application
+construction, uses one8 for validation/issuer/limits, derives release order
+from input chronology and retains actual keys by semantic delivery name.
+All original row, allocation, provider, native, refusal and retirement checks
+remain. Shipping owners, Counter, dependencies and public surface are unchanged.
+
+Formatted701-line source SHA256 is
+dd8868ce170ed8fa404de6cd42ebabe4fcdfb8f833c63acdc957b8ffe180dfe2.
+Actual pinned Rust1.99.0 b940084d7/Cargo1.99.0 5f94df478 Darwin runs execute the
+one named fixed case in both profiles. Canonical-lookup suppression then fails
+only the first post-cleanup Read oracle at553, actualUser3 versus required2,
+in both profiles; byte-exact restoration passes both. Removing only final
+permission revalidation independently fails that same intended oracle in
+both profiles; exact restoration again passes both. The ten runs therefore
+contain six healthy passes and four intended failures, each1 selected case,
+433 filtered and no ignored cases. Later negative assertions are unexecuted
+and uncredited. No timeout, setup failure or compiler denial earns law credit.
+Pinned formatting and strict owning all-feature library/test Clippy pass.
+
+Author/root and both independent two-pass source/outcome/nonvacuity reviews
+pass. The reviewed-only unformatted94db9f14 epoch is separate from all actual
+dd8868 executions. Current query source exactly restores dfaae0a0; root lock
+9bb2db13 is unchanged. The29-payload capsule in common Git's
+session-archives/2026-11-12/incoming-parameterization/ preserves Git base,
+patch/full source, both exact cuts, fresh owner audit, all13 logs and reviews.
+Its manifest SHA256 is267a90824531085bff839acbe902f3a3ee9cdfbf6d6d7de841a01b9c79e67a32.
+Command/status receipt explicitly transcribes observed terminal handles;
+raw logs contain stdout/stderr, not invented original exit wrappers.
+
+Complete five-path branch census against main814c96d1:
+shipping +0/-0/net0; tests +163/-76/net87; records +244/-11/net233;
+public types +0/-0; no untracked paths.
+This closes the extraction gate only. The180-word domain, generated/shrunk
+and persisted replay, new CI wiring, native Query/Client and restart work,
+full R24 and reviewed merge delivery remain open. Enumeration may now follow
+the recorded ordinary-Rust plan without changing shipping contracts.
 
 ## Delivery of the fixed schedule — 2026-11-11
 

@@ -1,4 +1,4 @@
-//! Fixed incoming delivery and authority schedule through the real request interpreter.
+//! Incoming delivery and authority schedules through the real request interpreter.
 use super::super::request::{Custody, Identity, Request};
 use super::super::tests::counter::{Counter, CounterMessage, CounterValue};
 use super::super::{Attempt, Export, ExportLimits, RefusalRetention, submission};
@@ -25,7 +25,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{Semaphore, oneshot};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Delivery {
     Initial,
     Repeat,
@@ -106,16 +106,123 @@ fn permission(
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn scheduled_duplicates_and_authority_changes_preserve_native_admission() {
-    tokio::time::timeout(Duration::from_secs(10), Box::pin(incoming_requests()))
-        .await
-        .expect("watchdog supplies no delivery, expiry or cleanup evidence");
+    let deliveries = [
+        Delivery::Initial,
+        Delivery::Repeat,
+        Delivery::Expiring,
+        Delivery::Revoked,
+        Delivery::ConstructorExpired,
+        Delivery::Fresh,
+    ];
+    let initial = Delivery::Initial.sequence();
+    let expiring = Delivery::Expiring.sequence();
+    let revoked = Delivery::Revoked.sequence();
+    let constructed = Delivery::ConstructorExpired.sequence();
+    let fresh = Delivery::Fresh.sequence();
+    let zero = Duration::ZERO;
+    let ten = Duration::from_secs(10);
+    let twenty = Duration::from_secs(20);
+    let expected = [
+        Event::Delivered(Delivery::Initial),
+        Event::Verified(initial),
+        Event::RequestChecked(initial, zero, Ok(())),
+        Event::Constructed(initial),
+        Event::RequestChecked(initial, zero, Ok(())),
+        Event::ReplyChecked(initial, zero, Ok(())),
+        Event::Delivered(Delivery::Repeat),
+        Event::Verified(initial),
+        Event::RequestChecked(initial, zero, Ok(())),
+        Event::ReplyChecked(initial, zero, Ok(())),
+        Event::Delivered(Delivery::Expiring),
+        Event::VerificationPolled(Delivery::Expiring, Poll::Pending),
+        Event::Advanced(ten),
+        Event::Released(Delivery::Expiring),
+        Event::Verified(expiring),
+        Event::RequestChecked(expiring, ten, Err(Refusal::Expired)),
+        Event::Delivered(Delivery::Revoked),
+        Event::VerificationPolled(Delivery::Revoked, Poll::Pending),
+        Event::Revoked(Delivery::Revoked),
+        Event::Released(Delivery::Revoked),
+        Event::Verified(revoked),
+        Event::RequestChecked(revoked, ten, Err(Refusal::Revoked)),
+        Event::Delivered(Delivery::ConstructorExpired),
+        Event::Verified(constructed),
+        Event::RequestChecked(constructed, ten, Ok(())),
+        Event::Advanced(twenty),
+        Event::Constructed(constructed),
+        Event::RequestChecked(constructed, twenty, Err(Refusal::Expired)),
+        Event::Delivered(Delivery::Fresh),
+        Event::Verified(fresh),
+        Event::RequestChecked(fresh, twenty, Ok(())),
+        Event::Constructed(fresh),
+        Event::RequestChecked(fresh, twenty, Ok(())),
+        Event::ReplyChecked(fresh, twenty, Ok(())),
+    ];
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        Box::pin(incoming_requests(&deliveries, &expected)),
+    )
+    .await
+    .expect("watchdog supplies no delivery, expiry or cleanup evidence");
 }
 
 #[expect(
     clippy::too_many_lines,
-    reason = "one fixed schedule retains every original provider, native request and independent Counter result through cleanup"
+    reason = "one incoming schedule retains every original provider, native request and independent Counter result through cleanup"
 )]
-async fn incoming_requests() {
+async fn incoming_requests(deliveries: &[Delivery], expected: &[Event]) {
+    let maximum = NonZeroUsize::new(8).unwrap();
+    let distinct = [
+        Delivery::Initial,
+        Delivery::Expiring,
+        Delivery::Revoked,
+        Delivery::ConstructorExpired,
+        Delivery::Fresh,
+    ];
+    assert!((distinct.len() + 1..=maximum.get()).contains(&deliveries.len()));
+    for delivery in distinct {
+        let occurrences = deliveries
+            .iter()
+            .filter(|&&input| input == delivery)
+            .count();
+        assert_eq!(occurrences, 1, "each named base delivery occurs once");
+    }
+    let repeats = deliveries
+        .iter()
+        .filter(|&&input| input == Delivery::Repeat)
+        .count();
+    assert!((1..=maximum.get() - distinct.len()).contains(&repeats));
+    let initial_position = deliveries
+        .iter()
+        .position(|&input| input == Delivery::Initial)
+        .unwrap();
+    let expiry_position = deliveries
+        .iter()
+        .position(|&input| input == Delivery::Expiring)
+        .unwrap();
+    let construction_position = deliveries
+        .iter()
+        .position(|&input| input == Delivery::ConstructorExpired)
+        .unwrap();
+    for (position, delivery) in deliveries.iter().enumerate() {
+        if *delivery == Delivery::Repeat {
+            assert!(initial_position < position, "Initial precedes each Repeat");
+        }
+    }
+    assert!(
+        expiry_position < construction_position,
+        "expiry advances the clock before constructor expiry"
+    );
+    let expected_publications = deliveries
+        .iter()
+        .filter_map(|&delivery| match delivery {
+            Delivery::Expiring | Delivery::Revoked => Some((delivery, Result::<(), ()>::Ok(()))),
+            Delivery::Initial
+            | Delivery::Repeat
+            | Delivery::ConstructorExpired
+            | Delivery::Fresh => None,
+        })
+        .collect::<Vec<_>>();
     let initial = Delivery::Initial.sequence();
     let expiring = Delivery::Expiring.sequence();
     let revoked = Delivery::Revoked.sequence();
@@ -154,19 +261,29 @@ async fn incoming_requests() {
             },
         ),
     ]));
-    let scheduled = &RefCell::new(VecDeque::from([
-        Scheduled::Deliver(Delivery::Initial),
-        Scheduled::Deliver(Delivery::Repeat),
-        Scheduled::Hold(Delivery::Expiring),
-        Scheduled::Advance(Duration::from_secs(10)),
-        Scheduled::Release(Delivery::Expiring),
-        Scheduled::Hold(Delivery::Revoked),
-        Scheduled::Revoke(Delivery::Revoked),
-        Scheduled::Release(Delivery::Revoked),
-        Scheduled::Deliver(Delivery::ConstructorExpired),
-        Scheduled::ExpireConstruction(Duration::from_secs(20)),
-        Scheduled::Deliver(Delivery::Fresh),
-    ]));
+    let mut scheduled = VecDeque::new();
+    for &delivery in deliveries {
+        match delivery {
+            Delivery::Initial | Delivery::Repeat | Delivery::Fresh => {
+                scheduled.push_back(Scheduled::Deliver(delivery));
+            }
+            Delivery::Expiring => scheduled.extend([
+                Scheduled::Hold(delivery),
+                Scheduled::Advance(Duration::from_secs(10)),
+                Scheduled::Release(delivery),
+            ]),
+            Delivery::Revoked => scheduled.extend([
+                Scheduled::Hold(delivery),
+                Scheduled::Revoke(delivery),
+                Scheduled::Release(delivery),
+            ]),
+            Delivery::ConstructorExpired => scheduled.extend([
+                Scheduled::Deliver(delivery),
+                Scheduled::ExpireConstruction(Duration::from_secs(20)),
+            ]),
+        }
+    }
+    let scheduled = &RefCell::new(scheduled);
     let trace = &RefCell::new(Vec::new());
     let registered = &[initial, expiring, revoked, constructed, fresh]
         .map(|sequence| {
@@ -199,10 +316,9 @@ async fn incoming_requests() {
     // cannot stand in for the actual Application cleanup inspected below.
     let (cancellation_owner, joined) = oneshot::channel::<()>();
     let joined = joined.shared();
-    let issuer = &Arc::new(Semaphore::new(8));
+    let issuer = &Arc::new(Semaphore::new(maximum.get()));
     let outcome = Application::new(Counter::new().stop_on_shutdown())
         .run_with(|application| async move {
-            let maximum = NonZeroUsize::new(8).unwrap();
             let target = application.root().established_recipient();
             let address = application.root().address();
             // Explicit deterministic fixture identity, never a native SDK ZID.
@@ -473,18 +589,15 @@ async fn incoming_requests() {
             })
         )]
     );
-    assert_eq!(
-        publications,
-        [(Delivery::Expiring, Ok(())), (Delivery::Revoked, Ok(()))]
-    );
+    assert_eq!(publications, expected_publications);
     assert!(
         scheduled.borrow().is_empty() && releases.borrow().is_empty() && waits.borrow().is_empty()
     );
     let (_, _, startup, withdrawal, ingress, rows) = export.into_parts();
     assert!(startup.is_none() && withdrawal.is_none() && ingress.is_empty());
-    assert_eq!(rows.len(), 6);
+    assert_eq!(rows.len(), deliveries.len());
     assert_eq!(originals.len(), rows.len());
-    let mut keys = Vec::new();
+    let mut keys = BTreeMap::new();
     for (row, (delivery, protected_allocation, proof_allocation)) in rows.into_iter().zip(originals)
     {
         assert_eq!(*row.custody.completed.borrow(), Some(()));
@@ -516,7 +629,8 @@ async fn incoming_requests() {
         match delivery {
             Delivery::Initial | Delivery::Fresh => {
                 let key = key.expect("a real selected native attempt owns its canonical key");
-                keys.push(key);
+                let previous = keys.insert(delivery, key);
+                assert!(previous.is_none());
                 assert!(matches!(refusals, (None, None, None)));
                 let (command, sender, admission) =
                     native.expect("the actual native submission remains");
@@ -532,7 +646,10 @@ async fn incoming_requests() {
                 assert_eq!(protection, Some(Ok(Box::<[u8]>::from([211]))));
             }
             Delivery::Repeat => {
-                assert_eq!(key.as_ref(), keys.first());
+                let initial_key = keys
+                    .get(&Delivery::Initial)
+                    .expect("Initial already owns its actual canonical key");
+                assert_eq!(key.as_ref(), Some(initial_key));
                 assert!(native.is_none() && encoding.is_none() && protection.is_none());
                 assert!(matches!(refusals, (None, None, None)));
             }
@@ -548,7 +665,9 @@ async fn incoming_requests() {
                 assert!(matches!(refusals, (Some(cause), None, None) if cause == expected));
             }
             Delivery::ConstructorExpired => {
-                keys.push(key.expect("construction preserves its actual canonical key"));
+                let key = key.expect("construction preserves its actual canonical key");
+                let previous = keys.insert(delivery, key);
+                assert!(previous.is_none());
                 let (command, sender, admission) =
                     native.expect("the unattempted original command remains");
                 assert!(matches!(
@@ -565,50 +684,18 @@ async fn incoming_requests() {
         }
     }
     assert_eq!(keys.len(), 3);
-    assert_ne!(keys[0], keys[1]);
-    assert_ne!(keys[0], keys[2]);
-    assert_ne!(keys[1], keys[2]);
+    let initial_key = keys
+        .get(&Delivery::Initial)
+        .expect("Initial retains its actual key");
+    let fresh_key = keys
+        .get(&Delivery::Fresh)
+        .expect("Fresh retains its actual key");
+    let constructed_key = keys
+        .get(&Delivery::ConstructorExpired)
+        .expect("constructor expiry retains its actual key");
+    assert_ne!(initial_key, fresh_key);
+    assert_ne!(initial_key, constructed_key);
+    assert_ne!(fresh_key, constructed_key);
     assert_eq!(clock.get(), Duration::from_secs(20));
-    let zero = Duration::ZERO;
-    let ten = Duration::from_secs(10);
-    let twenty = Duration::from_secs(20);
-    assert_eq!(
-        *trace.borrow(),
-        [
-            Event::Delivered(Delivery::Initial),
-            Event::Verified(initial),
-            Event::RequestChecked(initial, zero, Ok(())),
-            Event::Constructed(initial),
-            Event::RequestChecked(initial, zero, Ok(())),
-            Event::ReplyChecked(initial, zero, Ok(())),
-            Event::Delivered(Delivery::Repeat),
-            Event::Verified(initial),
-            Event::RequestChecked(initial, zero, Ok(())),
-            Event::ReplyChecked(initial, zero, Ok(())),
-            Event::Delivered(Delivery::Expiring),
-            Event::VerificationPolled(Delivery::Expiring, Poll::Pending),
-            Event::Advanced(ten),
-            Event::Released(Delivery::Expiring),
-            Event::Verified(expiring),
-            Event::RequestChecked(expiring, ten, Err(Refusal::Expired)),
-            Event::Delivered(Delivery::Revoked),
-            Event::VerificationPolled(Delivery::Revoked, Poll::Pending),
-            Event::Revoked(Delivery::Revoked),
-            Event::Released(Delivery::Revoked),
-            Event::Verified(revoked),
-            Event::RequestChecked(revoked, ten, Err(Refusal::Revoked)),
-            Event::Delivered(Delivery::ConstructorExpired),
-            Event::Verified(constructed),
-            Event::RequestChecked(constructed, ten, Ok(())),
-            Event::Advanced(twenty),
-            Event::Constructed(constructed),
-            Event::RequestChecked(constructed, twenty, Err(Refusal::Expired)),
-            Event::Delivered(Delivery::Fresh),
-            Event::Verified(fresh),
-            Event::RequestChecked(fresh, twenty, Ok(())),
-            Event::Constructed(fresh),
-            Event::RequestChecked(fresh, twenty, Ok(())),
-            Event::ReplyChecked(fresh, twenty, Ok(())),
-        ]
-    );
+    assert_eq!(trace.borrow().as_slice(), expected);
 }
