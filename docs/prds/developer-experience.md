@@ -29,9 +29,15 @@ open interface obligation, not a transport extension port.
 
 ## Current delivery
 
-The isolated branch is `codex/devx-stash-limits`. Main49cc897 is integrated;
-a fresh fetch found no newer main. Other AI worktrees remain untouched. Behavior
-PR113/114 and reviewed release PR115 are merged. Normal publication delivered
+The isolated branch is `codex/retirement-recovery`, based on integrated
+main3bf270cb (PR412). The retained recovery port and formatting correction are
+local commits; source361d7728 passes all28 host Nix checks. CI, independent
+review and delivery remain open. Other AI worktrees remain untouched. The
+runtime still selects registry Behavior/Actors0.29.0 and macros0.16.0; separate
+0.30.0 adoption stays with Bombay Codex until reconciled. Behavior0.30.0 is
+published and the release notice was acknowledged; the owning PRD holds those
+publication receipts. The earlier PR113/114 and reviewed release PR115 merged
+and normal publication delivered
 Behavior/Actors0.29.0 and macros0.16.0 from55dbac2. Registry checksums, clean
 archive provenance, tags and releases agree; all228 shipped Rust files match
 the tested candidate. The release passed14 GitHub checks,11 native Nix gates,
@@ -546,6 +552,94 @@ independent review is claimed. Both standalone Clippy commands skipped by the
 format failure now pass through the pinned shell: default and protected-transport,
 with their original strict warning policy. The corrected full Nix gate remains
 required; the27 successful earlier outputs stay qualified to18f266b.
+
+The corrected immutable source361d77281839ec76d755ad536020d594cab98dc4 now
+passes all28 existing aarch64-darwin checks and the authoritative `nix flake
+check`, both exit0. The exact input/output manifest,28 verified Nix roots,
+derivers, NAR hashes/sizes and complete log hash are retained in the restart
+evidence's retirement-recovery-corrected-full-gate-summary.json and
+retirement-recovery-corrected-output-metadata.json. Workspace results retain983
+reported passes/122 summaries and all six owning recovery cases. Minimum
+compiler1.96 executes114 outer passes/136 compiler fixtures; minimum remote
+passes3 cases. Each remote profile reports523 passes; the complete protected
+Counter gate, strict Clippy, examples, docs, formatting and Loom pass. All
+unchanged coverage floors and existing Driver/execution law witnesses pass.
+Other platforms and CI are not executed by these host receipts. This closes
+the retained source's full local gate, not complete DX04 or programme delivery.
+
+#### Nonempty unread-command recovery witness
+
+Before editing the next test, retain D-RETIRE-1 unchanged: consuming native
+retirement transfers the complete original custody and primary outcome even
+after failure. This is a derived ownership law, not a new actor-model ordering
+guarantee. The existing Counter/MAX overflow witness checks only empty unread
+lanes. Hypothesis: the existing ordinary consuming port also preserves a queued
+non-Clone command and its actual allocated sender beside the failed command,
+original Counter, completed Work, reports, cleanup and notifications.
+
+Use only the existing Counter/Increment/Overflow and Application APIs. On the
+current-thread host, two synchronous `sender.try_send` calls without an await
+admit overflow then an unread command into a validated two-slot mailbox. Native
+actor execution cannot intervene between those synchronous calls. Work awaits
+termination and returns its independent owned value and the allocated sender.
+Then consume completed Work, root retirement and `try_into_custody`; check the
+complete original User, both distinct command allocations, Counter and all14
+custody fields. No sleep, guessed sender, cloning or changed runtime policy.
+
+Falsifier: clear only the returned unread user lane in the consuming port. The
+new witness must fail its exact queued-input assertion in both profiles while
+the original six cases pass; restore the exact production source and repeat.
+The prior missing-port compile regression remains the design-stage evidence;
+this is a missing adversarial test of that proven interface, not another API.
+Review the oracle before execution and again against its actual inversion.
+
+Pre-edit checkpoint: all runtime control sums, subordinate states/results,
+transition branches, production lines, modules and public spellings stay
+unchanged. Terminal alternatives remain24 logical/5+20 tags, with one14-field
+custody product; each existing outcome retains its original table's current
+values. Reuse the mailbox's FIFO queue, allocated sender and original User;
+introduce no state, policy, result wrapper or second transition authority.
+Residue scan: no arrival-history storage, repeated cause, false cardinality,
+semantic boolean or structural caller path. Cross-check the same D-RETIRE-1,
+D-TERM-1 and normalized atomic documents listed in the focused checkpoint.
+Expected edits: this record and the existing retirement_recovery.rs test;
+production/API +0/-0. Whole DX04's rejected progress, descendants, family
+inspection, costs and delivered/archive acceptance remain open. Record actual
+test counts, measurements and disposition after the experiment. Markdown record
+changes also alter Nix source; the28-check receipt remains qualified to361d7728.
+
+Result: all seven owning cases pass on actual pinned Rust/Cargo1.99 and1.96,
+debug and release, with zero ignored tests. Strict current-compiler target
+Clippy and formatting pass. Clearing the consuming port's user lane makes
+only the new queued-input assertion fail in each profile (six controls pass,
+one intended failure, exit101). Exact production restoration is hash-verified;
+both current profiles then pass again. Receipts are retirement-recovery-unread-
+{owner,inversion-*,restored,minimum,conservation*} in the existing restart
+directory. Minimum toolchain is the exact Fenix output selected by the passing
+minimum check, not a host-installed substitute.
+
+Author review1 maps the complete User to its independently allocated second
+sender and payload, the primary overflow to the first distinct allocation,
+and Work/Counter to their original allocations. Current-thread synchronous
+admission establishes the required unread suffix without scheduler timing.
+Review2 checks the actual falsifier: the original six empty-queue cases all
+miss this loss; the added case catches it in both profiles. It also rejects a
+wrong sender, substituted payload, missing/extra unread input, changed actor,
+lost primary cause and missing independent retirement results. No independent
+review is claimed. Reversing only the added test and capacity import, then
+applying pinned formatting, reproduces the entire original six-case source
+byte-for-byte; no original oracle is weakened.
+
+Retained checkpoint disposition: `pass` for this test-only witness. Production
++0/-0/net0, public types +0/-0; test +102/-2/net100 (one new100-line case and
+formatted import). Runtime/control states, subordinate alternatives, branches,
+production modules/spellings and the existing14-field product stay unchanged;
+the same current values and normalized laws listed above still apply. The
+residue scan finds no new historical state, repeated cause, false cardinality,
+nested authority, semantic boolean or structural user syntax. Cumulative feature
+scope stays116 native/141 paired paths; production net36 and one public type
+remain unchanged. All28 full-gate credit still belongs to361d7728. Complete
+nonempty effect/progress, descendant/family, cost and delivery work remains open.
 
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing

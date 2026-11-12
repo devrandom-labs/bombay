@@ -3,8 +3,8 @@ use bombay::behavior::{
     Actions, AllocationRejection, BehaviorActed, ClassifySettlement as _, Never, SettlementStatus,
 };
 use bombay::{
-    ActorFailureAssessment, ActorRetirement, Application, Completion, RetirementAssessment,
-    RetirementOutcome,
+    ActorFailureAssessment, ActorRetirement, Application, Completion, MailboxCapacity,
+    RetirementAssessment, RetirementOutcome,
 };
 
 struct Counter {
@@ -100,6 +100,106 @@ async fn overflow_returns_the_original_counter_command_and_completed_work() {
     assert_eq!(
         (command_audit.as_ptr(), &*command_audit),
         (command_pointer, &[7, 11][..])
+    );
+    assert!(custody.control.is_empty());
+    assert!(custody.user.is_empty());
+    assert_eq!(custody.descendants, []);
+    assert_eq!(custody.child_failures, []);
+    assert!(custody.capability_failures.is_empty());
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn overflow_returns_the_unread_command_with_its_original_sender() {
+    let actor_audit = vec![53_u8, 59].into_boxed_slice();
+    let actor_pointer = actor_audit.as_ptr();
+    let failed_audit = vec![61_u8, 67].into_boxed_slice();
+    let failed_pointer = failed_audit.as_ptr();
+    let unread_audit = vec![71_u8, 73].into_boxed_slice();
+    let unread_pointer = unread_audit.as_ptr();
+    let output = vec![79_u8, 83].into_boxed_slice();
+    let output_pointer = output.as_ptr();
+    let outcome = Application::new(Counter {
+        value: u64::MAX,
+        audit: actor_audit,
+    })
+    .mailbox_capacity(MailboxCapacity::new(2).expect("both original commands fit"))
+    .run_with(move |application| async move {
+        let first = application
+            .sender()
+            .expect("the first sender is established");
+        let second = application
+            .sender()
+            .expect("the second sender is established");
+        let from = second.address();
+        assert_ne!(first.address(), from);
+        first
+            .try_send(CounterCommand::Increment(failed_audit))
+            .unwrap_or_else(|_| panic!("the overflowing command is admitted"));
+        second
+            .try_send(CounterCommand::Increment(unread_audit))
+            .unwrap_or_else(|_| panic!("the later command is admitted before execution"));
+        let observed = application.termination().await;
+        (output, from, observed)
+    })
+    .await
+    .unwrap_or_else(|_| panic!("the caller's native host exists"));
+    let ((output, from, observed), retirement) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("actor failure preserves completed business work"));
+    assert_eq!((output.as_ptr(), &*output), (output_pointer, &[79, 83][..]));
+    assert!(observed.is_err());
+    let report = retirement.root_report().expect("the joined report remains");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+    let (cleanup, retained_report, root, notifications, families) = retirement.into_parts();
+    assert!(cleanup.is_ok());
+    assert_eq!(retained_report, Some(report));
+    assert_eq!(families, ());
+    let notifications = notifications.expect("both notification results remain");
+    assert!(notifications.termination.is_ok());
+    assert!(notifications.retirement.is_ok());
+    let (_origin, root) = root.expect("the original native retirement remains");
+    let (mut custody, outcome) = root
+        .try_into_custody()
+        .unwrap_or_else(|_| panic!("failure returns complete original custody"));
+    let RetirementOutcome::BehaviorFailed {
+        interpretation,
+        source,
+        settlements,
+        error: CounterError::Overflow(failed_audit),
+    } = outcome
+    else {
+        panic!("the first command's overflow remains the primary failure");
+    };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert_eq!(settlements, []);
+    assert_eq!(custody.behavior.value, u64::MAX);
+    assert_eq!(
+        (custody.behavior.audit.as_ptr(), &*custody.behavior.audit),
+        (actor_pointer, &[53, 59][..])
+    );
+    assert_eq!(
+        (failed_audit.as_ptr(), &*failed_audit),
+        (failed_pointer, &[61, 67][..])
+    );
+    let unread = custody
+        .user
+        .pop()
+        .expect("the original queued User remains");
+    assert_eq!(unread.from, from);
+    let CounterCommand::Increment(unread_audit) = unread.message;
+    assert_eq!(
+        (unread_audit.as_ptr(), &*unread_audit),
+        (unread_pointer, &[71, 73][..])
     );
     assert!(custody.control.is_empty());
     assert!(custody.user.is_empty());
