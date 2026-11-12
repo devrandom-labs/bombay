@@ -1405,6 +1405,58 @@ and public API delta0; no new transition authority, state, cause, flag or user
 plumbing. Existing tests/seed and CI configuration are retained, not recreated.
 Verification remains pending on the merged source.
 
+Frozen0e4851b2 passes both existing remote Nix checks: current1.99 debug/release
+each528 outer cases/12 summaries/31 UI fixtures, zero failures/ignores; strict
+remote all-target Clippy and remote docs pass. Actual1.96 all-feature incoming
+corpus passes five cases in both profiles, each180 finite orders and256 generated
+successes plus one persisted replay (257 observed completions). Configuration
+uses ChaCha/seed20261112 with shrinking enabled, in-process and no Proptest
+timeout; the outer watchdog supplies no admission evidence. All718 source/seed
+hashes stay exact. Two output roots retain derivers/NAR hashes. Pinned workspace
+format and two author conservation/execution reviews pass; no independent review.
+PR414's eight hosted checks pass on51d8909a, not on this feature branch. The
+retirement representation, production branches and public contracts are unchanged;
+checkpoint pass. Exact receipts are incoming-main-*. Earlier full28 and SDK
+gates retain their source limits. Completed cache cleanup73077 removes3581232KiB
+from five verified task-only build targets, retaining all source/locks/raw logs
+and eight separately hashed positive benchmark binaries; no global GC.
+
+#### Borrowing the primary retirement outcome
+
+Before editing production at0e4851b2, DX04 still has one concrete inspection gap:
+callers can borrow common custody, but must match ActorRetirement::Retained to
+borrow a typed primary outcome. The existing public RetirementOutcome already
+owns that exact phase/cause. Derived observation law: outcome() borrows that
+resident value while leaving all originals in their retirement. Some means
+availability, not success; allocation refusal and the three executor cases
+without returned custody have None and keep their complete original alternative.
+This is a read-only API choice over the retained model, not a new actor law.
+
+Required inferred syntax is retirement.outcome(), followed by a domain match
+on RetirementOutcome::BehaviorFailed or EffectsFailed; consuming access through
+try_into_custody still transfers the same original cause, command/request,
+receipts and actor. First extend the existing live Counter overflow consumer
+with a borrowed original-command pointer observation, before production edits;
+the prior API must fail specifically with E0599 for outcome. Then add the smallest
+inherent immutable accessor with no new bound, trait, state, wrapper or allocation.
+Keep all four unavailable alternatives absent and original owned return intact.
+Exercise normal wrapped completion and the unrelated real-file interpreter's
+accepted/rejected original requests, retaining every original oracle. No broad
+catalogue migration belongs to this design batch.
+
+Expected four existing paths: terminal.rs, retirement_recovery.rs,
+interpreter_selection.rs and this PRD; production about17 lines including docs,
+public methods +1/types0, no registration/fixture/diagnostic changes. Existing
+Behavior/Actors0.30 (628649d), runtime/Driver interpretation, 14-field custody,
+24 logical outcomes (five outer alternatives,20 retained primary alternatives),
+wrappers and all producers stay unchanged. Pre-edit checkpoint: one aggregate
+transition authority and no new control/subordinate alternatives, historical
+state, cause, cardinality, flag, nested dispatcher or structural caller input.
+One observation match is forecast, with no runtime transition branch. Run focused
+callers on both supported compilers/profiles, strict owning lint/format, and an
+accessor-only absence inversion; conserve all original test bodies/oracles and
+production outside the accessor. Record actual deltas and two author reviews.
+
 #### SDK-independent foreign error spelling
 
 Before editing at95e2436c, retain the project policy that networking SDK types
