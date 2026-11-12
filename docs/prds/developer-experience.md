@@ -30,12 +30,16 @@ open interface obligation, not a transport extension port.
 ## Current delivery
 
 The isolated branch is `codex/retirement-recovery`, based on integrated
-main3bf270cb (PR412). The retained recovery port and formatting correction are
-local commits; source361d7728 passes all28 host Nix checks. CI, independent
+main814c96d1 (PR413), now including registry Behavior/Actors0.30.0 adoption.
+The pre-adoption history is retained at codex/retirement-recovery-before-030-
+6cb916ac. The retained recovery port and subsequent test stages are local
+commits; earlier029 source361d7728 passes all28 host Nix checks. CI, independent
 review and delivery remain open. Other AI worktrees remain untouched. The
-runtime still selects registry Behavior/Actors0.29.0 and macros0.16.0; separate
-0.30.0 adoption stays with Bombay Codex until reconciled. Behavior0.30.0 is
-published and the release notice was acknowledged; the owning PRD holds those
+runtime now selects registry Behavior/Actors0.30.0 and unchanged macros0.16.0.
+Current030 focused consumers qualify as recorded below; full current-source
+gates and delivery remain open. No029 receipt is relabelled. Behavior0.30.0 is
+published and the release notice was acknowledged;
+the owning PRD holds those
 publication receipts. The earlier PR113/114 and reviewed release PR115 merged
 and normal publication delivered
 Behavior/Actors0.29.0 and macros0.16.0 from55dbac2. Registry checksums, clean
@@ -849,6 +853,67 @@ old ActorRetirement patterns requiring only the already-proven mechanical
 representation migration; archive their original source and conserve every
 assertion/field before assigning030 verification credit. No new API, bound,
 wrapper, placeholder or production policy may arise from that migration.
+
+#### Main030 reconciliation, before caller edits
+
+All six local commits rebase onto814c96d1 as a10b3248. The sole conflict is
+backlog text: preserve the scoped DX1 feature row and current upstream NET1
+delivery row, retaining every other upstream update. The original6cb916ac
+branch and all029 receipts remain. Exact030 Behavior instructions are read in
+full, including the separately retrieved middle after tool-output truncation.
+The pure Behavior production algebra is unchanged from selected029; the seven
+changed Actors owners implement the already-released retained-progress Machine
+and finite-input contracts. Inspect their actual Machine/InputLimit/HeldInputs
+surface and registry archive provenance at628649d before migrating callers.
+
+The fresh native Machine test has exactly two old root retirement patterns.
+Apply only D-RETIRE-1's proven Retained/custody+outcome representation and one
+canonical module import; preserve all579 original lines modulo those patterns
+and pinned formatting, all bindings, literal values, assertions and native
+sender/refusal/cleanup observations. Archive original source/hash first. This
+adds one native test path:117 native/142 paired cumulative paths under standing
+scope authorization. Production +0/-0, public types +0/-0. Do not repair any
+other compiler diagnostic by adding a symbol or policy. Run owning recovery,
+service, terminal and Machine consumers on actual1.99/1.96 debug/release plus
+strict target Clippy/formatting before crediting the integrated graph.
+
+Checkpoint before the mechanical edit: runtime/control/subordinate sums,
+branches, production lines/modules/public spellings unchanged;24 logical
+terminal alternatives/5+20 tags, one14-field custody product. Same original
+outcome/current-value owners and normalized custody/creation laws apply. No
+new arrival history, repeated cause, cardinality, authority, semantic boolean
+or positional user syntax. Report measured test delta, full-source conservation
+and both author reviews after execution. Family recovery, source progress,
+costs and complete current-source gates/CI/delivery remain open.
+
+Result: current1.99 runs all five targets in both profiles,23 outer passes per
+profile (service4, terminal4, interpreter2, Machine6, recovery7), zero ignored.
+Both original interpreter-denial fixtures pass each profile with overwrite
+unset. Actual minimum1.96 passes22 outer cases per profile: the same four
+native targets plus the focused real-file case; its compiler harness is
+explicitly filtered and receives no minimum credit here. Strict current Clippy
+passes all five targets. Both compilers pass all11 unchanged Driver inventory
+checks. Workspace and the separate protected-consumer format checks pass.
+
+Two original Machine ownership products retain every binding, cause and literal;
+reversing only the proven patterns/import reproduces all579 upstream source
+lines byte-for-byte. Both author reviews confirm exact refusal origins, payloads,
+retained progress, finite refusal/closed-customer custody, Work and cleanup
+remain checked; no independent review is claimed. Production sources are also
+byte-identical between the preserved029 branch and rebased030 feature. Registry
+checksums and actual archive provenance remain those published from628649d.
+
+Retained checkpoint: `pass` for this mechanical reconciliation. Tests +17/-10/
+net7, production +0/-0/net0, public types +0/-0;117 native/142 paired paths.
+All pre-edit aggregate/subordinate alternatives, branches, production lines,
+modules/public spellings and current-value owners remain unchanged. The same
+normalized laws apply; no new history, repeated cause, cardinality, authority,
+flag or positional user input. Receipts are retirement-recovery-main030-
+{plan,machine-conservation,current,minimum,inventory-format,inventory-minimum,
+summary} in the restart handoff. The next source freeze runs all28 existing
+host Nix checks and authoritative flake check on the integrated graph, keeping
+the old029 full result bound to361d7728. Family/source-progress, cost and whole
+programme delivery acceptance remain open; these focused passes do not close it.
 
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
