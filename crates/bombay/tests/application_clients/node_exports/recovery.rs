@@ -13,6 +13,7 @@ use protocol::{
 };
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
+use std::error::Error;
 use std::future::{Future, poll_fn, ready};
 use std::num::NonZeroUsize;
 use std::pin::pin;
@@ -93,7 +94,12 @@ async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidReque
     let node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
-        .unwrap_or_else(|_| panic!("the actual recovery Node opens"));
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!(
+                "the actual recovery Node opens: {cause}; source: {:?}",
+                cause.source()
+            )
+        });
     let receiver_id = node.runtime_id();
     let peer = peer::Peer::open(&address).await;
     let caller_id = peer.runtime_id();

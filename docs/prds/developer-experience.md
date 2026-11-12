@@ -51,8 +51,18 @@ remain qualified below. `retirement-delivery-summary.json` in the restart
 handoff links exact merge trees, CI and final logs; earlier receipts keep their
 original revisions. Feature branches and pre-adoption backups remain preserved.
 
-DX01–DX28 remains active. Permanent root-transport fixtures, selected consumer
-and policy acceptance, broader costs and runtime registry delivery remain open.
+Permanent root-transport coverage merged through [PR417](https://github.com/devrandom-labs/bombay/pull/417)
+as `402ff67f95af3f1163caf492ee6b4101148771b0` after all eight checks passed.
+Its delivered tree `46e31eba` equals the reviewed and tested tree; all 721
+frozen inputs remain exact. All 28 local Nix checks and authoritative flake
+check pass, as do Linux flake, Driver 2,048 runs and four Observe campaigns of
+1,024 runs each. Miri was skipped for the PR event. Two author reviews pass;
+independent review is unclaimed. The separate main-push run remains pending.
+The six verified package archives retain their actual `46b34034` provenance;
+`d1414998` changes only the debug log guard and this coordination record.
+
+DX01–DX28 remains active. Selected consumer and policy acceptance, broader
+costs and runtime registry delivery remain open.
 Engine 0.3.0/macros 0.2.0/runtime 0.2.0 candidates are unpublished; a merged PR is
 not publication. Main-push CI is separate from the completed PR gates. Other
 active worktrees remain untouched. Behavior 0.30.0 and unchanged macros 0.16.0
@@ -115,9 +125,11 @@ reviews pass; no independent review is claimed. Workspace/fixture formatting
 and strict owning-target Clippy pass. Production/public API0; Rust tests+46,
 one new shared diagnostic and two existing harness calls, no new outer test.
 This is compile-contract evidence; host/work/cancellation behavior retains its
-separate existing witnesses. Full repository, package and hosted delivery
-gates for this batch remain open. Receipts are execution-transport-* in the
-existing restart handoff.
+separate existing witnesses. Full repository and hosted gates subsequently
+passed and PR417 delivered this batch as recorded above. Joint package and
+extracted fixture-consumer checks pass on both compilers, with their original
+`46b34034` source limits. Receipts are execution-transport-* in the existing
+restart handoff.
 
 The first full run at46b34034 ends1:18 checks pass, nine are cancelled after
 remote-debug returns101, and authoritative flake verification is not reached.
@@ -135,6 +147,56 @@ The exact original debug derivation then passes in isolation:528 tests across
 This does not recover the first Cargo error or establish a causal repair.
 Keep both attempts. The corrected full gate retains failed logs and bounds
 local build concurrency to two; it still runs every original check and marker.
+
+### Recovery startup diagnostics
+
+The separate PR415 main-push run43239095715 failed before request recovery:
+the scope-refusal test could not open its Node. Its generic setup panic discarded
+the existing `NodeStartupRefusal`. The historical startup cause remains unknown;
+successful later runs do not explain it. The actual raw log and
+retirement-main-failure.json preserve this distinction from successful PR CI.
+
+Before the project test edit, retain this engineering observability law: the
+shared recovery setup must print the actual typed refusal and its existing
+standard `Error::source` when Node opening fails. This is test observability,
+not a new actor-model or runtime law. Preserve all four recovery scenarios'
+original network selection, watchdogs, requests, assertions and cleanup.
+The independent request-key scenario keeps its existing contract; no broader
+startup rewrite, retry policy or test serialization belongs to this defect.
+
+Fresh locked all-feature metadata at merged main `402ff67f` confirms registry
+Behavior/Actors0.30.0, macros0.16.0, Address0.3.0, Communication0.1.6 and
+Timers0.2.0 without patches; Observe remains Native-owned. The selected Behavior
+revision is `628649da`, whose complete AGENTS.md applies. Source inspection
+confirms `Application::open_node` already returns the original Application and
+Network with the typed refusal, and `NodeStartupRefusal::source` exposes the
+actual cause. Reuse those owners; preserve the deliberately redacted public
+Display/Debug. No algebra, interpreter, dependency or public contract changes.
+
+The pre-edit external copy proves the defect using a real held IPv4 listener:
+the original setup fails101 with only its generic panic; the same setup with
+the proposed diagnostic fails101 and exposes actual TLS AddrInUse/os48 through
+the standard source. Neither forced setup failure earns recovery semantic
+credit or establishes the historical Linux cause. Restoring the original setup
+and every assertion leaves only the module-scope Error import and diagnostic;
+the scope-recovery scenario then passes. Owning formatting and strict Clippy
+also pass. These controls used actual Rust1.99 debug only. Two author source/
+oracle reviews pass, independent review unclaimed. Exact sources, raw logs and
+hashes live in node-startup-diagnosis-{plan,inputs,progress}.json in the existing
+restart handoff. The original test source is identical at d575/d141/402ff.
+
+Expected project scope: four Native paths, the owning recovery test plus this
+PRD and the two existing backlog records. Tests +7/-1; production +0/-0/net0;
+public API +0/-0. Reuse standard Error and the existing typed opening result;
+add no type, bound, callback, marker, route, runtime state or transition branch.
+All aggregate states, subordinate alternatives, modules and public spellings
+remain unchanged because the edit only formats an existing test failure.
+The applied project source equals the validated proposal byte-for-byte. Actual
+Rust1.99 project checks pass: all five recovery/request-key scenarios, workspace
+formatting and strict remote application_clients Clippy. The complete diff
+retains every original assertion and all other Rust files. Two author source/
+oracle reviews pass; independent review is unclaimed. Full repository gates
+and delivery for this diagnostic are still pending.
 
 All three tracked root, protected-consumer and Engine-fuzz locks select the
 published owners without Behavior patches. The root preserves all396 complete
