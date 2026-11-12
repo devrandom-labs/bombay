@@ -1003,6 +1003,86 @@ restored logs. This focused test-only batch follows the full0da4c952 gate;
 source progress, combined root/family failures, comparable costs, current-source
 CI/review/delivery and whole-programme acceptance remain open.
 
+#### Nonempty receipt-source recovery witness
+
+Before editing atc53afad6, retain D-RETIRE-1 and the existing Driver source-return
+law: a panic after one receipt is admitted but before its source reply transfers
+must preserve the complete original source remainder, original row position,
+admitted receipt, actor, exact primary panic and independent cleanup results.
+This is a derived affine-custody law/native host policy, not an Agha exception
+contract. Exact030 source laws and interpreter are unchanged: LocalEnvironment
+keeps SourceProgress across an interrupted offer, Driver keeps source_index,
+and ActorRetirement::from_local projects both into the existing public product.
+
+The existing transitive_source_cancellation fixture already executes real
+ScheduleAfter interpretation, native timer receipts and source admission. Its
+first-offer observer rejection panics after the underlying source reports
+Completed(Admitted), before the environment acquires that report. A new focused
+test will deliberately close that observer, execute the real native actor,
+project its retirement and consume try_into_custody. Required observations:
+unfolded actor state0; exact primary panic identity; current source index0;
+no acquired source reply; one already admitted accepted id1/gen1; nonempty
+Completed(Admitted) holding the untouched accepted id2/gen1; all remaining
+custody fields accounted for, successful notification publication and address
+retirement. No new fixture type, trait, runtime policy, protocol or public API.
+Keep the original cancellation test and every original assertion unchanged.
+
+Falsifier: only in the HostExecutionPanicked projection, replace its original
+source with None. The new test must fail its required nonempty-source assertion
+in debug/release while the existing cancellation and recovery controls pass.
+Restore exact production source and run the new case/control on actual1.99/1.96
+in both profiles, plus strict owning-target Clippy/formatting. Two author
+reviews must map the complete oracle and actual falsifier; no independence is
+claimed. Forecast: this PRD and one existing launch.rs test module, no production
+edit, no new public type, one test registration. Baseline/frozen source hashes
+are retirement-recovery-source-before.json and its exact source snapshots.
+
+Pre-edit checkpoint:24 logical terminal cases/5+20 tags, one14-field custody
+product; all runtime/subordinate states, result alternatives, transition
+branches, production lines/modules/public spellings unchanged. Current source
+remainder, row index, admitted control event, original actor/cause and cleanup
+products retain existing owners. Direct existing sums/products suffice. No
+arrival history, repeated cause, false cardinality, nested authority, semantic
+state boolean or new structural caller syntax. Cross-check D-RETIRE-1/D-TERM-1,
+Driver source-return/retirement law, selected030 source-settlement admission
+tests and the same normalized atomic documents. Record measured growth,
+source conservation, both reviews and disposition before retaining the test.
+Combined root/family cleanup failures, comparable costs and delivery stay open.
+
+Result: the new source case and original cancellation control pass actual1.99/
+1.96 debug/release, including final restored runs (two passes per profile,
+zero failed/ignored,347 filtered). Discarding only the original source through
+source.and(None) in the HostExecutionPanicked projection fails exactly the
+nonempty-source assertion at3383 in both current profiles; cancellation remains
+healthy and all seven original Counter controls pass in each profile. Exact
+projection/environment hashes restore. Strict current all-tests Clippy and
+formatting pass. Initial strict Clippy rejected three new empty assertions;
+their equivalent length0 checks keep every observation/expectation. Initial
+failed lint, source and conservation receipts remain preserved without lint credit.
+
+Both author reviews pass. The first maps real receipt admission, unfolded state,
+nonempty source classification/remainder, original row, exact panic identity,
+distinct receipt identities and independent notification/address retirement to
+their owning laws. The second verifies the actual loss falsifier and healthy
+controls; no fabricated residual, duplicated/replayed receipt, weakened original
+assertion or production change is retained. No independent review is claimed.
+Removing only the new test/import reproduces the whole original launch.rs
+byte-for-byte. This witness covers actual native Completed(Admitted) interruption,
+not every source phase or an end-to-end Application callback.
+
+Retained checkpoint: `pass`. Tests +160/-0/net160, one registration; production/
+API +0/-0. All pre-edit runtime/control/subordinate alternatives, production
+branches/lines, modules/public spellings and current-value owners are unchanged.
+The same D-SETTLE-1/D-RETIRE-1/D-TERM-1 and normalized laws apply; no arrival
+history, repeated cause, false cardinality, nested authority, semantic state
+boolean or new structural caller input. Complete diff:117 native/142 paired
+paths, Rust110 +2706/-1482/net1224; production net36, tests net1188, public types
++1/-0. Source-qualified receipts use retirement-recovery-source-{before,
+conservation,inversion,summary}.json and owning/minimum/restored/lint logs. The
+full28/flake result remains bound to0da4c952. Combined root/family cleanup,
+operational inspection, comparable costs, review/CI/delivery and whole-programme
+acceptance remain open.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The

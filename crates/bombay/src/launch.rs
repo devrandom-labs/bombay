@@ -2942,6 +2942,7 @@ mod transitive_source_cancellation {
     };
     use bombay_engine::{ActionsOf, Completion, Driver};
     use communication::Config;
+    use std::ptr;
     use std::sync::Arc;
     use std::time::{Duration, Instant};
     use tokio::sync::oneshot;
@@ -3272,6 +3273,165 @@ mod transitive_source_cancellation {
 
         drop(control);
     }
+    #[tokio::test]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one native panic trace accounts for the original source remainder, admitted receipt, row position, actor, cause and independent cleanup"
+    )]
+    async fn source_offer_panic_returns_the_original_admitted_receipt_and_unoffered_suffix() {
+        let (publisher, termination) = observe::pair();
+        let terminal_observer = termination.clone();
+        let (report, selected_report) = oneshot::channel();
+        let (_cancel, cancellation) = oneshot::channel();
+        let (entered, rejected_offer) = oneshot::channel();
+        // Reject the outside-fold observer only after the real source has admitted
+        // its first receipt. The existing interpreter then panics before returning.
+        drop(rejected_offer);
+        let addresses = ActorSpace::new();
+        let observer = addresses.clone();
+        let address = MailAddr(93);
+        let environment = LocalEnvironment::<
+            SourceCycleActor,
+            YieldingSourceInterpreter,
+            StandardIngress,
+        >::prepare(
+            address,
+            addresses,
+            Config::new(2),
+            termination,
+            cancellation,
+            #[cfg(feature = "remote")]
+            None,
+            move |control, timers, observations| {
+                let capabilities =
+                    ApplicationCapabilities::<SourceCycleActor, ()>::new_with_bindings(
+                        ApplicationCapabilityInputs {
+                            address,
+                            actor_spaces: Arc::new(()),
+                            allocations: ApplicationAddresses::new(),
+                            mailbox_capacity: MailboxCapacity::default(),
+                            control,
+                            timers,
+                            observations,
+                            terminal_reports: LocalTerminalReports::new(report),
+                        },
+                        NoChildBindings::default(),
+                    );
+                YieldingSourceInterpreter {
+                    interpreter: Some(ActionInterpreter::new(capabilities)),
+                    source_offers: 0,
+                    entered: Some(entered),
+                    release_first: None,
+                    progressed: None,
+                    release_progress: None,
+                }
+            },
+        );
+        let control = environment.control();
+        let (notification_publication, notification_receipt) = oneshot::channel();
+        let retirement = LocalRetirement::<SourceCycleActor>::new(
+            TerminationPublication::new(publisher, selected_report),
+            notification_publication,
+        );
+        let task = tokio::spawn(
+            ActorExecution::new(
+                Driver::new(
+                    SourceCycleActor {
+                        scheduling_receipts: 0,
+                    },
+                    environment,
+                ),
+                retirement,
+            )
+            .run(),
+        );
+        let (retirement, refused_notification) = task
+            .await
+            .expect("the actual source panic is retained by native execution");
+        assert!(refused_notification.is_none());
+        assert_eq!(terminal_observer.await, Err(Crash::Panicked));
+        let notification = notification_receipt
+            .await
+            .expect("the real termination notification is independently received");
+        notification.expect("publication succeeds beside the source panic");
+        let retirement =
+            ActorRetirement::<SourceCycleActor, Never, Vec<Never>>::from_local(retirement);
+        let ActorRetirement::Retained {
+            outcome: RetirementOutcome::HostExecutionPanicked { payload, .. },
+            ..
+        } = &retirement
+        else {
+            panic!("the original source-offer panic remains the primary outcome");
+        };
+        let original_cause = ptr::from_ref(payload.as_ref()).cast::<()>();
+        let (custody, outcome) = retirement
+            .try_into_custody()
+            .unwrap_or_else(|_| panic!("the interrupted source returns complete native custody"));
+        let RetirementOutcome::HostExecutionPanicked {
+            payload,
+            interpretation,
+            source,
+            settlements,
+        } = outcome
+        else {
+            panic!("consuming custody preserves the original host-execution panic");
+        };
+        assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), original_cause);
+        assert!(interpretation.is_none());
+        assert!(settlements.is_empty());
+        let Some(SourceProgress::Completed(SourceCustody::Admitted(settlement))) = source else {
+            panic!("the complete original nonempty source remainder survives its offer panic");
+        };
+        assert_eq!(
+            settlement.settlement_status(),
+            behavior::SettlementStatus::Accepted
+        );
+        assert!(settlement.creations.is_empty());
+        assert_eq!(settlement.become_, Step::Continue);
+        let mut unoffered = settlement.sends.into_inputs();
+        assert_eq!(unoffered.len(), 1);
+        let behavior::SettledItem::Attempted(ItemSettlement::Accepted(receipt)) = unoffered
+            .pop()
+            .expect("the original second receipt remains unoffered")
+        else {
+            panic!("the source remainder keeps its exact accepted receipt");
+        };
+        assert_eq!(
+            (receipt.id, receipt.generation),
+            (TimerId(2), TimerGeneration(1))
+        );
+        assert_eq!(custody.behavior.scheduling_receipts, 0);
+        assert_eq!(custody.source_index, Some(0));
+        assert!(custody.received_source.is_none());
+        assert!(custody.received_interpretation.is_none());
+        assert!(custody.acquired_ingress.is_none());
+        assert!(custody.terminal_report.is_none());
+        assert!(custody.retirement_failures.is_empty());
+        assert!(custody.additional_failures.is_empty());
+        assert_eq!(custody.child_failures.len(), 0);
+        assert!(custody.capability_failures.is_empty());
+        assert!(custody.unread_owner_cancellation.is_none());
+        assert_eq!(custody.user.len(), 0);
+        assert_eq!(custody.descendants.len(), 0);
+        assert_eq!(custody.control.len(), 1);
+        let SourceCycleEvent::Scheduling(behavior::SettledItem::Attempted(
+            ItemSettlement::Accepted(receipt),
+        )) = custody
+            .control
+            .into_iter()
+            .next()
+            .expect("one original admitted receipt")
+        else {
+            panic!("the first receipt remains admitted without being folded or duplicated");
+        };
+        assert_eq!(
+            (receipt.id, receipt.generation),
+            (TimerId(1), TimerGeneration(1))
+        );
+        assert!(observer.resolve(&address).is_none());
+        drop(control);
+    }
+
     fn verify_source_retirement_custody(
         retirement: LocalOutcome<SourceCycleActor, (Vec<Never>, Vec<Never>)>,
         observer: &ActorSpace<<SourceCycleActor as Behavior>::Protocol>,
