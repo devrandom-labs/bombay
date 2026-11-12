@@ -641,6 +641,67 @@ scope stays116 native/141 paired paths; production net36 and one public type
 remain unchanged. All28 full-gate credit still belongs to361d7728. Complete
 nonempty effect/progress, descendant/family, cost and delivery work remains open.
 
+#### Existing accepted/rejected-effect consumer, before editing
+
+Next extend the same D-RETIRE-1 consuming-port proof using the existing
+interpreter_selection.rs real-file case, rather than adding another actor or
+interpreter. Its native EffectsFailed result already owns one usable accepted
+File, one original refused OpenFile/path allocation and its actual OS cause,
+alongside the original Document and all14 custody fields. The exact selected
+0.29/0.16 graph and existing request/Services contracts above remain unchanged.
+Replace only the test's Retained pattern with consuming `try_into_custody`,
+then match the same outcome and retain every original assertion. Move the
+two existing iterator advances out of assertions into named local values so
+assertions only observe; preserve the exact traversal and absence checks.
+No production type, effect, interpreter, state or policy changes are needed.
+
+Hypothesis: complete failed initialization custody remains available through
+the ordinary consuming port, including both accepted and rejected effects.
+Falsifier: only for EffectsFailed, clear the returned settlements. The owning
+file case must fail at its complete-lane assertion in debug/release while all
+seven Counter cases still pass. Restore the production source exactly and
+repeat the focused file case on current1.99 and minimum1.96 in both profiles.
+Retain the two existing static interpreter denials unchanged for final gates.
+
+Pre-edit checkpoint:24 logical terminal cases/5+20 tags, one14-field product,
+all runtime/subordinate states/results, branches, modules, production lines and
+public spellings remain unchanged. Reuse the original passive outcome and
+settlement vector; every surviving current value is still required by the same
+phase table. No new arrival history, repeated cause, cardinality restriction,
+semantic flag, nested actor authority or positional user route. Cross-check
+D-RETIRE-1/D-TERM-1, total-item custody and the same normalized actor documents.
+Expected paths: the existing interpreter_selection.rs and this record; API and
+production +0/-0. Review the oracle twice, measure the final test diff and
+record actual source inversion/restoration before retaining this witness.
+
+Result: the real-file consuming case passes on actual Rust/Cargo1.99 and1.96,
+debug/release. Strict current target Clippy and formatting pass. The deliberate
+EffectsFailed-only settlement erasure fails exactly at the complete initialized
+file lane in both profiles; all seven Counter controls pass in each. Restoring
+the exact production hash passes the file case and all Counter controls again.
+The two static denial fixtures are unchanged and remain for final full gates;
+these focused runs do not claim to execute the filtered compiler harness.
+
+Review1 maps the existing independent file read, exact rejected-path allocation,
+actual NotADirectory cause, primary failure, Document and all14 custody fields
+through the consuming pair. Review2 checks the actual settlement-erasure
+counterexample and unchanged controls; accepted File and rejected request must
+coexist, so preserving only one is insufficient. Both iterator advances now
+precede their original absence assertions. Reversing exactly the four forecast
+edits reproduces every original test/fixture/assertion byte. No independent
+review is claimed. Receipts and exact hashes are retirement-recovery-effects-
+{before,inversion,owner,restored,minimum,summary} in the existing handoff.
+
+Retained checkpoint: `pass` for this existing consumer. Test +15/-14/net1;
+production +0/-0/net0, public types +0/-0. All pre-edit state, alternative,
+branch, module, production-line and public-spelling counts stay unchanged;
+the existing phase-table values and normalized-law cross-checks still apply.
+No new history, duplicated cause, cardinality, authority, boolean or structural
+caller route remains. Native scope stays116 paths; paired scope141. Nonempty
+partial interpretation/source progress, descendants, complete family recovery,
+costs and delivered acceptance remain open. The last full28-check receipt is
+still the immutable361d7728 source, not these later test/record commits.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
