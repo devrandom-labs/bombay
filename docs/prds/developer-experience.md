@@ -1089,6 +1089,114 @@ full28/flake result remains bound to0da4c952. Combined root/family cleanup,
 operational inspection, comparable costs, review/CI/delivery and whole-programme
 acceptance remain open.
 
+#### Coexisting root and family disposal failures
+
+Before editing at4fce7bfb, retain D-RETIRE-1's independent original failures and
+the existing Application/Entity disposal policy: completed Work, joined root,
+notifications, family shutdown/metrics and each original cleanup cause coexist.
+Root cleanup does not subsume family disposal, and family disposal must not
+reclassify the earlier root report. These are derived custody/native policy
+laws, not actor-model guarantees about arbitrary user destructors.
+
+Source inspection rules out a misleading address-space fault: families retain
+the same Arc<Spaces>, so its last destructor is not necessarily root disposal.
+Use the existing separately constructed actor service instead. Its actual
+ApplicationCapabilities::dispose catches that service's original destructor
+panic before releasing its construction owner. The independent family shutdown
+captures its definition destructor separately. EntityDefinition::Hosts must
+equal Application Spaces; preserve that real typed host, rather than adding a
+generic marker/default, wrapper, or compatibility port to force inference.
+
+Add one test-only AccountFactory owning the original root cause until service
+construction, AccountService owning its actual disposal cause, and AccountFamily
+owning the independent family definition cause and exact service-host type.
+Reuse the existing ReceivingAccount, hydration/callback policies, ordinary
+Application::new/with_interpreter/entity_family/run_with_entities, completed-work
+selection, consuming actor custody and family parts. Construction/disposal
+counters prove that the actual root service existed and retired once; this is
+a lifecycle resource witness, not an unused callback required by a new API.
+No new production abstraction or caller obligation is proposed.
+
+Four cases cover neither fault, root only, family only, and both. Require the
+same original non-Send completed Work, root state, nominal family role, all
+retirement/notification lanes, exact boxed cause pointers and payload lifetimes
+through final consuming discharge. The root remains primary Completed/Stopped;
+its native retirement-failure vector contains only its service cause and its
+report assesses only root/subtree cleanup. The zero-incarnation family owns its
+actual settled empty shutdown/zero metrics and only its own disposal cause.
+No claim of admitted-family work is made by this separate composition witness.
+
+Falsifiers are independent: discard only the root service panic instead of
+pushing it into native retirement failures, and separately erase only the
+family into_parts disposal cause. Both-fault and corresponding single-fault
+cases must fail their exact cause assertions; unaffected cases and original
+recovery controls must pass in debug/release. Restore every original producer
+byte-for-byte and run all four positives on actual1.99/1.96 in both profiles,
+strict target Clippy/format, source conservation and two author reviews.
+
+Forecast: this PRD and the existing completed_application_receiving.rs path;
+about300 test lines, three private fixtures/four test registrations, production/
+API +0/-0. Pre-edit checkpoint:24 logical terminal alternatives,5+20 tags,
+one14-field custody product; all runtime/control/subordinate sums, production
+transition branches/lines, modules/public spellings unchanged. Surviving Work,
+root, report, notifications, family shutdown/metrics/role and two independent
+causes keep their existing owners. The factory's optional original cause and
+each resource's cause are genuine single-value/absence products, not correlated
+phase flags. No arrival history, repeated cause, false cardinality, nested
+transition authority, semantic boolean or structural caller input. Cross-check
+D-RETIRE-1/D-TERM-1, total application/family disposal laws and the same normalized
+atomic documents. Exact baseline/snapshots are retirement-recovery-joint-before*.
+Record measured growth, surviving values, both reviews and pass/reopen before
+retention. Remaining source phases/Application witnesses, operational inspection,
+comparable costs and programme delivery stay open.
+
+Before inversion, all42 existing/new owner cases pass actual1.99/1.96 in both
+profiles; strict current target Clippy/format pass. The original entire test
+is byte-identical after removing only the added fixture/trace block and two
+imports, then pinned-formatting the import wrap. Measured test delta is +352/-2/
+net350 (forecast about300); production/API0, three private fixtures/four tests.
+Root service omission also changes the root report, so its first required
+failure is the root failure-assessment assertion; later exact cause-pointer/
+lifetime assertions remain unchanged. The family omission first fails the
+new exact family carrier assertion, and also the two existing consuming fault
+traces. No assertion or expected value is changed for either falsifier.
+
+Result: all42 owner cases pass actual1.99/1.96 debug/release before and after
+both inversions, zero failures/ignores. Strict current target Clippy/format pass.
+Root omission fails exactly the root-only/both-fault cases at root assessment;
+the other seven disposal cases pass each profile. Family omission fails exactly
+the family-only/both-fault cases at original carrier identity plus both existing
+consuming fault traces; five disposal cases pass each profile. All seven Counter
+controls pass per profile for each mutation. Every producer restores exactly.
+No failed test, source input or expectation is removed or weakened.
+
+Two author reviews pass. The first maps actual single service construction/
+disposal, completed non-Send Work, root state, role, settlements, reports,
+notifications, family shutdown/metrics and independent original causes to their
+complete consuming ownership equation. The second checks erasure/swapping/
+reboxing and early discharge against pointer/lifetime/report observations and
+the actual selective falsifiers. No independent review is claimed. This actual
+public Application composition needs no new consuming port or runtime policy.
+It uses a zero-incarnation family; the retained admitted-family/nonzero-metrics
+traces remain the separate witness for that case.
+
+Retained checkpoint: `pass`. Tests +352/-2/net350; production/API +0/-0; three
+private resource fixtures/four registrations. All pre-edit runtime/control/
+subordinate alternatives, production transition branches/lines, modules/public
+spellings and original-value owners are unchanged. Exact whole owner files are
+root producer5936 lines, family producer840, family parts84, root parts3012 and
+application parts327 before/after, including their existing inline tests; these
+are file counts, not production-only counts. Public type/trait spellings in
+those files stay7/14/2/13/2. No arrival-history state, repeated cause, false
+cardinality, nested authority, semantic state boolean or structural user input.
+The same normalized laws apply. Complete diff:117 native/142 paired paths;
+Rust110 +3058/-1484/net1574, production net36, tests net1538, public types +1/-0.
+Exact baseline, conservation, inversions/restoration, two reviews and current/
+minimum whole-target receipts are retirement-recovery-joint-* in the existing
+restart evidence. The full28/flake result stays bound to0da4c952. Remaining
+source/Application inspection, comparable costs, independent review/CI/delivery
+and whole-programme acceptance remain open.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
