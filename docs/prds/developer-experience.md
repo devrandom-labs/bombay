@@ -33,11 +33,17 @@ The isolated branch is `codex/retirement-recovery`, based on integrated
 main814c96d1 (PR413), now including registry Behavior/Actors0.30.0 adoption.
 The pre-adoption history is retained at codex/retirement-recovery-before-030-
 6cb916ac. The retained recovery port and subsequent test stages are local
-commits; earlier029 source361d7728 passes all28 host Nix checks. CI, independent
+commits. Integrated030 source0da4c952 passes all28 host Nix checks and
+authoritative flake check, with exact output roots/hashes/derivers retained.
+Following test-only family and native source witnesses pass both supported
+compilers/profiles, source conservation and intended loss inversions. Their
+focused receipts do not relabel the earlier full-gate source. CI, independent
 review and delivery remain open. Other AI worktrees remain untouched. The
 runtime now selects registry Behavior/Actors0.30.0 and unchanged macros0.16.0.
-Current030 focused consumers qualify as recorded below; full current-source
-gates and delivery remain open. No029 receipt is relabelled. Behavior0.30.0 is
+Current030 consumers qualify as recorded below; coexisting root/family cleanup
+failures, remaining source phases/Application paths, operational inspection,
+comparable costs and final acceptance/delivery remain open. No029 receipt is
+relabelled. Behavior0.30.0 is
 published and the release notice was acknowledged;
 the owning PRD holds those
 publication receipts. The earlier PR113/114 and reviewed release PR115 merged
