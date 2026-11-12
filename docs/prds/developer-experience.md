@@ -765,6 +765,91 @@ structural user input. Native116/paired141 paths remain unchanged. Nonempty
 source progress, descendants/families, costs and delivered acceptance stay open;
 the full28-check receipt remains bound to361d7728 before these test-only stages.
 
+#### Child failure and surviving descendant consumer, before editing
+
+Continue D-RETIRE-1/D-TERM-1 against clean1d57a776 and the unchanged selected
+dependency graph. The existing application_terminal_custody.rs panic journey
+already retains a failed uncommitted child's original creation/state and panic
+carrier, plus a later established sibling's joined retirement. Inspect its
+actual NativeChildren extraction and topology schema: ActorCustody independently
+owns the descendant vector and typed child-failure vector. The failure's
+original report, notification, address, nonce and birth provenance coexist with
+the surviving child. No new child/runtime policy or protocol is needed.
+
+Replace that test's root and survivor Retained patterns with consuming custody
+pairs, matching the same primary outcomes and destructuring the same complete
+products. Preserve every original assertion, exact panic allocation and shared
+payload lifetime oracle. Additionally inspect the existing runtime-issued root
+report before consuming: retirement Established and FailuresFound must coexist
+with the root's own Completed outcome. This is the existing joined-subtree
+classification law, not an assumption that root success implies child success.
+Expected paths: this existing test and this PRD; production/API +0/-0. Measure
+the exact test delta and prove original-source conservation after reversing
+only these forecast changes.
+
+Falsifiers, separately restored: clear only the consuming custody's descendant
+vector; then, at its actual NativeChildren owner, discharge the complete
+InitializationPanicked failure instead of appending it to the original vector.
+Each must fail this panic journey for its missing descendant/failure assertion
+in debug/release while the other three terminal cases and seven Counter cases
+pass. Preserve exact production inputs, restore each file and repeat current
+and actual minimum1.96 profiles, strict target Clippy and formatting. Review
+the original carrier/lifetime/provenance oracle and the actual failures twice.
+
+Pre-edit checkpoint:24 logical terminal cases/5+20 tags and one14-field custody
+product remain; runtime/subordinate states/results, branches, production lines,
+modules and public spellings stay unchanged. The original child cause, sibling,
+report and current original creation values each retain their distinct owner.
+Use the existing typed vector and complete sum, with no new history, repeated
+cause, cardinality restriction, semantic flag, transition authority or positional
+user input. Cross-check the same normalized terminal-custody/creation laws and
+explicit provenance. Family recovery, nonempty source progress, costs, full
+current-source/CI and delivered acceptance remain open.
+
+Result: all four terminal cases pass actual Rust/Cargo1.99 and1.96 in debug and
+release; seven Counter controls pass both current profiles. Strict current
+target Clippy and formatting pass. The root's retained report establishes
+retirement and failure together while its original primary outcome is Completed.
+Both original survivor custody and failed-child carrier/provenance/lifetime
+oracles now run through the consuming port.
+
+Separately clearing descendants and dropping only the initialization-panic
+failure at NativeChildren each fails exactly the corresponding length assertion
+in the intended case, in both profiles. Three other terminal cases and seven
+Counter controls pass each time. Exact restoration of both production files
+passes again. The first minimum invocation has a mistyped RUSTC store path and
+exits101 before executing the compiler/tests; retain that failed receipt with
+no test credit. The separately named minimum-corrected invocation executes
+actual1.96 and passes both profiles.
+
+Review1 maps the independent sibling and failed child, original creation/state,
+exact panic carrier, report/notification and final shared-payload discharge to
+the consuming pairs. Review2 checks both actual erasures and ten passing
+controls, including the distinction between root completion and subtree failure.
+No independent review is claimed. Reversing only the two consuming sites and
+new report oracle reproduces the complete original four-case source byte-for-
+byte. Receipts are retirement-recovery-children-{before-*,reversed,inversion,
+owner,restored,minimum,minimum-corrected,summary} in the existing handoff.
+
+Retained checkpoint: `pass` for this child/descendant consumer. Tests +53/-52/net1;
+production +0/-0/net0, public types +0/-0. All pre-edit state, subordinate,
+branch, module, production-line and public-spelling counts and current-value
+owners remain unchanged. The same normalized terminal/creation laws apply;
+residue scan adds no history, repeated cause, cardinality, flag, authority or
+structural user input. Native116/paired141 paths stay unchanged. Family recovery,
+nonempty source progress, costs and delivered acceptance remain open.
+
+A fresh remote fetch now finds main814c96d1: PR413 merges registry Behavior/
+Actors0.30 adoption and579 lines of native Machine consumer tests, plus the
+existing remote-delivery records (16 upstream paths total). This work belongs
+to main, not our feature delta. Preserve all029 receipts at their actual sources.
+After closing this stage, retain the pre-adoption branch, read the exact030
+owner instructions/contracts, then integrate main. Its Machine file has two
+old ActorRetirement patterns requiring only the already-proven mechanical
+representation migration; archive their original source and conserve every
+assertion/field before assigning030 verification credit. No new API, bound,
+wrapper, placeholder or production policy may arise from that migration.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The

@@ -934,7 +934,7 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
             startup_error: Some(_startup_error),
             cleanup: Ok(()),
         },
-        _root_report,
+        root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -946,32 +946,34 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
         drop(application_outcome);
         panic!("the original startup phase and complete joined root remain exact");
     };
-    let ActorRetirement::Retained {
-        custody:
-            ActorCustody {
-                behavior,
-                capability_failures,
-                unread_owner_cancellation,
-                control,
-                user,
-                mut child_failures,
-                additional_failures: retirement_additional_failures,
-                received_interpretation: retirement_received_interpretation,
-                received_source: retirement_received_source,
-                source_index: retirement_source_index,
-                acquired_ingress: retirement_acquired_ingress,
-                retirement_failures: retirement_native_failures,
-                terminal_report: retirement_terminal_report,
-                mut descendants,
-            },
-        outcome:
-            RetirementOutcome::Completed {
-                settlements,
-                completion,
-                interpretation: retirement_interpretation,
-                source: retirement_source,
-            },
-    } = retirement
+    let report = root_report.expect("the joined parent retains its original subtree report");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+    let (custody, outcome) = retirement
+        .try_into_custody()
+        .unwrap_or_else(|_| panic!("the parent retains both original child results"));
+    let ActorCustody {
+        behavior,
+        capability_failures,
+        unread_owner_cancellation,
+        control,
+        user,
+        mut child_failures,
+        additional_failures: retirement_additional_failures,
+        received_interpretation: retirement_received_interpretation,
+        received_source: retirement_received_source,
+        source_index: retirement_source_index,
+        acquired_ingress: retirement_acquired_ingress,
+        retirement_failures: retirement_native_failures,
+        terminal_report: retirement_terminal_report,
+        mut descendants,
+    } = custody;
+    let RetirementOutcome::Completed {
+        settlements,
+        completion,
+        interpretation: retirement_interpretation,
+        source: retirement_source,
+    } = outcome
     else {
         panic!("the parent completes after joining every surviving child");
     };
@@ -1051,31 +1053,30 @@ async fn panicking_child_returns_exact_uncommitted_creation() {
     // address getter or inferring an incarnation generation from this address.
     let survivor_recipient = actor.into_recipient();
     assert!(survivors.resolve(&survivor_origin.address()).is_none());
-    let ActorRetirement::Retained {
-        custody:
-            ActorCustody {
-                behavior: survivor,
-                control: survivor_control,
-                user: survivor_user,
-                descendants: survivor_descendants,
-                child_failures: survivor_child_failures,
-                capability_failures: survivor_capability_failures,
-                unread_owner_cancellation: survivor_unread_request,
-                additional_failures: retirement_additional_failures,
-                received_interpretation: retirement_received_interpretation,
-                received_source: retirement_received_source,
-                source_index: retirement_source_index,
-                acquired_ingress: retirement_acquired_ingress,
-                retirement_failures: retirement_native_failures,
-                terminal_report: retirement_terminal_report,
-            },
-        outcome:
-            RetirementOutcome::OwnerCancelled {
-                settlements: survivor_settlements,
-                interpretation: retirement_interpretation,
-                source: retirement_source,
-            },
-    } = *survivor_retirement
+    let (custody, outcome) = (*survivor_retirement)
+        .try_into_custody()
+        .unwrap_or_else(|_| panic!("the joined sibling retains its complete original custody"));
+    let ActorCustody {
+        behavior: survivor,
+        control: survivor_control,
+        user: survivor_user,
+        descendants: survivor_descendants,
+        child_failures: survivor_child_failures,
+        capability_failures: survivor_capability_failures,
+        unread_owner_cancellation: survivor_unread_request,
+        additional_failures: retirement_additional_failures,
+        received_interpretation: retirement_received_interpretation,
+        received_source: retirement_received_source,
+        source_index: retirement_source_index,
+        acquired_ingress: retirement_acquired_ingress,
+        retirement_failures: retirement_native_failures,
+        terminal_report: retirement_terminal_report,
+    } = custody;
+    let RetirementOutcome::OwnerCancelled {
+        settlements: survivor_settlements,
+        interpretation: retirement_interpretation,
+        source: retirement_source,
+    } = outcome
     else {
         panic!("the sibling preserves the actual acquired owner cancellation");
     };
