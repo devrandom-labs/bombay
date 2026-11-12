@@ -36,14 +36,16 @@ The pre-adoption history is retained at codex/retirement-recovery-before-030-
 commits. Integrated030 source0da4c952 passes all28 host Nix checks and
 authoritative flake check, with exact output roots/hashes/derivers retained.
 Following test-only family and native source witnesses pass both supported
-compilers/profiles, source conservation and intended loss inversions. Their
+compilers/profiles, source conservation and intended loss inversions. The later
+public Application witness also retains independent root/family cleanup causes
+in all four fault combinations, with all42 owner cases passing both compilers/
+profiles before and after selective loss inversions. Their
 focused receipts do not relabel the earlier full-gate source. CI, independent
 review and delivery remain open. Other AI worktrees remain untouched. The
 runtime now selects registry Behavior/Actors0.30.0 and unchanged macros0.16.0.
-Current030 consumers qualify as recorded below; coexisting root/family cleanup
-failures, remaining source phases/Application paths, operational inspection,
-comparable costs and final acceptance/delivery remain open. No029 receipt is
-relabelled. Behavior0.30.0 is
+Current030 consumers qualify as recorded below; source/Application inspection,
+remaining cost comparisons and final acceptance/delivery stay open. No029
+receipt is relabelled. Behavior0.30.0 is
 published and the release notice was acknowledged;
 the owning PRD holds those
 publication receipts. The earlier PR113/114 and reviewed release PR115 merged
@@ -1196,6 +1198,103 @@ minimum whole-target receipts are retirement-recovery-joint-* in the existing
 restart evidence. The full28/flake result stays bound to0da4c952. Remaining
 source/Application inspection, comparable costs, independent review/CI/delivery
 and whole-programme acceptance remain open.
+
+#### Comparable recovery costs, before measurement
+
+Use the existing isolated pool-memory-report/DHAT workload and the two immutable
+030 dependency-graph source archives in restart-2026-11-11/retirement-costs:
+upstream814c96d1 and custody0da4c952. Do not edit these snapshots. Latest retained
+changes after0da4c952 are tests/docs only; verify that production source agrees,
+using the existing exact launch.rs test reversal for its one cfg(test) addition.
+No029 measurement is comparative030 evidence, and upstream Native0.2.0 is not
+being labelled published. Both sources select the identical root lock/checksums.
+
+Preserve the actual one-root/one-worker FIFO policy, domain worker, input text,
+accepted submission/completed job, business result and complete joined native
+root/child retirement. Remove the old probe's redundant retirement wait inside
+Work in both consumers, matching the current ordinary example. Inspect the
+root report after Work; retain every original returned owner through the joined
+heap cut and explicitly discharge it afterward. The two source adapters differ
+only in the old variant versus Retained/outcome borrowed retirement patterns;
+no new runtime code, generic alias, actor, effect or ownership policy.
+
+First validate standalone consumers, known4096-byte allocator calibration and
+unmodified business/complete retirement observations on both supported pinned
+compilers. Record inferred execution-future, complete outcome, native root and
+worker sizes. Independent heap/System modes use the same workload, capacities1
+(native effective2) and1024, and source-specific Cargo targets. Preserve every
+input/hash and exact graph; use supported Cargo/DHAT/system measurement tools,
+without project-owned tooling. Functional builds are not timing samples.
+
+Before timed comparisons, inspect actual competing processes and run repeated
+same-source controls to establish noise. Then alternate at least five process
+samples per source/capacity/allocator/compiler. Record peak heap/resident memory,
+allocation counts, heap at join/after discharge/host stop and complete workload
+duration; System timing is separate from DHAT instrumentation. Benchmark clean/
+incremental Cargo checks with immutable inputs and fresh source/compiler targets;
+keep binary/metadata sizes secondary. Set no invented percentage correctness
+gate: this port adds no payload clone/allocation, so new allocation counts or
+post-discharge retention must be explained or reopen the model. Enum/future/
+task layout changes are measured costs, not assumed improvements. Contended
+host timings receive no comparative performance credit. This bounded FIFO case
+does not establish catalogue/remote latency, macro cost or all DX26 acceptance.
+
+First functional calibration rejects the upstream adapter: it incorrectly put
+the14 custody fields directly in Completed, although814c96d1 already owns them
+in ActorCustody. The compiler's E0026/E0027 reject that candidate; its consequent
+worker-reference diagnostic supplies no design authority. Correct only the
+existing custody nesting/import from the actual upstream source, retaining the
+same18 field equations, business code and every oracle. The initial source,
+conservation calculation, failed build and custody-only functional controls are
+preserved at retirement-costs/initial-pre-correction; none is a comparative cost
+result. No runtime type, generic, bound, protocol or workload is changed.
+
+Corrected functional consumers pass both capacities in System/heap modes on
+actual1.99/1.96 (eight runs per compiler). Their identical consumer lock is
+a054d3fb..., with66 default/81 heap-mode resolved packages/features. Metadata
+differs only by the exact extra retirement_recovery test target, which this
+external --bin build does not compile; the initial unqualified metadata check
+is not credited. All116 crate/src files match latest except the source-conserved
+cfg(test) launch addition; no latest-test compilation timing is claimed.
+
+Repeated measurement:40 fresh same-source controls then80 alternating paired
+processes pass, five samples per source/compiler/allocator/capacity. Every exit,
+business result, complete root/worker custody shape and immutable binary hash
+verifies; before/after snapshots show no competing build worker. Both sources
+have identical complete heap traces within each compiler/capacity. Current1.99
+peak heap is161650/415106 bytes at effective2/1024; minimum1.96 is161874/415330.
+Joined heap is28656/current and28880/minimum; both release to8648 before host
+drop and56 bytes/one existing Tokio parker afterward,176 total allocations.
+These are two immutable030 sources with the same workload; older workload
+measurements are not substituted for this comparison.
+
+Measured sizes agree across both sources: execution future8936/current and
+9048/minimum, complete outcome3224, application retirement2936, native root2840
+and worker712 bytes. System RSS medians range3.8–4.1MB with16KiB page variation;
+source deltas do not establish a memory improvement. Peak-footprint readings
+and one-job durations are retained separately; control outliers preclude a
+general latency claim. No invented percentage gate is imposed.
+
+The allocator substitution fails exactly0 versus4096; wrong business result
+fails3 versus4, both exit101/no success marker. A known nonzero32MiB touched
+allocation raises measured child RSS1671168→35241984 bytes. Both author reviews
+pass; no independent review is claimed. Source/oracle conservation, exact
+graph/compiler/binary identities, raw stdout/resources/exits/process snapshots,
+120 rows/CSV, noise ranges, controls and limits are in retirement-costs/
+{prepared-consumers,prepared-heap-consumers,consumer-conservation,functional-*,
+negative-controls,resident-calibration,memory-samples,memory-summary}.
+
+Checkpoint: `pass` for this bounded FIFO memory/layout comparison. Production/
+test/API changes0/0; runtime/control/subordinate alternatives, transition
+branches/lines/modules/public spellings and existing current-value owners remain
+unchanged. The isolated benchmark retains original complete native owners at
+the joined cut; no arrival state, repeated cause, false cardinality, nested
+authority, semantic flag or user plumbing is added. The same custody and
+normalized laws apply. Native source scope remains117/paired142 paths, Rust
++3058/-1484/net1574, production net36, tests net1538, public types +1/-0.
+This measures a healthy one-root/one-worker/one-job path, not error-path costs,
+remote/catalogue latency, macro cost or full DX26. Clean/incremental checks,
+binary/metadata diagnostics, remaining acceptance and delivery are still open.
 
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
