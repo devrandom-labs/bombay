@@ -702,6 +702,69 @@ partial interpretation/source progress, descendants, complete family recovery,
 costs and delivered acceptance remain open. The last full28-check receipt is
 still the immutable361d7728 source, not these later test/record commits.
 
+#### Partial interpretation consumer, before editing
+
+Continue D-RETIRE-1 with the existing application_services.rs guarded-panic
+case. Current sourceb1bfb46d is clean; root Cargo.lock still selects registry
+Behavior/Actors0.29.0, macros0.16.0, Address0.3.0, Communication0.1.6 and
+Timers0.2.0 without patches. The existing Documents, OpenFile/Services and
+InterpretationProgress contracts already own this trace: an acquired usable
+File, the original panicking pending request/provider, an untouched later file
+and an untouched independent environment lane. The original panic allocation,
+actor, Work, cleanup and all14 custody fields remain observable. No transition,
+interpretation, scheduler or actor-model law changes.
+
+Replace only that test's Retained pattern with consuming `try_into_custody`,
+then match its same HostExecutionPanicked outcome. Preserve every original
+assertion and allocation/provider identity check. Move its one final iterator
+advance out of the assertion into a named value. No import, fixture, actor,
+interpreter, generic, policy or production symbol is needed. Forecast: this
+existing test path and this record, production/API +0/-0; measure test lines.
+
+Falsifier: in the consuming port, only for HostExecutionPanicked, discard its
+interpretation while returning all other fields. The complete partial-action
+assertion must fail in debug/release; the other three service cases and seven
+Counter cases must pass. Restore the exact production source, rerun both
+profiles, strict target Clippy/formatting, then run actual minimum1.96 in both
+profiles. Review the oracle against the law and actual falsifier separately.
+
+Pre-edit aggregate checkpoint:24 logical cases/5+20 tags and one14-field custody
+product; all runtime/subordinate states, results, transition branches, production
+lines/modules/public spellings unchanged. Each existing progress alternative
+owns its same current original/accepted/pending value needed for exact return;
+no history or second transition authority is added. Reuse the existing sum,
+named effect lanes and ordered vector. Residue scan: no repeated cause, false
+cardinality, semantic boolean, new arrival state or structural caller input.
+Cross-check D-RETIRE-1/D-TERM-1, total-item/terminal custody and the same normalized
+atomic documents in the focused checkpoint. Complete descendant/family recovery,
+costs and full current-source/CI/delivery acceptance remain open.
+
+Result: all four service cases pass actual Rust/Cargo1.99 and1.96 in debug and
+release. Seven Counter controls also pass both current profiles. Strict target
+Clippy and formatting pass. Discarding only HostExecutionPanicked interpretation
+makes the intended partial-action assertion fail in each profile, with the
+other three service cases and seven Counter controls passing. Exact production
+restoration passes all current cases again. No test is ignored or weakened.
+
+Review1 traces the original panic carrier, acquired usable File, pending path
+allocation/provider and both untouched suffix allocations through the consuming
+pair; all14 custody fields and independent Work/notification/cleanup results
+retain their original oracles. Review2 checks the actual erasure failure and
+ten passing controls, including cancellation and opposite wrapper order. Both
+reviews are by the author. Reversing only the forecast pattern replacement and
+iterator advance reproduces the complete original four-case source byte-for-
+byte. Receipts are retirement-recovery-progress-{before,reversed,inversion,
+owner,restored,minimum,summary} in the existing restart evidence.
+
+Retained checkpoint: `pass` for this partial-interpretation consumer. Tests
++11/-11/net0, production +0/-0/net0, public types +0/-0. All pre-edit aggregate,
+subordinate, branch, module, production-line and public-spelling counts and
+current-value owners stay unchanged; the same normalized laws still apply.
+Residue scan retains no new history, cause, cardinality, authority, boolean or
+structural user input. Native116/paired141 paths remain unchanged. Nonempty
+source progress, descendants/families, costs and delivered acceptance stay open;
+the full28-check receipt remains bound to361d7728 before these test-only stages.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The

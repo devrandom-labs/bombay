@@ -295,16 +295,15 @@ async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both
         .retirement
         .expect("retirement publication succeeds");
     let (_, retirement) = native.expect("the failed actor is independently acquired");
-    let ActorRetirement::Retained {
-        custody,
-        outcome:
-            RetirementOutcome::HostExecutionPanicked {
-                payload,
-                settlements,
-                interpretation,
-                source,
-            },
-    } = retirement
+    let (custody, outcome) = retirement
+        .try_into_custody()
+        .unwrap_or_else(|_| panic!("the failed interpreter retains complete original custody"));
+    let RetirementOutcome::HostExecutionPanicked {
+        payload,
+        settlements,
+        interpretation,
+        source,
+    } = outcome
     else {
         panic!("the guarded interpreter panic must preserve its complete partial action");
     };
@@ -386,7 +385,8 @@ async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both
     );
     assert_eq!(suffix.path, expected_path);
     assert!(matches!(suffix.access, FileAccess::Ready));
-    assert!(files.next().is_none());
+    let later_file = files.next();
+    assert!(later_file.is_none());
 }
 
 #[tokio::test(flavor = "current_thread")]
