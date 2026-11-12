@@ -406,7 +406,8 @@ reviews also pass. Their report hashes are
 `a6ffa38bf23f4eeee02d1a66da10aa9119995a9b26d071a7cde83442baf0c393`
 and `d77c5d0dd4e5e681e00e495031e6f12bf2cd5f3c9967d20e912899902c31afae`.
 The full cohort also executes nine existing UI fixtures successfully per profile.
-The local fixed-law gate is closed; full Nix and hosted CI remain separate.
+The local fixed-law gate is closed. Full local gates are recorded below;
+hosted CI/review and main delivery remain separate.
 
 This fixed witness adds907 formatted test lines beyond the qualified caller,
 rather than the original300–450 forecast. Complete retained test contribution
@@ -427,9 +428,48 @@ client-overlap retains source/results/reviews; its README correction is in sibli
 client-overlap-reviews/erratum.txt. The earlier caller epoch remains in client-caller.
 Neither capsule receives later delivery records.
 
+### Full local gates — 2026-11-12
+
+`nix flake check --no-update-lock-file --max-jobs 1 --cores 2 -L` exits0
+with all28 named aarch64-darwin checks passing. The other three platforms
+are explicitly omitted. The selected remote debug and optimized gates each
+pass529 outer tests and31 UI fixtures, including both new overlap cases.
+Optimized workspace Cargo passes989 tests in122 result summaries, with six
+existing ignored child entrypoints and three benchmark entrypoints. No
+unprinted benchmark workload is credited. Rust1.96's selected diagnostic
+subset passes114 outer tests, one existing ignored child and136 UI fixtures;
+the separate minimum-remote gate passes three outer tests and11 UI fixtures.
+Those minimum subsets do not execute the new native overlap witness.
+
+Workspace build, formatting, strict Clippy and documentation pass. Coverage
+retains Driver737/818, execution1006/1048, outcome95/97 and Observe504/526,
+above their existing floors. The isolated protected-counter gate passes its
+base53 cases per profile, six public-Node cases per profile, exact ownership/
+sharing guards, three native counter cases per profile, formatting and both
+strict Clippy configurations. Expected child and owner-script failures are
+negative controls within successful gates, not ignored overall failures.
+
+The inherited explicit `cargo nextest run --locked --workspace` requirement
+also runs through pinned nix develop:989 tests across122 binaries pass,
+12 are slow and six are skipped. The six existing child entrypoints are
+invoked and checked by passing parent tests; the reported default skip count
+remains six. Both new overlap tests pass. Catalogue, commands, raw output,
+exit0 and unchanged16-input checks are retained separately from the Nix gate.
+
+Nix began on the staged source before commit0f04b84c. Its actual copied Cargo
+source pkwmfw39 contains690 files:689 compare byte-identically with that
+commit; only this PRD's later census/erratum text differs. All runtime Rust,
+manifests and fixtures remain exact; flake.lock is separately guarded outside
+the copied Cargo source. This establishes executed-code equality, not whole
+documentation/Git-tree equality. The later read-only postcommit evaluation
+has no execution credit. Hosted CI must still qualify the submitted head.
+
+Common Git session-archives/2026-11-12/client-overlap-gates retains both gates'
+commands, raw results, source comparisons and independent two-pass reviews.
+
 Final source census against mainf09303c8, including88dc44d7 and every
 tracked/untracked path: production +0/-0/net0; tests +994/-0/net994;
-public API types +0/-0; records +455/-29/net426. There are six paths.
+public API types +0/-0; records +497/-29/net468. There are six paths.
 Manifests, locks, production Rust, examples and shared fixtures are unchanged.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11

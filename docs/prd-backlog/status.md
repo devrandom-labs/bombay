@@ -19,8 +19,10 @@ paired intended receipt-loss failures and exact-restored debug/optimized control
 The [fixed native witness](../prds/network-schedule.md#fixed-public-client-overlap-executed-controls)
 now also passes paired healthy/canonical-cut/exact-restored runs and the complete
 52-case caller cohort in both profiles, with independent source/outcome reviews.
-Full Nix, hosted CI/review and main delivery remain open; this fixed witness
-does not close complete R24, AUTH1 or NET1.
+The full local Nix gate passes all28 native checks; explicit Nextest passes989
+tests with six existing parent-controlled child skips. Hosted CI/review and
+main delivery remain open; this fixed witness does not close complete R24,
+AUTH1 or NET1.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
