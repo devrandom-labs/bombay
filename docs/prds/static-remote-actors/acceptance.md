@@ -22,6 +22,11 @@ all six checks and independent reviews. Its [owning delivery record](../static-r
 keeps local falsifiers, actual CI scopes and merged delivery separate; no
 remote acceptance row closes from this prerequisite.
 
+The [bounded incoming campaign](../network-schedule.md#verified-generated-orders-and-retained-replay--2026-11-12)
+now has local finite/generated/falsifier/replay and narrow Nix seed evidence.
+Its CI source is reviewed; actual hosted CI and delivery remain open. Native
+Query/Client, arbitrary overlap, crash/restart and full R24 are not closed.
+
 On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
 byte-preservation witnesses after all six checks passed. PR404's R09 recovery
 is also merged. These contributions do not close their complete rows. Legacy

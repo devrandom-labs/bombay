@@ -16,6 +16,11 @@ use core::pin::pin;
 use core::task::Poll;
 use futures_util::FutureExt;
 use futures_util::future::Either;
+use proptest::arbitrary::any;
+use proptest::collection;
+use proptest::sample;
+use proptest::strategy::Strategy;
+use proptest::test_runner::{Config, RngSeed, TestError, TestRunner};
 use serde::Deserialize;
 use std::array;
 use std::cell::{Cell, RefCell};
@@ -24,6 +29,7 @@ use std::num::NonZeroUsize;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::runtime::Builder;
 use tokio::sync::{Semaphore, oneshot};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -315,6 +321,126 @@ async fn every_legal_six_label_order_preserves_native_admission() {
     }
     assert_eq!(completed, 180);
     println!("completed incoming delivery orders: {completed}");
+}
+
+#[test]
+fn generated_delivery_orders_preserve_native_admission() {
+    let orders = (
+        sample::select(delivery_orders()),
+        collection::vec(any::<sample::Index>(), 0..=2),
+    )
+        .prop_map(|(base, insertions)| {
+            let initial = base
+                .iter()
+                .position(|&delivery| delivery == Delivery::Initial)
+                .expect("each legal base word contains Initial");
+            let gaps = base.len() - initial;
+            let mut deliveries = Vec::with_capacity(base.len() + insertions.len());
+            for (position, delivery) in base.into_iter().enumerate() {
+                deliveries.push(delivery);
+                if position >= initial {
+                    for insertion in &insertions {
+                        if insertion.index(gaps) == position - initial {
+                            deliveries.push(Delivery::Repeat);
+                        }
+                    }
+                }
+            }
+            deliveries
+        });
+    let mut configuration = Config::with_source_file(file!());
+    if let RngSeed::Random = configuration.rng_seed {
+        configuration.rng_seed = RngSeed::Fixed(20_261_112);
+    }
+    let cases = configuration.cases;
+    let shrink_iterations = configuration.max_shrink_iters();
+    println!(
+        "generated incoming configuration: algorithm={:?}; seed={}; cases={cases}; shrink_iterations={} (effective {shrink_iterations}); shrink_time_ms={} (0 is unlimited); source_file={:?}; fork={}; timeout_ms={}; persistence={:?}",
+        configuration.rng_algorithm,
+        configuration.rng_seed,
+        configuration.max_shrink_iters,
+        configuration.max_shrink_time,
+        configuration.source_file,
+        configuration.fork(),
+        configuration.timeout(),
+        configuration.failure_persistence,
+    );
+    assert!(
+        cases > 0,
+        "the generated campaign must execute successful cases"
+    );
+    assert!(
+        shrink_iterations > 0,
+        "the generated campaign must permit shrinking"
+    );
+    assert!(
+        !configuration.fork(),
+        "this campaign requires in-process observations, without Proptest fork or timeout"
+    );
+    assert!(
+        configuration.failure_persistence.is_some(),
+        "this campaign requires standard failure persistence"
+    );
+    let mut runner = TestRunner::new(configuration);
+    let invocations = Cell::new(0_u64);
+    let completed = Cell::new(0_u64);
+    let result = runner.run(&orders, |deliveries| {
+        invocations.set(invocations.get() + 1);
+        let expected = expected_trace(&deliveries);
+        {
+            let host = Builder::new_multi_thread()
+                .worker_threads(2)
+                .enable_all()
+                .build()
+                .expect("each generated case owns its ordinary Tokio host");
+            host.block_on(async {
+                tokio::time::timeout(
+                    Duration::from_secs(10),
+                    Box::pin(incoming_requests(&deliveries, &expected)),
+                )
+                .await
+                .expect("watchdog supplies no generated admission or cleanup evidence");
+            });
+        }
+        completed.set(completed.get() + 1);
+        Ok(())
+    });
+    println!(
+        "generated incoming observations: invocations={}; completed={}",
+        invocations.get(),
+        completed.get()
+    );
+    match result {
+        Ok(()) => {
+            assert_eq!(invocations.get(), completed.get());
+            assert!(completed.get() >= u64::from(cases));
+        }
+        Err(TestError::Fail(reason, deliveries)) => {
+            panic!(
+                "generated incoming failure: {reason}; actual minimized deliveries: {deliveries:?}"
+            );
+        }
+        Err(TestError::Abort(reason)) => panic!("generated incoming campaign aborted: {reason}"),
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn minimized_duplicate_and_expiry_order_preserves_native_admission() {
+    let deliveries = [
+        Delivery::Initial,
+        Delivery::Repeat,
+        Delivery::Expiring,
+        Delivery::ConstructorExpired,
+        Delivery::Revoked,
+        Delivery::Fresh,
+    ];
+    let expected = expected_trace(&deliveries);
+    tokio::time::timeout(
+        Duration::from_secs(10),
+        Box::pin(incoming_requests(&deliveries, &expected)),
+    )
+    .await
+    .expect("watchdog supplies no literal-order admission or cleanup evidence");
 }
 
 #[expect(
