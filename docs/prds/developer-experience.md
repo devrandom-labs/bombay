@@ -64,7 +64,7 @@ the tested candidate. The release passed14 GitHub checks,11 native Nix gates,
 1,035 owner tests,123 doctests and four-workspace package preflight. These owner
 results do not substitute for the remaining Bombay gates.
 
-### Next acceptance: transported roots
+### Transported roots
 
 From delivered main `d575c614`, DX05 needs permanent coverage of the existing
 Rust task-transfer contract: transported root state must be `Send`, while
@@ -85,6 +85,39 @@ invert the carriers to prove both registrations execute and reject the intended
 counterexamples. Existing host/cancellation/receiving witnesses stay unchanged.
 Runtime control states remain five outer/20 retained/24 logical alternatives
 with 14 custody fields; no new state, protocol or transition authority is needed.
+
+Fresh locked metadata retains Behavior/Actors0.30.0, macros0.16.0,
+Address0.3.0, Communication0.1.6 and Timers0.2.0 without patches; Observe stays
+Native-owned. Relevant owner source, transfer contracts and existing host/work
+tests were inspected. Behavior/Actors impose no executor policy; Native's
+`execute_with` owns the transported `Actor: Send` bound and leaves
+`WorkFuture: Future` local. Address inherits endpoint transfer capabilities,
+Communication owns mailbox transfer and Timers retains generation tokens.
+No dependency contract changes. `execution-transport-before.json` records the
+original 718 inputs,136 cases and25 compiler-specific expectations before edits.
+
+The permanent run_with harness now registers both source twins. Actual Rust
+1.99/1.96 outer debug/release profiles each pass all eight fixtures. The new
+snapshot contains exactly two E0277s naming Counter/Rc/Send at `execute_with`
+and disposal of its opaque result; both compilers accept the same snapshot.
+All 136 original cases,25 compiler-specific expectations and the original
+minimum.patch remain unchanged. Removing only the two new harness calls
+reproduces the original entire run_with source byte-for-byte. The initial
+missing-expectation run failed only while creating this new snapshot; it is
+not credited as a production defect.
+
+Both carrier inversions fail exactly their intended fixture with seven healthy
+controls on both compilers/profiles: accepting Arc cannot satisfy the Rc denial,
+and rejecting Rc cannot satisfy the Arc control. All four restored runs pass;
+all 721 focused input files remain exact, with only the existing25 minimum
+diagnostic substitutions in that isolated copy. Two author source/oracle
+reviews pass; no independent review is claimed. Workspace/fixture formatting
+and strict owning-target Clippy pass. Production/public API0; Rust tests+46,
+one new shared diagnostic and two existing harness calls, no new outer test.
+This is compile-contract evidence; host/work/cancellation behavior retains its
+separate existing witnesses. Full repository, package and hosted delivery
+gates for this batch remain open. Receipts are execution-transport-* in the
+existing restart handoff.
 
 All three tracked root, protected-consumer and Engine-fuzz locks select the
 published owners without Behavior patches. The root preserves all396 complete

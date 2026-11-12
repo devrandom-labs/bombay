@@ -1412,6 +1412,8 @@ async fn application_delegates_to_the_explicit_single_space_app() {
 fn run_with_protocol_is_compile_checked() {
     let cases = trybuild::TestCases::new();
     cases.pass("tests/compile/pass/shutdown_authority.rs");
+    cases.pass("tests/compile/pass/root_send.rs");
+    cases.compile_fail("tests/compile/fail/root_not_send.rs");
     cases.compile_fail("tests/compile/fail/run_with_wrong_root_protocol.rs");
     cases.compile_fail("tests/compile/fail/actor_ref_has_no_shutdown.rs");
     cases.compile_fail("tests/compile/fail/application_lifecycle_wrong_event.rs");
