@@ -1,4 +1,5 @@
 use behavior_actors::{ShutdownRejection, ShutdownRequested};
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, Births, ChildCreationOutcome, ClassifySettlement,
     CreateChild, CreationEvent, CreationSequence, CreationSettlement, CreationSettlements,
@@ -409,7 +410,7 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert_eq!(repeated, Some(Err(ShutdownRejection::AlreadyStopped)));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -427,10 +428,13 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = native
     else {
         panic!("the full original root completes")
@@ -473,18 +477,17 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
     for child_service::RootRetirements { origin, retirement } in &descendants {
         let terminal = retirement.as_ref();
         match terminal {
-            ActorRetirement::Completed {
-                completion,
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { completion, .. },
             } => {
                 assert_eq!(behavior.base().amount, 11);
                 assert_eq!(origin.address(), target_address);
                 assert_eq!(*completion, Completion::Stopped);
             }
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::OwnerCancelled { .. },
             } => {
                 assert_eq!(behavior.base().amount, 17);
                 assert_eq!(origin.address(), sibling_address);
@@ -496,7 +499,7 @@ fn service_requests_exact_child_stop_and_waits_for_joined_report() {
 }
 
 fn assert_child_native(terminal: &ActorRetirement<Worker, Never, Vec<Never>>) {
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior: _,
@@ -514,33 +517,19 @@ fn assert_child_native(terminal: &ActorRetirement<Worker, Never, Vec<Never>>) {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion: _,
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody:
-            ActorCustody {
-                behavior: _,
-                control,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                additional_failures,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                retirement_failures,
-                terminal_report,
-                unread_owner_cancellation,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion: _,
+            }
+            | RetirementOutcome::OwnerCancelled {
+                interpretation,
+                source,
+                settlements,
             },
-        interpretation,
-        source,
-        settlements,
-    }) = terminal
+    } = terminal
     else {
         panic!("the acquired original child phase")
     };
@@ -563,7 +552,13 @@ fn assert_child_native(terminal: &ActorRetirement<Worker, Never, Vec<Never>>) {
             && terminal_report.is_none()
             && unread_owner_cancellation.is_none()
     );
-    if matches!(terminal, ActorRetirement::Completed { .. }) {
+    if matches!(
+        terminal,
+        ActorRetirement::Retained {
+            outcome: RetirementOutcome::Completed { .. },
+            ..
+        }
+    ) {
         assert_eq!(settlements.len(), 1, "the final Stop product survives");
     }
     for settlement in settlements {
@@ -572,10 +567,16 @@ fn assert_child_native(terminal: &ActorRetirement<Worker, Never, Vec<Never>>) {
         assert!(matches!(settlement.sends.owned, NoSends));
         assert!(settlement.sends.inner.replies.is_empty());
         match terminal {
-            ActorRetirement::Completed { .. } => {
+            ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { .. },
+                ..
+            } => {
                 assert!(matches!(settlement.become_, Step::Stop(_)));
             }
-            ActorRetirement::OwnerCancelled { .. } => {
+            ActorRetirement::Retained {
+                outcome: RetirementOutcome::OwnerCancelled { .. },
+                ..
+            } => {
                 assert!(matches!(settlement.become_, Step::Continue));
             }
             _ => unreachable!("only the acquired terminal phases"),

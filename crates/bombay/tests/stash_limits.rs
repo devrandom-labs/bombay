@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase as _, ExactDeliveryReason, ItemSettlement,
@@ -175,7 +176,7 @@ async fn invoices(mode: Customer) {
     };
     let (origin, native) = native.expect("native retirement survives");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -193,10 +194,13 @@ async fn invoices(mode: Customer) {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = native
     else {
         panic!("overflow continues until ordinary shutdown");
@@ -426,7 +430,7 @@ async fn a_replay_selector_panic_preserves_every_previously_held_invoice() {
     };
     let (origin, native) = native.expect("native panic retirement survives");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::TransitionPanicked {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 mut behavior,
@@ -444,10 +448,13 @@ async fn a_replay_selector_panic_preserves_every_previously_held_invoice() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        payload,
-        interpretation,
-        source,
-        settlements,
+        outcome:
+            RetirementOutcome::TransitionPanicked {
+                payload,
+                interpretation,
+                source,
+                settlements,
+            },
     } = native
     else {
         panic!("the borrowed replay selector is the failing transition");

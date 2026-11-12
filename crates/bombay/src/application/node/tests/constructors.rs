@@ -4,6 +4,7 @@ use super::protocol::{
     self, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReplyRef, ReadRequest,
     ReadRequestRef, configuration, limits, recorded, reserved_address,
 };
+use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::{ApplicationScope, ExternalActorError, MailboxCapacity};
@@ -327,10 +328,9 @@ async fn constructor_refusal() {
     assert_eq!(original.from, origin.address());
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(native.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        ..
+        outcome: RetirementOutcome::Completed { settlements, .. },
     } = &native
     else {
         panic!("complete original Ledger custody and successful terminal outcome");
@@ -684,12 +684,15 @@ async fn cold_declarations_preserve_native_constructor_refusals() {
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
             assert!(withdrawal.is_none() && diagnostics.is_empty() && requests.is_empty());
-            let ActorRetirement::OwnerCancelled {
+            let ActorRetirement::Retained {
                 custody,
-                settlements,
-                interpretation,
-                source,
-                ..
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        settlements,
+                        interpretation,
+                        source,
+                        ..
+                    },
             } = &native
             else {
                 panic!("startup refusal retains actual owner-cancelled root custody");

@@ -5,6 +5,9 @@ f09303c8 after successful routine/manual CI and independent reviews. The
 [delivery record](#delivery-of-the-bounded-campaign--2026-11-12) supersedes
 pending hosted-CI wording in the dated preparation checkpoints below. Earlier
 source, compiler and result epochs retain their original meanings.
+PR416's fixed public Client overlap now has [fresh local qualification on
+main d575c614](#incoming-custody-api-prerequisites--2026-11-12). Its new-source
+hosted Nix/CI and merged delivery remain open; old fed2 CI is kept separate.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
@@ -531,6 +534,60 @@ network law, generated native scheduler or full R24/AUTH1/NET1 scope is selected
 Pre-edit checkpoint against oldmainf09303c8, including all tracked/untracked
 paths: production +0/-0/net0; tests +994/-0/net994; public API types +0/-0;
 records +557/-29/net528. There are six owned paths before main integration.
+
+The normal main merge now retains both backlog entries, with no unresolved
+paths. Before any witness edits, the pinned locked application_clients
+compile command returns101 with exactly two E0599 errors: the removed
+ActorRetirement::Completed references at overlap.rs615/616. The witness is
+still byte-exact a30ef937, query remains dfaae0a0, and the imported custody
+consumer is baa0b4c6. The command, complete log, exit101, source guards and
+both merge parents are retained under delivery/client-overlap/integration-d575
+in the common Git archive. This is the intended compile refusal, not a
+runtime regression or evidence for the replay law. The two-predicate
+migration may proceed; combined-source semantic qualification remains open.
+
+The formatted995-line witness is now126a16ee. Its exact migration is+7/-4:
+remove that unused import and replace only the two borrowed diagnostic
+predicates. Author and root reviews plus both independent two-pass source
+reviews pass; the complete reconstructed three-substitution comparison is
+byte-exact and all169 assertion/panic/expect lines remain unchanged. Root's
+review is ac43ecb4; independent reports are8049222e andce244484. Existing
+completed_actor remains main's exact baa0b4c6 source. Pinned formatting passes.
+The new20-input source guard includes both locks, manifests, terminal/launch,
+Client/query and the complete native custody consumer; old source epochs stay
+separate.
+
+Fresh pinned Rust1.99 Darwin healthy debug/optimized runs each pass both
+overlap tests. The exact canonical-result omission4788ba45 then fails only
+the first post-cleanup independent Counter assertion633, actual3 versus2,
+in both profiles. Both actual negative commands return101 after finite native
+execution, with successful joined cleanup/close, no poll/disposal panic and
+original normal-completion/report/notification observations acquired. No later
+negative assertion is credited. Pristine query dfaae0a0 is restored byte-exact
+before restored native runs, which both pass; all20 current source hashes
+match. The existing Counter, schedule, expected values and complete consuming
+custody checks remain unchanged. Root outcome review96d6e1cc and independent
+two-pass outcome reviews b958da3c/abb05a78 pass.
+
+The full owning application_clients cohort passes52 cases and nine compiler
+fixtures per profile, zero failed or ignored. Strict owning Clippy and pinned
+formatting pass. Required pinned workspace Nextest exits0:1001 tests pass
+across123 binaries,15 slow,204.050s and six existing skipped child entrypoints.
+Its fresh catalogue has1007 cases; the complete actual1001-PASS set exactly
+matches the nonignored inventory. Passing parent tests invoke and check all
+six named children; the reported default skip count remains six. Both overlap
+tests actually pass. All20 inputs match after the run and in retained source.
+The existing hosted Nix workflow will qualify the submitted combined revision
+through its authoritative full gate. Earlier fed2 Nix/CI remains its original
+source proof. New-source full Nix/CI and reviewed merged delivery remain open;
+this integration closes no further remote requirement.
+
+Root's local gate review8f02f1f8 and independent two-pass reviews677413cb/
+03aee2e3 pass. Complete current branch scope against maind575c614, including
+staged/unstaged/untracked paths: production +0/-0/net0; tests +997/-0/net997;
+public API types +0/-0; records +627/-30/net597. Six owned paths and no untracked
+files remain. The separately imported121-path upstream change is not new
+PR416 production scope. All native input/source guards remain exact.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11
 

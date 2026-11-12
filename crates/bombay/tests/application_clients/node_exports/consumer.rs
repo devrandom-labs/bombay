@@ -2,6 +2,7 @@
 use super::super::counter::{CounterMessage, CounterProcessed, CounterValue};
 use super::actors::{ActorExports, Counters, CountersRole, Creator, Exports, topology};
 use super::{assert_exports, assert_retirement};
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::BehaviorBase;
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
@@ -978,7 +979,10 @@ async fn complete(presence: Presence, pending: ProviderStage) {
                 } else {
                     assert!(matches!(
                         retirement.as_ref(),
-                        ActorRetirement::OwnerCancelled { .. }
+                        ActorRetirement::Retained {
+                            outcome: RetirementOutcome::OwnerCancelled { .. },
+                            ..
+                        }
                     ));
                 }
             }

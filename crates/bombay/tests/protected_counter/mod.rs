@@ -6,6 +6,7 @@
 
 #[cfg(test)]
 use alloc_count::AllocCounter;
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     Behavior, BehaviorSettlements, Here, Ingress, MessageProtocol, SettlementStatus,
 };
@@ -1508,7 +1509,7 @@ fn assert_cancelled_actor<B>(
 ) where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
 {
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -1518,7 +1519,7 @@ fn assert_cancelled_actor<B>(
                 terminal_report,
                 ..
             },
-        ..
+        outcome: RetirementOutcome::OwnerCancelled { .. },
     } = retirement
     else {
         panic!("original owner-cancellation retirement is required");
@@ -1970,7 +1971,7 @@ async fn run_counter_profile<R>(
                 assert!(publication.is_ok());
                 assert!(permission.is_err());
                 assert!(matches!(handoff, Some(Ok(()))));
-                let ActorRetirement::Completed {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             capability_failures,
@@ -1978,8 +1979,11 @@ async fn run_counter_profile<R>(
                             additional_failures,
                             ..
                         },
-                    completion: Completion::Stopped,
-                    ..
+                    outcome:
+                        RetirementOutcome::Completed {
+                            completion: Completion::Stopped,
+                            ..
+                        },
                 } = retirement
                 else {
                     panic!("exact requester stopped after outer Work failure");
@@ -3144,8 +3148,11 @@ async fn run_protected_counter_profile<R>(
         );
         assert!(matches!(
             requester_retirement,
-            ActorRetirement::Completed {
-                completion: Completion::Stopped,
+            ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed {
+                    completion: Completion::Stopped,
+                    ..
+                },
                 ..
             }
         ));
@@ -3300,7 +3307,11 @@ async fn run_protected_counter_profile<R>(
                 panic!("actual completed requester Work");
             };
             assert!(publication.is_ok() && permission.is_ok());
-            let ActorRetirement::Completed { completion, .. } = retirement else {
+            let ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { completion, .. },
+                ..
+            } = retirement
+            else {
                 panic!("actual completed requester native retirement");
             };
             assert_eq!(*completion, Completion::Stopped);
@@ -3322,10 +3333,16 @@ async fn run_protected_counter_profile<R>(
             | CounterWorkCase::RequesterAfterReplyBytes
             | CounterWorkCase::RequesterAfterReplyVerification
             | CounterWorkCase::RequesterAfterReplySend => match retirement {
-                ActorRetirement::Completed { completion, .. } => {
+                ActorRetirement::Retained {
+                    outcome: RetirementOutcome::Completed { completion, .. },
+                    ..
+                } => {
                     assert!(matches!(completion, Completion::Stopped));
                 }
-                ActorRetirement::OwnerCancelled { .. } => {
+                ActorRetirement::Retained {
+                    outcome: RetirementOutcome::OwnerCancelled { .. },
+                    ..
+                } => {
                     assert_cancelled_actor(*origin, retirement);
                 }
                 _ => panic!("unexpected actual requester retirement"),
@@ -7178,6 +7195,7 @@ mod requester_diagnostics {
 #[cfg(test)]
 mod stop_admission {
     use super::*;
+    use bombay::RetirementOutcome;
 
     #[test]
     #[expect(
@@ -7793,7 +7811,7 @@ mod stop_admission {
         else {
             panic!("complete parent Work/native/two-notification product");
         };
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -7811,10 +7829,13 @@ mod stop_admission {
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         } = native
         else {
             panic!("complete original creator result");
@@ -7891,7 +7912,7 @@ mod stop_admission {
                 let counter_children_application::RootRetirements { origin, retirement } = terminal;
                 let terminal = *retirement;
                 let address = origin.address();
-                let ActorRetirement::Completed {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -7909,10 +7930,13 @@ mod stop_admission {
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 } = terminal
                 else {
                     panic!("complete original child retirement");

@@ -17,12 +17,17 @@ has fresh verification of all six owners and a recorded native Counter law.
 The ordinary caller prototype now passes independent source/outcome reviews,
 paired intended receipt-loss failures and exact-restored debug/optimized controls.
 The [fixed native witness](../prds/network-schedule.md#fixed-public-client-overlap-executed-controls)
-now also passes paired healthy/canonical-cut/exact-restored runs and the complete
+on fed2 also passes paired healthy/canonical-cut/exact-restored runs and the complete
 52-case caller cohort in both profiles, with independent source/outcome reviews.
-The full local Nix gate passes all28 native checks; explicit Nextest passes989
-tests with six existing parent-controlled child skips. Hosted CI/review and
-main delivery remain open; this fixed witness does not close complete R24,
-AUTH1 or NET1.
+That original source passes all28 local Nix checks, explicit Nextest989 with
+six existing parent-controlled child skips, and all eight hosted checks with
+independent reviews. Main PR415 now changes the retirement custody API;
+[fresh integration record](../prds/network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
+preserves the old source evidence and qualifies the migrated witness with
+fresh paired healthy/canonical-cut/restored controls, both52-case cohorts,
+lint and independent reviews. Combined-source full gates and main
+delivery remain open. This fixed witness does not close complete R24, AUTH1
+or NET1.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
@@ -47,7 +52,7 @@ merged through PR411 after all six checks and independent reviews passed.
 Independent network campaigns, replay beyond the bounded incoming campaign,
 restart and full R24 remain open.
 
-Updated: 2026-11-12 UTC. This delivery snapshot uses main `f09303c8`. The
+Updated: 2026-11-12 UTC. This integration snapshot uses main `d575c614`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the
@@ -696,7 +701,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): owning PRD tracks DX01–DX28. One Application/topology path, policy Config/startup closures and strict124-fixture verification are implemented with bounded evidence. Owner-inference publication, automatic timers, complete custody/cost coverage and final gates remain open. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): owning PRD tracks DX01–DX28. Main PR414 and published030 owners are integrated; owned custody and borrowed primary outcomes preserve original caller values. Both supported compilers/profiles retain focused unread/effect/source/child/family proofs. Clean706810b8 joint Engine0.3/macros0.2/runtime0.2 archives verify with all features; both compilers pass eight-example/all-target checks, native51 per profile, renamed3, six local runs and ten packaged doctests. Exact source/locks/diagnostics are retained. The scoped custody API merged through PR415/d575c614; remaining selected acceptance, broader costs, combined-source Nix/CI and publication stay open. |
 | NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; PR414 delivers the bounded incoming campaign. Complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |

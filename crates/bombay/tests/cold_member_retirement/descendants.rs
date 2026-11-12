@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, BirthMode, ChildReport,
@@ -236,7 +237,11 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     let (_, root) = native.expect("independent original root custody");
-    let ActorRetirement::Completed { custody, .. } = root else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { .. },
+    } = root
+    else {
         panic!("the root received both actual reports")
     };
     assert!(custody.behavior.base().outstanding.is_empty());
@@ -249,7 +254,11 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
                 let inserted = roles.insert("timer");
                 assert!(inserted);
                 assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-                let ActorRetirement::OwnerCancelled { custody, .. } = *retirement else {
+                let ActorRetirement::Retained {
+                    custody,
+                    outcome: RetirementOutcome::OwnerCancelled { .. },
+                } = *retirement
+                else {
                     panic!("continued direct timer returns cancellation custody")
                 };
                 assert_eq!(custody.behavior.base().payload.as_ptr(), first_allocation);
@@ -261,7 +270,11 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
                 let inserted = roles.insert("relay");
                 assert!(inserted);
                 assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-                let ActorRetirement::Completed { custody, .. } = *retirement else {
+                let ActorRetirement::Retained {
+                    custody,
+                    outcome: RetirementOutcome::Completed { .. },
+                } = *retirement
+                else {
                     panic!("relay reports and stops with complete nested custody")
                 };
                 assert!(custody.behavior.base().worker.is_none());
@@ -274,7 +287,11 @@ async fn inferred_cold_parent_preserves_its_original_actor_and_nested_timer_cust
                     .into_iter()
                     .next()
                     .expect("the relay retains its original worker");
-                let ActorRetirement::OwnerCancelled { custody, .. } = *child.retirement else {
+                let ActorRetirement::Retained {
+                    custody,
+                    outcome: RetirementOutcome::OwnerCancelled { .. },
+                } = *child.retirement
+                else {
                     panic!("the continued nested timer retains cancellation custody")
                 };
                 assert_eq!(custody.behavior.base().payload.as_ptr(), second_allocation);

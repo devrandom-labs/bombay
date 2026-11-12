@@ -2,6 +2,7 @@
 
 use axum::routing::get;
 use behavior_actors::ShutdownRequested;
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActionSettlement, Behavior, BehaviorBase, ChildChoice, ChildCreationOutcome, CreationKind,
     CreationSettlement, Creations, EventLayer, ItemSettlement, MessageProtocol, NoSends, SendLayer,
@@ -98,7 +99,7 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
     drop(caller);
 
     assert_eq!(calls.load(Ordering::SeqCst), 1);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -109,9 +110,12 @@ fn axum_router_receives_the_live_root_reference_exactly_once() {
                 descendants,
                 ..
             },
-        settlements,
-        completion,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                ..
+            },
     } = retirement
     else {
         panic!("the shutdown request must complete the published root")
@@ -428,7 +432,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
     else {
         panic!("actual graceful serving and all native cleanup facts must coexist");
     };
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -446,10 +450,13 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 unread_owner_cancellation,
                 mut descendants,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = retirement
     else {
         panic!("the composed actor retains the actual declared root's stopped retirement");
@@ -517,7 +524,7 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
         retirement: terminal,
     } = descendant;
     assert_ne!(child_origin.address(), origin.address());
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -535,9 +542,12 @@ fn declared_http_preserves_cold_bind_retry_and_distinct_owner_actor_custody() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                interpretation,
+                source,
+                settlements,
+            },
     } = *terminal
     else {
         panic!("the live declared child retains its actual parent-owned cancellation");
@@ -883,7 +893,7 @@ fn assert_joined_http_root(
     origin: RootOrigin<StopOnShutdown<Root>>,
     root_retirement: ActorRetirement<StopOnShutdown<Root>, Never, Vec<Never>>,
 ) {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -901,10 +911,13 @@ fn assert_joined_http_root(
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = root_retirement
     else {
         panic!("the separate actual application root completes after its own shutdown");

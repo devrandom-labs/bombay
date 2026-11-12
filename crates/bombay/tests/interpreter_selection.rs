@@ -1,9 +1,10 @@
 //! Native absence and a supplied unit interpreter are distinct capabilities.
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActionItem, Actions, BehaviorActed, InterpretItem, InterpreterRequests, ItemSettlement, Never,
     SettledItem, Step,
 };
-use bombay::{ActorRetirement, Application, SettlementFailure, WorkOutcome};
+use bombay::{Application, SettlementFailure, WorkOutcome};
 use core::future::Future;
 use std::io::{self, Read};
 use std::path::PathBuf;
@@ -106,14 +107,40 @@ async fn explicit_unit_interpreter_performs_real_io_and_retains_complete_rejecti
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original actor remains independently owned");
-    let ActorRetirement::EffectsFailed {
-        custody,
+    let Some(RetirementOutcome::EffectsFailed {
+        error: SettlementFailure::Rejected,
+        settlements,
+        ..
+    }) = retirement.outcome()
+    else {
+        panic!("the typed rejection remains available before custody extraction");
+    };
+    let borrowed_request = settlements
+        .iter()
+        .flat_map(|settlement| settlement.sends.files.iter())
+        .find_map(|file| match file {
+            SettledItem::Attempted(ItemSettlement::Rejected { item, .. }) => Some(item),
+            _ => None,
+        })
+        .expect("the original rejected request is available to borrow");
+    assert_eq!(
+        borrowed_request
+            .path
+            .as_os_str()
+            .as_encoded_bytes()
+            .as_ptr(),
+        rejected_pointer
+    );
+    let (custody, outcome) = retirement
+        .try_into_custody()
+        .unwrap_or_else(|_| panic!("failed effects retain the complete original custody"));
+    let RetirementOutcome::EffectsFailed {
         initialization,
         error,
         settlements,
         interpretation,
         source,
-    } = retirement
+    } = outcome
     else {
         panic!("initialization rejection preserves both real outcomes and rejects readiness");
     };
@@ -141,7 +168,8 @@ async fn explicit_unit_interpreter_performs_real_io_and_retains_complete_rejecti
     let settled = settlements
         .next()
         .expect("the complete initialized file lane");
-    assert!(settlements.next().is_none());
+    let later_settlement = settlements.next();
+    assert!(later_settlement.is_none());
     assert_eq!(settled.creations.len(), 0);
     assert!(matches!(settled.become_, Step::Stop(_)));
     let mut files = settled.sends.files.into_iter();
@@ -158,7 +186,8 @@ async fn explicit_unit_interpreter_performs_real_io_and_retains_complete_rejecti
             "the complete original request and actual OS cause coexist with the accepted prefix"
         );
     };
-    assert!(files.next().is_none());
+    let later_file = files.next();
+    assert!(later_file.is_none());
     assert_eq!(
         item.path.as_os_str().as_encoded_bytes().as_ptr(),
         rejected_pointer

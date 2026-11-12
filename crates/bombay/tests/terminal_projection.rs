@@ -1,5 +1,6 @@
 use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, ChildRole, Never};
@@ -141,7 +142,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
     let ApplicationTerminal::Root {
         origin,
         terminal:
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         capability_failures,
@@ -152,8 +153,7 @@ async fn derive_preserves_the_exact_runtime_origin_and_retirement() {
                         child_failures,
                         ..
                     },
-                completion,
-                ..
+                outcome: RetirementOutcome::Completed { completion, .. },
             },
     } = terminal
     else {

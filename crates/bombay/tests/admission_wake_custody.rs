@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorBase, ClassifySettlement, EstablishedDelivery, MessageProtocol, NoSends,
     SettlementStatus, Step,
@@ -186,7 +187,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
         cause_allocation
     );
     assert_eq!(cause_custody.strong_count(), 1);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -204,10 +205,13 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
                 retirement_failures,
                 terminal_report,
             },
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = native
     else {
         panic!("the independent actor's full original native result remains acquired")

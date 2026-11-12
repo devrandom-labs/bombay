@@ -886,14 +886,14 @@
     = note: match each owned .child role and actor with the selected topology declaration
 -help: the trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (BackgroundWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
 -      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
--  --> tests/compile/fail/topology_duplicate_roles.rs:37:1
+-  --> tests/compile/fail/topology_duplicate_roles.rs:38:1
 -   |
--37 | / bombay::topology! {
--38 | |     workshop {
--39 | |         root: Root { Born(RootChildrenBorn) => worker; }
--40 | |         members {
+-38 | / bombay::topology! {
+-39 | |     workshop {
+-40 | |         root: Root { Born(RootChildrenBorn) => worker; }
+-41 | |         members {
 -...  |
--46 | | }
+-47 | | }
 -   | |_^
 -   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
 -note: required by a bound in `bombay::application::execution::<impl bombay::Application<Root, Spaces, Members>>::run_with`
@@ -907,9 +907,9 @@
 -   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
 -
 -error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
--  --> tests/compile/fail/topology_duplicate_roles.rs:69:24
+-  --> tests/compile/fail/topology_duplicate_roles.rs:70:24
 -   |
--69 |     let outcome = host.block_on(application.run_with(|application| async move {
+-70 |     let outcome = host.block_on(application.run_with(|application| async move {
 -   |                        ^^^^^^^^ unsatisfied trait bound
 -   |
 -   = note: match each owned .child role and actor with the selected topology declaration
@@ -917,31 +917,31 @@
 -      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
 +help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
 +      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
-   --> tests/compile/fail/topology_duplicate_roles.rs:37:1
+   --> tests/compile/fail/topology_duplicate_roles.rs:38:1
     |
- 37 | / bombay::topology! {
+ 38 | / bombay::topology! {
 @@ -47,3 +18,24 @@
     | |_^
     = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
     = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
 +
 +error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
-+  --> tests/compile/fail/topology_duplicate_roles.rs:69:24
++  --> tests/compile/fail/topology_duplicate_roles.rs:70:24
 +   |
-+69 |     let outcome = host.block_on(application.run_with(|application| async move {
++70 |     let outcome = host.block_on(application.run_with(|application| async move {
 +   |                        ^^^^^^^^ unsatisfied trait bound
 +   |
 +   = note: match each owned .child role and actor with the selected topology declaration
 +help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
 +      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
-+  --> tests/compile/fail/topology_duplicate_roles.rs:37:1
++  --> tests/compile/fail/topology_duplicate_roles.rs:38:1
 +   |
-+37 | / bombay::topology! {
-+38 | |     workshop {
-+39 | |         root: Root { Born(RootChildrenBorn) => worker; }
-+40 | |         members {
++38 | / bombay::topology! {
++39 | |     workshop {
++40 | |         root: Root { Born(RootChildrenBorn) => worker; }
++41 | |         members {
 +...  |
-+46 | | }
++47 | | }
 +   | |_^
 +   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
 +   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
@@ -949,29 +949,9 @@
 +++ b/crates/bombay/tests/compile/fail/topology_erased_cold_origin.stderr
 @@ -1,13 +1,13 @@
  error[E0308]: mismatched types
-   --> tests/compile/fail/topology_erased_cold_origin.rs:92:129
+   --> tests/compile/fail/topology_erased_cold_origin.rs:93:129
     |
--92 | ...nd", cold_child_origin(&custody.behavior, origin), retirement),
--   |         -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<_>, _>`
--   |         |
--   |         arguments to this function are incorrect
-+92 | ...", cold_child_origin(&custody.behavior, origin), retirement),
-+   |       -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<...>, ...>`
-+   |       |
-+   |       arguments to this function are incorrect
-    |
--   = note: expected struct `ChildOrigin<Root, _>`
--              found struct `ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, BackgroundWorker>`
-+   = note: expected struct `bombay::ChildOrigin<Root, _>`
-+              found struct `bombay::ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, BackgroundWorker>`
- note: function defined here
-   --> tests/compile/fail/topology_erased_cold_origin.rs:48:4
-    |
-@@ -20,13 +20,13 @@
- error[E0308]: mismatched types
-   --> tests/compile/fail/topology_erased_cold_origin.rs:93:119
-    |
--93 | ...it", cold_child_origin(&custody.behavior, origin), retirement),
+-93 | ...nd", cold_child_origin(&custody.behavior, origin), retirement),
 -   |         -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<_>, _>`
 -   |         |
 -   |         arguments to this function are incorrect
@@ -981,11 +961,31 @@
 +   |       arguments to this function are incorrect
     |
 -   = note: expected struct `ChildOrigin<Root, _>`
+-              found struct `ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, BackgroundWorker>`
++   = note: expected struct `bombay::ChildOrigin<Root, _>`
++              found struct `bombay::ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, BackgroundWorker>`
+ note: function defined here
+   --> tests/compile/fail/topology_erased_cold_origin.rs:49:4
+    |
+@@ -20,13 +20,13 @@
+ error[E0308]: mismatched types
+   --> tests/compile/fail/topology_erased_cold_origin.rs:94:119
+    |
+-94 | ...it", cold_child_origin(&custody.behavior, origin), retirement),
+-   |         -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<_>, _>`
+-   |         |
+-   |         arguments to this function are incorrect
++94 | ...", cold_child_origin(&custody.behavior, origin), retirement),
++   |       -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<...>, ...>`
++   |       |
++   |       arguments to this function are incorrect
+    |
+-   = note: expected struct `ChildOrigin<Root, _>`
 -              found struct `ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, AuditWorker>`
 +   = note: expected struct `bombay::ChildOrigin<Root, _>`
 +              found struct `bombay::ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, AuditWorker>`
  note: function defined here
-   --> tests/compile/fail/topology_erased_cold_origin.rs:48:4
+   --> tests/compile/fail/topology_erased_cold_origin.rs:49:4
     |
 --- a/crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr
 +++ b/crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr
@@ -1549,14 +1549,14 @@
     = note: match each owned .child role and actor with the selected topology declaration
 -help: the trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (BackgroundWorker, StopOnShutdown<Worker>, (AuditWorker, StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
 -      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
--  --> tests/compile/fail/topology_swapped_roles.rs:37:1
+-  --> tests/compile/fail/topology_swapped_roles.rs:38:1
 -   |
--37 | / bombay::topology! {
--38 | |     workshop {
--39 | |         root: Root { Born(RootChildrenBorn) => worker; }
--40 | |         members {
+-38 | / bombay::topology! {
+-39 | |     workshop {
+-40 | |         root: Root { Born(RootChildrenBorn) => worker; }
+-41 | |         members {
 -...  |
--46 | | }
+-47 | | }
 -   | |_^
 -   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
 -note: required by a bound in `bombay::application::execution::<impl bombay::Application<Root, Spaces, Members>>::run_with`
@@ -1570,9 +1570,9 @@
 -   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
 -
 -error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
--  --> tests/compile/fail/topology_swapped_roles.rs:69:24
+-  --> tests/compile/fail/topology_swapped_roles.rs:70:24
 -   |
--69 |     let outcome = host.block_on(application.run_with(|application| async move {
+-70 |     let outcome = host.block_on(application.run_with(|application| async move {
 -   |                        ^^^^^^^^ unsatisfied trait bound
 -   |
 -   = note: match each owned .child role and actor with the selected topology declaration
@@ -1580,31 +1580,31 @@
 -      but trait `ApplicationTopology<StopOnShutdown<OneShot<Root>>, (AuditWorker, StopOnShutdown<Worker>, (BackgroundWorker, StopOnShutdown<Worker>, ()))>` is implemented for it
 +help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
 +      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
-   --> tests/compile/fail/topology_swapped_roles.rs:37:1
+   --> tests/compile/fail/topology_swapped_roles.rs:38:1
     |
- 37 | / bombay::topology! {
+ 38 | / bombay::topology! {
 @@ -47,3 +18,24 @@
     | |_^
     = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
     = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)
 +
 +error[E0277]: the declared topology does not match root `bombay::prelude::StopOnShutdown<OneShot<Root>>` and cold members `(BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))`
-+  --> tests/compile/fail/topology_swapped_roles.rs:69:24
++  --> tests/compile/fail/topology_swapped_roles.rs:70:24
 +   |
-+69 |     let outcome = host.block_on(application.run_with(|application| async move {
++70 |     let outcome = host.block_on(application.run_with(|application| async move {
 +   |                        ^^^^^^^^ unsatisfied trait bound
 +   |
 +   = note: match each owned .child role and actor with the selected topology declaration
 +help: the trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is not implemented for `Topology`
 +      but trait `ApplicationTopology<bombay::prelude::StopOnShutdown<OneShot<Root>>, (AuditWorker, bombay::prelude::StopOnShutdown<Worker>, (BackgroundWorker, bombay::prelude::StopOnShutdown<Worker>, ()))>` is implemented for it
-+  --> tests/compile/fail/topology_swapped_roles.rs:37:1
++  --> tests/compile/fail/topology_swapped_roles.rs:38:1
 +   |
-+37 | / bombay::topology! {
-+38 | |     workshop {
-+39 | |         root: Root { Born(RootChildrenBorn) => worker; }
-+40 | |         members {
++38 | / bombay::topology! {
++39 | |     workshop {
++40 | |         root: Root { Born(RootChildrenBorn) => worker; }
++41 | |         members {
 +...  |
-+46 | | }
++47 | | }
 +   | |_^
 +   = help: for that trait implementation, expected `AuditWorker`, found `BackgroundWorker`
 +   = note: this error originates in the macro `bombay::topology` (in Nightly builds, run with -Z macro-backtrace for more info)

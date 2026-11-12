@@ -3,6 +3,7 @@ use super::{
     Config, Document, DocumentChildrenNext, DocumentReady, FileAccess, Files, ManagedDocument,
     Root, RootChildrenDocument, file_request, inspect_file,
 };
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     BehaviorBase, ChildCreationOutcome, ClassifySettlement, CreationKind, CreationRejection,
@@ -148,12 +149,15 @@ async fn child_constructor_panic_keeps_original_creation_actions_and_independent
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(report.message, 157);
     assert_eq!(report.from, origin.address());
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!(

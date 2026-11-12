@@ -1018,6 +1018,7 @@ mod tests {
 mod installed_shutdown_contract {
     use crate::ActorCustody;
     use crate::MailboxCapacity;
+    use crate::RetirementOutcome;
 
     use behavior::{
         Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ChildCreationOutcome,
@@ -1512,7 +1513,7 @@ mailbox_capacity: MailboxCapacity::default(),
         };
         assert_eq!(origin.address(), direct_endpoint.address());
         assert_eq!(origin.nonce(), 0);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     received_interpretation: retirement_received_interpretation,
@@ -1530,10 +1531,13 @@ mailbox_capacity: MailboxCapacity::default(),
                     capability_failures,
                     unread_owner_cancellation,
                 },
-            interpretation: retirement_interpretation,
-            source: retirement_source,
-            settlements,
-            completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                    settlements,
+                    completion,
+                },
         } = retirement
         else {
             panic!("direct completed result")
@@ -1566,7 +1570,7 @@ mailbox_capacity: MailboxCapacity::default(),
         };
         assert_eq!(origin.address(), nested_endpoint.address());
         assert_eq!(origin.nonce(), 1);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     received_interpretation: retirement_received_interpretation,
@@ -1584,10 +1588,13 @@ mailbox_capacity: MailboxCapacity::default(),
                     capability_failures,
                     unread_owner_cancellation,
                 },
-            interpretation: retirement_interpretation,
-            source: retirement_source,
-            settlements,
-            completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                    settlements,
+                    completion,
+                },
         } = retirement
         else {
             panic!("nested completed result")

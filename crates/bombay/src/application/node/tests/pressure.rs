@@ -5,6 +5,7 @@ use super::protocol::{
     recorded,
 };
 use super::{LedgerCommand, MailLedger, Receipts};
+use crate::RetirementOutcome;
 use crate::application::{Application, MailboxCapacity};
 use crate::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, submission};
 use crate::{
@@ -368,7 +369,11 @@ async fn append_after_full(next_permission: Permission) {
     assert_eq!(original.as_ref(), [103]);
     assert!(admission.is_ok() && session.is_closed() && diagnostics.is_empty());
     assert_eq!(native.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody, .. } = native else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { .. },
+    } = native
+    else {
         panic!("complete original Ledger state survives retirement");
     };
     let reply = reply.expect("the independent terminal Ledger Read returns");

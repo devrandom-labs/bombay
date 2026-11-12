@@ -1,4 +1,5 @@
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorActed, Never};
 
@@ -81,10 +82,22 @@ async fn matching_incoming_births_preserve_declaration_order_independence() {
     assert!(matches!(right, Some(Ok(()))));
     assert!(matches!(
         left_native,
-        Ok((_, bombay::ActorRetirement::Completed { .. }))
+        Ok((
+            _,
+            bombay::ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { .. },
+                ..
+            }
+        ))
     ));
     assert!(matches!(
         right_native,
-        Ok((_, bombay::ActorRetirement::Completed { .. }))
+        Ok((
+            _,
+            bombay::ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { .. },
+                ..
+            }
+        ))
     ));
 }

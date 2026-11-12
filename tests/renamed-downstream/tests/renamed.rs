@@ -131,6 +131,7 @@ enum NamedTerminal {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use actor_runtime::RetirementOutcome;
     use actor_runtime::behavior::{User, delegate_transition, initialize};
 
     fn accepts_projection<
@@ -197,10 +198,9 @@ mod tests {
             panic!("initialization stops before startup grant and returns complete child custody");
         };
         assert_eq!(origin.address(), actor_runtime::MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody,
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = retirement
         else {
             panic!("the emitter stops after creating its child");
@@ -217,7 +217,11 @@ mod tests {
             child.origin.creation_kind(),
             actor_runtime::behavior::CreationKind::Birth
         ));
-        let ActorRetirement::OwnerCancelled { custody, .. } = *child.retirement else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::OwnerCancelled { .. },
+        } = *child.retirement
+        else {
             panic!("the child is retired by its actual parent");
         };
         assert_eq!(custody.behavior.base().value, 19);

@@ -426,6 +426,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::ActorCustody;
+    use crate::RetirementOutcome;
 
     use super::*;
     use crate::termination::Termination;
@@ -721,7 +722,7 @@ mod tests {
             None => ActorFailureAssessment::NoFailuresFound,
         };
         assert_eq!(retirement_report.failures(), expected_failures);
-        let Ok(ActorRetirement::Completed {
+        let Ok(ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -739,10 +740,13 @@ mod tests {
                     capability_failures,
                     unread_owner_cancellation,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         }) = retirement
         else {
             panic!("native shutdown must preserve completed state")
@@ -1112,7 +1116,7 @@ mod tests {
         let original =
             original.map(ActorRetirement::<ShutdownConversionActor, Never, Vec<Never>>::from_local);
         assert!(termination_notification.is_ok());
-        let Ok(ActorRetirement::OwnerCancelled {
+        let Ok(ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -1130,9 +1134,12 @@ mod tests {
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation,
+                    source,
+                },
         }) = original
         else {
             panic!("the surviving original affine owner joins its exact actor")
@@ -1222,7 +1229,7 @@ mod tests {
         let Some((
             returned_id,
             returned_activation,
-            Ok(ActorRetirement::OwnerCancelled {
+            Ok(ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -1240,9 +1247,12 @@ mod tests {
                         retirement_failures,
                         terminal_report,
                     },
-                settlements,
-                interpretation,
-                source,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        settlements,
+                        interpretation,
+                        source,
+                    },
             }),
             retirement_report,
         )) = acquired

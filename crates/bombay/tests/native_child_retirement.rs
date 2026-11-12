@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, ClassifySettlement, CreateChild, CreationKind, CreationSequence,
@@ -101,12 +102,15 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("creator retirement owns both children");
@@ -149,11 +153,14 @@ async fn leaf_retirement_keeps_its_empty_descendants_inside_a_nonempty_report_fa
     assert_eq!(descendants.len(), 2);
     let mut actual = Vec::new();
     for native_application::RootRetirements { origin, retirement } in descendants {
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody,
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation,
+                    source,
+                },
         } = *retirement
         else {
             panic!("the parent joins each original cancelled child");

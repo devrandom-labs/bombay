@@ -1,6 +1,7 @@
 #![cfg(feature = "axum")]
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 
@@ -365,7 +366,7 @@ pub(crate) fn assert_application_stopped<R>(
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -383,10 +384,13 @@ pub(crate) fn assert_application_stopped<R>(
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     ) = terminal
     else {

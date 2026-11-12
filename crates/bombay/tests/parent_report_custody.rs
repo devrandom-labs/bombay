@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActiveTurn, Behavior, BehaviorBase, ChildReport, ClassifySettlement, CreateChild,
     CreationSequence, Creations, EventIngress, InitializationTurn, InterpreterRequests,
@@ -127,7 +128,7 @@ async fn early_parent_stop_retains_the_original_refused_child_report() {
     let Ok((root_origin, root_retirement)) = &native else {
         panic!("the parent retains its original native result")
     };
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -145,10 +146,13 @@ async fn early_parent_stop_retains_the_original_refused_child_report() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = root_retirement
     else {
         panic!("the parent must complete after acquiring all child retirement")
@@ -164,7 +168,7 @@ async fn early_parent_stop_retains_the_original_refused_child_report() {
     };
     // The complete Work/native/notification owners above survive this first
     // semantic oracle, including the original host panic on the old interpreter.
-    let ActorRetirement::EffectsFailed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior: child,
@@ -183,11 +187,14 @@ async fn early_parent_stop_retains_the_original_refused_child_report() {
                 // The original unread owner request remains borrowed in native custody.
                 unread_owner_cancellation: _,
             },
-        initialization,
-        interpretation: child_interpretation,
-        source: child_source,
-        settlements: child_settlements,
-        error,
+        outcome:
+            RetirementOutcome::EffectsFailed {
+                initialization,
+                interpretation: child_interpretation,
+                source: child_source,
+                settlements: child_settlements,
+                error,
+            },
     } = terminal.as_ref()
     else {
         panic!("the refused child report must remain a typed EffectsFailed settlement")

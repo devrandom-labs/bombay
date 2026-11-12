@@ -1,5 +1,6 @@
 use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use core::future::{Future, poll_fn};
 use core::mem;
 use core::num::NonZeroUsize;
@@ -10,6 +11,7 @@ use std::cell::Cell;
 use std::panic::{AssertUnwindSafe, catch_unwind, panic_any, resume_unwind};
 use std::ptr;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError, Weak};
 
 use behavior_actors::{Exit, StopOnShutdown};
@@ -32,8 +34,8 @@ use bombay::entity::{
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationBehavior,
     ApplicationCleanupError, ApplicationDefinitionError, ApplicationStagingError, ChildFailure,
-    ChildOrigin, NativeHost, ProjectTerminal, RetirementAssessment, RootOrigin, Runtime,
-    WorkOutcome,
+    ChildOrigin, InterpreterFactory, NativeHost, ProjectTerminal, RetirementAssessment, RootOrigin,
+    Runtime, WorkOutcome,
 };
 use bombay::{
     ActorSpace, Application, ApplicationTopology, EstablishNativeChild, Hosts, MailAddr,
@@ -107,7 +109,10 @@ impl AccountConclusion {
         terminal: ActorRetirement<StopOnShutdown<ReceivingAccount>, Never, Vec<Never>>,
     ) -> Self {
         match terminal {
-            completed @ ActorRetirement::Completed { .. } => {
+            completed @ ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { .. },
+                ..
+            } => {
                 drop(completed);
                 panic!("the application terminal conversion failed");
             }
@@ -178,7 +183,7 @@ impl EntityDefinition for Accounts {
 
 fn assert_rejected_root(outcome: &AccountConclusion) {
     let AccountConclusion::Root { origin, terminal } = outcome;
-    let ActorRetirement::InitializationRejected {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -196,7 +201,7 @@ fn assert_rejected_root(outcome: &AccountConclusion) {
                 retirement_failures,
                 terminal_report,
             },
-        error,
+        outcome: RetirementOutcome::InitializationRejected { error },
     } = terminal
     else {
         panic!("the complete actual initialization refusal remains owned");
@@ -269,7 +274,7 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
         panic!("completed original output and both actual cleanup boundaries are acquired");
     };
     let retirement = joined;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -287,10 +292,13 @@ async fn completed_output_survives_actual_root_terminal_conversion_failure() {
                 retirement_failures,
                 terminal_report,
             },
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = &retirement
     else {
         panic!("same standard root completed normally");
@@ -566,7 +574,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
     let returned = (origin, retirement);
     let (
         origin,
-        ActorRetirement::InitializationRejected {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -584,7 +592,7 @@ async fn declared_application_refusal_retains_unstarted_original_child() {
                     retirement_failures,
                     terminal_report,
                 },
-            error,
+            outcome: RetirementOutcome::InitializationRejected { error },
         },
     ) = &returned
     else {
@@ -666,7 +674,7 @@ fn assert_completed_account(
 ) {
     let Ok((
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -684,10 +692,13 @@ fn assert_completed_account(
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     )) = root_receipt
     else {
@@ -739,7 +750,7 @@ fn assert_cancelled_account(
 ) {
     let Ok((
         origin,
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -757,9 +768,12 @@ fn assert_cancelled_account(
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation,
+                    source,
+                },
         },
     )) = root_receipt
     else {
@@ -893,9 +907,9 @@ fn unpolled_execution_returns_original_application_and_callable_for_real_retry()
         assert_completed_account(&root_receipt);
         let Ok((
             _,
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             },
         )) = &root_receipt
         else {
@@ -1266,7 +1280,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
         };
         let Ok((
             origin,
-            ActorRetirement::InitializationRejected {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -1284,7 +1298,7 @@ fn startup_refusal_returns_exact_uninvoked_callable_and_full_rejected_root() {
                         retirement_failures,
                         terminal_report,
                     },
-                error,
+                outcome: RetirementOutcome::InitializationRejected { error },
             },
         )) = &root_receipt
         else {
@@ -1674,7 +1688,7 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             _root_report,
             Ok((
                 origin,
-                ActorRetirement::Completed {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -1692,10 +1706,13 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 },
             )),
             Ok(ActorNotificationReceipts {
@@ -1823,6 +1840,25 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
         }
         _ => None,
     };
+    let returned = returned.map(|(work, report, root, notifications, families)| {
+        let root = root.map(|(origin, retirement)| {
+            let (custody, outcome) = retirement
+                .try_into_custody()
+                .unwrap_or_else(|_| panic!("the acquired root transfers complete custody"));
+            (origin, custody, outcome)
+        });
+        let (head, (middle, (tail, ()))) = families;
+        let head = head.map(|(role, family)| (role, family.into_parts()));
+        let middle = middle.map(|(role, family)| (role, family.into_parts()));
+        let tail = tail.map(|(role, family)| (role, family.into_parts()));
+        (
+            work,
+            report,
+            root,
+            notifications,
+            (head, (middle, (tail, ()))),
+        )
+    });
     let public_call_returned = caught.is_ok();
     let fault_retained = original_fault.as_ref().map(Weak::strong_count);
     drop(returned);
@@ -1879,6 +1915,355 @@ fn family_report_disposal_keeps_acquired_products_without_fault() {
 #[test]
 fn family_report_disposal_fault_keeps_acquired_products() {
     family_report_disposal_preserves_acquired_products(Some(Arc::new(vec![67, 71])));
+}
+
+struct AccountService {
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "the original boxed panic carrier and shared cause lifetime are separate observations"
+    )]
+    cause: Option<Box<Arc<Vec<u8>>>>,
+    stops: Arc<AtomicUsize>,
+}
+
+impl Drop for AccountService {
+    fn drop(&mut self) {
+        self.stops.fetch_add(1, Ordering::SeqCst);
+        if let Some(cause) = self.cause.take() {
+            resume_unwind(cause);
+        }
+    }
+}
+
+struct AccountFactory {
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "the factory transfers the original boxed panic carrier to its actor resource"
+    )]
+    cause: Mutex<Option<Box<Arc<Vec<u8>>>>>,
+    starts: Arc<AtomicUsize>,
+    stops: Arc<AtomicUsize>,
+}
+
+impl InterpreterFactory for AccountFactory {
+    type Interpreter = AccountService;
+
+    fn create(&self) -> AccountService {
+        self.starts.fetch_add(1, Ordering::SeqCst);
+        AccountService {
+            cause: self
+                .cause
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .take(),
+            stops: Arc::clone(&self.stops),
+        }
+    }
+}
+
+struct AccountFamily {
+    #[expect(
+        clippy::redundant_allocation,
+        reason = "the independent family cause retains its original panic carrier and payload lifetime"
+    )]
+    cause: Option<Box<Arc<Vec<u8>>>>,
+}
+
+impl Drop for AccountFamily {
+    fn drop(&mut self) {
+        if let Some(cause) = self.cause.take() {
+            resume_unwind(cause);
+        }
+    }
+}
+
+impl EntityDefinition for AccountFamily {
+    type Id = u64;
+    type Behavior = StopOnShutdown<ReceivingAccount>;
+    type Hosts = (ActorSpace<ReceivingAccount>, Runtime<AccountFactory>);
+    type HydrationError = Never;
+    type Terminal = Never;
+    type ChildFailures = Vec<Never>;
+
+    fn hydrate(
+        &self,
+        id: EntityId<u64>,
+    ) -> impl Future<Output = Result<Self::Behavior, Never>> + Send {
+        Accounts.hydrate(id)
+    }
+
+    fn activation_failed(
+        &self,
+        id: EntityId<u64>,
+        activation: ActivationId,
+        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+    ) {
+        Accounts.activation_failed(id, activation, failure);
+    }
+
+    fn admission_refused(&self, id: EntityId<u64>, failure: AdmissionFailure<Never>) {
+        Accounts.admission_refused(id, failure);
+    }
+
+    fn forced_retirement(
+        &self,
+        id: &EntityId<u64>,
+        activation: ActivationId,
+        failure: DrainFailure,
+    ) {
+        Accounts.forced_retirement(id, activation, failure);
+    }
+
+    fn retired(
+        &self,
+        id: &EntityId<u64>,
+        activation: ActivationId,
+        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        report: ActorRetirementReport,
+    ) {
+        Accounts.retired(id, activation, retirement, report);
+    }
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one complete Application consumer retains both original cleanup causes and all independent result lanes through final discharge"
+)]
+fn root_and_family_disposal_preserve_original_results(
+    root_cause: Option<Arc<Vec<u8>>>,
+    family_cause: Option<Arc<Vec<u8>>>,
+) {
+    let root_cause = root_cause.map(Box::new);
+    let original_root_cause = root_cause
+        .as_ref()
+        .map(|cause| Arc::downgrade(cause.as_ref()));
+    let root_carrier = root_cause
+        .as_ref()
+        .map(|cause| ptr::from_ref(cause.as_ref()).cast::<()>());
+    let family_cause = family_cause.map(Box::new);
+    let original_family_cause = family_cause
+        .as_ref()
+        .map(|cause| Arc::downgrade(cause.as_ref()));
+    let family_carrier = family_cause
+        .as_ref()
+        .map(|cause| ptr::from_ref(cause.as_ref()).cast::<()>());
+    let expected_root_failures = match root_carrier {
+        None => ActorFailureAssessment::NoFailuresFound,
+        Some(_) => ActorFailureAssessment::FailuresFound,
+    };
+    let output = Rc::new(vec![11_u8, 19]);
+    let original_output = Rc::downgrade(&output);
+    let state = Arc::new(vec![31_u8, 37]);
+    let original_state = Arc::downgrade(&state);
+    let role = Arc::new(vec![41_u8, 43]);
+    let original_role = Arc::downgrade(&role);
+    let starts = Arc::new(AtomicUsize::new(0));
+    let stops = Arc::new(AtomicUsize::new(0));
+    let application = Application::new(
+        ReceivingAccount {
+            admission: AccountAdmission::Ready,
+            original: state,
+        }
+        .stop_on_shutdown(),
+    )
+    .with_interpreter(AccountFactory {
+        cause: Mutex::new(root_cause),
+        starts: Arc::clone(&starts),
+        stops: Arc::clone(&stops),
+    })
+    .entity_family(
+        AccountsRole(role),
+        AccountFamily {
+            cause: family_cause,
+        },
+        DirectoryConfig::default(),
+        EntityCapacity::new(
+            NonZeroUsize::new(1).expect("one resident"),
+            NonZeroUsize::new(1).expect("one hydration"),
+        ),
+    );
+    let outcome = {
+        let runtime = Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("the actual application host builds");
+        runtime
+            .block_on(
+                application.run_with_entities(move |application| async move {
+                    let requested = application.shutdown();
+                    requested.expect("the original root accepts its shutdown");
+                    output
+                }),
+            )
+            .unwrap_or_else(|(application, work, error)| {
+                drop((application, work));
+                panic!("the actual application host is entered: {error}");
+            })
+    };
+    let (output, retirement) = outcome
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("both cleanup causes preserve the completed original Work"));
+    let report = retirement
+        .root_report()
+        .expect("the joined root publishes its report");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), expected_root_failures);
+    let (cleanup, retained_report, root, notifications, (family, ())) = retirement.into_parts();
+    cleanup.expect("the actual cleanup producer joins both guarded disposal paths");
+    assert_eq!(retained_report, Some(report));
+    let notifications = notifications.expect("both original notification results are received");
+    notifications
+        .termination
+        .expect("root termination publication succeeds");
+    notifications
+        .retirement
+        .expect("root retirement publication succeeds");
+    let (origin, root) = root.expect("the joined root result is independently received");
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    let (custody, outcome) = root
+        .try_into_custody()
+        .unwrap_or_else(|_| panic!("root disposal does not erase its complete original custody"));
+    let RetirementOutcome::Completed {
+        interpretation,
+        source,
+        settlements,
+        completion,
+    } = outcome
+    else {
+        panic!("independent disposal failures cannot replace the root's primary completion");
+    };
+    assert_eq!(completion, Completion::Stopped);
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    assert_eq!(settlements.len(), 1);
+    assert!(settlements[0].creations.is_empty());
+    assert_eq!(settlements[0].sends.owned, NoSends);
+    assert_eq!(settlements[0].sends.inner, NoSends);
+    assert!(matches!(settlements[0].become_, Step::Stop(_)));
+    assert_eq!(custody.behavior.base().admission, AccountAdmission::Ready);
+    assert_eq!(
+        Arc::as_ptr(&custody.behavior.base().original),
+        original_state.as_ptr()
+    );
+    assert_eq!(custody.behavior.base().original.as_slice(), [31, 37]);
+    assert_eq!(custody.control.len(), 0);
+    assert_eq!(custody.user.len(), 0);
+    assert_eq!(custody.descendants.len(), 0);
+    assert_eq!(custody.child_failures.len(), 0);
+    assert_eq!(custody.capability_failures.len(), 0);
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
+    let root_causes: Vec<_> = custody
+        .retirement_failures
+        .iter()
+        .map(|cause| ptr::from_ref(cause.as_ref()).cast::<()>())
+        .collect();
+    assert_eq!(root_causes, root_carrier.into_iter().collect::<Vec<_>>());
+    let (AccountsRole(role), family) = family.expect("the independent family report is received");
+    let (shutdown, metrics, disposal_failure) = family.into_parts();
+    assert_eq!(
+        disposal_failure
+            .as_ref()
+            .map(|cause| ptr::from_ref(cause.as_ref()).cast::<()>()),
+        family_carrier
+    );
+    let EntityShutdown::Settled {
+        represented,
+        entities,
+    } = &shutdown
+    else {
+        panic!("the actual zero-incarnation family retains its complete settled shutdown");
+    };
+    assert_eq!(*represented, 0);
+    assert_eq!(entities.len(), 0);
+    assert_eq!(
+        metrics,
+        EntityMetrics {
+            activations: 0,
+            hydration_failures: 0,
+            launch_failures: 0,
+            capacity_refusals: 0,
+            forced_retirements: 0,
+            peak_hydrations: 0,
+            residents: 0,
+        }
+    );
+    assert_eq!(Arc::as_ptr(&role), original_role.as_ptr());
+    assert_eq!(role.as_slice(), [41, 43]);
+    assert_eq!(Rc::as_ptr(&output), original_output.as_ptr());
+    assert_eq!(output.as_slice(), [11, 19]);
+    assert_eq!(starts.load(Ordering::SeqCst), 1);
+    assert_eq!(stops.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        original_root_cause.as_ref().map(Weak::strong_count),
+        root_carrier.map(|_| 1)
+    );
+    assert_eq!(
+        original_family_cause.as_ref().map(Weak::strong_count),
+        family_carrier.map(|_| 1)
+    );
+    assert_eq!(
+        (
+            original_output.strong_count(),
+            original_state.strong_count(),
+            original_role.strong_count()
+        ),
+        (1, 1, 1)
+    );
+    drop((
+        output,
+        origin,
+        custody,
+        settlements,
+        role,
+        shutdown,
+        metrics,
+        disposal_failure,
+    ));
+    assert_eq!(
+        (
+            original_output.strong_count(),
+            original_state.strong_count(),
+            original_role.strong_count()
+        ),
+        (0, 0, 0)
+    );
+    assert_eq!(
+        original_root_cause.as_ref().map(Weak::strong_count),
+        root_carrier.map(|_| 0)
+    );
+    assert_eq!(
+        original_family_cause.as_ref().map(Weak::strong_count),
+        family_carrier.map(|_| 0)
+    );
+}
+
+#[test]
+fn root_and_family_disposal_keep_complete_results_without_fault() {
+    root_and_family_disposal_preserve_original_results(None, None);
+}
+
+#[test]
+fn root_disposal_fault_keeps_complete_family_results() {
+    root_and_family_disposal_preserve_original_results(Some(Arc::new(vec![67, 71])), None);
+}
+
+#[test]
+fn family_disposal_fault_keeps_complete_root_results() {
+    root_and_family_disposal_preserve_original_results(None, Some(Arc::new(vec![73, 79])));
+}
+
+#[test]
+fn root_and_family_disposal_faults_keep_both_original_causes() {
+    root_and_family_disposal_preserve_original_results(
+        Some(Arc::new(vec![67, 71])),
+        Some(Arc::new(vec![73, 79])),
+    );
 }
 
 struct DeclaredAccountRole {
@@ -2050,7 +2435,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
     let complete_refusal = match joined_refusal.as_ref() {
         Some((
             origin,
-            ActorRetirement::InitializationRejected {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -2068,7 +2453,7 @@ fn declaration_role_disposal_preserves_original_actors(original_fault: Option<Ar
                         retirement_failures,
                         terminal_report,
                     },
-                error,
+                outcome: RetirementOutcome::InitializationRejected { error },
             },
         )) => {
             assert!(matches!(
@@ -2329,7 +2714,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
         };
         let Ok((
             origin,
-            ActorRetirement::InitializationRejected {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -2347,7 +2732,7 @@ fn declared_startup_refusal_returns_borrowed_non_send_callable() {
                         retirement_failures,
                         terminal_report,
                     },
-                error,
+                outcome: RetirementOutcome::InitializationRejected { error },
             },
         )) = &root_receipt
         else {
@@ -2862,7 +3247,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     let retirement =
         joined.unwrap_or_else(|_| panic!("the original active account joins successfully"));
     match &retirement {
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2880,10 +3265,13 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         } => {
             assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
@@ -2913,7 +3301,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             assert_eq!(capability_failures.len(), 0);
             assert_eq!(*completion, Completion::Stopped);
         }
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -2931,9 +3319,12 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation,
+                    source,
+                },
         } => {
             assert_eq!(child_failures.as_slice(), [] as [Never; 0]);
             assert!(matches!(
@@ -2964,13 +3355,10 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
     let account_exact = original_account
         .upgrade()
         .is_some_and(|original| match &retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
-            }
-            | ActorRetirement::OwnerCancelled {
-                custody: ActorCustody { behavior, .. },
-                ..
+                outcome:
+                    RetirementOutcome::Completed { .. } | RetirementOutcome::OwnerCancelled { .. },
             } => Arc::ptr_eq(&original, &behavior.base().original),
             _ => false,
         });
@@ -2987,7 +3375,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             _root_report,
             Ok((
                 origin,
-                ActorRetirement::Completed {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -3005,10 +3393,13 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 },
             )),
             Ok(ActorNotificationReceipts {
@@ -3104,6 +3495,32 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
         }
         _ => None,
     };
+    let returned = returned.map(|(work, report, root, notifications, families)| {
+        let root = root.map(|(origin, retirement)| {
+            let (custody, outcome) = retirement
+                .try_into_custody()
+                .unwrap_or_else(|_| panic!("the admitted root transfers complete custody"));
+            (origin, custody, outcome)
+        });
+        let (family, ()) = families;
+        let family = family.map(|(role, family)| {
+            let (shutdown, metrics, disposal_failure) = family.into_parts();
+            let expected = acquired.as_ref().expect("the borrowed family was acquired");
+            let EntityShutdown::Settled {
+                represented,
+                entities,
+            } = &shutdown
+            else {
+                panic!("consuming the family preserves its settled shutdown");
+            };
+            assert_eq!(*represented, expected.0);
+            assert_eq!(entities, &expected.1);
+            assert_eq!(metrics, expected.2);
+            assert_eq!(disposal_failure.is_some(), original_cause.is_some());
+            (role, (shutdown, metrics, disposal_failure))
+        });
+        (work, report, root, notifications, (family, ()))
+    });
     let retained = (
         original_root.strong_count(),
         original_role.strong_count(),
@@ -3394,7 +3811,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
             else {
                 panic!("the raw root is projected as the original root");
             };
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -3412,10 +3829,13 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                         unread_owner_cancellation,
                         mut descendants,
                     },
-                interpretation,
-                source,
-                settlements,
-                completion,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements,
+                        completion,
+                    },
             } = terminal
             else {
                 panic!("the explicit root shutdown retains its complete ordinary retirement");
@@ -3497,7 +3917,7 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                 panic!("the original declared child uses its total child projection");
             };
             drop(committed);
-            let ActorRetirement::OwnerCancelled {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior: child_behavior,
@@ -3515,9 +3935,12 @@ fn selected_actor_host_survives_distinct_caller_polling_host() {
                         terminal_report,
                         unread_owner_cancellation,
                     },
-                interpretation,
-                source,
-                settlements,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        interpretation,
+                        source,
+                        settlements,
+                    },
             } = child_terminal
             else {
                 panic!("root retirement joins its actually cancelled declared child");
@@ -3796,9 +4219,9 @@ fn owned_blocking_retains_ready_output_native_fault_and_joined_root() {
     assert_cancelled_account(&root_receipt);
     let Ok((
         _,
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         },
     )) = &root_receipt
     else {
@@ -3886,9 +4309,9 @@ fn owned_blocking_retains_unfinished_work_native_fault_and_joined_root() {
     assert_cancelled_account(&root_receipt);
     let Ok((
         _,
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         },
     )) = &root_receipt
     else {
@@ -4152,9 +4575,9 @@ fn host_setup_unwind_returns_original_uninvoked_work_for_real_retry() {
         assert_completed_account(&root_receipt);
         let Ok((
             _,
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             },
         )) = &root_receipt
         else {
@@ -4314,9 +4737,9 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
         assert_completed_account(&root_receipt);
         let Ok((
             _,
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             },
         )) = &root_receipt
         else {
@@ -4366,6 +4789,7 @@ fn host_setup_unwind_preserves_prepared_inputs_for_same_actor_retry() {
 
 mod family_cleanup {
     use bombay::ActorCustody;
+    use bombay::RetirementOutcome;
 
     use core::future::{Future, poll_fn};
     use core::num::NonZeroUsize;
@@ -4541,16 +4965,19 @@ mod family_cleanup {
         // accepted shutdown either folds to Stop, or remains the sole control input
         // when the distinct owner-cancellation source was acquired first.
         match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         control,
                         unread_owner_cancellation,
                         ..
                     },
-                completion,
-                settlements,
-                ..
+                outcome:
+                    RetirementOutcome::Completed {
+                        completion,
+                        settlements,
+                        ..
+                    },
             } => {
                 let expected_settlements = vec![ActionSettlement {
                     creations: Creations::empty(),
@@ -4566,15 +4993,14 @@ mod family_cleanup {
                     None | Some(()) => {}
                 }
             }
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         control,
                         unread_owner_cancellation,
                         ..
                     },
-                settlements,
-                ..
+                outcome: RetirementOutcome::OwnerCancelled { settlements, .. },
             } => {
                 assert_eq!(settlements.as_slice(), []);
                 assert_eq!(*unread_owner_cancellation, None);
@@ -4603,7 +5029,7 @@ mod family_cleanup {
             terminal_report,
             unread_owner_cancellation,
         ) = match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -4621,32 +5047,18 @@ mod family_cleanup {
                         terminal_report,
                         unread_owner_cancellation,
                     },
-                interpretation,
-                source,
-                settlements: _,
-                completion: _,
-            }
-            | ActorRetirement::OwnerCancelled {
-                custody:
-                    ActorCustody {
-                        behavior,
-                        control: _,
-                        user,
-                        descendants,
-                        child_failures,
-                        capability_failures,
-                        additional_failures,
-                        received_interpretation,
-                        received_source,
-                        source_index,
-                        acquired_ingress,
-                        retirement_failures,
-                        terminal_report,
-                        unread_owner_cancellation,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements: _,
+                        completion: _,
+                    }
+                    | RetirementOutcome::OwnerCancelled {
+                        interpretation,
+                        source,
+                        settlements: _,
                     },
-                interpretation,
-                source,
-                settlements: _,
             } => (
                 behavior,
                 interpretation,

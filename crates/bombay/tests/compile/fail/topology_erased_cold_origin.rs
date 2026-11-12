@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::prelude::*;
 use core::time::Duration;
@@ -80,7 +81,7 @@ fn main() {
     let (root_origin, retirement) = native.expect("independent root custody");
     assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody, .. } = retirement else { panic!("root completes") };
+    let ActorRetirement::Retained { custody, outcome: RetirementOutcome::Completed { .. } } = retirement else { panic!("root completes") };
     assert!(custody.child_failures.is_empty());
     assert_eq!(custody.descendants.len(), 3);
     let mut returned = BTreeSet::new();
@@ -96,7 +97,7 @@ fn main() {
         assert!(inserted_role);
         let inserted_address = addresses.insert(origin);
         assert!(inserted_address, "each occurrence has its original fresh binding");
-        let ActorRetirement::OwnerCancelled { custody, .. } = *retirement else { panic!("root retirement cancels original worker") };
+        let ActorRetirement::Retained { custody, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement else { panic!("root retirement cancels original worker") };
         let inserted_original = returned.insert(custody.behavior.base().original.as_ptr() as usize);
         assert!(inserted_original);
         assert!(custody.descendants.is_empty());

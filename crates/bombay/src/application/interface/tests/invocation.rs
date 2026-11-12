@@ -2,6 +2,7 @@
 mod refusal;
 
 use super::{AccountReport, Accounts, AccountsRole};
+use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
 use crate::behavior::{
@@ -27,12 +28,15 @@ fn ledger_custody(
     native: &ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>,
 ) -> &ActorCustody<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>> {
     let custody = match native {
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody,
-            settlements,
-            completion,
-            interpretation: None,
-            source: None,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation: None,
+                    source: None,
+                },
         } => {
             assert_eq!(*completion, Completion::Stopped);
             assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
@@ -41,11 +45,14 @@ fn ledger_custody(
             // exact original remains in this native report alongside the state.
             custody
         }
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody,
-            settlements,
-            interpretation: None,
-            source: None,
+            outcome:
+                RetirementOutcome::OwnerCancelled {
+                    settlements,
+                    interpretation: None,
+                    source: None,
+                },
         } => {
             assert_eq!(settlements.len(), 0);
             assert!(matches!(custody.control.as_slice(), [EventLayer::Owned(_)]));
@@ -205,10 +212,7 @@ async fn absent_work_drives_root_and_nonempty_family_retirement() {
         assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
         assert!(matches!(
             native,
-            ActorRetirement::Completed {
-                completion: Completion::Stopped,
-                ..
-            }
+            ActorRetirement::Retained { outcome: RetirementOutcome::Completed { completion: Completion::Stopped, .. }, .. }
         ));
         let root = ledger_custody(&native);
         let handoff = handoff.expect("startup attempted one actual authority transfer");

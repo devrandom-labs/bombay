@@ -27,6 +27,9 @@ records PR414/f09303c8 after routine/manual CI, independent reviews, matching
 merge trees and worktree cleanup. Its finite/generated/falsifier/replay and
 Nix seed claims retain their exact scopes. Native Query/Client, arbitrary
 overlap, crash/restart and full R24 remain open.
+The [fixed public Client integration](../network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
+is locally qualified on main's owned-retirement API. New-source full Nix/CI
+and PR416 delivery remain open; no complete acceptance row is added.
 
 On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
 byte-preservation witnesses after all six checks passed. PR404's R09 recovery

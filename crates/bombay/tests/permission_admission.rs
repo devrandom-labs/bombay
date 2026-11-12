@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorBase, ClassifySettlement, EstablishedDelivery, MessageProtocol, NoSends,
     SettlementStatus, Step,
@@ -388,7 +389,7 @@ where
             _root_report,
             Ok((
                 origin,
-                ActorRetirement::Completed {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -406,10 +407,13 @@ where
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 },
             )),
             Ok(ActorNotificationReceipts {

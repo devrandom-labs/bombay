@@ -12,8 +12,7 @@ use bombay::remote::{
     Attempt, Client, ClientLimits, Export, ExportLimits, Metadata, RefusalRetention, reply,
 };
 use bombay::{
-    ActorFailureAssessment, ActorRetirement, Application, ApplicationScope, MailAddr,
-    RetirementAssessment,
+    ActorFailureAssessment, Application, ApplicationScope, MailAddr, RetirementAssessment,
 };
 use futures_util::future::Either;
 use serde::{Deserialize, Serialize};
@@ -612,8 +611,12 @@ async fn increments() {
         caller_poll.is_none(),
         receiver_drop.is_none(),
         caller_drop.is_none(),
-        matches!(&incoming_native, Ok((_, ActorRetirement::Completed { .. }))),
-        matches!(&outgoing_native, Ok((_, ActorRetirement::Completed { .. }))),
+        incoming_native
+            .as_ref()
+            .is_ok_and(|(_, retirement)| retirement.completion().is_some()),
+        outgoing_native
+            .as_ref()
+            .is_ok_and(|(_, retirement)| retirement.completion().is_some()),
         incoming_report
             .as_ref()
             .map(|report| (report.retirement(), report.failures())),

@@ -630,6 +630,7 @@ pub(crate) struct ActionInterpreter<Capabilities> {
 mod atomic_interpretation_contract {
     use crate::ActorCustody;
     use crate::MailboxCapacity;
+    use crate::RetirementOutcome;
 
     use core::convert::Infallible;
     use core::future::Future;
@@ -2031,7 +2032,7 @@ mod atomic_interpretation_contract {
         // Every gate, task and source owner settled before custody assertions.
         assert!(admitted.is_ok());
         assert!(released.is_ok());
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     received_interpretation: retirement_received_interpretation,
@@ -2049,10 +2050,13 @@ mod atomic_interpretation_contract {
                     capability_failures,
                     unread_owner_cancellation,
                 },
-            interpretation: retirement_interpretation,
-            source: retirement_source,
-            settlements,
-            completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                    settlements,
+                    completion,
+                },
         } = retirement
         else {
             panic!("real completed actor retirement owns returned notification");
@@ -3413,6 +3417,7 @@ mod live_capability_retirement {
 mod capability_task_retirement {
     use crate::ActorCustody;
     use crate::MailboxCapacity;
+    use crate::RetirementOutcome;
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::launch::{ActorSpace, spawn_local_execution};
@@ -5396,7 +5401,7 @@ mod capability_task_retirement {
             unread,
             disposition,
         ) = match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -5414,10 +5419,13 @@ mod capability_task_retirement {
                         capability_failures,
                         unread_owner_cancellation,
                     },
-                interpretation,
-                source,
-                settlements,
-                completion,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements,
+                        completion,
+                    },
             } => (
                 behavior,
                 interpretation,
@@ -5438,7 +5446,7 @@ mod capability_task_retirement {
                 unread_owner_cancellation,
                 Ok(completion),
             ),
-            ActorRetirement::CapabilityFailed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -5456,10 +5464,13 @@ mod capability_task_retirement {
                         capability_failures,
                         unread_owner_cancellation,
                     },
-                interpretation,
-                source,
-                settlements,
-                error,
+                outcome:
+                    RetirementOutcome::CapabilityFailed {
+                        interpretation,
+                        source,
+                        settlements,
+                        error,
+                    },
             } => (
                 behavior,
                 interpretation,
@@ -5580,7 +5591,7 @@ mod capability_task_retirement {
         let child = descendants
             .pop()
             .expect("whole genuine child result after parent join");
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     received_interpretation: child_retirement_received_interpretation,
@@ -5598,10 +5609,13 @@ mod capability_task_retirement {
                     capability_failures: child_capabilities,
                     unread_owner_cancellation: child_unread,
                 },
-            interpretation: child_retirement_interpretation,
-            source: child_retirement_source,
-            settlements: child_settlements,
-            completion: child_completion,
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation: child_retirement_interpretation,
+                    source: child_retirement_source,
+                    settlements: child_settlements,
+                    completion: child_completion,
+                },
         } = child.retirement
         else {
             panic!("pure stop leaf has its original completed result")

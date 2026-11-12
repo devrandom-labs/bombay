@@ -2,6 +2,7 @@ use super::{
     ManagedLeaf, ManagedNode, Node, NodeError, NodeStartup, Root, RootStartup, Trace, garden,
     root_deadline_reached, stopped_root_deadline_reached,
 };
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Behavior, BehaviorBase, BehaviorSettlements, ChildCreationOutcome, ChildHead, ChildTail,
@@ -263,11 +264,14 @@ where
     }
 }
 fn observe_node<D, F>(retirement: &ActorRetirement<ManagedNode, D, Vec<F>>) -> (&Node, &Vec<D>) {
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the root owns the complete cancelled recursive node");
@@ -282,11 +286,14 @@ fn observe_node<D, F>(retirement: &ActorRetirement<ManagedNode, D, Vec<F>>) -> (
     (custody.behavior.base(), &custody.descendants)
 }
 fn observe_audit(retirement: &ActorRetirement<ManagedLeaf, Never, Vec<Never>>) -> GardenRetirement {
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("both graphs own the original audit actor");
@@ -316,7 +323,10 @@ fn manual_nodes(
     retirement: &ActorRetirement<ManagedNode, NodeRetirement, Vec<NodeFailure>>,
     addresses: &mut HashSet<MailAddr>,
 ) -> GardenRetirement {
-    if let ActorRetirement::OwnerCancelled { custody, .. } = retirement
+    if let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::OwnerCancelled { .. },
+    } = retirement
         && let Some(original) = custody.child_failures.first()
     {
         match original {
@@ -400,12 +410,15 @@ where
         + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     B::Settlements: ClassifySettlement,
 {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the original root must complete its actual reports");
@@ -639,12 +652,15 @@ fn inspect_refused_garden<D, F>(
     original_id: CreationId,
     allocation: *const u8,
 ) -> Vec<u8> {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                interpretation,
+                source,
+                ..
+            },
     } = retirement
     else {
         panic!("the original finite refused creation remains in root custody");

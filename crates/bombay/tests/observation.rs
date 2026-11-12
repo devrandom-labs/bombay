@@ -1,5 +1,6 @@
 use behavior_actors::{EstablishedObservation, ObservationId, ObserveEstablished};
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActionSettlement, BehaviorBase, ExactDeliveryReason, ItemSettlement, MessageProtocol,
     SendLayer, SettledItem, Stopped,
@@ -292,7 +293,7 @@ async fn rejected_report_delivery_retains_the_whole_original_report_and_normal_a
         panic!("the independent notification results remain owned");
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -310,10 +311,13 @@ async fn rejected_report_delivery_retains_the_whole_original_report_and_normal_a
                 retirement_failures,
                 terminal_report,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = retirement
     else {
         panic!("the normal actor stop retains its independent rejected delivery");

@@ -1,6 +1,7 @@
 //! Source-backed supervisor startup, replacement and complete retirement laws.
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use core::time::Duration;
@@ -150,7 +151,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
         retirement => retirement,
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -158,8 +159,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the supervisor returns completed terminal custody")
@@ -177,7 +177,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
         .expect("the primary role retains its proxy");
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -185,8 +185,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the proxy returns both worker incarnations")
@@ -202,7 +201,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
         } = descendant;
         let terminal = *terminal;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     capability_failures,
@@ -210,8 +209,7 @@ fn supervisor_replaces_worker_and_preserves_complete_retirement() {
                     descendants,
                     ..
                 },
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = terminal
         else {
             panic!("the worker returns completed terminal custody")

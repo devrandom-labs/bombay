@@ -905,6 +905,7 @@ where
 #[cfg(test)]
 mod tests {
     mod invocation;
+    use crate::RetirementOutcome;
     use crate::actors::ActorExt;
     #[cfg(feature = "remote")]
     use crate::application::{ApplicationScope, MailboxCapacity};
@@ -1132,15 +1133,17 @@ mod tests {
                     assert_eq!(&**id.get(), &[79, 83]);
                     let retirement = retirement.as_ref().expect("exact account task custody");
                     let custody = match retirement {
-                        ActorRetirement::Completed {
+                        ActorRetirement::Retained {
                             custody,
-                            completion,
-                            ..
+                            outcome: RetirementOutcome::Completed { completion, .. },
                         } => {
                             assert_eq!(*completion, Completion::Stopped);
                             custody
                         }
-                        ActorRetirement::OwnerCancelled { custody, .. } => custody,
+                        ActorRetirement::Retained {
+                            custody,
+                            outcome: RetirementOutcome::OwnerCancelled { .. },
+                        } => custody,
                         _ => panic!("fenced retirement returns completion or owner cancellation"),
                     };
                     let actor = custody.behavior.base();
@@ -1341,6 +1344,7 @@ mod tests {
 #[cfg(test)]
 mod installed_shutdown_contract {
 
+    use crate::RetirementOutcome;
     use behavior::{Become, BehaviorBase, Never, NoSends, Step, Stopped};
     use behavior_actors::{Exit, ShutdownRejection, StopOnShutdown};
     use bombay_engine::Completion;
@@ -1763,11 +1767,7 @@ mod installed_shutdown_contract {
             let (origin, native) =
                 native.expect("the native root result remains independently retained");
             assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-            let ActorRetirement::Completed {
-                completion: Completion::Stopped,
-                interpretation: None,
-                source: None,
-                settlements,
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -1784,6 +1784,13 @@ mod installed_shutdown_contract {
                         retirement_failures,
                         terminal_report: None,
                         unread_owner_cancellation: None,
+                    },
+                outcome:
+                    RetirementOutcome::Completed {
+                        completion: Completion::Stopped,
+                        interpretation: None,
+                        source: None,
+                        settlements,
                     },
             } = native
             else {
@@ -1909,10 +1916,13 @@ mod installed_shutdown_contract {
         };
         assert_eq!(retained_failure.strong_count(), 1);
         let (_, native) = native.expect("the complete native root survives report notification");
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            completion: Completion::Stopped,
-            ..
+            outcome:
+                RetirementOutcome::Completed {
+                    completion: Completion::Stopped,
+                    ..
+                },
         } = native
         else {
             panic!("the native stopped actor retains its original state");

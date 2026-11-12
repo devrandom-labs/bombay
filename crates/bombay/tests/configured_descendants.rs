@@ -1,4 +1,5 @@
 //! A configured native host must survive cold and recursive child startup.
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     ActionItem, Actions, BehaviorActed, BehaviorBase, ChildChoice, ChildCreationOutcome,
@@ -201,6 +202,10 @@ type DocumentRetirement = ActorRetirement<
     Vec<<archive::DocumentRetirements as RetirementSchema>::Failure>,
 >;
 
+#[expect(
+    clippy::too_many_lines,
+    reason = "one recursive custody check retains every original actor, file, creation, settlement and child assertion across both native outcomes"
+)]
 fn collect_documents(
     mut retirement: DocumentRetirement,
     expected: &[(usize, u8)],
@@ -212,23 +217,29 @@ fn collect_documents(
     let mut remaining = expected.iter();
     loop {
         let (custody, settlements) = match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody,
-                completion,
-                settlements,
-                interpretation,
-                source,
+                outcome:
+                    RetirementOutcome::Completed {
+                        completion,
+                        settlements,
+                        interpretation,
+                        source,
+                    },
             } => {
                 assert_eq!(completion, Completion::Stopped);
                 assert!(interpretation.is_none());
                 assert!(source.is_none());
                 (custody, settlements)
             }
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody,
-                settlements,
-                interpretation,
-                source,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        settlements,
+                        interpretation,
+                        source,
+                    },
             } => {
                 assert!(interpretation.is_none());
                 assert!(source.is_none());
@@ -418,12 +429,15 @@ async fn configured_services_reach_fresh_grandchildren_and_cold_members() {
         let (origin, retirement) = native.expect("independent root retirement custody");
         assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
         assert_eq!(reports[&3], origin.address());
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody,
-            completion,
-            settlements,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    completion,
+                    settlements,
+                    interpretation,
+                    source,
+                },
         } = retirement
         else {
             panic!("the original root handles its actual shutdown command");

@@ -2,6 +2,7 @@
 use super::super::super::counter::{Counter, CounterMessage, CounterValue};
 use super::super::assert_retirement;
 use super::{peer, protocol, same_counter, wire};
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::User;
 use bombay::prelude::Application;
@@ -454,11 +455,14 @@ async fn overlapping_counters() {
     assert_retirement(&native);
     assert_retirement(&other_native);
     for original in [&native, &other_native] {
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody,
-            interpretation,
-            source,
-            ..
+            outcome:
+                RetirementOutcome::Completed {
+                    interpretation,
+                    source,
+                    ..
+                },
         } = original
         else {
             panic!("both original native roots completed their typed shutdown");

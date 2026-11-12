@@ -1,4 +1,5 @@
 use bombay::ApplicationScope;
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorBase, ChildDelivery, CreateChild, CreationSequence, Creations, MessageProtocol,
 };
@@ -120,7 +121,11 @@ async fn inferred_cold_branch_creates_worker_and_keeps_native_reply_and_complete
         .as_ref()
         .expect("the original root remains owned");
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody: root, .. } = root else {
+    let ActorRetirement::Retained {
+        custody: root,
+        outcome: RetirementOutcome::Completed { .. },
+    } = root
+    else {
         panic!("the root stops normally");
     };
     assert_eq!(root.child_failures.len(), 0);
@@ -131,8 +136,9 @@ async fn inferred_cold_branch_creates_worker_and_keeps_native_reply_and_complete
     let branches::RootRetirements {
         retirement: branch, ..
     } = &root.descendants[0];
-    let ActorRetirement::OwnerCancelled {
-        custody: branch, ..
+    let ActorRetirement::Retained {
+        custody: branch,
+        outcome: RetirementOutcome::OwnerCancelled { .. },
     } = branch.as_ref()
     else {
         panic!("parent retirement cancels its original cold child");
@@ -148,8 +154,9 @@ async fn inferred_cold_branch_creates_worker_and_keeps_native_reply_and_complete
         retirement: worker,
     } = &branch.descendants[0];
     assert_eq!(origin.address(), worker_address);
-    let ActorRetirement::OwnerCancelled {
-        custody: worker, ..
+    let ActorRetirement::Retained {
+        custody: worker,
+        outcome: RetirementOutcome::OwnerCancelled { .. },
     } = worker.as_ref()
     else {
         panic!("parent retirement cancels its original fresh child");
