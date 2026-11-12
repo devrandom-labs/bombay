@@ -1577,6 +1577,25 @@ Production +7/-6/net1, tests +0/-0, public types/methods +0/-0. Cumulative nativ
 paired145 paths, Rust113 +3065/-1490/net1575; production net37, tests net1538,
 public types +1/-0. Full programme, final registry runtime delivery and CI remain open.
 
+#### Current runtime archive verification
+
+Before packaging the retaineda2ef6ce5 production source, reuse the established
+three-package Cargo workflow: `cargo package --locked -p bombay-engine`
+`-p bombay-macros -p bombay-rs --all-features`, through pinned Nix on actual1.99
+and1.96. These are unpublished Engine0.3.0/macros0.2.0/runtime0.2.0 candidates;
+no publication is implied. Keep the source clean and frozen while each package
+set is produced/verified. Inspect actual archives, normalized manifests/locks,
+VCS records and every shipped production byte against the selected Git source.
+Only these three unpublished packages may be locally staged/patched for joint
+verification; Behavior/Actors0.30 and macros0.16 remain registry selections.
+Then exercise extracted-package callers, preserving current inferred syntax,
+original retirement/failure oracles, facade/renamed use and executable examples.
+This verification changes no production model, dependency, expected diagnostic
+or caller policy. Existing source tests and package consumers remain immutable
+inputs; use isolated task-owned caches and retire them after preserving evidence.
+Older archive receipts retain their exact source/compiler limits and do not
+certify this candidate. Final repository/CI and full programme gates stay open.
+
 The user authorized186 cumulative source paths for DX04/24 report retention.
 `outcome.root_report()` and `retirement.root_report()` inspect the existing
 runtime-issued root/subtree report after Work returns its business value. The
