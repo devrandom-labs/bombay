@@ -1374,6 +1374,26 @@ tests net1538, public types +1/-0. This is small business-edit compilation, not
 wrapper/child addition, macro expansion, latest tests or full-workspace costs.
 Remaining DX26 and whole-programme acceptance/delivery stay open.
 
+#### Incoming schedule main reconciliation
+
+Before integrating mainf09303c8 (PR414) over retainedfa25bbd7, preserve both
+complete contracts: upstream's fixed/exhaustive/generated incoming schedules,
+persisted replay and CI evidence, and the proven retirement custody/outcome
+product. Main changes eight paths, including one existing cfg(test) schedule
+owner and its regression seed; it changes no selected package or runtime API.
+Retain every upstream delivery, permission, request/reply, retirement and replay
+oracle. The sole overlapping Rust change is the already-proven normal-retirement
+pattern/import, with the same owned custody/interpretation/source/settlements.
+Keep upstream workflow/flake/doc changes and this branch's independent backlog
+status. No new semantic type, bound, fixture, expectation or policy is authorized
+by compiler fallout. Expected resolution production/API0; feature scope remains
+within approved186. Preserve the exact pre-merge branch/source and compare the
+whole final schedule against upstream after reversing only that pattern/import.
+Run the existing five-case incoming owner corpus in both profiles through pinned
+Nix, including finite orders, generated cases and saved replay; retain exact
+configuration, source/seed hashes and results. Recheck affected owner gates for
+the reconciled source. Earlier full/SDK gates retain their original source limits.
+
 #### SDK-independent foreign error spelling
 
 Before editing at95e2436c, retain the project policy that networking SDK types
