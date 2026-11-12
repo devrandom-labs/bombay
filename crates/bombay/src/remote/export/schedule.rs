@@ -17,8 +17,9 @@ use core::task::Poll;
 use futures_util::FutureExt;
 use futures_util::future::Either;
 use serde::Deserialize;
+use std::array;
 use std::cell::{Cell, RefCell};
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::num::NonZeroUsize;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -158,12 +159,162 @@ async fn scheduled_duplicates_and_authority_changes_preserve_native_admission() 
         Event::RequestChecked(fresh, twenty, Ok(())),
         Event::ReplyChecked(fresh, twenty, Ok(())),
     ];
+    let derived = expected_trace(&deliveries);
+    assert_eq!(derived.as_slice(), expected);
     tokio::time::timeout(
         Duration::from_secs(10),
         Box::pin(incoming_requests(&deliveries, &expected)),
     )
     .await
     .expect("watchdog supplies no delivery, expiry or cleanup evidence");
+}
+
+fn delivery_orders() -> Vec<[Delivery; 6]> {
+    let mut orders = Vec::new();
+    for initial in 0..6 {
+        for repeat in initial + 1..6 {
+            let remaining = (0..6)
+                .filter(|&position| position != initial && position != repeat)
+                .collect::<Vec<_>>();
+            for expiry in 0..remaining.len() {
+                for construction in expiry + 1..remaining.len() {
+                    let expiring = remaining[expiry];
+                    let constructed = remaining[construction];
+                    let unassigned = remaining
+                        .iter()
+                        .copied()
+                        .filter(|&position| position != expiring && position != constructed)
+                        .collect::<Vec<_>>();
+                    for [revoked, fresh] in [
+                        [unassigned[0], unassigned[1]],
+                        [unassigned[1], unassigned[0]],
+                    ] {
+                        let deliveries = array::from_fn(|position| match position {
+                            position if position == initial => Delivery::Initial,
+                            position if position == repeat => Delivery::Repeat,
+                            position if position == expiring => Delivery::Expiring,
+                            position if position == constructed => Delivery::ConstructorExpired,
+                            position if position == revoked => Delivery::Revoked,
+                            position if position == fresh => Delivery::Fresh,
+                            _ => unreachable!("six distinct positions own the six deliveries"),
+                        });
+                        orders.push(deliveries);
+                    }
+                }
+            }
+        }
+    }
+    orders
+}
+
+#[test]
+fn delivery_orders_cover_each_legal_six_label_word_once() {
+    let orders = delivery_orders();
+    let unique = orders.iter().copied().collect::<BTreeSet<_>>();
+    assert_eq!(orders.len(), 180);
+    assert_eq!(unique.len(), 180);
+    let labels = BTreeSet::from([
+        Delivery::Initial,
+        Delivery::Repeat,
+        Delivery::Expiring,
+        Delivery::Revoked,
+        Delivery::ConstructorExpired,
+        Delivery::Fresh,
+    ]);
+    for deliveries in orders {
+        let present = deliveries.into_iter().collect::<BTreeSet<_>>();
+        assert_eq!(present, labels);
+        let initial = deliveries
+            .iter()
+            .position(|&delivery| delivery == Delivery::Initial)
+            .unwrap();
+        let repeat = deliveries
+            .iter()
+            .position(|&delivery| delivery == Delivery::Repeat)
+            .unwrap();
+        let expiring = deliveries
+            .iter()
+            .position(|&delivery| delivery == Delivery::Expiring)
+            .unwrap();
+        let constructed = deliveries
+            .iter()
+            .position(|&delivery| delivery == Delivery::ConstructorExpired)
+            .unwrap();
+        assert!(initial < repeat);
+        assert!(expiring < constructed);
+    }
+}
+
+fn expected_trace(deliveries: &[Delivery]) -> Vec<Event> {
+    let mut trace = Vec::new();
+    let mut at = Duration::ZERO;
+    for &delivery in deliveries {
+        let sequence = delivery.sequence();
+        trace.push(Event::Delivered(delivery));
+        match delivery {
+            Delivery::Initial | Delivery::Fresh => trace.extend([
+                Event::Verified(sequence),
+                Event::RequestChecked(sequence, at, Ok(())),
+                Event::Constructed(sequence),
+                Event::RequestChecked(sequence, at, Ok(())),
+                Event::ReplyChecked(sequence, at, Ok(())),
+            ]),
+            Delivery::Repeat => trace.extend([
+                Event::Verified(sequence),
+                Event::RequestChecked(sequence, at, Ok(())),
+                Event::ReplyChecked(sequence, at, Ok(())),
+            ]),
+            Delivery::Expiring => {
+                at = Duration::from_secs(10);
+                trace.extend([
+                    Event::VerificationPolled(delivery, Poll::Pending),
+                    Event::Advanced(at),
+                    Event::Released(delivery),
+                    Event::Verified(sequence),
+                    Event::RequestChecked(sequence, at, Err(Refusal::Expired)),
+                ]);
+            }
+            Delivery::Revoked => trace.extend([
+                Event::VerificationPolled(delivery, Poll::Pending),
+                Event::Revoked(delivery),
+                Event::Released(delivery),
+                Event::Verified(sequence),
+                Event::RequestChecked(sequence, at, Err(Refusal::Revoked)),
+            ]),
+            Delivery::ConstructorExpired => {
+                trace.extend([
+                    Event::Verified(sequence),
+                    Event::RequestChecked(sequence, at, Ok(())),
+                ]);
+                at = Duration::from_secs(20);
+                trace.extend([
+                    Event::Advanced(at),
+                    Event::Constructed(sequence),
+                    Event::RequestChecked(sequence, at, Err(Refusal::Expired)),
+                ]);
+            }
+        }
+    }
+    trace
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn every_legal_six_label_order_preserves_native_admission() {
+    let orders = delivery_orders();
+    assert_eq!(orders.len(), 180);
+    let mut completed = 0;
+    for deliveries in orders {
+        let expected = expected_trace(&deliveries);
+        tokio::time::timeout(
+            Duration::from_secs(10),
+            Box::pin(incoming_requests(&deliveries, &expected)),
+        )
+        .await
+        .expect("watchdog supplies no finite-order admission or cleanup evidence");
+        completed += 1;
+    }
+    assert_eq!(completed, 180);
+    println!("completed incoming delivery orders: {completed}");
 }
 
 #[expect(
@@ -550,6 +701,11 @@ async fn incoming_requests(deliveries: &[Delivery], expected: &[Event]) {
         .retirement
         .expect("actual joined-retirement notification");
     drop(cancellation_owner);
+    println!("incoming deliveries: {deliveries:?}");
+    println!(
+        "incoming Counter: {value:?}; actual trace: {:?}",
+        trace.borrow().as_slice()
+    );
     assert_eq!(
         value,
         Some(User::new(origin.address(), 2)),

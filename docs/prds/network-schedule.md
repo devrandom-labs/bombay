@@ -2,9 +2,10 @@
 
 Current checkpoint: PR411 delivers the fixed incoming schedule; PR413 now
 delivers the paired Behavior0.30 prerequisite. The exhaustive/generated stage
-below starts from main814c96d1 with fresh owner verification. No new schedule
-campaign is qualified yet; the fixed host extraction is verified below.
-Earlier checkpoints preserve their source epochs.
+below starts from main814c96d1 with fresh owner verification. Host extraction
+and all180 finite orders are locally qualified below; generated/shrunk replay,
+new campaign CI and reviewed delivery remain open. Earlier checkpoints preserve
+their source epochs.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
@@ -194,6 +195,51 @@ This closes the extraction gate only. The180-word domain, generated/shrunk
 and persisted replay, new CI wiring, native Query/Client and restart work,
 full R24 and reviewed merge delivery remain open. Enumeration may now follow
 the recorded ordinary-Rust plan without changing shipping contracts.
+
+### Verified finite orders — 2026-11-12
+
+The next ordinary-function experiment qualifies all180 legal six-label orders.
+The measured std position construction is37 formatted lines, within the
+35–50-line forecast. It needs no dependency, new product or generic permuter;
+the recorded itertools alternative would add a direct dependency/lock edge.
+This is a source/ownership comparison, not a performance superiority claim.
+Separate coverage checks require180 total/unique words, all six labels and
+both precedences. Expected traces depend only on the supplied word and
+authored chronology. The original34-event literal remains the fixed host's
+input and calibrates the derived oracle without being replaced.
+
+Formatted857-line source SHA256 is
+223f0023146a537d378f65cfc976f0f6a3f1b8363359ff7c21ce9c1166bf7383.
+Actual pinned current Darwin debug/optimized runs and all three exact-restored
+pairs pass3 selected tests each, zero failures/ignored and433 filtered. Both
+independent reviewers enumerate the180 legal permutations separately and
+compare every actual positive word set. Each of the eight healthy logs has
+180 distinct completed words, each actual Counter2/full34-event trace, then
+one separate fixed control. These nested executions are not181 Cargo tests.
+
+Omitting one generated word fails only the coverage assertion215,179 versus
+180, in both profiles; it earns no actor/cleanup credit. Canonical lookup and
+final-permission omissions independently fail only the first post-cleanup
+Counter oracle709, actual3 versus required2, in both profiles. Their actual
+first word is Initial/Repeat/Expiring/ConstructorExpired/Revoked/Fresh.
+The other179 words and later assertions are unexecuted in those negatives
+and uncredited. All six negative commands return101 after the intended test;
+all restorations are byte-exact and their healthy D/R pairs return0. No
+compiler, setup or watchdog failure earns semantic credit. Formatting and
+strict owning all-feature library/test Clippy pass. Shipping querydfaae0a0,
+root lock9bb2db13, Counter and public surface remain unchanged.
+
+Author/root and both independent two-pass source/outcome/nonvacuity audits
+pass. All17 original command/log/exit sets, Git basec943bc61, full source,
+three isolated cuts, readbacks and reviews are sealed as79 payloads in common
+Git's session-archives/2026-11-12/incoming-orders/. Manifest SHA256 is
+b283cc775e27c0da85a09799deaf6334552e152c2b3531e0b8786bf8f8e85250.
+The unformattedd0674b8b review epoch remains separate from actual223f runs.
+Finite-stage tests +157/-1/net156; production/public types +0/-0.
+Complete five-path branch census against main814c96d1: shipping0;
+tests +319/-76/net243; records +291/-11/net280; public types +0/-0; no untracked paths.
+Generated cases, actual minimized/persisted replay, CI wiring and delivery
+remain open, together with native Query/Client, restart and the rest of R24.
 
 ## Delivery of the fixed schedule — 2026-11-11
 

@@ -8,8 +8,9 @@ actual Linux runtime/minimum compiler/campaign scopes, matching delivery tree
 and normal worktree removal. Remaining remote acceptance is unchanged. R24's
 next [exhaustive/generated schedule stage](../prds/network-schedule.md#exhaustive-and-generated-incoming-schedules--2026-11-11)
 starts from this main with fresh feature-specific owner verification and its
-pre-edit law recorded. Fixed host extraction and paired cuts/restores qualify;
-enumeration, generated replay, campaign CI and delivery remain open.
+pre-edit law recorded. Fixed host extraction and all180 finite orders qualify
+locally with paired source cuts/restorations. Generated/shrunk/persisted replay,
+campaign CI and delivery remain open.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
