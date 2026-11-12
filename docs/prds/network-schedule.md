@@ -5,9 +5,10 @@ f09303c8 after successful routine/manual CI and independent reviews. The
 [delivery record](#delivery-of-the-bounded-campaign--2026-11-12) supersedes
 pending hosted-CI wording in the dated preparation checkpoints below. Earlier
 source, compiler and result epochs retain their original meanings.
-PR416's fixed public Client overlap now has [fresh local qualification on
-main d575c614](#incoming-custody-api-prerequisites--2026-11-12). Its new-source
-hosted Nix/CI and merged delivery remain open; old fed2 CI is kept separate.
+PR416's fixed public Client overlap passes hosted CI on34b0726a with main
+d575c614. [Integration with newer main402ff67f](#current-main-integration-records-and-transport-fixtures--2026-11-12)
+now requires a record conflict resolution and fresh combined qualification;
+merged delivery remains open. Earlier source epochs are kept separate.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
@@ -577,17 +578,71 @@ Its fresh catalogue has1007 cases; the complete actual1001-PASS set exactly
 matches the nonignored inventory. Passing parent tests invoke and check all
 six named children; the reported default skip count remains six. Both overlap
 tests actually pass. All20 inputs match after the run and in retained source.
-The existing hosted Nix workflow will qualify the submitted combined revision
-through its authoritative full gate. Earlier fed2 Nix/CI remains its original
-source proof. New-source full Nix/CI and reviewed merged delivery remain open;
-this integration closes no further remote requirement.
+At this local checkpoint, hosted full Nix/CI and merged delivery were still
+open; the later34b CI result is recorded below. Earlier fed2 Nix/CI remains
+its original source proof. This integration closes no further remote requirement.
 
 Root's local gate review8f02f1f8 and independent two-pass reviews677413cb/
-03aee2e3 pass. Complete current branch scope against maind575c614, including
+03aee2e3 pass. Complete submitted34b scope against maind575c614, including
 staged/unstaged/untracked paths: production +0/-0/net0; tests +997/-0/net997;
 public API types +0/-0; records +627/-30/net597. Six owned paths and no untracked
 files remain. The separately imported121-path upstream change is not new
 PR416 production scope. All native input/source guards remain exact.
+
+### Current main integration: records and transport fixtures — 2026-11-12
+
+Submitted34b0726a/tree9415a4e9 passes all eight hosted checks on its actual
+synthetic7cb198d3 checkout with maind575c614. Full Nix completes19:42:50 UTC;
+the job and bounded Driver/Observe campaigns finish19:44:45. Actual28 Linux
+checks, remote530 per profile, workspace/coverage1001, current minimum
+subsets and both new named overlap cases pass. Root and both independent
+two-pass reviews pass. Routine Miri is skipped. The complete601-payload CI
+capsule is sealed separately from earlier epochs: inventoryd6b8eb25,
+manifestd03ed823; both independent retention checks pass. Corpus/source,
+compiler/platform/graph and negative-control limits remain in that evidence.
+These results qualify34b, not a subsequent main merge or feature delivery.
+
+Final eligibility finds main advanced through PR417 to402ff67f/tree46e31eba.
+Its nine paths add the existing root transport contract's Arc/Rc compiler
+twins, register them in run_with and the138-case diagnostic inventory, update
+owner records, and retain remote-debug Cargo failure output. No production
+Rust, manifest, dependency lock or flake.lock changes. The exact Cargo command,
+targets and success markers remain; the failure branch saves Cargo's status,
+prints its log, then exits with that status when log printing succeeds. This
+does not add a guarantee about independent log-read/output failures.
+
+Fresh selected-lock/owner verification retains Core/Actors0.30 at628649da,
+Macros0.16 and the primitive versions listed above. The complete selected
+775-line Behavior instructions are reread. All20 executed inputs match current
+34b; the incoming delta touches none. The995-line126a witness stays exact;
+verify conservation again after the merge. Existing Actor:Send, caller-local
+WorkFuture:Future, full native custody and completed-outcome contracts are
+unchanged. Author's ordinary-Rust plan fd1339b3 requires no source migration,
+new state, protocol, bound, wrapper, public type, callback or semantic law.
+Independent fresh ownership/API and two-pass contract reviews90b98aa1/
+41b0e9b5 also pass, including304 exact registry/archive source comparisons.
+
+The concrete blocker is one text conflict: merge-tree34b/402 exits1 only for
+docs/prd-backlog/status.md (basea4fc8cb0,ours5279a5e1,incoming1136970d).
+Root will preserve incoming DX1 verbatim plus this branch's NET1 and current
+remote checkpoint. No whole-file ours/theirs replacement or authored Rust
+change is selected. Expected owned edits are the existing status/PRD records;
+production +0/-0, tests +0/-0 and public API types +0/-0 for this integration.
+The nine imported paths are upstream delivery, separate from owned scope.
+
+Before delivery, review the resolved combined source; run pinned workspace
+Nextest with its exact catalogue, the owning eight-case run_with compiler
+harness in debug/optimized, formatting and strict owning lint, then fresh
+hosted full Nix/CI on the combined revision. Unchanged prior canonical-omission
+controls retain their exact source/law evidence; repeat them only if a relevant
+input/law changes or a new failure justifies it. Neither old34b CI nor PR417's
+parent checks qualify the future combined tree. All full remote requirements
+and actual reviewed merge/worktree cleanup remain open.
+
+Premerge checkpoint against maind575c614, including all tracked/untracked
+paths: production +0/-0/net0; tests +997/-0/net997; public API types +0/-0;
+records +682/-30/net652. Six owned paths, no untracked files; incoming nine-path
+upstream delivery remains separate from this owned scope.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11
 
