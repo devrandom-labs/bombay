@@ -107,6 +107,30 @@ async fn explicit_unit_interpreter_performs_real_io_and_retains_complete_rejecti
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original actor remains independently owned");
+    let Some(RetirementOutcome::EffectsFailed {
+        error: SettlementFailure::Rejected,
+        settlements,
+        ..
+    }) = retirement.outcome()
+    else {
+        panic!("the typed rejection remains available before custody extraction");
+    };
+    let borrowed_request = settlements
+        .iter()
+        .flat_map(|settlement| settlement.sends.files.iter())
+        .find_map(|file| match file {
+            SettledItem::Attempted(ItemSettlement::Rejected { item, .. }) => Some(item),
+            _ => None,
+        })
+        .expect("the original rejected request is available to borrow");
+    assert_eq!(
+        borrowed_request
+            .path
+            .as_os_str()
+            .as_encoded_bytes()
+            .as_ptr(),
+        rejected_pointer
+    );
     let (custody, outcome) = retirement
         .try_into_custody()
         .unwrap_or_else(|_| panic!("failed effects retain the complete original custody"));

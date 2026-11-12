@@ -926,6 +926,22 @@ where
         }
     }
 
+    /// Borrow the exact retained primary outcome without consuming custody.
+    ///
+    /// Presence means availability, not success or failure-free cleanup.
+    /// Allocation refusal and executor outcomes without returned custody have
+    /// no retained outcome; their original alternatives remain in `self`.
+    #[must_use]
+    pub const fn outcome(&self) -> Option<&RetirementOutcome<BehaviorState>> {
+        match self {
+            Self::Retained { outcome, .. } => Some(outcome),
+            Self::AllocationRejected { .. }
+            | Self::ActorTaskFailed(_)
+            | Self::Panicked
+            | Self::Cancelled => None,
+        }
+    }
+
     #[expect(
         clippy::too_many_lines,
         reason = "one closed Completion conversion retains every original typed field and invariant; another forwarding function would only relocate the same conservation law"

@@ -77,6 +77,17 @@ async fn overflow_returns_the_original_counter_command_and_completed_work() {
     assert!(notifications.termination.is_ok());
     assert!(notifications.retirement.is_ok());
     let (_origin, root) = root.expect("the exact native retirement is received");
+    let Some(RetirementOutcome::BehaviorFailed {
+        error: CounterError::Overflow(borrowed_command),
+        ..
+    }) = root.outcome()
+    else {
+        panic!("the borrowed overflow is available without custody extraction");
+    };
+    assert_eq!(
+        (borrowed_command.as_ptr(), borrowed_command.as_ref()),
+        (command_pointer, &[7, 11][..])
+    );
     let (custody, outcome) = root
         .try_into_custody()
         .unwrap_or_else(|_| panic!("failure still returns the complete original actor custody"));
@@ -254,6 +265,10 @@ async fn actual_shutdown_returns_the_whole_nondefault_wrapped_counter() {
     assert!(notifications.termination.is_ok());
     assert!(notifications.retirement.is_ok());
     let (_origin, root) = root.expect("the complete native retirement is received");
+    let Some(RetirementOutcome::Completed { completion, .. }) = root.outcome() else {
+        panic!("the wrapped actor's normal outcome remains available to borrow");
+    };
+    assert_eq!(completion, &Completion::Stopped);
     let (custody, outcome) = root
         .try_into_custody()
         .unwrap_or_else(|_| panic!("actual shutdown returns the whole wrapped actor"));
@@ -304,6 +319,7 @@ fn allocation_refusal_returns_the_original_counter_without_native_custody() {
             behavior: Counter { value: 47, audit },
             reason,
         };
+        assert!(retirement.outcome().is_none());
         let Err(returned) = retirement.try_into_custody() else {
             panic!("allocation refusal established no native custody");
         };
@@ -326,6 +342,7 @@ fn allocation_refusal_returns_the_original_counter_without_native_custody() {
 #[test]
 fn unreturned_panic_stays_unreturned_without_fabricated_actor_state() {
     let retirement = ActorRetirement::<Counter, Never, Vec<Never>>::Panicked;
+    assert!(retirement.outcome().is_none());
     let Err(returned) = retirement.try_into_custody() else {
         panic!("unreturned panic cannot fabricate an actor");
     };
@@ -335,6 +352,7 @@ fn unreturned_panic_stays_unreturned_without_fabricated_actor_state() {
 #[test]
 fn unreturned_cancellation_stays_unreturned_without_fabricated_actor_state() {
     let retirement = ActorRetirement::<Counter, Never, Vec<Never>>::Cancelled;
+    assert!(retirement.outcome().is_none());
     let Err(returned) = retirement.try_into_custody() else {
         panic!("unreturned cancellation cannot fabricate an actor");
     };
@@ -348,6 +366,7 @@ async fn executor_failure_returns_its_original_task_failure_without_actor_state(
         .expect_err("this real task fails");
     let task = failure.id();
     let retirement = ActorRetirement::<Counter, Never, Vec<Never>>::ActorTaskFailed(failure);
+    assert!(retirement.outcome().is_none());
     let Err(returned) = retirement.try_into_custody() else {
         panic!("executor failure cannot fabricate native custody");
     };

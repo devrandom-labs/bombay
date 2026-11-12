@@ -1457,6 +1457,47 @@ callers on both supported compilers/profiles, strict owning lint/format, and an
 accessor-only absence inversion; conserve all original test bodies/oracles and
 production outside the accessor. Record actual deltas and two author reviews.
 
+The pre-edit Counter caller fails only E0599 for outcome(), with production
+unchanged. Its initial new observation also produced E0614 while the method was
+absent; standard as_ref preserves its exact expected pointer/bytes and isolates
+the missing method. Retain both logs; no type-identity or actor-law change is
+claimed. The16-line inherent const accessor borrows the resident primary outcome
+and adds no bound, trait, wrapper, state, allocation or visibility change.
+
+Actual1.99/1.96 debug/release each pass nine existing owner cases: four live
+Application journeys, one real-executor fixture, three pure unavailable-state
+cases and one compile harness with two unchanged static denials. The Counter
+command and rejected real-file request are borrowed at their original allocation
+before complete consuming recovery; wrapped normal completion is available and
+all four unavailable alternatives stay absent with exact original return.
+Accessor-only Some→None inversion fails exactly the three intended availability
+observations while six named original controls stay healthy in every configuration.
+The initial audit incorrectly expected five controls; source and original positive
+logs establish nine cases, so six is correct. Preserve the rejected audit and its
+unchanged raw current-debug run; only the classifier is corrected. Earlier reports
+of eight owner cases are superseded. No Rust oracle is changed to fit that count.
+
+Exact production restoration and final nine-case reruns pass on both compilers/
+profiles. Current strict target Clippy, pinned workspace format and denied-warning
+docs pass; the rendered signature is the exact const borrowed Option contract.
+Only new observer style changes resolve manual_let_else and chain formatting.
+Removing only the declared additions reproduces all three original files byte
+for byte, including every original assertion, literal and producer/consumer body.
+Two author reviews check original ownership/availability and falsifier/controls;
+no independent review is claimed. Receipts are borrowed-outcome-{before,regression,
+conservation,inversion,summary} and raw per-profile logs in the restart handoff.
+
+Retained checkpoint pass: five outer/20 retained/24 logical alternatives and
+14-field custody unchanged; no runtime transition, module or stored cause change.
+One new immutable observation match and public method; types +0/-0. Production
++16/-0/net16, tests +43/-0/net43, no new fixture or registration. Owner physical
+lines3012→3028; existing test files359→378 and181→205. Same normalized actor/custody
+laws apply, with no arrival history, false cardinality, repeated stored cause,
+nested transition authority, semantic flag or structural user input. Cumulative
+native120/paired145 paths, Rust113 +3124/-1490/net1634; production net53, tests
+net1581, public types +1/-0. Earlier incoming/SDK/full28 receipts keep their exact
+source scopes; complete programme, final package/CI/review/delivery gates remain open.
+
 #### SDK-independent foreign error spelling
 
 Before editing at95e2436c, retain the project policy that networking SDK types
