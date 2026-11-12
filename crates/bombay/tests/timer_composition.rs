@@ -1,6 +1,7 @@
 use behavior_actors::{
     OwnedScheduleAfter, ScheduleAfter, ScheduleAfterRejection, TimerElapsed, TimerGeneration,
 };
+use bombay::RetirementOutcome;
 use bombay::{
     ActorCustody, ActorNotificationReceipts, ActorRetirement, SettlementFailure, WorkOutcome,
 };
@@ -328,13 +329,16 @@ async fn rejected_owned_timer_preserves_prefix_suffix_original_state_and_retirem
         panic!("both original notification results are received");
     };
     let (origin, retirement) = native.expect("the original actor retirement remains owned");
-    let ActorRetirement::EffectsFailed {
+    let ActorRetirement::Retained {
         custody,
-        initialization,
-        interpretation,
-        source,
-        settlements,
-        error,
+        outcome:
+            RetirementOutcome::EffectsFailed {
+                initialization,
+                interpretation,
+                source,
+                settlements,
+                error,
+            },
     } = retirement
     else {
         panic!("the original timer rejection remains an effect failure");

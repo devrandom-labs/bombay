@@ -1,5 +1,6 @@
 use bombay::ActorNotificationReceipts;
 use bombay::MailAddr;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ChildReport, CreateChild,
@@ -129,7 +130,11 @@ async fn named_birth_delivers_both_reports_and_preserves_retirement() {
     cleanup.expect("actual application cleanup completes");
     let (origin, retirement) = native.expect("original root retirement");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let bombay::ActorRetirement::Completed { custody, .. } = retirement else {
+    let bombay::ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { .. },
+    } = retirement
+    else {
         panic!("root completes after exact initialization reports");
     };
     assert_eq!(custody.behavior.base().visits, 1);
@@ -145,6 +150,9 @@ async fn named_birth_delivers_both_reports_and_preserves_retirement() {
     assert_ne!(child.origin.address(), MailAddr::APPLICATION_ROOT);
     assert!(matches!(
         child.retirement.as_ref(),
-        bombay::ActorRetirement::OwnerCancelled { .. }
+        bombay::ActorRetirement::Retained {
+            outcome: RetirementOutcome::OwnerCancelled { .. },
+            ..
+        }
     ));
 }

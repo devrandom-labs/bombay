@@ -3,6 +3,7 @@
 
 use bombay::ActorCustody;
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use core::time::Duration;
 use tokio::runtime::Builder;
@@ -309,7 +310,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
         retirement => retirement,
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -317,8 +318,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the supervisor returns completed terminal custody")
@@ -334,7 +334,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
         } = descendant;
         let terminal = *terminal;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     capability_failures,
@@ -342,8 +342,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
                     descendants,
                     ..
                 },
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = terminal
         else {
             panic!("the proxy returns both worker incarnations")
@@ -359,7 +358,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
             } = descendant;
             let terminal = *terminal;
             assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         capability_failures,
@@ -367,8 +366,7 @@ fn fixed_factory_preserves_prepared_prefix_and_exact_refusal() {
                         descendants,
                         ..
                     },
-                completion,
-                ..
+                outcome: RetirementOutcome::Completed { completion, .. },
             } = terminal
             else {
                 panic!("the worker returns completed terminal custody")
@@ -548,7 +546,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
         retirement => retirement,
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -556,8 +554,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the supervisor returns completed terminal custody")
@@ -575,7 +572,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
         .expect("the primary role retains its proxy");
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -583,8 +580,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the proxy returns both worker incarnations")
@@ -600,7 +596,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
         } = descendant;
         let terminal = *terminal;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     capability_failures,
@@ -608,8 +604,7 @@ fn fixed_factory_replaces_workers_with_stash_inside_shutdown() {
                     descendants,
                     ..
                 },
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = terminal
         else {
             panic!("the worker returns completed terminal custody")
@@ -788,7 +783,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
         retirement => retirement,
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -796,8 +791,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the supervisor returns completed terminal custody")
@@ -815,7 +809,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
         .expect("the primary role retains its proxy");
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -823,8 +817,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the proxy returns both worker incarnations")
@@ -840,7 +833,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
         } = descendant;
         let terminal = *terminal;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     capability_failures,
@@ -848,8 +841,7 @@ fn fixed_factory_replaces_workers_with_shutdown_inside_stash() {
                     descendants,
                     ..
                 },
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = terminal
         else {
             panic!("the worker returns completed terminal custody")

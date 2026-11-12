@@ -1,4 +1,5 @@
 use super::{Counter, CounterMessage, CounterValue, counter_application};
+use bombay::RetirementOutcome;
 use bombay::behavior::{ClassifySettlement, Never, SettlementStatus};
 use bombay::prelude::*;
 use bombay::{ActorSpace, ApplicationTopology, NativeHost, RootRegistration, Runtime};
@@ -117,12 +118,15 @@ fn inspect_counter_retirement(
     origin: RootOrigin<StopOnShutdown<Counter>>,
     retirement: ActorRetirement<StopOnShutdown<Counter>, Never, Vec<Never>>,
 ) {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("both leaf roots retain the original completed Counter");

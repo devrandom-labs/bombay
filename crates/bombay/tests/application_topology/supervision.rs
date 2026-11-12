@@ -2,6 +2,7 @@
 //! The supervisor owns recovery policy; Bombay interprets its typed actions.
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::behavior::{Behavior, BirthMode, ChildHead, CreationKind};
 use bombay::composition::replies::ExactReplies;
@@ -258,7 +259,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
     let origin = root_origin;
     let terminal = joined_actor;
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -266,8 +267,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the supervisor returns completed terminal custody")
@@ -283,7 +283,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
     let (origin, terminal) = primary_proxy(original_proxy);
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -291,8 +291,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the proxy returns both worker incarnations")
@@ -316,7 +315,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
         previous_creation = Some(current_creation);
         let terminal = *terminal;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     capability_failures,
@@ -324,8 +323,7 @@ fn run_supervision<Spaces, RootDescendants, ProxyDescendants>(
                     descendants,
                     ..
                 },
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = terminal
         else {
             panic!("the worker returns completed terminal custody")

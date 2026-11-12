@@ -337,7 +337,7 @@ completion and failure alternatives; its presence does not imply success.
 `ActorTaskFailed`, `Panicked` and `Cancelled` have no retained actor and return
 `None`. Inspection preserves every cause, effect, unread message and child
 value in the original retirement. Existing matches remain appropriate when
-your decision needs the exact phase or owned fields.
+your decision needs an unavailable alternative's original values.
 
 `ActorRetirement::custody()` borrows the common `ActorCustody` product: actor
 state, unread control/user messages, descendants, child failures and acquired
@@ -346,25 +346,24 @@ original actor is still available through `behavior()`. Executor outcomes
 without returned actor state also have no custody product. Presence never
 certifies successful completion.
 
-Migration: the 20 alternatives with runtime custody now contain `custody`
-instead of repeating those 14 fields. Match `Completed { custody, completion,
-.. }` to consume the original product, or the exact failure variant to retain
-its primary cause. Read or move `custody.behavior`, `custody.user` and
-`custody.descendants` directly. Initialization progress, active interpretation,
-source progress, settlements and phase-specific errors remain in their original
-variants. All 24 alternatives and all owned values are preserved.
+`ActorRetirement::outcome()` borrows the exact primary `RetirementOutcome` with
+the same availability as `custody()`. Match its domain variant to inspect a
+behavior error, rejected effects, normal completion or another retained phase.
+Inspection leaves the original cause and every other value owned by the retirement.
 
-Supplied Work receives the activated application's concrete handle:
+`try_into_custody()` consumes the complete `(ActorCustody, RetirementOutcome)`
+pair. Read or move `custody.behavior`, `custody.user` and `custody.descendants`
+directly; initialization progress, interpretation, source progress, settlements
+and the primary error belong to the typed outcome. When custody is unavailable,
+the method returns the complete original retirement for the application's decision.
 
-```text
-let outcome = Application::new(service.stop_on_shutdown())
-    .run_with(|application| async move {
-        let reply = boundary(application.root()).await;
-        let shutdown = application.shutdown();
-        (reply, shutdown)
-    })
-    .await;
-```
+Migration: match `RetirementOutcome::Completed` after consuming that pair, rather
+than the former `ActorRetirement::Completed` variant. The 20 retained primary
+phases and four alternatives without runtime custody preserve all 24 logical
+outcomes and their original values.
+
+Supplied Work receives the activated application's concrete handle. Its typed
+client sends domain commands and receives their separate replies.
 
 Returning from Work does not request shutdown. The root's concrete Behavior
 must accept or transform `ShutdownRequested`; topology does not select policy.

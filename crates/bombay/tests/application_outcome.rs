@@ -1,4 +1,5 @@
 use bombay::RetirementNotificationError;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     AllocationRejection, BehaviorActed, BehaviorBase, ClassifySettlement, Never, SettlementStatus,
@@ -274,10 +275,9 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
     let borrowed = retirement
         .behavior()
         .expect("the joined actor remains inspectable");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { behavior, .. },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = &retirement
     else {
         panic!("the counter completed");
@@ -287,13 +287,16 @@ async fn counter_work_and_joined_retirement_remain_independently_owned() {
         retirement.completion().expect("the original completion"),
         completion
     ));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody {
             user, descendants, ..
         },
-        settlements,
-        completion,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                ..
+            },
     } = retirement
     else {
         panic!("complete root retirement remains available");
@@ -334,8 +337,11 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
         &native,
         Ok((
             _,
-            ActorRetirement::InitializationRejected {
-                error: CounterRefusal::Initialization,
+            ActorRetirement::Retained {
+                outcome: RetirementOutcome::InitializationRejected {
+                    error: CounterRefusal::Initialization,
+                    ..
+                },
                 ..
             }
         ))
@@ -378,10 +384,13 @@ async fn startup_rejection_returns_uninvoked_local_work_and_original_actor() {
     assert_eq!(invoked.get(), 0);
     cleanup.expect("actual application cleanup completes");
     let (_, retirement) = native.expect("startup rejection was joined");
-    let ActorRetirement::InitializationRejected {
+    let ActorRetirement::Retained {
         custody: ActorCustody { behavior, .. },
-        error: CounterRefusal::Initialization,
-        ..
+        outcome:
+            RetirementOutcome::InitializationRejected {
+                error: CounterRefusal::Initialization,
+                ..
+            },
     } = retirement
     else {
         panic!("the exact actor and refusal survive");
@@ -505,10 +514,13 @@ async fn independent_absent_work_infers_original_initialization_rejection() {
         _root_report,
         Ok((
             _,
-            ActorRetirement::InitializationRejected {
+            ActorRetirement::Retained {
                 custody,
-                error: CounterRefusal::Initialization,
-                ..
+                outcome:
+                    RetirementOutcome::InitializationRejected {
+                        error: CounterRefusal::Initialization,
+                        ..
+                    },
             },
         )),
         Ok(ActorNotificationReceipts {
@@ -635,10 +647,13 @@ async fn entity_runner_infers_rejected_root_and_preserves_uninvoked_work() {
     assert_eq!(invoked.get(), 0);
     let (
         _,
-        ActorRetirement::InitializationRejected {
+        ActorRetirement::Retained {
             custody,
-            error: CounterRefusal::Initialization,
-            ..
+            outcome:
+                RetirementOutcome::InitializationRejected {
+                    error: CounterRefusal::Initialization,
+                    ..
+                },
         },
     ) = root.expect("the actual root refusal remains independently acquired")
     else {
@@ -792,10 +807,13 @@ async fn rejected_startup_retains_root_report_and_original_inputs() {
     };
     assert_eq!(Rc::strong_count(&invoked), 2);
     let (_, native) = native.expect("the rejected original root remains owned");
-    let ActorRetirement::InitializationRejected {
+    let ActorRetirement::Retained {
         custody,
-        error: CounterRefusal::Initialization,
-        ..
+        outcome:
+            RetirementOutcome::InitializationRejected {
+                error: CounterRefusal::Initialization,
+                ..
+            },
     } = native
     else {
         panic!("the actual initialization error is preserved");

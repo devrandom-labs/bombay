@@ -1,4 +1,5 @@
 //! Guarded service construction preserves the actor, original actions and callable.
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ClassifySettlement, EstablishedDelivery,
@@ -170,10 +171,13 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
         .expect("actual retirement publication");
     let (origin, retirement) = native.expect("the failed native actor is independently received");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::HostCommitPanicked {
+    let ActorRetirement::Retained {
         custody,
-        initialization: Some(InterpretationProgress::Original(initialization)),
-        payload,
+        outcome:
+            RetirementOutcome::HostCommitPanicked {
+                initialization: Some(InterpretationProgress::Original(initialization)),
+                payload,
+            },
     } = retirement
     else {
         panic!("constructor failure preserves untouched initialization before host commitment");
@@ -254,12 +258,15 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the recovered actor remains independently owned");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("recovered service construction permits normal actor completion");
@@ -354,7 +361,11 @@ async fn pure_initialization_refusal_never_constructs_services_even_during_retir
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original refused actor is independently received");
-    let ActorRetirement::InitializationRejected { custody, error } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::InitializationRejected { error },
+    } = retirement
+    else {
         panic!("the original pure refusal must not become a constructor failure");
     };
     let NoticeError::Restricted(restriction) = error;
@@ -443,7 +454,11 @@ async fn pure_initialization_panic_retains_the_original_actor_request_and_cause_
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original actor is independently received");
-    let ActorRetirement::InitializationPanicked { custody, payload } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::InitializationPanicked { payload },
+    } = retirement
+    else {
         panic!("the original pure cause must not become a service-constructor failure");
     };
     assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), cause_pointer);
@@ -563,12 +578,15 @@ fn missing_host_returns_the_original_application_constructor_and_work_for_retry(
         .expect("actual retirement publication");
     let (origin, retirement) = native.expect("the original actor remains independently owned");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("retry reaches the actual normal actor stop");

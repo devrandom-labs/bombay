@@ -1,5 +1,6 @@
 //! Root-bound communication preserves affine receiving and truthful sender identity.
 
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, ClassifySettlement, SettlementStatus};
 use bombay::prelude::{Actions, ActorRetirement, Application, Completion, Exit, MailAddr};
@@ -309,7 +310,13 @@ async fn sender_and_client_keep_distinct_origins_and_exact_closed_root_rejection
         .try_into_completed()
         .unwrap_or_else(|_| panic!("business work and original cleanup remain independent"));
     cleanup.expect("actual application cleanup completes");
-    let (_, ActorRetirement::Completed { custody, .. }) = native.expect("the actual root result")
+    let (
+        _,
+        ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::Completed { .. },
+        },
+    ) = native.expect("the actual root result")
     else {
         panic!("the exact ledger completes after its accepted reply");
     };
@@ -577,12 +584,15 @@ async fn bound_sender_preserves_nonwaiting_full_retry_prefix_and_closed_commands
         .expect("the native root returns");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                ..
+            },
     } = root
     else {
         panic!("the original root stops normally");
@@ -733,9 +743,13 @@ async fn certified_client_try_send_preserves_full_retry_and_exact_root_closure()
         .expect("the original Counter remains native");
     assert_eq!(custody.descendants, []);
     assert_eq!(custody.child_failures, []);
-    let ActorRetirement::Completed {
-        interpretation,
-        source,
+    let ActorRetirement::Retained {
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                ..
+            },
         ..
     } = &retirement
     else {
@@ -852,12 +866,15 @@ async fn certified_reply_client_uses_the_application_capacity() {
         .as_ref()
         .expect("the original root retirement");
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                ..
+            },
     } = root
     else {
         panic!("the original counter completes its joined retirement");

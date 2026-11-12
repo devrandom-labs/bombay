@@ -1,4 +1,5 @@
 //! Private local admission/replay evidence; no production identity or networking contract.
+use bombay::RetirementOutcome;
 use bombay::behavior::{BehaviorBase, EstablishedDelivery, MessageProtocol, Protocol};
 use bombay::prelude::*;
 use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
@@ -991,9 +992,9 @@ fn record_provider_consumer_uses_exclusive_admission() {
         };
         let ((disposition, snapshot, allocation, first_attempt, final_attempt), progress) =
             observations;
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            ..
+            outcome: RetirementOutcome::Completed { .. },
         } = &terminal
         else {
             panic!("native completed Counter")
@@ -1116,9 +1117,9 @@ fn scheduled_provider_consumer_uses_exclusive_admission() {
         };
         let ((disposition, snapshot, allocation, first_attempt, final_attempt), progress) =
             observations;
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            ..
+            outcome: RetirementOutcome::Completed { .. },
         } = &terminal
         else {
             panic!("native completed Arithmetic")
@@ -1264,6 +1265,7 @@ mod replay {
     use super::{
         CASES, INCOMING_RESERVATION, LOCAL_STORAGE_CEILING, Permission, protected_command, reject,
     };
+    use bombay::RetirementOutcome;
     use bombay::behavior::{BehaviorBase, Protocol};
     use bombay::prelude::*;
     use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
@@ -2970,9 +2972,9 @@ mod replay {
             else {
                 panic!("complete native and notification originals");
             };
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             } = &terminal
             else {
                 panic!("native Counter");
@@ -3112,9 +3114,9 @@ mod replay {
             else {
                 panic!("complete native and notification originals");
             };
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             } = &terminal
             else {
                 panic!("native Arithmetic");

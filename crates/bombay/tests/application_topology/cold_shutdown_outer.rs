@@ -1,6 +1,7 @@
 use behavior::{
     BehaviorBase, ChildDelivery, ChildProduct, CreateChild, CreationSequence, Creations,
 };
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::prelude::*;
 use core::time::Duration;
@@ -133,7 +134,11 @@ fn cold_children_keep_original_root_through_shutdown_outer() {
     let (root_origin, retirement) = native.expect("independent root custody");
     assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody, .. } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { .. },
+    } = retirement
+    else {
         panic!("root completes")
     };
     assert_eq!(custody.child_failures.len(), 0);
@@ -164,7 +169,11 @@ fn cold_children_keep_original_root_through_shutdown_outer() {
             inserted_address,
             "each occurrence has its original fresh binding"
         );
-        let ActorRetirement::OwnerCancelled { custody, .. } = *retirement else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::OwnerCancelled { .. },
+        } = *retirement
+        else {
             panic!("root retirement cancels original worker")
         };
         let inserted_original = returned.insert(custody.behavior.base().original.as_ptr() as usize);

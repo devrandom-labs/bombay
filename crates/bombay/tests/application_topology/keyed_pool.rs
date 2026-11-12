@@ -1,6 +1,7 @@
 //! Key affinity, complete admission rejection, and joined worker custody.
 
 use bombay::Application;
+use bombay::RetirementOutcome;
 use bombay::behavior::{ClassifySettlement, MessageProtocol, SettlementStatus};
 use bombay::diagnostic::DiagnosticDisposition;
 use bombay::lifecycle::ActorDrainPolicy;
@@ -209,12 +210,15 @@ fn keyed_search_preserves_affinity_rejected_payload_and_joined_worker() {
     let (origin, retirement) = native.expect("the exact root retirement is received");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                interpretation,
+                source,
+                ..
+            },
     } = retirement
     else {
         panic!("the pool completes orderly retirement");
@@ -242,12 +246,15 @@ fn keyed_search_preserves_affinity_rejected_payload_and_joined_worker() {
         .expect("the exact worker remains owned");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                interpretation,
+                source,
+                ..
+            },
     } = *retirement
     else {
         panic!("the worker receives orderly shutdown");

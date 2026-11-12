@@ -4,6 +4,7 @@ use super::protocol::{
     VerificationError, configuration, current_scope, limits, metadata, recorded,
 };
 use super::{Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger};
+use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::application::{Application, ApplicationClient, MailboxCapacity};
 use crate::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, reply, submission};
@@ -240,7 +241,11 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
         };
         let polling = polling.expect("retain the actual kernel poll panic outside its producer");
         let polling = polling.downcast_ref::<Box<u64>>().unwrap();
-        let ActorRetirement::OwnerCancelled { custody, .. } = native else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::OwnerCancelled { .. },
+        } = native
+        else {
             panic!("kernel disposal cancels the original still-running Ledger");
         };
         let claims = claims.borrow();
@@ -692,7 +697,13 @@ fn retry_permission_unwind_preserves_the_second_native_full() {
                 assert!(matches!(bound, Some(Ok(_))) && closed.is_ok() && session.is_closed());
                 assert_eq!(root_report, Some(retirement));
                 assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
-                assert!(matches!(&native, ActorRetirement::OwnerCancelled { .. }));
+                assert!(matches!(
+                    &native,
+                    ActorRetirement::Retained {
+                        outcome: RetirementOutcome::OwnerCancelled { .. },
+                        ..
+                    }
+                ));
                 assert_eq!(origin.address().0, claims.actor_generation);
                 assert!(
                     custody.capability_failures.is_empty()
@@ -1027,7 +1038,11 @@ async fn discharged_refusal_panic_preserves_joined_node_finalization() {
         let polling = polling
             .downcast_ref::<u64>()
             .expect("the same original u64 panic payload");
-        let ActorRetirement::OwnerCancelled { custody, .. } = native else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::OwnerCancelled { .. },
+        } = native
+        else {
             panic!("the still-live Ledger is joined through owner cancellation");
         };
         let actual = claims.borrow();

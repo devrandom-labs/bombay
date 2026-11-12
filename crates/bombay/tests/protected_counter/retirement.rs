@@ -1,4 +1,5 @@
 use super::{Counter, CounterMessage, CounterProcessed, CounterValue};
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{Behavior, BehaviorSettlements, Here, Never, RecoverEvent};
 use bombay::composition::replies::ExactReplies;
@@ -94,7 +95,7 @@ where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     Descendants: RetirementSchema,
 {
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 control,
@@ -112,33 +113,19 @@ where
                 retirement_failures,
                 ..
             },
-        interpretation,
-        source,
-        completion: Completion::Stopped,
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody:
-            ActorCustody {
-                control,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                completion: Completion::Stopped,
+                ..
+            }
+            | RetirementOutcome::OwnerCancelled {
+                interpretation,
+                source,
                 ..
             },
-        interpretation,
-        source,
-        ..
-    }) = retirement
+    } = retirement
     else {
         panic!("the original joined owner is normal or owner-cancelled");
     };
@@ -356,36 +343,23 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
     let mut native = (origin, native);
     inspect_joined_counter_subtree(native.0, &native.1, target_address);
     let terminal = &mut native.1;
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { descendants, .. },
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody: ActorCustody { descendants, .. },
-        ..
-    }) = terminal
+        outcome: RetirementOutcome::Completed { .. } | RetirementOutcome::OwnerCancelled { .. },
+    } = terminal
     else {
         unreachable!("the native root was checked");
     };
     let terminal = descendants[0].retirement.as_mut();
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 control,
                 descendants,
                 ..
             },
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody:
-            ActorCustody {
-                control,
-                descendants,
-                ..
-            },
-        ..
-    }) = terminal
+        outcome: RetirementOutcome::Completed { .. } | RetirementOutcome::OwnerCancelled { .. },
+    } = terminal
     else {
         unreachable!("the native proxy was checked");
     };
@@ -417,7 +391,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         "the proxy retains exactly one original Ready activation and no recovery alternative"
     );
     eprintln!("NATIVE_RECOVERED_ACTIVATIONS {returned_activations}");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -427,8 +401,11 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                 descendants,
                 ..
             },
-        completion: Completion::Stopped,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                completion: Completion::Stopped,
+                ..
+            },
     } = &sibling_native
     else {
         panic!("the independent Counter retains its completed original");

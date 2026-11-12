@@ -6,6 +6,7 @@ use super::super::super::ledger::{LedgerCommand, Receipts};
 use super::super::actors::{ActorExports, Counters, CountersRole, Creator, Exports, topology};
 use super::super::{assert_exports, assert_retirement};
 use super::{peer, protocol, wire};
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, User};
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
@@ -802,7 +803,10 @@ async fn refused(stage: RefusalStage) {
                 assert_retirement(retirement.as_ref());
                 assert!(matches!(
                     retirement.as_ref(),
-                    ActorRetirement::OwnerCancelled { .. }
+                    ActorRetirement::Retained {
+                        outcome: RetirementOutcome::OwnerCancelled { .. },
+                        ..
+                    }
                 ));
             }
             topology::RootRetirements::MailLedger { origin, retirement } => {
@@ -830,7 +834,10 @@ async fn refused(stage: RefusalStage) {
                     _ => {
                         assert!(matches!(
                             retirement.as_ref(),
-                            ActorRetirement::OwnerCancelled { .. }
+                            ActorRetirement::Retained {
+                                outcome: RetirementOutcome::OwnerCancelled { .. },
+                                ..
+                            }
                         ));
                         assert_eq!(entries.as_slice(), []);
                     }

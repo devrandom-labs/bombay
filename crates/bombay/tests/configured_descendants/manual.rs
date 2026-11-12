@@ -3,6 +3,7 @@ use super::{
     Config, Document, DocumentReady, ManagedDocument, Root, archive, collect_documents,
     file_request, inspect_file,
 };
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Behavior, BehaviorBase, ChildCreationOutcome, ChildHead, CreationId, CreationKind,
@@ -255,12 +256,15 @@ async fn manual_namespace_keeps_configured_services_through_generic_root_and_rec
     let (origin, retirement) = native.expect("the original root is independently received");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(reports[&3], origin.address());
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the root handles its actual typed shutdown request");
@@ -398,11 +402,14 @@ async fn manual_namespace_preserves_bare_creator_services_and_owner_cancellation
     let (origin, retirement) = native.expect("the original root is independently received");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(reports[&3], origin.address());
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the bare root retains its exact owner-cancelled retirement");

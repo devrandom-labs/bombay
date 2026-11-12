@@ -1,5 +1,6 @@
 //! Counter transition and native processing laws, exercised against the public example actor.
 
+use bombay::RetirementOutcome;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 use tokio::runtime::Builder;
@@ -151,12 +152,15 @@ where
     R::Settlements: ClassifySettlement,
 {
     let (origin, terminal) = terminal;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")
@@ -183,6 +187,7 @@ where
 }
 
 mod tests {
+    use bombay::RetirementOutcome;
     use bombay::{ActorNotificationReceipts, WorkOutcome};
     use futures_util::FutureExt;
     use std::panic::AssertUnwindSafe;
@@ -411,7 +416,11 @@ mod tests {
         let Ok((origin, retirement)) = &native else {
             panic!("the native actor result must be independently received");
         };
-        let ActorRetirement::BehaviorFailed { error, .. } = retirement else {
+        let ActorRetirement::Retained {
+            outcome: RetirementOutcome::BehaviorFailed { error, .. },
+            ..
+        } = retirement
+        else {
             panic!("overflow must retain the original native BehaviorFailed retirement");
         };
         assert_eq!(*error, CounterError::Overflow);
@@ -545,7 +554,14 @@ mod tests {
         });
         drop(host);
         // All original owners are acquired before any semantic assertion.
-        let Ok((origin, ActorRetirement::Completed { settlements, .. })) = &native else {
+        let Ok((
+            origin,
+            ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { settlements, .. },
+                ..
+            },
+        )) = &native
+        else {
             panic!("the active Counter must retain its joined outcome");
         };
         let WorkOutcome::Completed {

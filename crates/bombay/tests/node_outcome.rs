@@ -8,6 +8,7 @@ mod counter {
     }
 }
 
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     BehaviorBase, ClassifySettlement, Never, NoSends, SettlementStatus, Stopped,
@@ -150,12 +151,15 @@ fn assert_counter_retirement(
     expected_value: u64,
 ) {
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                ..
+            },
     } = root
     else {
         panic!("the original counter stops normally");

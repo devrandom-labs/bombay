@@ -6,6 +6,7 @@ use super::super::protocol::{
     configuration, limits, recorded,
 };
 use super::super::{Counter, CounterMessage};
+use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::application::execution::ApplicationWorkPresence;
 use crate::application::work::invoke;
@@ -288,7 +289,13 @@ async fn binding_disposal_preserves_original_work(progress: BindingProgress) {
         let report = application.retirement().await;
         assert_eq!(root_report, Some(report));
         assert_eq!(origin.address(), application.root().address());
-        assert!(matches!(native, ActorRetirement::OwnerCancelled { .. }));
+        assert!(matches!(
+            native,
+            ActorRetirement::Retained {
+                outcome: RetirementOutcome::OwnerCancelled { .. },
+                ..
+            }
+        ));
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
         assert!(started.is_ok());
         assert!(polls.get() > 0);
@@ -446,7 +453,7 @@ queued_queries: maximum, retained_queries: maximum,
         assert!(!initially_closed && connection.is_closed() && closed.is_ok());
         assert_eq!(root_report, Some(retired));
         assert_eq!(origin.address(), application.root().address());
-        assert!(matches!(&native, ActorRetirement::OwnerCancelled { .. }));
+        assert!(matches!(&native, ActorRetirement::Retained { outcome: RetirementOutcome::OwnerCancelled { .. }, .. }));
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
         assert_eq!(polls.get(), 1);
         assert_eq!(disposals.get(), 1);
@@ -600,7 +607,7 @@ queued_queries: maximum, retained_queries: maximum,
         assert!(!initially_closed && connection.is_closed() && closed.is_ok());
         assert_eq!(root_report, Some(retired));
         assert_eq!(origin.address(), application.root().address());
-        assert!(matches!(&native, ActorRetirement::OwnerCancelled { .. }));
+        assert!(matches!(&native, ActorRetirement::Retained { outcome: RetirementOutcome::OwnerCancelled { .. }, .. }));
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
         assert!(matches!(&work, WorkOutcome::NotInvoked {
             work: None, startup_error: None, cleanup: Ok(())

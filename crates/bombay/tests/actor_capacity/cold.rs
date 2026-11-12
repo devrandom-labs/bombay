@@ -1,4 +1,5 @@
 use super::{Archive, ArchiveReply, DocumentCommand, Library, Receipt};
+use bombay::RetirementOutcome;
 use bombay::behavior::BehaviorBase;
 use bombay::prelude::*;
 use bombay::{ApplicationScope, MailboxCapacity};
@@ -91,7 +92,11 @@ async fn cold_member_passes_actor_capacity_to_its_fresh_child_and_returns_comple
         .as_ref()
         .expect("the original root remains owned");
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody: root, .. } = root else {
+    let ActorRetirement::Retained {
+        custody: root,
+        outcome: RetirementOutcome::Completed { .. },
+    } = root
+    else {
         panic!("the root stops normally");
     };
     assert_eq!(root.child_failures.len(), 0);
@@ -103,8 +108,9 @@ async fn cold_member_passes_actor_capacity_to_its_fresh_child_and_returns_comple
         retirement: library,
         ..
     } = &root.descendants[0];
-    let ActorRetirement::OwnerCancelled {
-        custody: library, ..
+    let ActorRetirement::Retained {
+        custody: library,
+        outcome: RetirementOutcome::OwnerCancelled { .. },
     } = library.as_ref()
     else {
         panic!("parent retirement cancels its original cold child");
@@ -118,8 +124,9 @@ async fn cold_member_passes_actor_capacity_to_its_fresh_child_and_returns_comple
         retirement: archive,
         ..
     } = &library.descendants[0];
-    let ActorRetirement::OwnerCancelled {
-        custody: archive, ..
+    let ActorRetirement::Retained {
+        custody: archive,
+        outcome: RetirementOutcome::OwnerCancelled { .. },
     } = archive.as_ref()
     else {
         panic!("parent retirement cancels its original fresh child");

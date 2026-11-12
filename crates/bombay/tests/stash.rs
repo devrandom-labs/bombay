@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{BehaviorBase as _, MessageProtocol, NoSends, SendLayer, Step, Stopped};
 use bombay::composition::{MessageAdapter, StashRoute, UnlimitedStash};
@@ -116,7 +117,7 @@ async fn retirement_recovers_original_stashed_invoices_and_the_unread_mailbox_su
     };
     let (origin, native) = native.expect("the native retirement survives");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -134,10 +135,13 @@ async fn retirement_recovers_original_stashed_invoices_and_the_unread_mailbox_su
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = native
     else {
         panic!("shutdown stops the paused payments normally");

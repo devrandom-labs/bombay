@@ -1,5 +1,6 @@
 //! Machine contracts through Bombay's ordinary Application and exact native custody.
 
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     Actions, ExactDeliveryReason, ItemSettlement, MessageProtocol, Never, NoBirths, Recipient,
     SettledItem, Step, Stopped, User, delegate_transition, initialize,
@@ -136,7 +137,7 @@ fn native_refusal_preserves_progress_and_each_original_input() {
         panic!("the completed Work and its original observations survive");
     };
     let (origin, native) = native.expect("the joined native root is received");
-    let ActorRetirement::BehaviorFailed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 mut behavior,
@@ -154,10 +155,13 @@ fn native_refusal_preserves_progress_and_each_original_input() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        error,
+        outcome:
+            RetirementOutcome::BehaviorFailed {
+                interpretation,
+                source,
+                settlements,
+                error,
+            },
     } = native
     else {
         panic!("the domain refusal retains its original BehaviorFailed result");
@@ -326,7 +330,7 @@ async fn deposits(customer: Customer) {
         panic!("completed Work returns the real external receiver");
     };
     let (origin, native) = native.expect("the exact joined Machine survives");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 mut behavior,
@@ -344,10 +348,13 @@ async fn deposits(customer: Customer) {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = native
     else {
         panic!("finite holding continues to the ordinary Stop");

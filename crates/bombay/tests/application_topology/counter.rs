@@ -2,6 +2,7 @@
 //! messages, state, typed reply, domain error, and transition remain together.
 //! No reusable template is needed; the pure active fold remains the test oracle.
 
+use bombay::RetirementOutcome;
 use tokio::runtime::Builder;
 #[path = "../../../../examples/counter/src/counter.rs"]
 mod counter_actor;
@@ -81,12 +82,15 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
     );
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let terminal = retirement;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")

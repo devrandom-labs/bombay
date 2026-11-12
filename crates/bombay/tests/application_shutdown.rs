@@ -1,4 +1,5 @@
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, Protocol, SettlementStatus};
 use bombay::prelude::*;
 use bombay::{ActorSpace, ApplicationLifecycle};
@@ -65,12 +66,15 @@ where
 {
     assert!(retirement.behavior().is_some());
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                interpretation,
+                source,
+                completion,
+            },
     } = retirement
     else {
         panic!("the original complete counter retirement must return");

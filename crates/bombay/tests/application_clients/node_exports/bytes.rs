@@ -2,6 +2,7 @@
 use super::super::super::ledger::{LedgerCommand, MailLedger, Receipts};
 use super::super::assert_retirement;
 use super::{peer, protocol, same_ledger, wire};
+use bombay::RetirementOutcome;
 use bombay::prelude::Application;
 use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, submission};
 use bombay::{ActorFailureAssessment, ActorRetirement, MailAddr, RetirementAssessment};
@@ -364,11 +365,14 @@ async fn registered_originals() {
     assert!(ingress.is_empty());
     let (origin, native) = native.expect("the actual native Ledger root remains");
     assert_retirement(&native);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                ..
+            },
     } = &native
     else {
         panic!("the actual Ledger Read completed its root");

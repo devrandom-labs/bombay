@@ -2,6 +2,7 @@
 //! The pool owns admission, assignment, completion, and orderly worker drain.
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use tokio::runtime::Builder;
 
@@ -130,7 +131,7 @@ fn run_search_pool() {
     let origin = root_origin;
     let terminal = joined_actor;
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -138,8 +139,7 @@ fn run_search_pool() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
@@ -157,7 +157,7 @@ fn run_search_pool() {
         .expect("the primary role retains one worker");
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -165,8 +165,7 @@ fn run_search_pool() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("orderly shutdown completes the exact worker");

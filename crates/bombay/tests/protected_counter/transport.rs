@@ -1,5 +1,6 @@
 use super::*;
 use bombay::ActorInterface;
+use bombay::RetirementOutcome;
 use bombay::remote::{IngressError, try_retain};
 use std::io::{self, BufRead, Read, Write};
 use std::path::Path;
@@ -1164,7 +1165,7 @@ async fn counter_native_applications<R>(
             else {
                 panic!("all original parent Work/native/two-notification products");
             };
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         descendants,
@@ -1173,8 +1174,7 @@ async fn counter_native_applications<R>(
                         retirement_failures,
                         ..
                     },
-                completion,
-                ..
+                outcome: RetirementOutcome::Completed { completion, .. },
             } = &retirement
             else {
                 panic!("original parent retirement");
@@ -1197,15 +1197,14 @@ async fn counter_native_applications<R>(
             assert_eq!(descendants.len(), 2);
             for child in descendants {
                 let terminal = child.retirement.as_ref();
-                let ActorRetirement::Completed {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             capability_failures,
                             retirement_failures,
                             ..
                         },
-                    completion,
-                    ..
+                    outcome: RetirementOutcome::Completed { completion, .. },
                 } = terminal
                 else {
                     panic!("child complete retirement");
@@ -2047,7 +2046,7 @@ fn counter_child_stop<R>(
     assert_eq!(remaining_sibling_stop, Ok(()));
     assert_eq!(parent_stop, Ok(()));
     assert!(released.is_ok());
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 descendants,
@@ -2056,8 +2055,7 @@ fn counter_child_stop<R>(
                 retirement_failures,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = &parent_terminal
     else {
         panic!("original completed creator outcome");
@@ -2073,15 +2071,14 @@ fn counter_child_stop<R>(
     for child in descendants {
         let counter_children_application::RootRetirements { origin, retirement } = child;
         let terminal = retirement.as_ref();
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     capability_failures,
                     retirement_failures,
                     ..
                 },
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = terminal
         else {
             panic!("original completed child");

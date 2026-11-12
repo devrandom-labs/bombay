@@ -1,6 +1,7 @@
 //! For learning how to select a standalone actor template and compose wrapper
 //! policy through `ActorExt` without implementing a custom Behavior.
 
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use tokio::runtime::Builder;
@@ -142,7 +143,7 @@ where
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -160,10 +161,13 @@ where
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     ) = terminal
     else {

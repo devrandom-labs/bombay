@@ -1,4 +1,5 @@
 //! Independent interpreter owners must not unwind through one another.
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActionItem, Actions, BehaviorActed, InterpretItem, InterpreterRequests, ItemSettlement, Never,
     SettledItem, Step,
@@ -172,12 +173,15 @@ async fn service_and_constructor_retirement_child() {
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original actor is independently received");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("disposal failures do not rewrite the actual completed actor transition");

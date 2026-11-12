@@ -56,7 +56,7 @@ pub struct Node<
     session: Session,
     exports: Exports,
     binding: Option<Binding<BindingFn, BindResult>>,
-    closed: Option<Result<(), zenoh::Error>>,
+    closed: Option<Result<(), Box<dyn Error + Send + Sync>>>,
     poll_panic: Option<Panic>,
     disposal_panic: Option<Panic>,
 }
@@ -541,7 +541,7 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
         (
             Exports,
             Option<Result<Targets, BindError>>,
-            Result<(), zenoh::Error>,
+            Result<(), Box<dyn Error + Send + Sync>>,
             Option<Panic>,
             Option<Panic>,
         ),

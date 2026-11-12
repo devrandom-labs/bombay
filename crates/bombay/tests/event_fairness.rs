@@ -1,5 +1,6 @@
 //! Public Application trace: preload ingress before arming already-due timers.
 use behavior_actors::{Exit, ScheduleAt, TimerElapsed, TimerGeneration, TimerId};
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, ClassifySettlement, Here,
     InjectEvent, InterpreterRequests, MessageProtocol, Never, NoBirths, SettlementStatus, User,
@@ -153,12 +154,15 @@ async fn actual_actor_bounds_both_sources_and_returns_every_original_payload() {
         let (_, retirement) = native.unwrap();
         let termination = termination.unwrap();
         assert_eq!(&termination, &Ok(Exit::Normal));
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody,
-            completion,
-            interpretation,
-            source,
-            settlements,
+            outcome:
+                RetirementOutcome::Completed {
+                    completion,
+                    interpretation,
+                    source,
+                    settlements,
+                },
         } = retirement
         else {
             panic!("the actual actor returns its complete trace and original messages");

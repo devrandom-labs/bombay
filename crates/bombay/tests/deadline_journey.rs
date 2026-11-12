@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorBase, ItemSettlement, MessageProtocol, NoSends, SendLayer, SettledItem, Step,
 };
@@ -85,7 +86,11 @@ async fn deadline_and_inactivity_keep_their_order_original_actor_and_complete_re
     assert_eq!(retained.note.as_ptr(), allocation);
     assert_eq!(&*retained.note, &[149, 151, 157]);
     assert_eq!(retained.recipient, observer.recipient());
-    let ActorRetirement::Completed { settlements, .. } = &terminal.1 else {
+    let ActorRetirement::Retained {
+        outcome: RetirementOutcome::Completed { settlements, .. },
+        ..
+    } = &terminal.1
+    else {
         panic!("the original successful timer retirement keeps its complete last settlement");
     };
     let [settled] = settlements.as_slice() else {

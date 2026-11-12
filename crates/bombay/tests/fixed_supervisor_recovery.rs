@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 #[cfg(feature = "remote")]
 use bombay::SendError;
 use bombay::WorkOutcome;
@@ -357,7 +358,7 @@ fn assert_restarted_workers_retired(
     terminal: ActorRetirement<RootSupervisor, supervisor_application::RootRetirements<RootSupervisor>, Vec<<supervisor_application::RootRetirements<RootSupervisor> as bombay::RetirementSchema>::Failure>>,
 ) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -366,8 +367,7 @@ fn assert_restarted_workers_retired(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the supervisor returns completed terminal custody")
@@ -383,7 +383,7 @@ fn assert_restarted_workers_retired(
             retirement: terminal,
         } = descendant;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -392,8 +392,7 @@ fn assert_restarted_workers_retired(
                     descendants,
                     ..
                 },
-            completion,
-            ..
+            outcome: RetirementOutcome::Completed { completion, .. },
         } = *terminal
         else {
             panic!("each proxy completes after its workers")
@@ -409,7 +408,7 @@ fn assert_restarted_workers_retired(
                 retirement: terminal,
             } = descendant;
             assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         child_failures,
@@ -418,8 +417,7 @@ fn assert_restarted_workers_retired(
                         descendants,
                         ..
                     },
-                completion,
-                ..
+                outcome: RetirementOutcome::Completed { completion, .. },
             } = *terminal
             else {
                 panic!("each worker completes its retirement")
@@ -544,7 +542,7 @@ fn assert_rejected_preparation_retirement(
     terminal: ActorRetirement<RootSupervisor, supervisor_application::RootRetirements<RootSupervisor>, Vec<<supervisor_application::RootRetirements<RootSupervisor> as bombay::RetirementSchema>::Failure>>,
 ) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -553,9 +551,12 @@ fn assert_rejected_preparation_retirement(
                 descendants,
                 ..
             },
-        completion,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                ..
+            },
     } = terminal
     else {
         panic!("the supervisor keeps terminal custody after rejection")
@@ -596,7 +597,7 @@ fn assert_rejected_preparation_retirement(
             retirement: terminal,
         } = descendant;
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -605,7 +606,7 @@ fn assert_rejected_preparation_retirement(
                     descendants,
                     ..
                 },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         } = *terminal
         else {
             panic!("the terminal diagnostic cancels each proxy's owner task")
@@ -623,7 +624,7 @@ fn assert_rejected_preparation_retirement(
             .expect("only the original worker belongs to this proxy");
         assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
         let retirement = match *terminal {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         child_failures,
@@ -632,8 +633,7 @@ fn assert_rejected_preparation_retirement(
                         descendants,
                         ..
                     },
-                completion,
-                ..
+                outcome: RetirementOutcome::Completed { completion, .. },
             } => {
                 assert_eq!(child_failures, []);
                 assert!(capability_failures.is_empty());
@@ -642,7 +642,7 @@ fn assert_rejected_preparation_retirement(
                 assert_eq!(descendants, []);
                 WorkerRetirement::Completed
             }
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         child_failures,
@@ -651,7 +651,7 @@ fn assert_rejected_preparation_retirement(
                         descendants,
                         ..
                     },
-                ..
+                outcome: RetirementOutcome::OwnerCancelled { .. },
             } => {
                 assert_eq!(child_failures, []);
                 assert!(capability_failures.is_empty());
@@ -884,7 +884,11 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
                 assert_eq!(failures, []);
             }
         }
-        let ActorRetirement::Completed { settlements, .. } = terminal else {
+        let ActorRetirement::Retained {
+            outcome: RetirementOutcome::Completed { settlements, .. },
+            ..
+        } = terminal
+        else {
             panic!("both roots retain their actual final Stop product")
         };
         assert_eq!(settlements.len(), 1);
@@ -912,9 +916,9 @@ fn joined_root_retirement_waits_for_owned_preparation_while_another_application_
         assert_eq!(sends.capability_replies.as_slice().len(), 0);
         assert_eq!(sends.diagnostics.len(), 0);
     }
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { control, .. },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = &target.1
     else {
         panic!("the target conserves its completed root")
@@ -935,9 +939,7 @@ where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     Descendants: RetirementSchema,
 {
-    let (ActorRetirement::Completed {
-        interpretation,
-        source,
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 received_interpretation,
@@ -954,30 +956,19 @@ where
                 retirement_failures,
                 ..
             },
-        completion: Completion::Stopped,
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        interpretation,
-        source,
-        custody:
-            ActorCustody {
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                completion: Completion::Stopped,
+                ..
+            }
+            | RetirementOutcome::OwnerCancelled {
+                interpretation,
+                source,
                 ..
             },
-        ..
-    }) = retirement
+    } = retirement
     else {
         panic!(
             "every real joined owner retains its complete normal or owner-cancelled native product"
@@ -1387,9 +1378,9 @@ fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_
     let (children, failures) = assert_joined_native(terminal);
     assert!(failures.is_empty());
     assert_eq!(children.len(), 2);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { behavior, .. },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = terminal
     else {
         panic!("parent normal stop")
@@ -1403,10 +1394,9 @@ fn joined_child_retirement_waits_for_owned_preparation_while_parent_and_sibling_
         let terminal = retirement.as_ref();
         if origin.address() == target_address {
             target_retirements += 1;
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody: ActorCustody { control, .. },
-                completion,
-                ..
+                outcome: RetirementOutcome::Completed { completion, .. },
             } = terminal
             else {
                 panic!("A retains its genuine normally completed native product")

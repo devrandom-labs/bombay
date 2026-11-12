@@ -1,5 +1,6 @@
 //! The caller names domain roles and owns every retirement without a terminal enum.
 
+use bombay::RetirementOutcome;
 use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Never};
@@ -79,10 +80,7 @@ async fn main() {
     notifications.retirement.expect("actual joined retirement notification");
     let (origin, retirement) = native.expect("joined cleanup");
     assert_eq!(origin.address(), bombay::MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::Completed { .. } } = retirement
     else {
         panic!("root completed after its real counter reply");
     };
@@ -114,10 +112,7 @@ async fn main() {
             ..
         } = &report
         {
-            let ActorRetirement::OwnerCancelled {
-                custody: ActorCustody { behavior, .. },
-                ..
-            } = audit_retirement.as_ref()
+            let ActorRetirement::Retained { custody: ActorCustody { behavior, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = audit_retirement.as_ref()
             else {
                 panic!("root retirement cancelled the audit child");
             };
@@ -136,10 +131,7 @@ async fn main() {
                 assert!(primary_before.is_none());
                 assert!(replica_before.is_none());
                 audit_addresses.push(audit_origin.address());
-                let ActorRetirement::OwnerCancelled {
-                    custody: ActorCustody { behavior, .. },
-                    ..
-                } = *audit_retirement
+                let ActorRetirement::Retained { custody: ActorCustody { behavior, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *audit_retirement
                 else {
                     panic!("audit outcome is preserved by consuming selection");
                 };
@@ -180,7 +172,7 @@ async fn main() {
                 );
                 assert!(replica_before.is_none());
                 primary_addresses.push(primary_origin.address());
-                let ActorRetirement::OwnerCancelled { .. } = *primary_retirement else {
+                let ActorRetirement::Retained { outcome: RetirementOutcome::OwnerCancelled { .. }, .. } = *primary_retirement else {
                     panic!("primary cancellation remains exact");
                 };
                 continue;
@@ -202,7 +194,7 @@ async fn main() {
             Some((replica_origin, core::ptr::from_ref(&*replica_retirement)))
         );
         replica_addresses.push(replica_origin.address());
-        let ActorRetirement::OwnerCancelled { .. } = *replica_retirement else {
+        let ActorRetirement::Retained { outcome: RetirementOutcome::OwnerCancelled { .. }, .. } = *replica_retirement else {
             panic!("replica cancellation remains exact");
         };
     }

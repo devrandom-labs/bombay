@@ -1,4 +1,5 @@
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use core::num::NonZeroUsize;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
@@ -553,7 +554,7 @@ fn application_runs_two_native_entity_families() {
     // winner between shutdown acquisition and same-lease owner cancellation.
     let (behavior, settlements, user, mut descendants, child_failures, capability_failures) =
         match profile_retirement {
-            Ok(ActorRetirement::Completed {
+            Ok(ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -571,10 +572,13 @@ fn application_runs_two_native_entity_families() {
                         capability_failures,
                         unread_owner_cancellation: None | Some(()),
                     },
-                interpretation,
-                source,
-                settlements,
-                completion,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements,
+                        completion,
+                    },
             }) => {
                 assert!(interpretation.is_none());
                 assert!(source.is_none());
@@ -596,7 +600,7 @@ fn application_runs_two_native_entity_families() {
                     capability_failures,
                 )
             }
-            Ok(ActorRetirement::OwnerCancelled {
+            Ok(ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -614,9 +618,12 @@ fn application_runs_two_native_entity_families() {
                         capability_failures,
                         unread_owner_cancellation,
                     },
-                interpretation,
-                source,
-                settlements,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        interpretation,
+                        source,
+                        settlements,
+                    },
             }) => {
                 assert!(interpretation.is_none());
                 assert!(source.is_none());
@@ -656,7 +663,7 @@ fn application_runs_two_native_entity_families() {
         .expect("the profile retains its child terminal");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
     match *child_retirement {
-        ActorRetirement::OwnerCancelled {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -664,7 +671,7 @@ fn application_runs_two_native_entity_families() {
                     unread_owner_cancellation,
                     ..
                 },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         } => {
             assert_eq!(child_failures, []);
             assert!(capability_failures.is_empty());
@@ -690,8 +697,12 @@ fn application_runs_two_native_entity_families() {
     assert_eq!(failures[2].0, EntityId::new(LAUNCH_REFUSAL));
     let EntityActivationError::Launch {
         retirement:
-            ActorRetirement::InitializationRejected {
-                error: AccountError::Initialization,
+            ActorRetirement::Retained {
+                outcome:
+                    RetirementOutcome::InitializationRejected {
+                        error: AccountError::Initialization,
+                        ..
+                    },
                 ..
             },
         retirement_report,
@@ -726,7 +737,7 @@ fn application_runs_two_native_entity_families() {
         assert_eq!(report.retirement(), RetirementAssessment::Established);
         assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         let (settlements, user, descendants, capability_failures) = match retirement {
-            Ok(ActorRetirement::Completed {
+            Ok(ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         child_failures,
@@ -737,16 +748,19 @@ fn application_runs_two_native_entity_families() {
                         descendants,
                         ..
                     },
-                settlements,
-                completion,
-                ..
+                outcome:
+                    RetirementOutcome::Completed {
+                        settlements,
+                        completion,
+                        ..
+                    },
             }) => {
                 assert_eq!(child_failures, &[]);
                 assert_eq!(*completion, Completion::Stopped);
                 assert_eq!(control.len(), 0);
                 (settlements, user, descendants, capability_failures)
             }
-            Ok(ActorRetirement::OwnerCancelled {
+            Ok(ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         child_failures,
@@ -757,8 +771,7 @@ fn application_runs_two_native_entity_families() {
                         descendants,
                         ..
                     },
-                settlements,
-                ..
+                outcome: RetirementOutcome::OwnerCancelled { settlements, .. },
             }) => {
                 assert_eq!(child_failures, &[]);
                 assert!(unread_owner_cancellation.is_none());

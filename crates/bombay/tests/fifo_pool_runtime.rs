@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::composition::replies::ExactReplies;
 use bombay::{ActorCustody, ActorNotificationReceipts};
@@ -336,7 +337,7 @@ fn assert_orderly_pool_terminal(
     >,
 ) {
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -345,8 +346,7 @@ fn assert_orderly_pool_terminal(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
@@ -364,7 +364,7 @@ fn assert_orderly_pool_terminal(
         .next()
         .expect("the declared role retains one worker");
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -373,8 +373,7 @@ fn assert_orderly_pool_terminal(
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = *terminal
     else {
         panic!("the pool shutdown completes the exact worker");
@@ -491,7 +490,7 @@ fn fifo_search_completes_and_drains_its_worker() {
         retirement => retirement,
     };
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -499,8 +498,7 @@ fn fifo_search_completes_and_drains_its_worker() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
@@ -518,7 +516,7 @@ fn fifo_search_completes_and_drains_its_worker() {
         .expect("the primary role retains one worker");
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -526,8 +524,7 @@ fn fifo_search_completes_and_drains_its_worker() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("orderly shutdown completes the exact worker");

@@ -2,6 +2,7 @@
 
 #[cfg(feature = "axum")]
 use axum::{Router, routing::get};
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
@@ -539,8 +540,11 @@ async fn failed_counter_keeps_business_observation_and_original_native_error() {
         .expect("the actual failed actor remains owned");
     assert!(matches!(
         native,
-        ActorRetirement::BehaviorFailed {
-            error: CounterError::Overflow,
+        ActorRetirement::Retained {
+            outcome: RetirementOutcome::BehaviorFailed {
+                error: CounterError::Overflow,
+                ..
+            },
             ..
         }
     ));
