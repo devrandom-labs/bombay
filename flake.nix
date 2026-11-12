@@ -251,7 +251,11 @@
                 RUSTDOCFLAGS = "--deny warnings";
               };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1 || {
+                  cargo_status=$?
+                  cat "remote-debug.log"
+                  exit "$cargo_status"
+                }
                 cat "remote-debug.log"
                 grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
                 grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
