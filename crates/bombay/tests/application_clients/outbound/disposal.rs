@@ -108,7 +108,7 @@ async fn verification_disposal_preserves_ready_receipt_without_delivering() {
     reason = "one causal provider fault trace retains the original request, independent acquired results, exact panic cause and both joined outcomes"
 )]
 async fn read(fault: ProviderFault) {
-    let address = protocol::reserved_address();
+    let address = protocol::listener_address();
     let maximum = NonZeroUsize::new(4).unwrap();
     let records = &RefCell::new(Vec::<(Scope, ProtectedMessage)>::new());
     let claims = &RefCell::new(None::<Metadata>);

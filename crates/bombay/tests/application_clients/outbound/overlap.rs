@@ -36,8 +36,8 @@ use tokio::sync::{mpsc, oneshot};
 mod protocol;
 use protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef,
-    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits, metadata,
-    recorded, reserved_address,
+    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits,
+    listener_address, metadata, recorded,
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -142,7 +142,7 @@ async fn overlapping_processed_increments_reuse_the_original_admission() {
     reason = "the owning command selector requires the complete original ReadRequest on rejection"
 )]
 async fn increments() {
-    let address = reserved_address();
+    let address = listener_address();
     let maximum = NonZeroUsize::new(3).unwrap();
     let records = &RefCell::new(Vec::<ProtectedMessage>::new());
     let claims = &RefCell::new(Vec::<Metadata>::new());

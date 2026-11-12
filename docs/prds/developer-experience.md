@@ -196,7 +196,9 @@ Rust1.99 project checks pass: all five recovery/request-key scenarios, workspace
 formatting and strict remote application_clients Clippy. The complete diff
 retains every original assertion and all other Rust files. Two author source/
 oracle reviews pass; independent review is unclaimed. Full repository gates
-and delivery for this diagnostic are still pending.
+and delivery subsequently passed: PR418 merged as `899af54f` after all eight
+hosted checks and28 local checks passed. The historical opening cause remains
+unknown. The separate main-push run is qualified below.
 
 All three tracked root, protected-consumer and Engine-fuzz locks select the
 published owners without Behavior patches. The root preserves all396 complete
@@ -239,6 +241,92 @@ No invalid Rust fixture, runtime behavior or public type changes. A further
 remote snapshot correction removes exactly eight stale underline columns on
 both compilers, preserving the complete E0499 borrow denial. That snapshot path
 was already included in the authorized rename set.
+
+### Listener address selection, before implementation
+
+Main `899af54f` run43314686083/job131519649903 failed the Linux remote-debug
+gate while opening the second Counter Node in the overlap witness. The other
+49 cases passed, including the recovery cases. Its generic opening panic
+discarded the refusal, so the actual cause remains unknown. Earlier intentional
+allocation-role child panics are not this gate failure. Keep the original raw
+log and distinguish this event from the older recovery opening failure/hang.
+The runner-type work is preserved separately on codex/runner-types, with its
+exact mechanical candidate in the recorded stash and two independent patches.
+
+Inspection found a concrete fixture mismatch: reserved_address binds IPv4
+127.0.0.1 but returns a localhost TLS endpoint. Selected
+bombay-zenoh-link-tls1.10.4 resolves localhost and takes the first address;
+Tokio1.53.3 delegates that lookup to standard ToSocketAddrs. On this host the
+first address is IPv6 ::1, and an actual bind there succeeds while the IPv4
+reservation remains held. This demonstrates the mismatch; it does not prove
+the historical Linux refusal's cause. The standalone pinned1.99 source/log
+are retained in the existing restart handoff.
+
+Engineering law: test listener selection must use the same host/address family
+as the actual TLS listener. A held reservation must prevent binding the first
+address returned by the TLS owner's actual Tokio lookup; releasing it must
+allow binding that same address. The existing two-Node overlap trace remains
+the end-to-end Node witness, with every original ownership oracle retained.
+This is test-host policy, not an actor-model law. Before changing selection,
+factor the existing IPv4 bind into one private reserve_listener function that
+returns the original standard TcpListener. The existing address function keeps
+the same operation. Add a focused owning test that holds that actual returned
+socket, resolves localhost through Tokio, checks the real native bind refusal,
+then releases the reservation and binds the same resolved address. This tests
+the socket owner directly, without inventing an actor fixture or a second TLS
+implementation. If binding succeeds while the reservation is held, close both
+sockets before the intended failure. Establish this baseline
+before replacing IPv4 selection with localhost; do not change the oracle.
+
+Fresh owner verification must retain registry Behavior/Actors0.30.0,
+macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0 and Native Observe.
+The selected Behavior revision remains628649da. Controlled networking selects
+bombay-zenoh1.10.10/config1.10.2/link-tls1.10.4; inspect their actual source.
+Reuse those owners, standard socket ownership and the existing typed refusal.
+Add no runtime API, transport escape, retry, serialization, semaphore, callback,
+registry or dependency. Preserve all seven certificate inputs and every
+original overlap operation, watchdog, ownership assertion and cleanup.
+
+Expected scope:22 Native paths,19 test-source paths plus three existing records,
+under the user's standing automatic approval. The shared test network owner, its
+existing address callers, the overlap test and three existing coordination
+records. Production+0/-0, public types+0/-0; tests expected net40–90 lines.
+After the focused law passes, rename the address function to listener_address
+so a returned string does not promise a held reservation. Preserve all callers'
+original operations. Give both actual overlap openings the same existing
+standard Error::source diagnostic already used by recovery. No source-selected
+probe or successful replay establishes the old Linux cause. Finish focused
+debug/optimized controls, full gates and normal reviewed delivery before
+resuming the preserved runner migration. The full DX01–DX28 goal stays active.
+
+The original-selection baseline now fails for the intended law on pinned1.99
+debug: IPv6 ::1 accepts a real listener while the same port on127.0.0.1 is
+still held. Both sockets close before the failure. Keep that test unchanged
+and replace only the selector's IPv4 host with localhost. The baseline raw
+log/source hashes remain in listener-address-progress.json; no historical
+Linux cause is inferred.
+
+The unchanged regression now passes on actual1.99 debug and optimized builds;
+the original two-Node overlap witness also passes optimized. Two author
+source/oracle reviews pass; independent review is unclaimed. The mechanical
+rename touches19 existing test paths, including cfg(test)-owned Node and export
+consumers, plus three records. Both overlap openings now retain the established
+standard Error::source diagnostic on failure. Production/API0; original
+configuration, certificates, actors, watchdogs and business/custody assertions
+remain unchanged. Complete scope, source inversions, both-profile owning
+suites, full gates and delivery are still pending.
+
+The exact0d44 candidate subsequently passed all28 local checks, authoritative
+flake check and content verification with all721 inputs unchanged. Restoring
+only the old selector in an isolated optimized build makes the unchanged
+regression fail for the intended namespace mismatch. Those receipts retain
+their original source. Main then advanced through PR416/b3833e50, adding one
+more shared-helper caller in the existing outbound overlap witness. Rebase
+preserves that peer's complete tests and records; migrate only its helper name.
+The revised scope is23 paths,20 test-source paths plus three records, with
+production/API0. Locks and production source did not change in that main
+advance. Fresh metadata, both-profile real overlap controls and full gates on
+the reconciled tree remain required before delivery.
 
 ## Verification and remaining work
 

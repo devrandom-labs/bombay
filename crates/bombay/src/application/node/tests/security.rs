@@ -19,8 +19,8 @@ use counter::{Counter, CounterMessage, CounterValue};
 use custody::completed_actor;
 use protocol::{
     Binding, CounterOperation, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply,
-    ReadReplyRef, ReadRequest, ReadRequestRef, VerificationError, configuration, limits, metadata,
-    recorded, reserved_address,
+    ReadReplyRef, ReadRequest, ReadRequestRef, VerificationError, configuration, limits,
+    listener_address, metadata, recorded,
 };
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -31,7 +31,7 @@ use protocol::{
 )]
 async fn foreign_client_is_refused_while_the_listener_remains_usable() {
     timeout(Duration::from_secs(10), async {
-        let address = reserved_address();
+        let address = listener_address();
         let node = Application::new(Counter::new().stop_on_shutdown())
             .open_node(configuration(&address, &EndpointRole::Receiver))
             .await

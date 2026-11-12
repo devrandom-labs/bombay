@@ -41,9 +41,52 @@ pub(crate) enum EndpointRole {
     Caller,
     Receiver,
 }
-pub(crate) fn reserved_address() -> String {
-    let reservation = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+fn reserve_listener() -> TcpListener {
+    TcpListener::bind(("localhost", 0)).unwrap()
+}
+
+pub(crate) fn listener_address() -> String {
+    let reservation = reserve_listener();
     let address = reservation.local_addr().unwrap();
     drop(reservation);
     format!("tls/localhost:{}", address.port())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::reserve_listener;
+    use std::io::ErrorKind;
+    use std::net::TcpListener;
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn listener_reservation_matches_the_configured_host() {
+        let reservation = reserve_listener();
+        let reserved = reservation.local_addr().expect("the socket is bound");
+        let address = format!("localhost:{}", reserved.port());
+        let selected = tokio::net::lookup_host(address.as_str())
+            .await
+            .expect("the configured local host resolves")
+            .next()
+            .expect("the TLS owner selects the first resolved address");
+        let attempt = TcpListener::bind(selected);
+        let refusal = match attempt {
+            Err(cause) => cause,
+            Ok(listener) => {
+                let actual = listener.local_addr().expect("the second socket is bound");
+                drop(listener);
+                drop(reservation);
+                panic!(
+                    "the TLS address {actual} accepted a listener while {reserved} remained held"
+                );
+            }
+        };
+        drop(reservation);
+        let listener = TcpListener::bind(selected)
+            .expect("the same configured address binds after its reservation is released");
+        let actual = listener.local_addr().expect("the new listener is bound");
+        drop(listener);
+
+        assert_eq!(refusal.kind(), ErrorKind::AddrInUse);
+        assert_eq!(actual, selected);
+    }
 }

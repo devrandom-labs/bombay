@@ -9,7 +9,7 @@ use bombay::remote::{Attempt, Export, ExportError, ExportLimits, RefusalRetentio
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use protocol::{
     EndpointRole, ProtectedMessage, ProviderProfile, VerificationError, configuration, limits,
-    recorded, reserved_address,
+    listener_address, recorded,
 };
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
@@ -90,7 +90,7 @@ async fn valid_increment_recovers_after_request_scope_refusal() {
     reason = "one finite trace retains invalid and valid originals, independent processing and all joined cleanup before its progress oracle"
 )]
 async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidRequest) {
-    let address = reserved_address();
+    let address = listener_address();
     let node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
@@ -509,7 +509,7 @@ async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidReque
 )]
 async fn issued_request_keys_survive_reused_refusal_capacity() {
     let trace = async {
-        let address = reserved_address();
+        let address = listener_address();
         let maximum = NonZeroUsize::new(4).unwrap();
         let mut network = configuration(&address, &EndpointRole::Receiver);
         network.max_retained_queries = maximum;
