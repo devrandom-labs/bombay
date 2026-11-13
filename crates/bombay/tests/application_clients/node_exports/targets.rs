@@ -7,7 +7,7 @@ use bombay::behavior::EstablishedRecipient;
 use bombay::prelude::{Application, Completion};
 use bombay::remote::{Export, ExportError, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, MailAddr, RetirementAssessment, WorkOutcome};
-use protocol::{EndpointRole, ProtectedMessage, configuration, limits, recorded, reserved_address};
+use protocol::{EndpointRole, ProtectedMessage, configuration, limits, listener_address, recorded};
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
 use std::num::NonZeroUsize;
@@ -40,7 +40,7 @@ async fn foreign_actor_target_refuses_before_numeric_duplicate_comparison() {
     reason = "both actual Applications join before checking target refusal and original Work custody"
 )]
 async fn refused(selection: Selection) {
-    let address = reserved_address();
+    let address = listener_address();
     let configuration_scope = String::from("borrowed target refusal scope");
     let payload: Box<[u8]> = [107, 109].into();
     let allocation = payload.as_ptr();

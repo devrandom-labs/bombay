@@ -18,8 +18,8 @@ use bombay::{
 };
 use futures_util::future::Either;
 use protocol::{
-    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
-    reserved_address, scheduled,
+    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, listener_address,
+    recorded, scheduled,
 };
 use std::cell::{Cell, RefCell};
 use std::future::ready;
@@ -217,7 +217,7 @@ async fn protection_factory_panic_preserves_the_actual_native_reply() {
     reason = "one complete refusal trace preserves native, provider, family, Work and cleanup originals"
 )]
 async fn refused(stage: RefusalStage) {
-    let address = reserved_address();
+    let address = listener_address();
     let reports = Arc::new(Mutex::new(Vec::new()));
     let scope = ApplicationScope::new();
     let mut exported = scope.external::<Exports>().unwrap();

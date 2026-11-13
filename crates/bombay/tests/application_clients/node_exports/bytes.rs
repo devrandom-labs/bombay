@@ -8,7 +8,7 @@ use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, submission
 use bombay::{ActorFailureAssessment, ActorRetirement, MailAddr, RetirementAssessment};
 use protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, configuration, limits,
-    reserved_address, scheduled,
+    listener_address, scheduled,
 };
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
@@ -31,7 +31,7 @@ async fn noncanonical_requests_keep_their_original_registered_pair() {
     reason = "one native request retains the complete protected pair, moved Ledger payload and independently joined owners before the byte oracle"
 )]
 async fn registered_originals() {
-    let address = reserved_address();
+    let address = listener_address();
     let node = Application::new(MailLedger {
         entries: Vec::new(),
     })

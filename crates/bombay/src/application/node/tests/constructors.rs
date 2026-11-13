@@ -2,7 +2,7 @@
 use super::ledger::{LedgerCommand, MailLedger, Receipts};
 use super::protocol::{
     self, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReplyRef, ReadRequest,
-    ReadRequestRef, configuration, limits, recorded, reserved_address,
+    ReadRequestRef, configuration, limits, listener_address, recorded,
 };
 use crate::RetirementOutcome;
 use crate::actors::ActorExt;
@@ -56,7 +56,7 @@ async fn exhausted_endpoint_keeps_the_unused_original_append_constructor() {
     reason = "one complete constructor trace retains all native originals; the immutable provider table remains borrowed through its actual verification"
 )]
 async fn constructor_refusal() {
-    let address = reserved_address();
+    let address = listener_address();
     let scope = ApplicationScope {
         allocations: ApplicationAddresses::from_next(u64::MAX - 2),
         client_capacity: MailboxCapacity::default(),

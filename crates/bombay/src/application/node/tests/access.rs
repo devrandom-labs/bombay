@@ -4,7 +4,7 @@ use super::custody::completed_actor;
 use super::permissions::{LocalAuthorityRefusal, local_current};
 use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadRequest, ReadRequestRef,
-    VerificationError, configuration, limits, metadata, recorded, reserved_address,
+    VerificationError, configuration, limits, listener_address, metadata, recorded,
 };
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
@@ -71,7 +71,7 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
     timeout(
         Duration::from_secs(15),
         Box::pin(async {
-            let address = reserved_address();
+            let address = listener_address();
             let mut router_network = configuration(&address, &EndpointRole::Receiver);
             let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
                 .join("../../docs/prds/static-remote-actors/transport-custody/certificates");

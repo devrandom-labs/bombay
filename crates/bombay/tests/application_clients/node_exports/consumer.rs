@@ -45,8 +45,8 @@ mod targets;
 mod wire;
 
 use protocol::{
-    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
-    reserved_address, scheduled,
+    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, listener_address,
+    recorded, scheduled,
 };
 use wire::{CounterInput, LedgerInput, Refusal};
 
@@ -108,7 +108,7 @@ async fn pending_verification_allows_other_actor_requests() {
     reason = "one causal two-target trace retains all native, provider, family and cleanup originals"
 )]
 async fn complete(presence: Presence, pending: ProviderStage) {
-    let address = reserved_address();
+    let address = listener_address();
     let reports = Arc::new(Mutex::new(Vec::new()));
     let scope = ApplicationScope::new();
     let mut exports = scope.external::<Exports>().unwrap();

@@ -41,8 +41,8 @@ use tokio::sync::{mpsc, oneshot};
 mod protocol;
 use protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef,
-    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits, metadata,
-    recorded, reserved_address,
+    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits,
+    listener_address, metadata, recorded,
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -351,7 +351,7 @@ async fn increments(deliveries: &[Delivery]) {
     let expected_acknowledgements = fresh.iter().copied().chain([23, 23]).collect::<Vec<_>>();
     let expected_value = u64::try_from(expected_effects.len()).unwrap();
     let query_count = expected_requests.len();
-    let address = reserved_address();
+    let address = listener_address();
     let maximum = NonZeroUsize::new(query_count).unwrap();
     let records = &RefCell::new(Vec::<ProtectedMessage>::new());
     let claims = &RefCell::new(Vec::<Metadata>::new());

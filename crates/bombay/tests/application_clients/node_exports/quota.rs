@@ -7,8 +7,8 @@ use bombay::prelude::{Application, MailAddr};
 use bombay::remote::{Attempt, Export, ExportError, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use protocol::{
-    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
-    reserved_address,
+    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, listener_address,
+    recorded,
 };
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
@@ -49,7 +49,7 @@ async fn provider_refusal_consumes_request_custody_before_the_next_factory() {
     reason = "one complete quota trace retains original causes, native outcomes and both closes"
 )]
 async fn complete(policy: VerificationPolicy) {
-    let address = reserved_address();
+    let address = listener_address();
     let node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await

@@ -420,7 +420,7 @@ async fn read_counter<Receipt>(
     proof: fn(&Receipt) -> Option<&[u8]>,
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let address = reserved_address();
+    let address = listener_address();
     let records = RefCell::new(Vec::new());
     let claims = RefCell::new(None::<Metadata>);
     let allocations = RefCell::new(Vec::new());
@@ -660,7 +660,7 @@ async fn read_ledger<Receipt>(
     proof: fn(&Receipt) -> Option<&[u8]>,
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let address = reserved_address();
+    let address = listener_address();
     let records = RefCell::new(Vec::new());
     let claims = RefCell::new(None::<Metadata>);
     let allocations = RefCell::new(Vec::new());
