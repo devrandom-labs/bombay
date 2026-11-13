@@ -169,6 +169,102 @@ must precede the next implementation step.
 Delivery reconciliation census against f09303c8: four record paths,
 records +113/-29/net84; production/tests/API0. `git diff --check` passes.
 
+## Public Client schedules: prerequisites and change record — 2026-11-13
+
+The next R24 stage starts at mainb3833e50. Commit a829db44 only reconciles
+PR416 delivery after both independent record reviews; it changes no executable
+input. GitHub main remains b3833e50 at this prerequisite check. The existing
+995-line public Client witness is126a16ee; query.rs remains dfaae0a0,
+client.rs45282b54 and declaration.rs5dae0887. A generated native campaign is
+missing; the fixed witness does not establish a production defect.
+
+Fresh lock inspection selects the same registry contracts, without patches or
+replacement. Cargo.lock SHA256 is9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394;
+flake.lock is13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1.
+The complete775-line Behavior instructions at628649da are read before design.
+Fresh source/API/test/document inspection covers these owners:
+
+| Owner | Selected revision | Reused contract |
+| --- | --- | --- |
+| Behavior and Actors | Registry0.30.0 pair,628649da014a527d47f21567a859c5c78494df13; Macros0.16.0/55dbac2d1068b29907498b3a7fa32b3080e0cd30 | Complete pure Actions, actual User/sender, MessageAdapter and ActorExt shutdown; no rollback of completed work. |
+| Address | Registry0.3.0/9f058dc03d1239e1ef5c3147a893b134a1e74a83 | Exact lease retirement and opaque endpoint snapshots; no authentication or retargeting. |
+| Communication | Registry0.1.6/963067e0e6bdef15549088966cde354fd820be7e | Per-lane FIFO, original Full/Closed values, nonwaiting admission and affine closure. |
+| Observe | Workspaceb3833e50; mod.rs0e63b34d | Independent exact publication and affine results; termination and joined retirement remain separate. |
+| Timers | Registry0.2.0/9369d1f6c7fcda91e7de5bf3c19e6769f92145bd | Explicit ordered time and branded generations; no native timeout or clock proof is inferred. |
+
+Node retains both real TLS Sessions and all startup/withdrawal/close ownership.
+The selected SDK remains bombay-zenoh1.10.10/c34eb350faad3d8d103aa383091d85502b67a898,
+defaults disabled with transport_tls. Export owns canonical recognition and
+native admission; Client owns actual Gets, checked actor delivery and acquired
+callback EOF. Engine retains its causal Driver and affine retirement contracts.
+No owner interface, dependency or protocol-consumer blocker has been found for
+the proposed scope. Independent prerequisite/plan reviews must close before
+test authoring. AUTH1→NET1 remains reciprocal and incomplete.
+
+The selected law is bounded native replay safety under variable fresh load.
+Hold original A23's actual reply protection. Execute a word containing exactly
+one byte-exact same-identity RepeatA and one to three distinct fresh increments
+B24/C25/D26, in every order, before releasing A. Each fresh command must reach
+the actual caller actor before the next word item. Observe RepeatA through the
+existing current_reply callback while A remains held. Return from that callback,
+canonical assignment, publication, checked delivery and EOF remain distinct.
+After all cleanup, the independent local FIFO Counter Read must equal
+1+fresh_count. Every actual checked receipt, original allocation, canonical key,
+native attempt, publication, refusal, panic slot and retirement result remains
+checked. The original literal word [B24, RepeatA] remains the fixed control.
+
+For canonical-recognition omission, RepeatA can produce an early checked A
+receipt. Work must retain that receipt and keep receiving until the issued fresh
+correlation arrives, then release A unconditionally and acquire all remaining
+receipts and cleanup. The intended first semantic failure is the final Read
+being one too high; an early ordering assertion or watchdog earns no credit.
+With Q=fresh_count+2 real Gets, select Q native/concurrent/retained request
+slots, 2Q source rows plus one spare for source EOF, and the existing per-reply
+and JSON limits. These equations establish no aggregate byte bound.
+
+First extract the existing ordinary async host to accept a borrowed word and
+derive its expectations solely from that word. Preserve the fixed control,
+review twice, then run healthy, canonical-omission and byte-exact-restored
+controls in debug and optimized builds before adding campaign code. No new
+actor, adapter, wrapper, macro, protocol or interpreter is selected.
+
+Next enumerate all32 legal words:2!+3!+4!. An independent coverage test checks
+unique valid words and exact2/6/24 counts and rejects a deliberately omitted
+word. Existing proptest1.11.0 supplies TestRunner, sample::select, Index and Vec
+shrinking. Generate one of the two base words, then insert up to two fresh IDs
+sequentially into the current expanded word's gaps. This permits26 before25
+and keeps every shrink legal without filters or a custom strategy. Retain the
+actual minimized failure, standard persisted case seed and literal replay;
+replay against the source cut and restored owner in both profiles.
+For this integration-module source, select the supported
+FileFailurePersistence::WithSource("proptest-regressions") explicitly: its
+owned file is tests/application_clients/outbound/overlap.proptest-regressions.
+The default SourceParallel search has no ancestor lib.rs/main.rs here and
+otherwise falls back with a warning. Prove actual saved-file replay before
+adding that exact file to Nix source inclusion and CI artifacts.
+
+Root owns records, source cuts, Nix commands, shared inputs and integration;
+the original acceptance author owns the test edit and the original two readers
+review independently. Expected software paths are overlap.rs, its standard
+Proptest regression file, flake.nix and checks.yml, with the existing four
+delivery/acceptance records. Forecast: production+0/-0/net0, test net250–400,
+public API+0types/-0types. Campaign persistence inclusion and ordinary routine/
+scheduled CI commands follow semantic qualification, using existing tools.
+Actual counts, runtime and output determine the recorded campaign settings.
+
+This stage adds no authority-expiry, publication-revocation, loss, disconnection,
+crash or volatile-restart proof. Those remain required later R24 work, alongside
+the external durable/cryptographic obligations. It closes no full R24, AUTH1,
+NET1 or other remote acceptance row. Current executable change is zero.
+
+Root and both independent readers accept the first extraction plan after law
+and counterexample review. Both identify the integration persistence path above;
+the supported explicit selection resolves it before later campaign work.
+The fresh owner report cb45e87b is retained
+under .git/session-archives/2026-11-13/client-schedules/prerequisites.
+Only the existing overlap.rs host may now be extracted. Campaign code still
+waits for its reviewed, executed and falsified fixed control.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first

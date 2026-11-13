@@ -18,6 +18,10 @@ overlap tests execute in four current Linux cohorts; delivered and qualified
 trees match. Complete evidence is sealed and the clean worktree is removed.
 Earlier omission/restoration controls retain their exact source limits.
 This fixed witness does not close complete R24/R07, AUTH1 or NET1.
+The next [public Client schedules](../prds/network-schedule.md#public-client-schedules-prerequisites-and-change-record--2026-11-13)
+stage records fresh owner verification and the proposed32-word campaign;
+independent plan review passes for the first host extraction. Its execution
+and the subsequent campaign remain unqualified.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
