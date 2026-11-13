@@ -250,6 +250,7 @@
               inherit cargoArtifacts;
               env = commonArgs.env // {
                 RUSTDOCFLAGS = "--deny warnings";
+                RUST_LOG = "zenoh::api::session=info,zenoh::net::runtime=trace,zenoh_transport=trace,zenoh_link_tls=debug";
               };
               buildPhaseCargoCommand = ''
                 cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1 || {

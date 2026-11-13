@@ -28,6 +28,7 @@ use std::task::Poll;
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::{mpsc, oneshot};
+use zenoh::try_init_log_from_env;
 
 #[path = "../protocol.rs"]
 #[expect(
@@ -222,6 +223,7 @@ async fn all_delivery_orders_preserve_processed_increments() {
 
 #[test]
 fn generated_delivery_orders_preserve_processed_increments() {
+    try_init_log_from_env();
     let orders = (
         sample::select(vec![
             vec![Delivery::Fresh(24), Delivery::Repeat],

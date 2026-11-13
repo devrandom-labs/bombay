@@ -684,6 +684,57 @@ tests+345/-83/net262; configuration+65/-0/net65;
 records+613/-37/net576; public API+0types/-0types.
 Nine tracked paths, no untracked source files; required CI and delivery open.
 
+### Existing SDK shutdown logs: pre-edit record — 2026-11-13
+
+The boxed error exposes the deadline class, but not the original pending
+shutdown stage. Use the selected SDK's existing public try_init_log_from_env
+once at generated-test entry, outside every Behavior fold. It already owns
+global subscriber registration; no new logger, wrapper, static or dependency
+is needed. Select existing session/runtime/transport/TLS targets through
+RUST_LOG in the owning Nix remote-debug check. Keep the existing close policy,
+concurrency, watchdog and every semantic assertion unchanged. This is
+diagnostic instrumentation and cannot establish a repair by passing alone.
+
+Expected retained edits are two test lines, one existing Nix environment field
+and this record, with production/public API/dependency changes zero and the
+same nine cumulative paths. Verify actual SDK shutdown events from the normal
+generated journey in both profiles; an absent logging configuration must
+leave the semantic journey passing but fail the diagnostic-evidence guard.
+Then qualify formatting, strict lint, ordinary consumers and current workspace
+execution. Do not substitute new SDK hooks or a synthetic actor controller.
+
+The first configuration probe incorrectly reads the derivation's env.RUST_LOG;
+the public derivation exposes flattened RUST_LOG instead. Its eval error and
+empty output remain retained. The outer shell's following cat masks that eval
+exit, so the combined probe ends1 at missing SDK-event evidence after the
+unconfigured and empty-configured debug journeys each actually pass. Optimized
+execution does not run in that attempt. Correct direct Nix evaluation obtains
+the actual nonempty builder setting; no logging literal is duplicated in the
+consumer probe.
+
+Corrected debug/optimized probes each pass one test with58filtered and three
+complete words (two saved plus one fresh). Six distinct actual Session-close
+entries and six Runtime-close entries are acquired in each profile. Those are
+entry observations, not proof of inner-stage completion or the original cause.
+The absent/empty settings produce no SDK entries while semantics still pass.
+Five source/configuration guards match. Independent source/outcome reviews
+252a20eb/ffa443f8 pass this bounded logging qualification.
+
+With the actual Nix logging setting, full Client execution passes59/0/0 in
+both profiles,258 generated completions each, in40.10/45.01seconds. The logs
+contain19,664,765/19,183,005bytes; these are observed verification costs, not
+throughput claims. Strict owning Clippy passes. Fresh workspace Nextest
+completes0 with1010passed/6existing child-registration skips in88.884seconds,
+5slow and one leaky warning. Every PASS/LEAK identity matches its catalogue.
+This time the warning names engine driver_law::completion_preserves_stop_and_input_exhaustion_as_success;
+its handle owner remains unlocated. No test result, timeout or concurrency is
+changed to discharge either warning. Required CI and the SDK stall remain open.
+
+Complete current branch versus maineb08: production+0/-0/net0;
+tests+347/-83/net264; configuration+66/-0/net66;
+records+664/-37/net627; public API+0types/-0types.
+Nine tracked paths, no untracked source files; no SDK shutdown repair claimed.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
