@@ -23,7 +23,8 @@ stage records fresh owner verification and the proposed32-word campaign.
 Its reviewed finite32-word suite passes debug and optimized controls, with
 intended missing-word/replay-omission failures and exact restorations.
 Generated/shrunk words and actual saved-case replay now pass local controls;
-longer measurement, Nix/hosted qualification and broader fault schedules remain open.
+longer measurement and local Nix packaging/workflow controls also pass.
+Broader checks, hosted qualification and broader fault schedules remain open.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.

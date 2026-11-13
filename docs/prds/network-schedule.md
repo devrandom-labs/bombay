@@ -418,6 +418,59 @@ Complete branch checkpoint versus b383: production+0/-0/net0, tests+335/-81/net2
 records+346/-37/net309, public API+0types/-0types; six paths including the
 actual saved regression. No other untracked file is present.
 
+### Public Client campaign delivery: measured settings and pre-edit record
+
+On the same911409b7 source and selected saved case, both longer campaigns
+complete4,097 invocations: one persisted original plus4,096 fresh. All32 words
+are sampled; actual fresh classes are1,368/1,414/1,314. Debug takes48.80 seconds,
+optimized21.76 seconds. Every8,194 native word/ACK/Counter/terminal projection
+is inspected; the profile sequences match. Independent two-pass long reviews
+84c52fa1/b4a5d54f pass. These are measured test costs, with no throughput claim.
+
+The remaining delivery blocker is the owned sidecar's omission from Crane's
+source filter and the absence of public Client artifacts in the existing
+incoming-schedules matrix. Before edits: retain existing256 routine/4,096
+weekly/manual case selection, matrix, action pins and30-minute job limit.
+Add only the exact sidecar to the existing fileset and one explicit Client
+Cargo step plus its standard artifact upload in that same job. Retain actual
+revision/compiler/command/input hashes, source seed, full trace and both Cargo
+and qualification exits. Guard five selected tests and actual saved+fresh
+observations, including first-line libtest prefixes. Demonstrate missing seed
+inclusion/empty selection cannot receive credit using ordinary Nix/Cargo checks.
+
+Expected configuration paths are flake.nix and checks.yml; no new script,
+runner, controller, dependency or Rust interface is selected. Production/API
+remain zero. Root owns these edits and both independent readers review them
+before local workflow/source-inclusion execution. Fresh hosted qualification
+and actual reviewed delivery remain open, as do full R24 and the remote goal.
+
+### Public Client campaign: local wiring qualification
+
+Frozen flake5f9ddce3 and workflow65e1faa9 pass root and independent two-pass
+source/outcome reviews. Outcome reports19e27099/c242f7a8 are retained with the
+actual invocations under client-schedules/workflow. Nix source evaluation
+materializes the exact saved seed. Removing only its new fileset member
+materializes a source without it; the independent presence check fails.
+Restoration reproduces the original source path and seed. This is packaging
+proof, not a missing-seed Rust execution or full Nix check.
+
+The actual extracted workflow body passes through pinned Nix in both profiles:
+five tests,257 generated completions,32 finite words and the fixed control.
+All580 native diagnostic frames and both sets of nine retained files are
+checked. Each fifteen-input hash manifest matches the actual inputs; the
+recorded revision68846e8d remains distinct from the then-uncommitted config.
+An actual empty selection preserves Cargo0 but qualification1; an actual
+missing target preserves Cargo101/qualification101. Four isolated missing or
+wrong observation fixtures each reject qualification. Pinned Nixfmt and
+actionlint pass. Actual artifact upload and Linux CI remain unqualified.
+
+Complete branch versus b383: production+0/-0/net0;
+tests+335/-81/net254; configuration+65/-0/net65;
+records+400/-37/net363; public API+0types/-0types; eight tracked paths,
+with no untracked source files. Broader checks, focused PR, hosted routine and
+manual campaigns, reviewed merge and cleanup remain before scoped delivery.
+Full R24, authority/crash/restart and the complete remote goal remain open.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
