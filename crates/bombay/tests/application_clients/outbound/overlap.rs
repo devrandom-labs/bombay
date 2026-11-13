@@ -46,6 +46,12 @@ enum Operation {
     Increment,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Delivery {
+    Fresh(u64),
+    Repeat,
+}
+
 fn consume(input: Either<u64, CounterIncremented>) -> CounterServiceInput {
     match input {
         Either::Left(correlation) => CounterServiceInput::Verify(correlation),
@@ -128,7 +134,8 @@ fn caller_actions_preserve_submitted_and_processed_correlations() {
     reason = "the bounded two-Node trace retains concrete native originals without another allocation or erased future"
 )]
 async fn overlapping_processed_increments_reuse_the_original_admission() {
-    tokio::time::timeout(Duration::from_secs(15), increments())
+    let deliveries = [Delivery::Fresh(24), Delivery::Repeat];
+    tokio::time::timeout(Duration::from_secs(15), increments(&deliveries))
         .await
         .expect("both real Nodes and their original native queries finish before native expiry");
 }
@@ -141,9 +148,43 @@ async fn overlapping_processed_increments_reuse_the_original_admission() {
     clippy::result_large_err,
     reason = "the owning command selector requires the complete original ReadRequest on rejection"
 )]
-async fn increments() {
+async fn increments(deliveries: &[Delivery]) {
+    let fresh = deliveries
+        .iter()
+        .filter_map(|delivery| match delivery {
+            Delivery::Fresh(sequence) => Some(*sequence),
+            Delivery::Repeat => None,
+        })
+        .collect::<Vec<_>>();
+    let mut identities = fresh.clone();
+    identities.sort_unstable();
+    let repeats = deliveries
+        .iter()
+        .filter(|delivery| matches!(delivery, Delivery::Repeat))
+        .count();
+    assert!((1..=3).contains(&fresh.len()));
+    assert_eq!(repeats, 1);
+    assert_eq!(identities.as_slice(), &[24, 25, 26][..fresh.len()]);
+    let repeat_row = 1 + deliveries
+        .iter()
+        .position(|delivery| matches!(delivery, Delivery::Repeat))
+        .expect("the validated word contains one repeated request");
+    let expected_requests = [23]
+        .into_iter()
+        .chain(deliveries.iter().map(|delivery| match delivery {
+            Delivery::Fresh(sequence) => *sequence,
+            Delivery::Repeat => 23,
+        }))
+        .collect::<Vec<_>>();
+    let expected_effects = [23]
+        .into_iter()
+        .chain(fresh.iter().copied())
+        .collect::<Vec<_>>();
+    let expected_acknowledgements = fresh.iter().copied().chain([23, 23]).collect::<Vec<_>>();
+    let expected_value = u64::try_from(expected_effects.len()).unwrap();
+    let query_count = expected_requests.len();
     let address = reserved_address();
-    let maximum = NonZeroUsize::new(3).unwrap();
+    let maximum = NonZeroUsize::new(query_count).unwrap();
     let records = &RefCell::new(Vec::<ProtectedMessage>::new());
     let claims = &RefCell::new(Vec::<Metadata>::new());
     let encoded = &RefCell::new(Vec::new());
@@ -163,7 +204,7 @@ async fn increments() {
     let (release, released) = oneshot::channel();
     let released = &RefCell::new(Some(released));
     let reply_policy = &RefCell::new(None::<oneshot::Sender<(Binding, u64)>>);
-    let (acknowledged, mut acknowledgements) = mpsc::channel(3);
+    let (acknowledged, mut acknowledgements) = mpsc::channel(query_count);
     let acknowledgements_sent = &RefCell::new(Vec::new());
     let (configured, configuration_ready) = oneshot::channel();
     let (ready, receiver_ready) = oneshot::channel();
@@ -334,7 +375,7 @@ async fn increments() {
     let mut receiver = receiver.exports(export, async |application| {
         let target = application.root().established_recipient();
         let target_address = application.actor_address(&target)?;
-        for sequence in [23, 24] {
+        for &sequence in &expected_effects {
             let mut declared = metadata(
                 ProviderProfile::Recorded,
                 "counter",
@@ -361,7 +402,7 @@ async fn increments() {
         "bombay/overlap/increment",
         ClientLimits {
             concurrent_requests: maximum,
-            retained_requests: NonZeroUsize::new(7).unwrap(),
+            retained_requests: NonZeroUsize::new(2 * query_count + 1).unwrap(),
             retained_responses: NonZeroUsize::new(1).unwrap(),
         },
         limits(),
@@ -519,16 +560,47 @@ async fn increments() {
         let sender = application.sender().unwrap();
         let first = sender.send(Either::Left(23)).await;
         let held = entering.await;
-        let fresh = sender.send(Either::Left(24)).await;
-        let fresh_acknowledgement = acknowledgements.recv().await;
-        let (observed, replay_observed) = oneshot::channel();
-        *reply_policy.borrow_mut() = Some(observed);
-        let resubmission = sender.send(Either::Left(23)).await;
-        let policy_observation = replay_observed.await;
+        let mut submissions = Vec::new();
+        let mut acknowledgements_received = Vec::new();
+        let mut fresh_progress = Vec::new();
+        let mut policy_observation = None;
+        for delivery in deliveries {
+            match *delivery {
+                Delivery::Fresh(sequence) => {
+                    submissions.push(sender.send(Either::Left(sequence)).await);
+                    let arrived = loop {
+                        match acknowledgements.recv().await {
+                            Some(correlation) => {
+                                // An omitted canonical lookup may already have
+                                // delivered A. Retain it while waiting for this
+                                // actual fresh correlation, without rejecting it.
+                                acknowledgements_received.push(correlation);
+                                if correlation == sequence {
+                                    break Some(correlation);
+                                }
+                            }
+                            None => break None,
+                        }
+                    };
+                    fresh_progress.push(arrived);
+                }
+                Delivery::Repeat => {
+                    let (observed, replay_observed) = oneshot::channel();
+                    *reply_policy.borrow_mut() = Some(observed);
+                    submissions.push(sender.send(Either::Left(23)).await);
+                    policy_observation = Some(replay_observed.await);
+                }
+            }
+        }
+        let before_release = acknowledgements_received.clone();
         // Even an observation failure releases the sole first-A provider.
         let released = release.send(());
-        let first_acknowledgement = acknowledgements.recv().await;
-        let replay_acknowledgement = acknowledgements.recv().await;
+        while acknowledgements_received.len() < query_count {
+            match acknowledgements.recv().await {
+                Some(correlation) => acknowledgements_received.push(correlation),
+                None => break,
+            }
+        }
         let read_admission = reader.send(CounterMessage::Read(reader.recipient())).await;
         let value = reader.receive().await;
         reader.close_admission();
@@ -540,13 +612,12 @@ async fn increments() {
         (
             first,
             held,
-            fresh,
-            fresh_acknowledgement,
-            resubmission,
+            submissions,
+            fresh_progress,
             policy_observation,
             released,
-            first_acknowledgement,
-            replay_acknowledgement,
+            before_release,
+            acknowledgements_received,
             read_admission,
             value,
             read_tail,
@@ -580,13 +651,12 @@ async fn increments() {
     let (
         first,
         held,
-        fresh,
-        fresh_acknowledgement,
-        resubmission,
+        submissions,
+        fresh_progress,
         policy_observation,
         released,
-        first_acknowledgement,
-        replay_acknowledgement,
+        before_release,
+        acknowledgements_received,
         read_admission,
         value,
         read_tail,
@@ -631,7 +701,7 @@ async fn increments() {
             .map(|notes| (notes.termination.is_ok(), notes.retirement.is_ok())),
     );
     assert_eq!(
-        value.message, 2,
+        value.message, expected_value,
         "a replay cannot increment the actual Counter again"
     );
 
@@ -643,14 +713,17 @@ async fn increments() {
             && caller_poll.is_none()
             && caller_drop.is_none()
     );
-    assert!(first.is_ok() && fresh.is_ok() && resubmission.is_ok() && read_admission.is_ok());
+    assert!(first.is_ok() && read_admission.is_ok());
+    assert_eq!(submissions.len(), deliveries.len());
+    assert!(submissions.iter().all(Result::is_ok));
     assert_eq!(held, Ok(23));
-    assert_eq!(fresh_acknowledgement, Some(24));
-    assert_eq!(policy_observation, Ok((binding, 23)));
     assert_eq!(
-        [first_acknowledgement, replay_acknowledgement],
-        [Some(23), Some(23)]
+        fresh_progress,
+        fresh.iter().copied().map(Some).collect::<Vec<_>>()
     );
+    assert_eq!(before_release, fresh);
+    assert_eq!(policy_observation, Some(Ok((binding, 23))));
+    assert_eq!(acknowledgements_received, expected_acknowledgements);
     assert!(
         released.is_ok()
             && receiver_shutdown.is_ok()
@@ -689,23 +762,31 @@ async fn increments() {
                 .unwrap_or_else(|_| panic!("joined producers relinquish each actual request"))
         })
         .collect::<Vec<_>>();
-    assert_eq!(rows.len(), 3);
-    assert_eq!(rows[0].0, rows[2].0);
-    assert_ne!(rows[0].0, rows[1].0);
-    assert!(rows[0].0.is_some());
+    assert_eq!(rows.len(), query_count);
+    assert_eq!(rows[0].0, rows[repeat_row].0);
+    for (index, row) in rows.iter().enumerate() {
+        assert!(row.0.is_some());
+        if index != repeat_row {
+            for (previous, original) in rows[..index].iter().enumerate() {
+                if previous != repeat_row {
+                    assert_ne!(row.0, original.0);
+                }
+            }
+        }
+    }
     let request_origins = request_origins.borrow();
     let claims = claims.borrow();
     let reply_protections = reply_protections.borrow();
-    assert_eq!(request_origins.len(), 3);
-    assert_eq!(constructed.get(), 2);
+    assert_eq!(request_origins.len(), query_count);
+    assert_eq!(constructed.get(), expected_effects.len());
     assert_eq!(
         emitted.borrow().as_slice(),
-        [
-            (counter_origin.address(), 23),
-            (counter_origin.address(), 24)
-        ]
+        expected_effects
+            .iter()
+            .map(|sequence| (counter_origin.address(), *sequence))
+            .collect::<Vec<_>>()
     );
-    assert_eq!(reply_protections.len(), 2);
+    assert_eq!(reply_protections.len(), expected_effects.len());
     let mut incoming_originals = Vec::new();
     let mut produced = Vec::new();
     let mut reply_addresses = Vec::new();
@@ -726,7 +807,7 @@ async fn increments() {
             .expect("actual verification remains")
             .unwrap_or_else(|_| panic!("finite exact provider accepts"));
         let actual = recorded::projection(&receipt);
-        let sequence = [23, 24, 23][index];
+        let sequence = expected_requests[index];
         let expected = claims
             .iter()
             .find(|claim| claim.request_sequence == sequence)
@@ -755,7 +836,7 @@ async fn increments() {
         assert!(matches!(panics, (None, None, None, None, None, None)));
         assert_eq!(publications.len(), 1);
         assert!(publications.iter().all(Result::is_ok));
-        if index == 2 {
+        if index == repeat_row {
             assert!(native.is_none() && encoding.is_none() && protection.is_none());
         } else {
             let (constructor, client, admission, reply, tail) =
@@ -773,6 +854,10 @@ async fn increments() {
                 .expect("actual encoding remains")
                 .expect("processing receipt encodes");
             let encoded_reply: ReadReply<u64, Operation> = serde_json::from_slice(&bytes).unwrap();
+            let snapshot = reply_protections
+                .iter()
+                .find(|entry| entry.0 == sequence)
+                .expect("each actual processing receipt retains its own protection inputs");
             assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
             assert_eq!(
                 (reply.from, reply.message.request_sequence),
@@ -790,16 +875,18 @@ async fn increments() {
                 ),
                 (Purpose::Processed, Operation::Increment, sequence)
             );
-            assert_eq!(
-                (sequence, bytes.as_ptr(), protected.as_ptr()),
-                reply_protections[index]
-            );
+            assert_eq!((sequence, bytes.as_ptr(), protected.as_ptr()), *snapshot);
             assert_eq!(protected.as_ref(), [13, 17]);
             produced.push((sequence, bytes, protected));
         }
         incoming_originals.push(raw);
     }
-    assert_ne!(reply_addresses[0], reply_addresses[1]);
+    assert_eq!(reply_addresses.len(), expected_effects.len());
+    for (index, address) in reply_addresses.iter().enumerate() {
+        for previous in &reply_addresses[..index] {
+            assert_ne!(address, previous);
+        }
+    }
     let (source, _, startup, withdrawal, joined, source_eof, rows, routes) = client.into_parts();
     let (listener, visible, listener_withdrawal) = routes;
     assert_eq!(source.address(), source_address);
@@ -810,36 +897,26 @@ async fn increments() {
             && matches!(visible, Some(Ok(())))
             && matches!(listener_withdrawal, Some(Ok(())))
     );
-    assert_eq!(rows.len(), 6);
+    assert_eq!(rows.len(), 2 * query_count);
     assert_eq!(
         consumed.borrow().as_slice(),
-        [
-            (
+        expected_acknowledgements
+            .iter()
+            .map(|correlation| (
                 adapter_origin.address(),
-                24,
-                CounterProofPurpose::IncrementProcessed
-            ),
-            (
-                adapter_origin.address(),
-                23,
-                CounterProofPurpose::IncrementProcessed
-            ),
-            (
-                adapter_origin.address(),
-                23,
-                CounterProofPurpose::IncrementProcessed
-            )
-        ]
+                *correlation,
+                CounterProofPurpose::IncrementProcessed,
+            ))
+            .collect::<Vec<_>>()
     );
     assert_eq!(
         checked.borrow().as_slice(),
-        [
-            (adapter_origin.address(), 24, 24),
-            (adapter_origin.address(), 23, 23),
-            (adapter_origin.address(), 23, 23)
-        ]
+        expected_acknowledgements
+            .iter()
+            .map(|correlation| (adapter_origin.address(), *correlation, *correlation,))
+            .collect::<Vec<_>>()
     );
-    assert_eq!(acknowledgements_sent.borrow().len(), 3);
+    assert_eq!(acknowledgements_sent.borrow().len(), query_count);
     assert!(acknowledgements_sent.borrow().iter().all(Result::is_ok));
     assert_eq!(held_transfers.borrow().len(), 1);
     assert!(held_transfers.borrow().iter().all(Result::is_ok));
@@ -962,21 +1039,23 @@ async fn increments() {
             }
         }
     }
-    assert_eq!(requests.len(), 3);
+    assert_eq!(requests.len(), query_count);
     assert_eq!(
         acknowledged
             .iter()
             .map(|(correlation, purpose, _completed)| (*correlation, *purpose))
             .collect::<Vec<_>>(),
-        [
-            (24, CounterProofPurpose::IncrementProcessed),
-            (23, CounterProofPurpose::IncrementProcessed),
-            (23, CounterProofPurpose::IncrementProcessed)
-        ]
+        expected_acknowledgements
+            .iter()
+            .map(|correlation| (*correlation, CounterProofPurpose::IncrementProcessed,))
+            .collect::<Vec<_>>()
     );
-    assert_eq!([requests[0].0, requests[1].0, requests[2].0], [23, 24, 23]);
-    assert_eq!(requests[0].1, requests[2].1);
-    assert_eq!(requests[0].2, requests[2].2);
+    assert_eq!(
+        requests.iter().map(|request| request.0).collect::<Vec<_>>(),
+        expected_requests
+    );
+    assert_eq!(requests[0].1, requests[repeat_row].1);
+    assert_eq!(requests[0].2, requests[repeat_row].2);
     let encoded = encoded.borrow();
     let protected = protected.borrow();
     for (index, (sequence, bytes, proof, _completed)) in requests.iter().enumerate() {

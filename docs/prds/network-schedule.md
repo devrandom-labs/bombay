@@ -265,6 +265,43 @@ under .git/session-archives/2026-11-13/client-schedules/prerequisites.
 Only the existing overlap.rs host may now be extracted. Campaign code still
 waits for its reviewed, executed and falsified fixed control.
 
+### Public Client host extraction: source review
+
+The borrowed-word extraction is frozen at c3a82c85,1,074 lines, after pinned
+formatting passes. The original fixed word and complete custody checks remain;
+expectations and Q derive only from the supplied word. Root's two-pass review
+851570c5 and independent two-pass reviews32aabc17/fd0f9277 pass. Reports, exact
+source and patch are retained beside the prerequisite inputs under extraction.
+Checkpoint versus b383: production+0/-0/net0, tests+159/-80/net79,
+public API+0types/-0types; five tracked paths and no untracked files.
+At that source checkpoint, focused executions remained open. The following
+executed-control record closes that gate; no reverse-order or campaign
+execution is credited yet.
+
+### Public Client host extraction: executed control
+
+The same c3a82c85 test source passes healthy and exact-restored controls in
+debug and optimized builds: each runs both named tests, with zero failures or
+ignores and50 filtered. Actual Counter Read2 and all complete retained custody
+assertions pass. The actual canonical-result omission6385d3be adds one filter
+after the real lookup. Both profiles compile and run the selected native test,
+then fail only its first post-cleanup Read3-versus-2 assertion at line703,
+exit101/one failed test/51 filtered. Both Nodes' cleanup, close, native
+completion, retirement assessments and notifications report success before
+that assertion. Later negative-run custody assertions are not credited.
+Query is restored byte-exactly to dfaae0a0; all source/lock guards pass.
+
+Pinned formatting and owning all-features application_clients strict Clippy
+pass. These are actual aarch64-darwin Rust1.99 executions, not minimum-compiler
+or Linux CI evidence. Exact commands, full logs, exits, source cut/restoration
+and inputs remain under extraction. Root outcome review8676bcfd and independent
+two-pass reviews3a600526/1723b399 pass; all readers are released.
+Complete branch checkpoint versus b383: production+0/-0/net0, tests+159/-80/net79,
+records+228/-37/net191, public API+0types/-0types; five tracked paths and
+no untracked files. The next finite32-word stage is now eligible.
+Generated/minimized replay, authority/crash schedules, full R24 and delivery
+remain open.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
