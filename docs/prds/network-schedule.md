@@ -9,12 +9,95 @@ source, compiler and result epochs retain their original meanings.
 is now mainb3833e50 after all eight checks and independent reviews passed.
 Its qualified and delivered trees match, and its worktree is removed. This
 supersedes pending delivery wording in earlier dated source checkpoints.
+[PR420's bounded public Client campaign](#delivery-of-the-public-client-campaign--2026-11-13)
+is merged as6ee3e676 after all eight checks and final reviews pass. Its delivered
+tree matches the qualified head, evidence is sealed and the worktree is removed.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
 `937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. Complete network simulation,
-generated native Query/Client schedules, restart and full R24 remain open.
+broader native fault schedules, restart and full R24 remain open.
 The user's complete R01–R25/AUTH1/NET1 goal remains unchanged.
+
+## Delivery of the public Client campaign — 2026-11-13
+
+[PR420](https://github.com/devrandom-labs/bombay/pull/420) merged normally at
+2026-11-13T21:52:08Z as6ee3e6763b975156e35e60d9d6bf618ae6f1f776,
+with parents maineb08c152 and reviewed head6df33c41. Its actual tree
+f26ffcf6520237ef1b807d9c34aa6b5ea7bf8a98 equals the submitted tree and
+actual CI checkout28b5e1a6. No administrator bypass or post-qualification source
+edit was used. Main-push CI is separate; no crate publication is claimed.
+
+All eight checks pass on that exact head. The
+[required run43485478196](https://github.com/devrandom-labs/bombay/actions/runs/43485478196)
+finishes successfully after its Nix flake check, Driver/Observe campaigns and
+artifact uploads. The separate
+[long manual run43480909344](https://github.com/devrandom-labs/bombay/actions/runs/43480909344)
+also succeeds at0e08f3ba. Its Rust, locks, seeds, side-job commands and Linux
+development environment match the later head; its older Nix capture command
+keeps its own scope. Source, outcome, custody and final retention reviews pass.
+
+The public journey executes all32 selected words, generated orders and both
+standard saved cases. Routine debug/release each pass six selected Client tests
+and258 generated invocations, yielding291 actual hosts including finite/fixed
+controls. Manual profiles each complete4098 generated invocations and4131 hosts.
+Complete routine vectors and manual observations retain their own acquired
+Counter, ACK, original custody and joined-cleanup evidence. Saved input replay
+does not reproduce native timing. Earlier intended omissions and exact
+restorations retain their original source-bound proof.
+
+Current Linux Nix passes all28 named native check attributes. Remote debug and
+optimized each pass539 cases across twelve targets, including59 Client cases.
+Workspace/coverage each pass1010 cases with six existing parent-owned child
+registrations ignored at that level. Minimum diagnostics pass114 cases/one
+owned ignore across28 targets and138 UI invocations; minimum remote passes
+three cases/11 UI invocations. These subsets add no minimum-native Client proof.
+All four coverage floors and bounded Entity/Observe Loom gates pass. Other
+platforms remain omitted. Nix's printed636 count is not636 semantic owner gates.
+
+The changed capture separates SDK stdout from diagnostics on stderr. Local
+qualification retains291 whole physical diagnostic rows. Current Nix retains
+290 whole rows and one Cargo-split row: raw52357–52358 preserve the actual
+Counter, ACK, cleanup/report and notification facts in original adjacent
+fragments. No repaired row, whole291-row vector or cross-stream chronology is
+credited. Cargo-child attribution is a source/context inference, not a PID proof.
+Independent semantic assertions pass. The earlier real receiver-close failure
+and its saved input remain retained; fresh success identifies no inner wait or
+SDK repair. The selected SDK deadline and test watchdog are unchanged.
+
+Driver completes2048 ASan inputs; four Observe targets each complete1024.
+All464 fresh archive streams,453 written corpus payloads and16 Git seeds verify.
+Observe retains334 files/5623bytes versus DONE336/5659; no cause or complete
+memory-to-disk corpus equality is inferred. The isolated unlocked fuzz graphs
+and unretained post-run locks keep their existing limits. Routine Miri is
+skipped; manual0e separately executes four seeds of12 affine cases, retaining
+the existing legacy polling-in-assert limitation and its restricted graph.
+
+Common Git session-archives/2026-11-13/client-schedules/ contains the immutable
+current625-payload hosted-capture-pr capsule, manifest8be62331, and the
+manual581-payload hosted-shutdown-manual capsule, manifest4912a169. Current
+outcome reviewf5fd9ad9 and retention112333b0 pass; manual outcome2aa3cc4b and
+retention6497788b pass. Earlier failures, controls and source epochs are separately
+sealed. Merge, matching-tree and cleanup receipts live outside those capsules
+under session-archives/2026-11-13/delivery/client-schedules/pr420/.
+
+All readers are released. The clean bombay-client-schedules worktree and its
+local branch are removed normally after proving ancestry in origin/main; the
+remote branch is absent. The protected root's dirty document, branch and status
+remain exact; the independent DevX worktree is preserved.
+
+PR420's complete nine-file scope versus maineb08 is production+0/-0/net0;
+tests+347/-83/net264; configuration+77/-9/net68; records+702/-37/net665;
+public API+0types/-0types, with no untracked source files. This delivers bounded
+Client campaign evidence and diagnostics. Complete R24/R07/AUTH1/NET1, native
+shutdown investigation, broader faults/restart, resource/security acceptance,
+remote-example simplification and final distillation remain open. No additional
+complete acceptance row closes.
+
+This delivery reconciliation changes four existing records only:
+production+0/-0/net0; tests+0/-0/net0; records+110/-13/net97;
+public API+0types/-0types; no untracked source files.
+It adds no pipeline capability.
 
 ## Delivery of the fixed public Client overlap — 2026-11-13
 

@@ -7,7 +7,7 @@ records PR414/f09303c8: finite/generated incoming orders, falsifiers, retained
 replay and Nix seed inclusion now have passing routine/manual CI, independent
 source/evidence reviews, matching merge trees and normal worktree removal.
 No shipping Rust, public type or example changed. This advances scoped R24
-evidence; generated Query/Client schedules, crash/restart, production identity,
+evidence; broader Query/Client fault schedules, crash/restart, production identity,
 remote-example simplification and the complete remote goal remain open.
 PR413's delivered dependency qualification below is unchanged.
 The [fixed public Client overlap delivery](network-schedule.md#delivery-of-the-fixed-public-client-overlap--2026-11-13)
@@ -15,6 +15,13 @@ is PR416/b3833e50 after all eight checks and independent reviews pass. Both
 tests execute in four current Linux cohorts; delivered and qualified trees
 match, complete evidence is sealed and the clean worktree is removed.
 No additional complete row closes; the owning record retains all remaining scope.
+The [bounded public Client campaign](network-schedule.md#delivery-of-the-public-client-campaign--2026-11-13)
+is delivered by PR420/6ee3e676 after all eight checks and final reviews pass.
+Qualified/submitted/merged trees match; current and long-manual evidence is
+separately sealed and the merged worktree is removed. The record preserves one
+Cargo-split diagnostic and the unexplained earlier native-close failure without
+claiming a repair. Broader fault/restart, resource/security, example simplification
+and full R01–R25/AUTH1/NET1 acceptance remain open.
 
 ## Published Behavior qualification — 2026-11-11
 
