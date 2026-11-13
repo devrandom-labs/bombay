@@ -7,8 +7,8 @@ pending hosted-CI wording in the dated preparation checkpoints below. Earlier
 source, compiler and result epochs retain their original meanings.
 PR416's fixed public Client overlap passes all eight hosted checks onc6af64e2
 with main402ff67f. [Newer main899 integration](#main-integration-startup-diagnostics--2026-11-13)
-requires one record conflict resolution and fresh combined qualification;
-merged delivery remains open. Earlier source epochs stay separate.
+has its record conflict resolved and passes combined local gates; fresh hosted
+CI and merged delivery remain open. Earlier source epochs stay separate.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
@@ -756,6 +756,52 @@ Before adding this census paragraph, the complete tracked/untracked branch
 delta versus402 is six owned paths: production+0/-0/net0, tests+997/-0/net997,
 records+788/-29/net759, public API+0types/-0types; no untracked files exist.
 The resolved899 checkpoint below will measure its own complete final scope.
+
+#### Combined899 local qualification
+
+Prerequisite record37a7101f precedes the normal899 merge. Its sole status
+conflict is resolved as planned: both incoming DX1/NET1 rows and all three
+other incoming paths remain byte-exact. No authored Rust edit exists. Root
+and resolved-source reviews1b914067/425d1ce3 pass after correcting current
+summary/snapshot wording. Production, tests and public API integration deltas
+remain zero; the original two owned test paths are unchanged.
+
+All six pinned local commands exit0. The actual registered module is
+node_exports::consumer::recovery::; Cargo --locked -p bombay-rs --all-features
+--test application_clients with that filter, once in each debug/--release
+profile, executes5PASS/0fail/0ignored/47filtered. Complete actual five-name
+sets match the owning cohort. Strict all-feature application_clients Clippy
+-Dwarnings and cargo fmt --all -- --check pass. Initial file-derived filter
+node_exports::recovery:: selected zero debug tests; that result earns no
+runtime credit. Its pending release compilation was stopped before the
+corrected guarded two-profile run. Original attempts remain retained.
+
+Pinned cargo nextest run --locked --workspace and its complete JSON catalogue
+pass:1001 tests across123 listed binaries,5slow,6existing child skips,85.583s.
+All1001 actual PASS identities equal the1001 nonignored entries in the1007-case catalogue,
+without duplicates. Both outbound overlap tests and all five recovery cases
+pass. Catalogue-minus-actual names equal the same six ignored child cases as
+before; the actual summary independently reports six skips. There are no
+per-case SKIP lines in this output. An initial postprocessing assumption that
+they existed was rejected and corrected against the complete sets; no test
+or expected value changed. Parent-owned child contracts retain their earlier
+source evidence; no new hidden child-output or zero-skip claim is made.
+
+All27 current inputs match before/after focused execution and Nextest; their
+complete retained source copies match too. Root outcome review536de92c passes
+both command/outcome and counterexample passes. Command/log/exit triplets,
+catalogue/complete identities, rejected attempts and all source copies are
+retained in the separate integration-899 delivery directory. No new semantic
+law or source failure justifies repeating the exact earlier canonical omission
+controls. This local result supplies no fresh hosted or minimum-native proof.
+Independent outcome reviewse8226b59/c15f27e1 pass both reviews and release all
+readers. Their full command/selection/source limits match the root record.
+Fresh full hosted checks and reviewed PR416 delivery remain open.
+
+Final complete tracked/untracked owned delta versus899: six paths;
+production+0/-0/net0, tests+997/-0/net997, records+844/-28/net816,
+public API+0types/-0types. No untracked file exists. The imported upstream
+four-path+76/-8 delta remains separate; no production reduction is claimed.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11
 

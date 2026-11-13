@@ -11,9 +11,11 @@ evidence; native Query/Client overlap, crash/restart, production identity,
 remote-example simplification and the complete remote goal remain open.
 PR413's delivered dependency qualification below is unchanged.
 The [owned-retirement Client integration](network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
-passes hosted CI on34b0726a with maind575c614. [Newer main402 integration](network-schedule.md#current-main-integration-records-and-transport-fixtures--2026-11-12)
-conserves the witness while adding upstream compiler fixtures and records.
-Combined local gates pass; fresh hosted CI and PR416 delivery remain open.
+passes hosted CI on34b0726a with maind575c614. [Main402 integration](network-schedule.md#current-main-integration-records-and-transport-fixtures--2026-11-12)
+passes all eight hosted checks onc6af64e2. [Newer main899 integration](network-schedule.md#main-integration-startup-diagnostics--2026-11-13)
+preserves the witness and incoming startup diagnostic. Its record conflict is
+resolved and combined local gates pass; fresh hosted CI and PR416 delivery
+remain open.
 No additional row closes.
 
 ## Published Behavior qualification — 2026-11-11

@@ -28,9 +28,11 @@ merge trees and worktree cleanup. Its finite/generated/falsifier/replay and
 Nix seed claims retain their exact scopes. Native Query/Client, arbitrary
 overlap, crash/restart and full R24 remain open.
 The [fixed public Client integration](../network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
-passes hosted CI on34b0726a with maind575c614. [Current main402 qualification](../network-schedule.md#current-main-integration-records-and-transport-fixtures--2026-11-12)
-passes local gates; fresh hosted CI and PR416 delivery remain open. No complete
-acceptance row is added.
+passes hosted CI on34b0726a with maind575c614. [Main402 qualification](../network-schedule.md#current-main-integration-records-and-transport-fixtures--2026-11-12)
+passes all eight hosted checks onc6af64e2. [Newer main899 integration](../network-schedule.md#main-integration-startup-diagnostics--2026-11-13)
+preserves the witness and incoming startup diagnostic with its record conflict
+resolved and combined local gates pass. Fresh hosted CI and PR416 delivery
+remain open. No complete acceptance row is added.
 
 On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
 byte-preservation witnesses after all six checks passed. PR404's R09 recovery
