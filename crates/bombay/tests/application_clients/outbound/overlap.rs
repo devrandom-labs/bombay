@@ -140,6 +140,81 @@ async fn overlapping_processed_increments_reuse_the_original_admission() {
         .expect("both real Nodes and their original native queries finish before native expiry");
 }
 
+fn delivery_orders() -> Vec<Vec<Delivery>> {
+    let permutations: &[&[u64]] = &[
+        &[24],
+        &[24, 25],
+        &[25, 24],
+        &[24, 25, 26],
+        &[24, 26, 25],
+        &[25, 24, 26],
+        &[25, 26, 24],
+        &[26, 24, 25],
+        &[26, 25, 24],
+    ];
+    let mut orders = Vec::new();
+    for fresh in permutations {
+        for gap in 0..=fresh.len() {
+            let mut deliveries = fresh
+                .iter()
+                .copied()
+                .map(Delivery::Fresh)
+                .collect::<Vec<_>>();
+            deliveries.insert(gap, Delivery::Repeat);
+            orders.push(deliveries);
+        }
+    }
+    orders
+}
+
+#[test]
+fn delivery_orders_cover_each_bounded_word_once() {
+    let orders = delivery_orders();
+    assert_eq!(orders.len(), 32);
+    let mut groups = [0_usize; 3];
+    let mut unique: Vec<&[Delivery]> = Vec::new();
+    for deliveries in &orders {
+        assert!((2..=4).contains(&deliveries.len()));
+        let mut fresh = Vec::new();
+        let mut repeats = 0;
+        for delivery in deliveries {
+            match delivery {
+                Delivery::Fresh(sequence) => fresh.push(*sequence),
+                Delivery::Repeat => repeats += 1,
+            }
+        }
+        fresh.sort_unstable();
+        let expected: &[u64] = match deliveries.len() {
+            2 => &[24],
+            3 => &[24, 25],
+            4 => &[24, 25, 26],
+            _ => unreachable!("each bounded word has two to four deliveries"),
+        };
+        let duplicate = unique.contains(&deliveries.as_slice());
+        assert!(!duplicate, "a bounded word appears twice: {deliveries:?}");
+        assert_eq!(repeats, 1);
+        assert_eq!(fresh.as_slice(), expected);
+        unique.push(deliveries);
+        groups[deliveries.len() - 2] += 1;
+    }
+    assert_eq!(groups, [2, 6, 24]);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn all_delivery_orders_preserve_processed_increments() {
+    let orders = delivery_orders();
+    let mut completed = 0;
+    for deliveries in orders {
+        println!("Client delivery input: {deliveries:?}");
+        tokio::time::timeout(Duration::from_secs(15), Box::pin(increments(&deliveries)))
+            .await
+            .expect("each actual two-Node word finishes before native expiry");
+        completed += 1;
+        println!("Client delivery cases completed={completed}; input={deliveries:?}");
+    }
+    assert_eq!(completed, 32);
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "the fixed public two-Node trace keeps all original inputs, independent Counter Read and joined custody together"
@@ -671,7 +746,7 @@ async fn increments(deliveries: &[Delivery]) {
     // Both Node futures, original Work/native products and native closes are
     // acquired. This is the first semantic assertion, independent of replay labels.
     eprintln!(
-        "counter_read={} cleanup={}/{} close={}/{} poll_panic_absent={}/{} disposal_panic_absent={}/{} native_completed={}/{} reports={:?}/{:?} notifications={:?}/{:?}",
+        "deliveries={deliveries:?} acknowledgements_before_release={before_release:?} acknowledgements_received={acknowledgements_received:?} counter_read={} cleanup={}/{} close={}/{} poll_panic_absent={}/{} disposal_panic_absent={}/{} native_completed={}/{} reports={:?}/{:?} notifications={:?}/{:?}",
         value.message,
         incoming_cleanup.is_ok(),
         outgoing_cleanup.is_ok(),

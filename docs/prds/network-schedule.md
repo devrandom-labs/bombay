@@ -302,6 +302,50 @@ no untracked files. The next finite32-word stage is now eligible.
 Generated/minimized replay, authority/crash schedules, full R24 and delivery
 remain open.
 
+### Public Client finite orders: source review
+
+The next source is frozen at429555ad,1,149 lines. Nine explicit fresh
+permutations and every Repeat gap construct the32 words. Independent coverage
+checks legal labels, uniqueness and2/6/24 class counts. The native parent
+awaits every actual host before counting completion. The host and original
+controls remain unchanged except its diagnostic now includes actual input and
+acknowledgement vectors. Root and both independent two-pass source reviews
+6fa3d4e4/932bdd18 pass. Pinned formatting passes; execution remains open.
+Checkpoint: production+0/-0/net0, tests+235/-81/net154,
+public API+0types/-0types; five tracked paths and no untracked files.
+The prior extraction's41 payloads plus self-excluded manifest are closed,
+manifest SHA256 e0df63fb896e3a4fbfbccd344b3031b46c12200639e63943cb8af5f5db76a2a3.
+New evidence belongs in the separate finite directory. No generator is added.
+
+### Public Client finite orders: executed controls
+
+Source429555ad passes six positive cohorts: healthy, coverage-restored and
+final-restored, each debug/optimized. Each runs four tests with zero failures
+or ignores and50 filtered. Every cohort completes32 unique legal native words
+in2/6/24 classes plus the original fixed control. Whole input/completion lists
+and all33 actual word/acknowledgement/Counter/terminal vectors match only after
+fresh inspection. Passed row assertions establish150 Get rows/300 source Users
+finite-only,153/306 including the fixed control; these are not extra laws.
+
+Omitted-word sourceb12899ab removes one generated word. Both profiles compile
+and fail only pure coverage's first31-versus-32 assertion at174, exit101,
+one failed test/53 filtered. This supplies no native-law failure credit.
+Canonical omission6385d3be fails the native parent on its first actual word,
+Repeat then Fresh24. Both profiles retain actual early ACKs[23,24], release A,
+acquire full ACKs[23,24,23] and successful terminal observations, then fail only
+the first post-cleanup Counter3-versus-2 assertion at778. Zero completion
+markers appear; later31 negative cases and later assertions earn no credit.
+Both files restore exactly; all complete restored cohorts and input guards pass.
+
+Pinned formatting/owning strict Clippy pass. Root and independent two-pass
+outcome reviewsde6c34df/ecb40864 pass, with raw evidence under finite.
+These remain aarch64-darwin Rust1.99 results. Generated/minimized replay,
+scheduled networking campaigns, authority/crash work and full R24 remain open.
+
+Complete branch checkpoint versus b383: production+0/-0/net0, tests+235/-81/net154,
+records+273/-37/net236, public API+0types/-0types; five tracked paths and
+no untracked files. Generated orders are the next eligible stage.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first

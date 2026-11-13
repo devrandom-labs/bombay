@@ -20,8 +20,9 @@ Earlier omission/restoration controls retain their exact source limits.
 This fixed witness does not close complete R24/R07, AUTH1 or NET1.
 The next [public Client schedules](../prds/network-schedule.md#public-client-schedules-prerequisites-and-change-record--2026-11-13)
 stage records fresh owner verification and the proposed32-word campaign.
-Its reviewed host extraction passes healthy/restored debug and optimized
-controls, with intended replay-omission failures. The campaign remains unqualified.
+Its reviewed finite32-word suite passes debug and optimized controls, with
+intended missing-word/replay-omission failures and exact restorations.
+Generated/minimized replay and hosted campaign qualification remain open.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
