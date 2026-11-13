@@ -15,6 +15,7 @@ use bombay::{
 };
 use futures_util::future::Either;
 use std::cell::RefCell;
+use std::error::Error;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -131,7 +132,10 @@ async fn complete(presence: Presence, pending: ProviderStage) {
     let node = application
         .open_node(network)
         .await
-        .unwrap_or_else(|_| panic!("actual Node opens"));
+        .unwrap_or_else(|(_, _, refusal)| {
+            let source = refusal.source();
+            panic!("actual Node opens at {address}: {refusal}; source: {source:?}");
+        });
     let receiver_id = node.runtime_id();
     let peer = peer::Peer::open(&address).await;
     let caller_id = peer.runtime_id();

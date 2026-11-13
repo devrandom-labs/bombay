@@ -471,6 +471,53 @@ with no untracked source files. Broader checks, focused PR, hosted routine and
 manual campaigns, reviewed merge and cleanup remain before scoped delivery.
 Full R24, authority/crash/restart and the complete remote goal remain open.
 
+### Linux coverage startup refusal: investigation record
+
+Manual run43420086644 tests committed460e1e48. Both incoming/Client campaign
+jobs and both native TLS jobs pass; the original six artifact ZIPs, four job
+logs and independent component/job reviews are retained under hosted-manual.
+The run fails in bombay-owner-coverage: application_clients passes54 cases,
+but pending_verification_allows_other_actor_requests refuses Node startup at
+consumer.rs134. Its current closure discards the returned refusal and prints
+only "actual Node opens". No native cause is available in that original log;
+the successful new overlap cases do not explain or discharge this failure.
+Driver-law negative controls earlier in the log are not additional failed gates.
+
+Before editing, limit investigation to this diagnostic in the existing
+node_exports/consumer.rs and this owning record: expected tests+5/-1/net4,
+production+0/-0/net0, public types+0/-0; nine cumulative paths. Reuse the
+returned NodeStartupRefusal, its standard Error::source and existing endpoint.
+Print those facts only at the current refusal boundary. Retain all original
+fixture inputs, policy, waits and assertions; add no retry, delay, fallback,
+new test entrypoint or runtime change. Existing locked owners remain unchanged.
+
+Qualify this narrow diagnostic with normal owning debug/optimized controls
+and an actual controlled startup refusal, restoring the temporary input cut
+exactly. This proves observability only. The cause of the original Linux
+opening refusal remains unknown until evidence identifies it; complete Nix,
+reviewed PR delivery and the full remote goal remain open. The original local
+Nix run continues against its immutable460e source and is not relabelled.
+
+Diagnostic665e57c0 passes the full55-case Client suite in both profiles,
+formatting and owning all-feature strict Clippy. The temporary21e69996 input
+cut selects a verified-absent deployment-root file. Actual debug/optimized
+executions each fail the named test with Cargo101,1failed/54filtered and the
+real Open/sourceSome diagnostic: resolved IPv6 listener and OS error2.
+The SDK omits the filename. The first outer debug guard incorrectly required
+it and exits1 after the actual intended native failure, before executing
+release. Preserve that failed qualification. A separate release execution
+checks the actual source/OS2 and passes its guards; no debug rerun is invented.
+These are input-cut outcomes, not the original Linux cause.
+
+The complete consumer restores exactly to665e57c0. The affected ordinary test
+then passes1/0/0 with54filtered in both profiles. Original logs, input snapshots,
+statuses and outer-command provenance remain under startup-diagnostic;
+outcome reviewsa0da56c7/45e0f9eb pass. No production Rust or API changes.
+The original failed Linux gate still requires fresh qualification.
+Complete branch versus b383: production+0/-0/net0, tests+340/-82/net258;
+configuration+65/-0/net65, records+447/-37/net410;
+public API+0types/-0types; nine paths, no untracked source files.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
