@@ -370,6 +370,54 @@ follow actual shrinking/replay proof. Production/public API remain zero.
 The finite capsule is closed at78 payloads plus manifest59530cb71306fd413c57e05c5bcc0226c66be511e0d213ca3679d7e50024e963;
 generated evidence must use a separate directory. Full R24 remains open.
 
+### Public Client generator: source review
+
+The prototype is frozen at911409b7,1,242 lines, after pinned formatting passes.
+It adds93 test lines; the finite host and controls remain byte-exact. Root's
+two-pass source review5ee5ec47 and independent reviewsa91934f6/9a16bd00 pass.
+Config::fork includes timeout, the selected default cache is a no-op, and
+persisted cases are additional to fresh cases. Runtime, actual shrinking,
+saved seeds and replay remain unverified. Checkpoint: production/API zero,
+tests+328/-81/net247; five tracked paths and no untracked files.
+
+### Public Client generator: executed controls
+
+Source911409b7 passes256 actual generated executions in both profiles. The
+default ChaCha seed20261113 samples31 distinct words; exhaustive32 coverage
+remains separate. The first fault already starts at the minimum and earns no
+load-shrinking credit. Preliminary20261114/20261115 seed files and their
+narrower outcomes are retained outside the selected regression file.
+
+The actual12345 fault starts[Fresh25,Fresh24,Repeat,Fresh26], then shrinks to
+[Fresh24,Repeat,Fresh25] and[Fresh24,Repeat]. All three callbacks finish native
+cleanup and fail only the first independent Counter oracle,5-versus-4,
+4-versus-3 and3-versus-2 at871. The real saved case is
+cc7c357c1ba6facec189d406b385576c6b6cdb5ca7740493aa03b0c49d6f4329e2.
+Its seed replays the original four-entry word; its comment names the minimum.
+Optimized saved replay under campaign20261113 reproduces4→3→2, rather than that
+campaign's fresh first minimum. The two seed meanings are not conflated.
+The returned minimum exactly matches the existing fixed literal, whose
+standalone debug/optimized fault runs both fail intended3-versus-2 after cleanup.
+
+Query restores exactly to dfaae0a0. Complete restored cohorts each pass five
+tests,0failures/ignores/50filtered:257 generated executions (one saved plus256
+fresh), finite32 and fixed,290 actual native diagnostic vectors. Every positive
+vector is inspected; profile projections match. All13 actual inverse native
+frames retain successful terminal observations; later assertions earn no credit.
+Five invalid-config runs refuse before native work. Their inner commands ran
+inside one pinned parent; its honest tool-provenance receipt is retained.
+
+Root outcome review07f25e0b and independent two-pass reviews771248d9/d693ac80
+pass. The actual seven-line WithSource regression file has SHA256
+6f055a7c3c03ae1e182831fc4d1a616af13cf4484fc45855ddaca2fe859ea5ba.
+Source/locks remain exact, formatting/strict Clippy pass, and evidence remains
+under generated. Longer4096 measurement, Nix seed inclusion, hosted CI,
+authority/crash work and full R24 remain open.
+
+Complete branch checkpoint versus b383: production+0/-0/net0, tests+335/-81/net254,
+records+346/-37/net309, public API+0types/-0types; six paths including the
+actual saved regression. No other untracked file is present.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first

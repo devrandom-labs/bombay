@@ -15,6 +15,10 @@ use bombay::{
     ActorFailureAssessment, Application, ApplicationScope, MailAddr, RetirementAssessment,
 };
 use futures_util::future::Either;
+use proptest::arbitrary::any;
+use proptest::strategy::Strategy;
+use proptest::test_runner::{Config, FileFailurePersistence, RngSeed, TestError, TestRunner};
+use proptest::{collection, sample};
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
 use std::future::{Future, poll_fn};
@@ -22,6 +26,7 @@ use std::num::NonZeroUsize;
 use std::pin::pin;
 use std::task::Poll;
 use std::time::{Duration, Instant};
+use tokio::runtime::Builder;
 use tokio::sync::{mpsc, oneshot};
 
 #[path = "../protocol.rs"]
@@ -213,6 +218,94 @@ async fn all_delivery_orders_preserve_processed_increments() {
         println!("Client delivery cases completed={completed}; input={deliveries:?}");
     }
     assert_eq!(completed, 32);
+}
+
+#[test]
+fn generated_delivery_orders_preserve_processed_increments() {
+    let orders = (
+        sample::select(vec![
+            vec![Delivery::Fresh(24), Delivery::Repeat],
+            vec![Delivery::Repeat, Delivery::Fresh(24)],
+        ]),
+        collection::vec(any::<sample::Index>(), 0..=2),
+    )
+        .prop_map(|(mut deliveries, insertions)| {
+            for (sequence, insertion) in [25, 26].into_iter().zip(insertions) {
+                let gap = insertion.index(deliveries.len() + 1);
+                deliveries.insert(gap, Delivery::Fresh(sequence));
+            }
+            deliveries
+        });
+    let mut configuration = Config::with_source_file(file!());
+    if let RngSeed::Random = configuration.rng_seed {
+        configuration.rng_seed = RngSeed::Fixed(20_261_113);
+    }
+    if configuration.failure_persistence.is_some() {
+        configuration.failure_persistence = Some(Box::new(FileFailurePersistence::WithSource(
+            "proptest-regressions",
+        )));
+    }
+    let cases = configuration.cases;
+    let shrink_iterations = configuration.max_shrink_iters();
+    println!(
+        "generated Client configuration: algorithm={:?}; seed={}; cases={cases}; shrink_iterations={} (effective {shrink_iterations}); shrink_time_ms={} (0 is unlimited); source_file={:?}; fork={}; timeout_ms={}; persistence={:?}",
+        configuration.rng_algorithm,
+        configuration.rng_seed,
+        configuration.max_shrink_iters,
+        configuration.max_shrink_time,
+        configuration.source_file,
+        configuration.fork(),
+        configuration.timeout(),
+        configuration.failure_persistence,
+    );
+    assert!(cases > 0, "the generated campaign requires positive cases");
+    assert!(
+        shrink_iterations > 0,
+        "the generated campaign requires shrinking"
+    );
+    assert!(
+        !configuration.fork(),
+        "the generated campaign requires in-process observations"
+    );
+    assert!(
+        configuration.failure_persistence.is_some(),
+        "the generated campaign requires standard persistence"
+    );
+    let mut runner = TestRunner::new(configuration);
+    let invocations = Cell::new(0_u64);
+    let completed = Cell::new(0_u64);
+    let result = runner.run(&orders, |deliveries| {
+        invocations.set(invocations.get() + 1);
+        {
+            let host = Builder::new_multi_thread()
+                .worker_threads(2)
+                .enable_all()
+                .build()
+                .expect("each generated word owns its ordinary Tokio host");
+            host.block_on(async {
+                tokio::time::timeout(Duration::from_secs(15), Box::pin(increments(&deliveries)))
+                    .await
+                    .expect("watchdog supplies no generated admission or cleanup credit");
+            });
+        }
+        completed.set(completed.get() + 1);
+        Ok(())
+    });
+    println!(
+        "generated Client observations: invocations={}; completed={}",
+        invocations.get(),
+        completed.get(),
+    );
+    match result {
+        Ok(()) => {
+            assert_eq!(invocations.get(), completed.get());
+            assert!(completed.get() >= u64::from(cases));
+        }
+        Err(TestError::Fail(reason, deliveries)) => panic!(
+            "generated Client failure: {reason}; actual minimized deliveries: {deliveries:?}"
+        ),
+        Err(TestError::Abort(reason)) => panic!("generated Client campaign aborted: {reason}"),
+    }
 }
 
 #[expect(
