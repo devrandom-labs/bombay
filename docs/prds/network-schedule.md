@@ -346,6 +346,30 @@ Complete branch checkpoint versus b383: production+0/-0/net0, tests+235/-81/net1
 records+273/-37/net236, public API+0types/-0types; five tracked paths and
 no untracked files. Generated orders are the next eligible stage.
 
+### Public Client generated orders: pre-edit record
+
+Start from qualified ee41b3dd/429555ad without changing the host. Use existing
+Proptest1.11 select(two base words) and zero to two Index values, inserting25
+then26 sequentially into the current word. Every value and shrink remains one
+of the32 legal words; no filter, custom strategy or simulator is selected.
+Each invocation owns fresh ordinary Tokio execution and fresh Applications,
+acquires all cleanup, then increments completion. Record actual config, word,
+invocations and completions. Preserve explicit Fixed seeds; use20261113 only
+when Random. Keep normal case overrides/default256 and validate positive
+case/shrink counts, in-process execution and required standard persistence.
+WithSource("proptest-regressions") uses the real integration source path.
+
+Measure256 and longer4096 only after semantic qualification. Finite32 costs
+0.38/0.73 seconds in the initial debug/optimized cohorts; this is test cost,
+not production performance. Acquire actual TestError minimum and saved case
+seed before retaining a literal replay; reuse the existing fixed literal if
+it matches. A persisted algorithm-tagged seed may replay its original word
+while its comment names the minimum; campaign seed and case seed are distinct.
+Only overlap.rs is eligible now. Persistence-file retention and Nix/CI wiring
+follow actual shrinking/replay proof. Production/public API remain zero.
+The finite capsule is closed at78 payloads plus manifest59530cb71306fd413c57e05c5bcc0226c66be511e0d213ca3679d7e50024e963;
+generated evidence must use a separate directory. Full R24 remains open.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
