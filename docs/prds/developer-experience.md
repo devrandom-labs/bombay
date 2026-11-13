@@ -795,6 +795,42 @@ Other platforms and actual Miri execution are not credited by this Darwin
 gate. PR delivery, runtime registry publication, remaining acceptance/costs
 and the full DX01–DX28 programme remain open.
 
+### Main integration, before verification
+
+While PR421's original `dcde8e80` CI is running, main advances from `eb08c152`
+to `6ee3e676` through PR420. Its merged tree equals the tested `6df33c41`
+tree. The nine upstream paths add public Client schedule tests, persisted
+cases, actual Node refusal diagnostics, the corresponding hosted campaign,
+and separate SDK shutdown logs in the remote Nix check. No upstream production,
+dependency, public interface or compiler expectation changes. Preserve that
+complete contribution; its old-head CI does not certify this combined tree.
+
+The integration law is source conservation, a delivery policy rather than a
+new actor law. Merge main normally into the existing feature branch, retaining
+both runner commits. A pre-edit merge-tree probe reports no conflict and tree
+`3e76e01cd21d2b78c21ce5d6e12524ff2d6a93be` before this record. All three
+runner production files must remain byte-exact to `dcde8e80`; all eight
+upstream-only paths must remain byte-exact to main. The shared backlog status
+must preserve both contributions. No caller, assertion, diagnostic, effect,
+operational bound, policy or test selection may change to resolve integration.
+
+Scope remains 41 owned paths against current main, plus nine imported paths
+against the previous base, overlapping only backlog status: 49 combined paths.
+The standing automatic approval covers this integration. Owned production
+remains +88/-105/net -17, with zero public types added or removed. The existing
+control sums remain 6/5/2, retirement 5/20/24 and fourteen custody fields;
+production modules, branches and public spellings remain unchanged. Every
+surviving alternative keeps the same original input, cause, callable, output
+or cleanup needed by the caller. Source conservation must confirm no arrival
+history, duplicate cause, false cardinality or nested transition authority.
+
+The already completed Darwin, compiler, package and hosted profile receipts
+retain their original source epochs. Verify the combined source through the
+normal pinned Nix gate, including the imported remote campaigns and their
+actual execution evidence, before updating PR421 and requiring fresh hosted
+CI. Do not infer a combined-tree pass, merge, publication or full DX01–DX28
+acceptance from either parent alone.
+
 ## Verification and remaining work
 
 ### Owned retirement recovery, before implementation (2026-11-11)

@@ -83,6 +83,7 @@
               ./.config/nextest.toml
               ./docs/prds/static-remote-actors/transport-custody/certificates
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/proptest-regressions/remote/export/schedule.txt)
+              (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/application_clients/outbound/overlap.proptest-regressions)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
               ./nix/references.sh
@@ -249,20 +250,23 @@
               inherit cargoArtifacts;
               env = commonArgs.env // {
                 RUSTDOCFLAGS = "--deny warnings";
+                RUST_LOG = "zenoh::api::session=info,zenoh::net::runtime=trace,zenoh_transport=trace,zenoh_link_tls=debug";
               };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1 || {
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery -- --nocapture > "remote-debug.stdout.log" 2> "remote-debug.stderr.log" || {
                   cargo_status=$?
-                  cat "remote-debug.log"
+                  cat "remote-debug.stdout.log"
+                  cat "remote-debug.stderr.log"
                   exit "$cargo_status"
                 }
-                cat "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::recorded_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
+                cat "remote-debug.stdout.log"
+                cat "remote-debug.stderr.log"
+                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::requests::recorded_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.stdout.log"
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';

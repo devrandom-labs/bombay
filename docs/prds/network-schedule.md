@@ -5,16 +5,82 @@ f09303c8 after successful routine/manual CI and independent reviews. The
 [delivery record](#delivery-of-the-bounded-campaign--2026-11-12) supersedes
 pending hosted-CI wording in the dated preparation checkpoints below. Earlier
 source, compiler and result epochs retain their original meanings.
-PR416's fixed public Client overlap passes all eight hosted checks onc6af64e2
-with main402ff67f. [Newer main899 integration](#main-integration-startup-diagnostics--2026-11-13)
-has its record conflict resolved and passes combined local gates; fresh hosted
-CI and merged delivery remain open. Earlier source epochs stay separate.
+[PR416's fixed public Client overlap delivery](#delivery-of-the-fixed-public-client-overlap--2026-11-13)
+is now mainb3833e50 after all eight checks and independent reviews passed.
+Its qualified and delivered trees match, and its worktree is removed. This
+supersedes pending delivery wording in earlier dated source checkpoints.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
 `937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. Complete network simulation,
-native Query/Client overlap, restart and full R24 remain open.
+generated native Query/Client schedules, restart and full R24 remain open.
 The user's complete R01–R25/AUTH1/NET1 goal remains unchanged.
+
+## Delivery of the fixed public Client overlap — 2026-11-13
+
+[PR416](https://github.com/devrandom-labs/bombay/pull/416) merged normally at
+2026-11-13T03:32:44Z as
+`b3833e5069bad23d03b9d4dd6b8e0dc23bf42f0d`, with parents main899af54f and
+reviewed head442bdbaab0bf6cfb4e48f009fcdc5f0442c34e2b. Actual merged tree
+`1ce2dfacfee09e8dcb46d4e5b4c69ae0b3c6680d` exactly equals the submitted tree
+and actual CI checkoutd1b6bf05's tree. No administrator bypass or source edit
+followed qualification. Main-push CI is separate; no crate publication is claimed.
+
+All eight reported checks pass on that head. [CI43343044778](https://github.com/devrandom-labs/bombay/actions/runs/43343044778)
+and Nix job131615718135 finish successfully at03:10:55UTC after flake success
+03:09:06 and both bounded campaigns. Deny43343045017 and CodeQL43343044868,
+including its changed-code aggregate, pass. Root and both independent source,
+outcome and retention reviews close; no required gate is waived or retried.
+
+The995-line witness126a16ee and Querydfaae0a0 stay exact. Both overlap tests
+actually pass in remote debug/release, LLVM debug coverage and optimized
+workspace cohorts. Earlier canonical-omission Read3-versus-2 failures and exact
+restorations retain their source-bound proof. Current Linux Nix executes28 checks:
+remote530 passes per profile with31 compiler cases; workspace/coverage1,001
+passes each with six existing parent-owned skips and153 actual compiler cases.
+Each153 comprises152 intact success rows plus external_actor_error.rs success
+split by a60-second notice. Current child feature checks have six intact cases
+each. Minimum diagnostics execute114 passes/one owned ignore across28 targets
+and138 compiler cases; minimum remote executes three passes and11 compiler
+cases. These subsets add no minimum-native overlap proof. Other platforms are
+omitted, and routine Miri is skipped. Bench entrypoints add no performance claim.
+
+All five fuzz campaigns complete under ASan: Driver2,048 inputs and four Observe
+targets1,024 each. All444 retained corpus files are checked:16 exact Git seeds
+and428 valid SHA1 names. Current Observe ops retains78 files/1,217 bytes versus
+DONE79/1,235; aggregate retention is325/5,428 versus DONE326/5,446. No cause or
+complete in-memory retention is inferred. Isolated unlocked fuzz graphs, CodeQL's
+six extraction-error files/new-alert scope, existing Deny exceptions, compiler
+and platform limits remain explicit in the complete evidence. None closes a
+production identity, resource, network simulation or full remote requirement.
+
+The separate603-payload CI capsule plus two self-excluded manifests is sealed
+under .git/session-archives/2026-11-13/ci-review/pr416/442bdbaa. Inventory49bb2e89
+and manifest1e54a915 verify every payload; independent seal reviews7d284873 and
+259f5470 pass. All six original ZIPs and full extracted contents remain retained.
+Nix outcome reviews833eb7f9/a407d112 and rootd83fa8a3 bind actual commands,
+profiles, source and outcomes. The128-payload local899 capsule remains separately
+sealed with inventorycf350053/manifest739005af. Earlier source epochs are not
+relabelled as current execution.
+
+All readers and command sessions are released. The clean
+/Users/joel/Code/devrandom/bombay-remote-admission worktree is removed normally;
+its branch is deleted after proving ancestry in origin/main. The remote branch
+was already absent. The protected root's existing dirty document is byte-exact,
+and the independent DevX worktree is retained. Merge and cleanup receipts remain
+outside the sealed capsules under delivery/client-overlap/pr416.
+
+Final PR416 owned scope versus899 is six files: production+0/-0/net0,
+tests+997/-0/net997, records+844/-28/net816, public API+0types/-0types, with no
+untracked files. Imported upstream changes retain their separate scope.
+This delivers one fixed public Client overlap and its correlation control;
+complete R24/R07/AUTH1/NET1, generated Client schedules, crash/restart,
+production identity, resource acceptance, example simplification and final
+distillation remain open. No additional complete acceptance row closes.
+
+The delivery reconciliation changes four existing records only:
+production+0/-0/net0, tests+0/-0/net0, records+91/-37/net54,
+public API+0types/-0types, no untracked files. It adds no new pipeline capability.
 
 ## Delivery of the bounded campaign — 2026-11-12
 
@@ -102,6 +168,610 @@ must precede the next implementation step.
 
 Delivery reconciliation census against f09303c8: four record paths,
 records +113/-29/net84; production/tests/API0. `git diff --check` passes.
+
+## Public Client schedules: prerequisites and change record — 2026-11-13
+
+The next R24 stage starts at mainb3833e50. Commit a829db44 only reconciles
+PR416 delivery after both independent record reviews; it changes no executable
+input. GitHub main remains b3833e50 at this prerequisite check. The existing
+995-line public Client witness is126a16ee; query.rs remains dfaae0a0,
+client.rs45282b54 and declaration.rs5dae0887. A generated native campaign is
+missing; the fixed witness does not establish a production defect.
+
+Fresh lock inspection selects the same registry contracts, without patches or
+replacement. Cargo.lock SHA256 is9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394;
+flake.lock is13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1.
+The complete775-line Behavior instructions at628649da are read before design.
+Fresh source/API/test/document inspection covers these owners:
+
+| Owner | Selected revision | Reused contract |
+| --- | --- | --- |
+| Behavior and Actors | Registry0.30.0 pair,628649da014a527d47f21567a859c5c78494df13; Macros0.16.0/55dbac2d1068b29907498b3a7fa32b3080e0cd30 | Complete pure Actions, actual User/sender, MessageAdapter and ActorExt shutdown; no rollback of completed work. |
+| Address | Registry0.3.0/9f058dc03d1239e1ef5c3147a893b134a1e74a83 | Exact lease retirement and opaque endpoint snapshots; no authentication or retargeting. |
+| Communication | Registry0.1.6/963067e0e6bdef15549088966cde354fd820be7e | Per-lane FIFO, original Full/Closed values, nonwaiting admission and affine closure. |
+| Observe | Workspaceb3833e50; mod.rs0e63b34d | Independent exact publication and affine results; termination and joined retirement remain separate. |
+| Timers | Registry0.2.0/9369d1f6c7fcda91e7de5bf3c19e6769f92145bd | Explicit ordered time and branded generations; no native timeout or clock proof is inferred. |
+
+Node retains both real TLS Sessions and all startup/withdrawal/close ownership.
+The selected SDK remains bombay-zenoh1.10.10/c34eb350faad3d8d103aa383091d85502b67a898,
+defaults disabled with transport_tls. Export owns canonical recognition and
+native admission; Client owns actual Gets, checked actor delivery and acquired
+callback EOF. Engine retains its causal Driver and affine retirement contracts.
+No owner interface, dependency or protocol-consumer blocker has been found for
+the proposed scope. Independent prerequisite/plan reviews must close before
+test authoring. AUTH1→NET1 remains reciprocal and incomplete.
+
+The selected law is bounded native replay safety under variable fresh load.
+Hold original A23's actual reply protection. Execute a word containing exactly
+one byte-exact same-identity RepeatA and one to three distinct fresh increments
+B24/C25/D26, in every order, before releasing A. Each fresh command must reach
+the actual caller actor before the next word item. Observe RepeatA through the
+existing current_reply callback while A remains held. Return from that callback,
+canonical assignment, publication, checked delivery and EOF remain distinct.
+After all cleanup, the independent local FIFO Counter Read must equal
+1+fresh_count. Every actual checked receipt, original allocation, canonical key,
+native attempt, publication, refusal, panic slot and retirement result remains
+checked. The original literal word [B24, RepeatA] remains the fixed control.
+
+For canonical-recognition omission, RepeatA can produce an early checked A
+receipt. Work must retain that receipt and keep receiving until the issued fresh
+correlation arrives, then release A unconditionally and acquire all remaining
+receipts and cleanup. The intended first semantic failure is the final Read
+being one too high; an early ordering assertion or watchdog earns no credit.
+With Q=fresh_count+2 real Gets, select Q native/concurrent/retained request
+slots, 2Q source rows plus one spare for source EOF, and the existing per-reply
+and JSON limits. These equations establish no aggregate byte bound.
+
+First extract the existing ordinary async host to accept a borrowed word and
+derive its expectations solely from that word. Preserve the fixed control,
+review twice, then run healthy, canonical-omission and byte-exact-restored
+controls in debug and optimized builds before adding campaign code. No new
+actor, adapter, wrapper, macro, protocol or interpreter is selected.
+
+Next enumerate all32 legal words:2!+3!+4!. An independent coverage test checks
+unique valid words and exact2/6/24 counts and rejects a deliberately omitted
+word. Existing proptest1.11.0 supplies TestRunner, sample::select, Index and Vec
+shrinking. Generate one of the two base words, then insert up to two fresh IDs
+sequentially into the current expanded word's gaps. This permits26 before25
+and keeps every shrink legal without filters or a custom strategy. Retain the
+actual minimized failure, standard persisted case seed and literal replay;
+replay against the source cut and restored owner in both profiles.
+For this integration-module source, select the supported
+FileFailurePersistence::WithSource("proptest-regressions") explicitly: its
+owned file is tests/application_clients/outbound/overlap.proptest-regressions.
+The default SourceParallel search has no ancestor lib.rs/main.rs here and
+otherwise falls back with a warning. Prove actual saved-file replay before
+adding that exact file to Nix source inclusion and CI artifacts.
+
+Root owns records, source cuts, Nix commands, shared inputs and integration;
+the original acceptance author owns the test edit and the original two readers
+review independently. Expected software paths are overlap.rs, its standard
+Proptest regression file, flake.nix and checks.yml, with the existing four
+delivery/acceptance records. Forecast: production+0/-0/net0, test net250–400,
+public API+0types/-0types. Campaign persistence inclusion and ordinary routine/
+scheduled CI commands follow semantic qualification, using existing tools.
+Actual counts, runtime and output determine the recorded campaign settings.
+
+This stage adds no authority-expiry, publication-revocation, loss, disconnection,
+crash or volatile-restart proof. Those remain required later R24 work, alongside
+the external durable/cryptographic obligations. It closes no full R24, AUTH1,
+NET1 or other remote acceptance row. Current executable change is zero.
+
+Root and both independent readers accept the first extraction plan after law
+and counterexample review. Both identify the integration persistence path above;
+the supported explicit selection resolves it before later campaign work.
+The fresh owner report cb45e87b is retained
+under .git/session-archives/2026-11-13/client-schedules/prerequisites.
+Only the existing overlap.rs host may now be extracted. Campaign code still
+waits for its reviewed, executed and falsified fixed control.
+
+### Public Client host extraction: source review
+
+The borrowed-word extraction is frozen at c3a82c85,1,074 lines, after pinned
+formatting passes. The original fixed word and complete custody checks remain;
+expectations and Q derive only from the supplied word. Root's two-pass review
+851570c5 and independent two-pass reviews32aabc17/fd0f9277 pass. Reports, exact
+source and patch are retained beside the prerequisite inputs under extraction.
+Checkpoint versus b383: production+0/-0/net0, tests+159/-80/net79,
+public API+0types/-0types; five tracked paths and no untracked files.
+At that source checkpoint, focused executions remained open. The following
+executed-control record closes that gate; no reverse-order or campaign
+execution is credited yet.
+
+### Public Client host extraction: executed control
+
+The same c3a82c85 test source passes healthy and exact-restored controls in
+debug and optimized builds: each runs both named tests, with zero failures or
+ignores and50 filtered. Actual Counter Read2 and all complete retained custody
+assertions pass. The actual canonical-result omission6385d3be adds one filter
+after the real lookup. Both profiles compile and run the selected native test,
+then fail only its first post-cleanup Read3-versus-2 assertion at line703,
+exit101/one failed test/51 filtered. Both Nodes' cleanup, close, native
+completion, retirement assessments and notifications report success before
+that assertion. Later negative-run custody assertions are not credited.
+Query is restored byte-exactly to dfaae0a0; all source/lock guards pass.
+
+Pinned formatting and owning all-features application_clients strict Clippy
+pass. These are actual aarch64-darwin Rust1.99 executions, not minimum-compiler
+or Linux CI evidence. Exact commands, full logs, exits, source cut/restoration
+and inputs remain under extraction. Root outcome review8676bcfd and independent
+two-pass reviews3a600526/1723b399 pass; all readers are released.
+Complete branch checkpoint versus b383: production+0/-0/net0, tests+159/-80/net79,
+records+228/-37/net191, public API+0types/-0types; five tracked paths and
+no untracked files. The next finite32-word stage is now eligible.
+Generated/minimized replay, authority/crash schedules, full R24 and delivery
+remain open.
+
+### Public Client finite orders: source review
+
+The next source is frozen at429555ad,1,149 lines. Nine explicit fresh
+permutations and every Repeat gap construct the32 words. Independent coverage
+checks legal labels, uniqueness and2/6/24 class counts. The native parent
+awaits every actual host before counting completion. The host and original
+controls remain unchanged except its diagnostic now includes actual input and
+acknowledgement vectors. Root and both independent two-pass source reviews
+6fa3d4e4/932bdd18 pass. Pinned formatting passes; execution remains open.
+Checkpoint: production+0/-0/net0, tests+235/-81/net154,
+public API+0types/-0types; five tracked paths and no untracked files.
+The prior extraction's41 payloads plus self-excluded manifest are closed,
+manifest SHA256 e0df63fb896e3a4fbfbccd344b3031b46c12200639e63943cb8af5f5db76a2a3.
+New evidence belongs in the separate finite directory. No generator is added.
+
+### Public Client finite orders: executed controls
+
+Source429555ad passes six positive cohorts: healthy, coverage-restored and
+final-restored, each debug/optimized. Each runs four tests with zero failures
+or ignores and50 filtered. Every cohort completes32 unique legal native words
+in2/6/24 classes plus the original fixed control. Whole input/completion lists
+and all33 actual word/acknowledgement/Counter/terminal vectors match only after
+fresh inspection. Passed row assertions establish150 Get rows/300 source Users
+finite-only,153/306 including the fixed control; these are not extra laws.
+
+Omitted-word sourceb12899ab removes one generated word. Both profiles compile
+and fail only pure coverage's first31-versus-32 assertion at174, exit101,
+one failed test/53 filtered. This supplies no native-law failure credit.
+Canonical omission6385d3be fails the native parent on its first actual word,
+Repeat then Fresh24. Both profiles retain actual early ACKs[23,24], release A,
+acquire full ACKs[23,24,23] and successful terminal observations, then fail only
+the first post-cleanup Counter3-versus-2 assertion at778. Zero completion
+markers appear; later31 negative cases and later assertions earn no credit.
+Both files restore exactly; all complete restored cohorts and input guards pass.
+
+Pinned formatting/owning strict Clippy pass. Root and independent two-pass
+outcome reviewsde6c34df/ecb40864 pass, with raw evidence under finite.
+These remain aarch64-darwin Rust1.99 results. Generated/minimized replay,
+scheduled networking campaigns, authority/crash work and full R24 remain open.
+
+Complete branch checkpoint versus b383: production+0/-0/net0, tests+235/-81/net154,
+records+273/-37/net236, public API+0types/-0types; five tracked paths and
+no untracked files. Generated orders are the next eligible stage.
+
+### Public Client generated orders: pre-edit record
+
+Start from qualified ee41b3dd/429555ad without changing the host. Use existing
+Proptest1.11 select(two base words) and zero to two Index values, inserting25
+then26 sequentially into the current word. Every value and shrink remains one
+of the32 legal words; no filter, custom strategy or simulator is selected.
+Each invocation owns fresh ordinary Tokio execution and fresh Applications,
+acquires all cleanup, then increments completion. Record actual config, word,
+invocations and completions. Preserve explicit Fixed seeds; use20261113 only
+when Random. Keep normal case overrides/default256 and validate positive
+case/shrink counts, in-process execution and required standard persistence.
+WithSource("proptest-regressions") uses the real integration source path.
+
+Measure256 and longer4096 only after semantic qualification. Finite32 costs
+0.38/0.73 seconds in the initial debug/optimized cohorts; this is test cost,
+not production performance. Acquire actual TestError minimum and saved case
+seed before retaining a literal replay; reuse the existing fixed literal if
+it matches. A persisted algorithm-tagged seed may replay its original word
+while its comment names the minimum; campaign seed and case seed are distinct.
+Only overlap.rs is eligible now. Persistence-file retention and Nix/CI wiring
+follow actual shrinking/replay proof. Production/public API remain zero.
+The finite capsule is closed at78 payloads plus manifest59530cb71306fd413c57e05c5bcc0226c66be511e0d213ca3679d7e50024e963;
+generated evidence must use a separate directory. Full R24 remains open.
+
+### Public Client generator: source review
+
+The prototype is frozen at911409b7,1,242 lines, after pinned formatting passes.
+It adds93 test lines; the finite host and controls remain byte-exact. Root's
+two-pass source review5ee5ec47 and independent reviewsa91934f6/9a16bd00 pass.
+Config::fork includes timeout, the selected default cache is a no-op, and
+persisted cases are additional to fresh cases. Runtime, actual shrinking,
+saved seeds and replay remain unverified. Checkpoint: production/API zero,
+tests+328/-81/net247; five tracked paths and no untracked files.
+
+### Public Client generator: executed controls
+
+Source911409b7 passes256 actual generated executions in both profiles. The
+default ChaCha seed20261113 samples31 distinct words; exhaustive32 coverage
+remains separate. The first fault already starts at the minimum and earns no
+load-shrinking credit. Preliminary20261114/20261115 seed files and their
+narrower outcomes are retained outside the selected regression file.
+
+The actual12345 fault starts[Fresh25,Fresh24,Repeat,Fresh26], then shrinks to
+[Fresh24,Repeat,Fresh25] and[Fresh24,Repeat]. All three callbacks finish native
+cleanup and fail only the first independent Counter oracle,5-versus-4,
+4-versus-3 and3-versus-2 at871. The real saved case is
+cc7c357c1ba6facec189d406b385576c6b6cdb5ca7740493aa03b0c49d6f4329e2.
+Its seed replays the original four-entry word; its comment names the minimum.
+Optimized saved replay under campaign20261113 reproduces4→3→2, rather than that
+campaign's fresh first minimum. The two seed meanings are not conflated.
+The returned minimum exactly matches the existing fixed literal, whose
+standalone debug/optimized fault runs both fail intended3-versus-2 after cleanup.
+
+Query restores exactly to dfaae0a0. Complete restored cohorts each pass five
+tests,0failures/ignores/50filtered:257 generated executions (one saved plus256
+fresh), finite32 and fixed,290 actual native diagnostic vectors. Every positive
+vector is inspected; profile projections match. All13 actual inverse native
+frames retain successful terminal observations; later assertions earn no credit.
+Five invalid-config runs refuse before native work. Their inner commands ran
+inside one pinned parent; its honest tool-provenance receipt is retained.
+
+Root outcome review07f25e0b and independent two-pass reviews771248d9/d693ac80
+pass. The actual seven-line WithSource regression file has SHA256
+6f055a7c3c03ae1e182831fc4d1a616af13cf4484fc45855ddaca2fe859ea5ba.
+Source/locks remain exact, formatting/strict Clippy pass, and evidence remains
+under generated. Longer4096 measurement, Nix seed inclusion, hosted CI,
+authority/crash work and full R24 remain open.
+
+Complete branch checkpoint versus b383: production+0/-0/net0, tests+335/-81/net254,
+records+346/-37/net309, public API+0types/-0types; six paths including the
+actual saved regression. No other untracked file is present.
+
+### Public Client campaign delivery: measured settings and pre-edit record
+
+On the same911409b7 source and selected saved case, both longer campaigns
+complete4,097 invocations: one persisted original plus4,096 fresh. All32 words
+are sampled; actual fresh classes are1,368/1,414/1,314. Debug takes48.80 seconds,
+optimized21.76 seconds. Every8,194 native word/ACK/Counter/terminal projection
+is inspected; the profile sequences match. Independent two-pass long reviews
+84c52fa1/b4a5d54f pass. These are measured test costs, with no throughput claim.
+
+The remaining delivery blocker is the owned sidecar's omission from Crane's
+source filter and the absence of public Client artifacts in the existing
+incoming-schedules matrix. Before edits: retain existing256 routine/4,096
+weekly/manual case selection, matrix, action pins and30-minute job limit.
+Add only the exact sidecar to the existing fileset and one explicit Client
+Cargo step plus its standard artifact upload in that same job. Retain actual
+revision/compiler/command/input hashes, source seed, full trace and both Cargo
+and qualification exits. Guard five selected tests and actual saved+fresh
+observations, including first-line libtest prefixes. Demonstrate missing seed
+inclusion/empty selection cannot receive credit using ordinary Nix/Cargo checks.
+
+Expected configuration paths are flake.nix and checks.yml; no new script,
+runner, controller, dependency or Rust interface is selected. Production/API
+remain zero. Root owns these edits and both independent readers review them
+before local workflow/source-inclusion execution. Fresh hosted qualification
+and actual reviewed delivery remain open, as do full R24 and the remote goal.
+
+### Public Client campaign: local wiring qualification
+
+Frozen flake5f9ddce3 and workflow65e1faa9 pass root and independent two-pass
+source/outcome reviews. Outcome reports19e27099/c242f7a8 are retained with the
+actual invocations under client-schedules/workflow. Nix source evaluation
+materializes the exact saved seed. Removing only its new fileset member
+materializes a source without it; the independent presence check fails.
+Restoration reproduces the original source path and seed. This is packaging
+proof, not a missing-seed Rust execution or full Nix check.
+
+The actual extracted workflow body passes through pinned Nix in both profiles:
+five tests,257 generated completions,32 finite words and the fixed control.
+All580 native diagnostic frames and both sets of nine retained files are
+checked. Each fifteen-input hash manifest matches the actual inputs; the
+recorded revision68846e8d remains distinct from the then-uncommitted config.
+An actual empty selection preserves Cargo0 but qualification1; an actual
+missing target preserves Cargo101/qualification101. Four isolated missing or
+wrong observation fixtures each reject qualification. Pinned Nixfmt and
+actionlint pass. Actual artifact upload and Linux CI remain unqualified.
+
+Complete branch versus b383: production+0/-0/net0;
+tests+335/-81/net254; configuration+65/-0/net65;
+records+400/-37/net363; public API+0types/-0types; eight tracked paths,
+with no untracked source files. Broader checks, focused PR, hosted routine and
+manual campaigns, reviewed merge and cleanup remain before scoped delivery.
+Full R24, authority/crash/restart and the complete remote goal remain open.
+
+### Linux coverage startup refusal: investigation record
+
+Manual run43420086644 tests committed460e1e48. Both incoming/Client campaign
+jobs and both native TLS jobs pass; the original six artifact ZIPs, four job
+logs and independent component/job reviews are retained under hosted-manual.
+The run fails in bombay-owner-coverage: application_clients passes54 cases,
+but pending_verification_allows_other_actor_requests refuses Node startup at
+consumer.rs134. Its current closure discards the returned refusal and prints
+only "actual Node opens". No native cause is available in that original log;
+the successful new overlap cases do not explain or discharge this failure.
+Driver-law negative controls earlier in the log are not additional failed gates.
+
+Before editing, limit investigation to this diagnostic in the existing
+node_exports/consumer.rs and this owning record: expected tests+5/-1/net4,
+production+0/-0/net0, public types+0/-0; nine cumulative paths. Reuse the
+returned NodeStartupRefusal, its standard Error::source and existing endpoint.
+Print those facts only at the current refusal boundary. Retain all original
+fixture inputs, policy, waits and assertions; add no retry, delay, fallback,
+new test entrypoint or runtime change. Existing locked owners remain unchanged.
+
+Qualify this narrow diagnostic with normal owning debug/optimized controls
+and an actual controlled startup refusal, restoring the temporary input cut
+exactly. This proves observability only. The cause of the original Linux
+opening refusal remains unknown until evidence identifies it; complete Nix,
+reviewed PR delivery and the full remote goal remain open. The original local
+Nix run continues against its immutable460e source and is not relabelled.
+
+Diagnostic665e57c0 passes the full55-case Client suite in both profiles,
+formatting and owning all-feature strict Clippy. The temporary21e69996 input
+cut selects a verified-absent deployment-root file. Actual debug/optimized
+executions each fail the named test with Cargo101,1failed/54filtered and the
+real Open/sourceSome diagnostic: resolved IPv6 listener and OS error2.
+The SDK omits the filename. The first outer debug guard incorrectly required
+it and exits1 after the actual intended native failure, before executing
+release. Preserve that failed qualification. A separate release execution
+checks the actual source/OS2 and passes its guards; no debug rerun is invented.
+These are input-cut outcomes, not the original Linux cause.
+
+The complete consumer restores exactly to665e57c0. The affected ordinary test
+then passes1/0/0 with54filtered in both profiles. Original logs, input snapshots,
+statuses and outer-command provenance remain under startup-diagnostic;
+outcome reviewsa0da56c7/45e0f9eb pass. No production Rust or API changes.
+The original failed Linux gate still requires fresh qualification.
+Complete branch versus b383: production+0/-0/net0, tests+340/-82/net258;
+configuration+65/-0/net65, records+447/-37/net410;
+public API+0types/-0types; nine paths, no untracked source files.
+
+### Current-main integration: listener selection — 2026-11-13
+
+Main now contains reviewed PR419/eb08c152, merged after all eight checks pass.
+Its owning native socket regression proves the shared fixture selected an
+IPv4 port for a localhost listener whose TLS resolution can select IPv6.
+The fix uses the existing socket owner to select on localhost and renames the
+returned string listener_address. It still releases the reservation before
+opening a Node. This establishes the fixture mismatch, not the cause of our
+earlier cause-discarding Linux failure.
+
+Before integration, this branch is clean48fcc455. Merge delivered main without
+changing its socket law or any fixture input, and retain this branch's real
+NodeStartupRefusal/source diagnostic. Expected local resolutions are the two
+overlapping test imports/calls and the existing backlog record. Production,
+public API and dependency changes remain zero; selected locks and owner
+contracts are unchanged. Review the complete resulting diff against main,
+then run focused debug/optimized consumers and required integrated-head CI.
+The live local460e and hosted48fcc checks retain their original immutable
+source scopes; do not restart or relabel them as integrated-source results.
+
+The full integrated Client target actually passes59 cases in debug/optimized;
+its four imported socket-law instances include one inside outbound::overlap.
+Independent review therefore rejects retaining the old campaign's five-test
+completion guard: the inherited law makes its selected set six. First retain
+the real six-pass/old-guard refusal, then change only that guard to six and
+qualify the current workflow body in both profiles. Keep the inherited law
+selected and retain the existing saved/generated/finite guards. Fresh
+integrated workspace Nextest and required PR CI remain mandatory.
+
+The resolved mergec1806b48 preserves every incoming main change. Independent
+byte review0266f716 confirms both changed host bodies equal their prior bodies
+except listener naming/import ordering, with unchanged locks and all shipping
+source. The actual original workflow body then completes six tests with
+Cargo0 but qualification1. Only the Client completion guard changes5 to6;
+the incoming five-test guard and every other completion check stay unchanged.
+The corrected bodies each pass6/0/0 with53filtered,257 complete generated
+invocations,32 finite words and the fixed control. All290 native projections
+per profile and their fifteen artifact-input hashes pass independent review
+e96febcf. No inherited socket law is excluded.
+
+Integrated full Client controls pass59/0/0 in debug/optimized, including the
+earlier startup case and four actual socket-law instances. Pinned fmt and
+owning strict all-feature/all-target Clippy pass. The first combined wrapper
+then stops127 because actionlint is absent from the default shell; its queued
+Nextest does not execute. A separate invocation uses the same selected
+nixpkgs actionlint/ShellCheck packages as the earlier wiring proof and passes.
+The distinct subsequent Nextest invocation completes1010/1010 passes,6 existing
+child-registration skips and7 slow cases in89.069seconds across123binaries.
+Its complete PASS identities equal the1016-entry catalogue minus those six
+registrations. All12 corrected source/lock guards pass afterward. These results
+cover the integrated source and uncommitted one-line workflow correction;
+artifact revisionc180 is not relabelled as a later commit.
+
+Current scoped delivery still requires independently reviewed final records,
+submitted integrated-head CI and actual merge/cleanup. Existing live checks
+keep their older source identities. No full R24 or remote acceptance closes.
+
+Hosted diagnostic run43431667327 subsequently completes SUCCESS at48fcc455.
+All five jobs pass, including the full Linux flake check and its actual bounded
+Driver/Observe fuzz and Observe Miri campaigns. The terminal run/job metadata,
+complete new Nix log and three campaign archives are retained alongside the
+six already reviewed campaign/TLS artifacts. This freshly qualifies the older
+diagnostic head; the original failure's cause remains unknown. The integrated
+source still requires its own submitted-head CI and reviewed delivery.
+
+Complete branch versus delivered maineb08: production+0/-0/net0;
+tests+340/-82/net258; configuration+65/-0/net65;
+records+517/-37/net480; public API+0types/-0types.
+Nine tracked paths, no untracked source files; no example changes.
+
+### Native close refusal: investigation record — 2026-11-13
+
+PR420's required run43449396385 fails at the reviewed c2e0645b tree52666b15,
+identical to submitted341117df. Nix job131967280385 ends FAILURE in
+checks.x86_64-linux.bombay-remote-debug: application_clients58passed/1failed.
+The generated Client run reports204invocations/203completed and prints the
+standard seedccda749e3d136efded45bb677deb3bb203ff78100d471a69d8641ce266636c062e.
+Its last/minimized input is [Fresh(24),Repeat]. The actual Counter Read2 and
+earlier Work cleanup assertion pass; receiver native close is Err and caller
+close is Ok. The close assertion fails before later custody assertions, which
+receive no passing credit. The diagnostic retains only close=false/true,
+discarding the cause text. The full log6be8c73a and terminal metadata remain
+under hosted-pr420. Earlier allocation-profile failures are intended controls;
+subsequent Driver/Observe fuzz and Miri steps are skipped, not passing runs.
+
+The returned Node parts already preserve the original boxed Error Result;
+run_with stores the selected Session::close result directly. Locked SDK source
+has one returned Err path, expiry of its existing10-second close deadline.
+This narrows the error by source inspection; it does not identify the actual
+pending inner step, prove that the Session remained open, or explain a repair.
+Independent investigation43c43176 and proposal reviewa219de13 retain that scope.
+
+Before edits, limit the retained change to the existing unchanged close
+assertion's failure text and exact standard seed line, plus this owning record.
+Expected tests+5/-1/net4, production+0/-0/net0, public types+0/-0; the same
+nine cumulative paths. Borrow both full original Results in the failure text,
+including a primary Error whose source may be None. Keep all assertions,
+Counter-first order, inputs, close policy, waits and runtime composition.
+Add no retry, timeout increase, serialization, wrapper or guessed owner fix.
+The saved seed replays generated input, not native timing or guaranteed failure.
+Qualify ordinary debug/optimized consumers and the narrow observability change;
+any controlled refusal and exact restorations retain their distinct source
+epochs. Existing live manual341/old local460e runs keep their immutable scopes.
+Required integrated-head CI, real refusal investigation and delivery stay open.
+
+The observability control uses a disposable exact SDK copy:169 physical files
+match the registry source and all168 archive payloads match independently.
+After a source-equal positive, append one pending await after actual
+WeakSession close cleanup, preserving its early closed return and unchanged
+10-second builder deadline. The existing fixed two-Node test has a15-second
+watchdog, so both original close Results can reach the unchanged assertion.
+Use only ordinary temporary Cargo source patching; root owns and restores the
+registry lock byte-exact. A negative proves timeout-error observability only,
+not the original pending stage, production repair or deterministic seed replay.
+Restore the complete SDK source and qualify the same positive afterward.
+Print each actual SDK Session ID immediately before the temporary pending
+point and require two distinct markers, so an earlier unrelated timeout
+cannot earn control credit. This marker is temporary SDK instrumentation.
+
+The normal registry consumers pass all59 Client cases in both profiles,
+including258 generated completions (two saved inputs plus256 fresh). Formatting
+and owning strict Clippy pass. The pristine SDK copy then passes the existing
+fixed test in debug/optimized,1passed/58filtered each. Its temporary Cargo
+selection changes only the SDK record's source/checksum; no version or
+dependency changes. All original registry selections are restored afterward.
+
+The actual marker-plus-await cut62e5ee48 differs from the earlier unapplied
+one-await proposal76c8e33a. In both profiles, two distinct actual SDK Session
+markers prove the new pending point was reached. Both original close Results
+then contain the real SDK timeout error. The same close assertion fails after
+Read2 and the earlier cleanup assertion, with Cargo101/one failed test and
+58filtered. Runtime is10.03/10.02seconds; the15-second watchdog does not fire.
+The new failure text exposes both boxed errors, including their owning SDK
+location. Later custody assertions remain unexecuted. The outer negative
+qualification exits0 only after these intended failures and markers are checked.
+This proves observability, not a reproduction or repair of the original stall.
+
+The complete169-file SDK copy restores exactly. The same fixed test passes
+through the restored SDK copy in both profiles, then through the original
+registry graph in both profiles,1passed/58filtered each. Registry lock9bb2db13,
+all five guarded inputs and the complete SDK contents remain exact after the
+last commands. No temporary SDK change or Cargo patch is retained in the repo.
+Read-only source investigation also vetoes a guessed TLS-handshake repair:
+the selected owner already selects cancellation at accept and handshake and
+tests that law. Other task/drain/transport waits remain candidates, not causes.
+
+The older local full Nix run completes0 at immutable460e: all28 named native
+checks pass, with its package builds. This does not qualify the newer diagnostic
+or another platform. PR420's failed required run remains recorded. The old
+manual341 monitor ends on HTTP502; direct API verification finds its actual
+Nix job still running, so only its observation is resumed. No CI run is retried.
+
+The fresh current diagnostic Nextest run completes0:1010passed,6 existing
+child-registration skips,8slow and one leaky warning in96.546seconds. All
+1010 PASS/LEAK identities equal its1016-entry catalogue minus those six.
+The warning names actor_spaces::derive_selects_each_protocols_exact_named_space.
+Inspection2b7f290a finds only two empty AddressSpace tables and borrowed pointer
+checks on that test's path, with no process or I/O call. Nextest's label concerns
+output handles after process exit; their owner/cause remains unlocated. Keep
+this warning separate from the SDK close failure; no timeout or test is changed.
+
+Complete current branch versus maineb08: production+0/-0/net0;
+tests+345/-83/net262; configuration+65/-0/net65;
+records+613/-37/net576; public API+0types/-0types.
+Nine tracked paths, no untracked source files; required CI and delivery open.
+
+### Existing SDK shutdown logs: pre-edit record — 2026-11-13
+
+The boxed error exposes the deadline class, but not the original pending
+shutdown stage. Use the selected SDK's existing public try_init_log_from_env
+once at generated-test entry, outside every Behavior fold. It already owns
+global subscriber registration; no new logger, wrapper, static or dependency
+is needed. Select existing session/runtime/transport/TLS targets through
+RUST_LOG in the owning Nix remote-debug check. Keep the existing close policy,
+concurrency, watchdog and every semantic assertion unchanged. This is
+diagnostic instrumentation and cannot establish a repair by passing alone.
+
+Expected retained edits are two test lines, one existing Nix environment field
+and this record, with production/public API/dependency changes zero and the
+same nine cumulative paths. Verify actual SDK shutdown events from the normal
+generated journey in both profiles; an absent logging configuration must
+leave the semantic journey passing but fail the diagnostic-evidence guard.
+Then qualify formatting, strict lint, ordinary consumers and current workspace
+execution. Do not substitute new SDK hooks or a synthetic actor controller.
+
+The first configuration probe incorrectly reads the derivation's env.RUST_LOG;
+the public derivation exposes flattened RUST_LOG instead. Its eval error and
+empty output remain retained. The outer shell's following cat masks that eval
+exit, so the combined probe ends1 at missing SDK-event evidence after the
+unconfigured and empty-configured debug journeys each actually pass. Optimized
+execution does not run in that attempt. Correct direct Nix evaluation obtains
+the actual nonempty builder setting; no logging literal is duplicated in the
+consumer probe.
+
+Corrected debug/optimized probes each pass one test with58filtered and three
+complete words (two saved plus one fresh). Six distinct actual Session-close
+entries and six Runtime-close entries are acquired in each profile. Those are
+entry observations, not proof of inner-stage completion or the original cause.
+The absent/empty settings produce no SDK entries while semantics still pass.
+Five source/configuration guards match. Independent source/outcome reviews
+252a20eb/ffa443f8 pass this bounded logging qualification.
+
+With the actual Nix logging setting, full Client execution passes59/0/0 in
+both profiles,258 generated completions each, in40.10/45.01seconds. The logs
+contain19,664,765/19,183,005bytes; these are observed verification costs, not
+throughput claims. Strict owning Clippy passes. Fresh workspace Nextest
+completes0 with1010passed/6existing child-registration skips in88.884seconds,
+5slow and one leaky warning. Every PASS/LEAK identity matches its catalogue.
+This time the warning names engine driver_law::completion_preserves_stop_and_input_exhaustion_as_success;
+its handle owner remains unlocated. No test result, timeout or concurrency is
+changed to discharge either warning. Required CI and the SDK stall remain open.
+
+Complete current branch versus maineb08: production+0/-0/net0;
+tests+347/-83/net264; configuration+66/-0/net66;
+records+664/-37/net627; public API+0types/-0types.
+Nine tracked paths, no untracked source files; no SDK shutdown repair claimed.
+
+The broader logging review finds actual SDK stdout inserted inside diagnostic
+stderr fields in the merged file. Passing assertions and258 completions remain
+valid; complete byte-equal291-record text vectors cannot be credited or repaired
+by inventing rows. Preserve both original streams separately in the owning Nix
+remote-debug command, emit each in CI output, and apply its existing six named
+test guards to stdout. This changes capture only, not failure exit, test
+selection or semantics. Qualify the actual twelve-target command with its
+six named guards, separate streams and unchanged native assertions before
+retaining the capture change.
+
+The first split-stream execution passes all539 reported cases across twelve
+targets and all six named guards, but its outer diagnostic qualification ends1:
+libtest's default capture hides successful eprintln records, so no291 stderr
+records are available. Keep that actual result. Enable the standard libtest
+--nocapture option in this diagnostic check to expose those records to the
+separate streams; no test, assertion or runtime setting changes.
+
+The corrected pinned capture-visible execution78765 ends0. Its exact twelve
+targets report539 passes, zero failures/ignored cases and all six named stdout
+guards. Generated Client execution completes258 invocations. All291 physical
+stderr diagnostics are complete, including their independent Counter, ordered
+ACK and terminal fields; SDK observations remain separately on stdout. The
+stderr vector SHA256 is db1d6a07ca14cd17d8f48c43bca92064c1595e76e0aee7975110025160fe2b03.
+Printing the two files does not establish chronology between the streams.
+All five source/lock/configuration guards match; pinned Nix formatting passes.
+This executes the selected Cargo test command, not the later Clippy/doc phases
+or whole Nix derivation. Rust remains byte-exact to0e08f3ba; current flake hash
+is3469c70308bdcd5c5fb1f1a85b8ca6d7c81f27c32365c5ecfdfa342fc8344893.
+
+Independent source and outcome reviews b59ecf0c/e009a9ba pass and release all
+readers. Commands, original streams, input guards and both review receipts are
+retained under common Git session-archives/2026-11-13/client-schedules/
+close-diagnostic/logging/. The earlier mixed/default-capture limitations stay
+recorded. SDK stall cause/repair, updated-head CI, delivery and full R24 remain
+open. Complete nine-path tracked/untracked delta versus maineb08 follows:
+production+0/-0/net0; tests+347/-83/net264; configuration+77/-9/net68;
+records+702/-37/net665; public API+0types/-0types; no untracked source files.
 
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 

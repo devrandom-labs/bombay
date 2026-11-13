@@ -174,6 +174,70 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Run public Client delivery orders
+        id: client_orders
+        shell: bash
+        run: |
+          nix develop -c env PROPTEST_CASES="$PROPTEST_CASES" bash -euo pipefail -c "$(cat <<'CLIENT_ORDERS'
+          profile_args=()
+          if [[ '${{ matrix.profile }}' == 'release' ]]; then
+            profile_args+=(--release)
+          fi
+          evidence="target/client-evidence/${{ matrix.profile }}"
+          seed=crates/bombay/tests/application_clients/outbound/overlap.proptest-regressions
+          mkdir -p "$evidence"
+          git rev-parse HEAD > "$evidence/revision.txt"
+          rustc --version > "$evidence/rustc.txt"
+          cargo --version > "$evidence/cargo.txt"
+          sha256sum Cargo.toml Cargo.lock flake.lock flake.nix \
+            crates/bombay/Cargo.toml examples/counter/src/counter.rs \
+            crates/bombay/src/remote/client.rs \
+            crates/bombay/src/remote/export/query.rs \
+            crates/bombay/src/remote/export/declaration.rs \
+            crates/bombay/tests/application_clients.rs \
+            crates/bombay/tests/application_clients/outbound.rs \
+            crates/bombay/tests/application_clients/outbound/overlap.rs \
+            crates/bombay/tests/application_clients/protocol.rs \
+            "$seed" .github/workflows/checks.yml > "$evidence/inputs.sha256"
+          saved_cases=$(grep -Ec '^cc [0-9a-f]{64}( |$)' "$seed")
+          expected_observations=$((PROPTEST_CASES + saved_cases))
+          campaign=(cargo test --locked "${profile_args[@]}" -p bombay-rs
+            --all-features --test application_clients outbound::overlap::
+            -- --nocapture --test-threads=1)
+          printf '%q ' "${campaign[@]}" > "$evidence/command.txt"
+          printf '\n' >> "$evidence/command.txt"
+          if "${campaign[@]}" > "$evidence/campaign.log" 2>&1; then
+            qualification_status=0
+          else
+            qualification_status=$?
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/cargo-exit.txt"
+          if [[ "$qualification_status" -eq 0 ]]; then
+            if ! {
+              grep -Eq '^test result: ok\. 6 passed; 0 failed; 0 ignored;' "$evidence/campaign.log" &&
+              [[ "$(grep -c 'generated Client configuration:' "$evidence/campaign.log")" == 1 ]] &&
+              [[ "$(grep -Fxc "generated Client observations: invocations=$expected_observations; completed=$expected_observations" "$evidence/campaign.log")" == 1 ]] &&
+              [[ "$(grep -c '^Client delivery cases completed=' "$evidence/campaign.log")" == 32 ]]
+            }; then
+              printf '%s\n' 'Client campaign execution evidence is incomplete' >&2
+              qualification_status=1
+            fi
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/exit.txt"
+          cat "$evidence/campaign.log"
+          cp "$seed" "$evidence/overlap.proptest-regressions"
+          exit "$qualification_status"
+          CLIENT_ORDERS
+          )"
+      - name: Retain public Client schedules and saved cases
+        if: always() && (steps.client_orders.outcome == 'success' || steps.client_orders.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: client-schedules-${{ matrix.profile }}-${{ github.run_id }}
+          path: target/client-evidence/${{ matrix.profile }}/
+          if-no-files-found: error
+          retention-days: 14
+
   native_tls_research:
     name: Native TLS research (${{ matrix.profile }})
     runs-on: ubuntu-latest
