@@ -76,7 +76,7 @@ enum EndpointRole {
     Caller,
     Receiver,
 }
-fn reserved_address() -> String {
+fn listener_address() -> String {
     let reservation = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let address = reservation.local_addr().unwrap();
     drop(reservation);
@@ -131,7 +131,7 @@ async fn live_read<Receipt>(
     projection: fn(&Receipt) -> (&ProofScope, Scope),
     evidence: fn(&Receipt) -> Option<&[u8]>,
 ) {
-    let address = reserved_address();
+    let address = listener_address();
     let mut receiver = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
@@ -632,7 +632,7 @@ async fn cold_pending_protection<Receipt>(
     let (configured_requests, requests) = oneshot::channel();
     let maximum = NonZeroUsize::new(4).unwrap();
     let deadline = Instant::now() + Duration::from_secs(60);
-    let address = reserved_address();
+    let address = listener_address();
     let mut network = configuration(&address, &EndpointRole::Receiver);
     network.max_retained_queries = maximum;
     let node = Application::new(Counter::new().stop_on_shutdown())

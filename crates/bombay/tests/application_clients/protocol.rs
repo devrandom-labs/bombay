@@ -4,7 +4,7 @@ mod network;
     unused_imports,
     reason = "the shared fixture exposes address reservation for Node unit consumers; this external cohort supplies its own addresses"
 )]
-pub(super) use network::reserved_address;
+pub(super) use network::listener_address;
 pub(super) use network::{EndpointRole, configuration};
 
 use bombay::behavior::{EstablishedRecipient, MessageProtocol};

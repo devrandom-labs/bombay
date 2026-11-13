@@ -10,11 +10,12 @@ use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, ActorRetirement, MailAddr, RetirementAssessment};
 use futures_util::future::Either;
 use protocol::{
-    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, recorded,
-    reserved_address,
+    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, listener_address,
+    recorded,
 };
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
+use std::error::Error;
 use std::num::NonZeroUsize;
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
@@ -36,16 +37,26 @@ async fn overlapping_queries_admit_only_the_assigned_counter() {
     reason = "one two-responder trace preserves both original receptions, native actor states and every joined owner before its ownership oracle"
 )]
 async fn overlapping_counters() {
-    let address = reserved_address();
+    let address = listener_address();
     let assigned = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
-        .unwrap_or_else(|_| panic!("the assigned Counter Node opens"));
-    let other_address = reserved_address();
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!(
+                "the assigned Counter Node opens: {cause}; source: {:?}",
+                cause.source()
+            )
+        });
+    let other_address = listener_address();
     let other = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&other_address, &EndpointRole::Receiver))
         .await
-        .unwrap_or_else(|_| panic!("the other Counter Node opens"));
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!(
+                "the other Counter Node opens: {cause}; source: {:?}",
+                cause.source()
+            )
+        });
     let assigned_runtime = assigned.runtime_id();
     let other_runtime = other.runtime_id();
     // Each receiver has a direct connection; no implicit Peer relay is assumed.

@@ -1,6 +1,6 @@
 //! Runtime text and checked actor addresses come from their existing owners.
 use super::custody::completed_actor;
-use super::protocol::{EndpointRole, configuration, reserved_address};
+use super::protocol::{EndpointRole, configuration, listener_address};
 use super::{Counter, counter::CounterValue};
 use crate::actors::ActorExt;
 use crate::remote::ExportError;
@@ -10,12 +10,12 @@ use std::time::Duration;
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn runtime_identity_matches_its_owner_before_and_after_close() {
     tokio::time::timeout(Duration::from_secs(10), async {
-        let address = reserved_address();
+        let address = listener_address();
         let mut first = Application::new(Counter::new().stop_on_shutdown())
             .open_node(configuration(&address, &EndpointRole::Receiver))
             .await
             .unwrap_or_else(|_| panic!("actual first Node opens"));
-        let address = reserved_address();
+        let address = listener_address();
         let mut second = Application::new(Counter::new().stop_on_shutdown())
             .open_node(configuration(&address, &EndpointRole::Receiver))
             .await
