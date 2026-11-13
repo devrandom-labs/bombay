@@ -2,15 +2,21 @@
 
 ## Incoming campaign qualification — 2026-11-12
 
-The [owning incoming record](network-schedule.md#verified-generated-orders-and-retained-replay--2026-11-12)
-qualifies all180 finite orders, bounded generated/shrunk/literal replay,
-independent duplicate/final-permission falsifiers and measured4096-case
-profiles. A narrow real Darwin Nix comparison proves the saved seed adds
-actual replay work. CI source and its zero-selected-test guard are reviewed;
-hosted CI, submitted-tree review and delivery remain open. No shipping Rust,
-public type or example changed. This advances scoped R24 evidence; native
-Query/Client, arbitrary overlap, crash/restart and the complete remote goal
-remain open. PR413's delivered dependency qualification below is unchanged.
+The [owning delivery record](network-schedule.md#delivery-of-the-bounded-campaign--2026-11-12)
+records PR414/f09303c8: finite/generated incoming orders, falsifiers, retained
+replay and Nix seed inclusion now have passing routine/manual CI, independent
+source/evidence reviews, matching merge trees and normal worktree removal.
+No shipping Rust, public type or example changed. This advances scoped R24
+evidence; native Query/Client overlap, crash/restart, production identity,
+remote-example simplification and the complete remote goal remain open.
+PR413's delivered dependency qualification below is unchanged.
+The [owned-retirement Client integration](network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
+passes hosted CI on34b0726a with maind575c614. [Main402 integration](network-schedule.md#current-main-integration-records-and-transport-fixtures--2026-11-12)
+passes all eight hosted checks onc6af64e2. [Newer main899 integration](network-schedule.md#main-integration-startup-diagnostics--2026-11-13)
+preserves the witness and incoming startup diagnostic. Its record conflict is
+resolved and combined local gates pass; fresh hosted CI and PR416 delivery
+remain open.
+No additional row closes.
 
 ## Published Behavior qualification — 2026-11-11
 

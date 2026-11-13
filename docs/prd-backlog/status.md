@@ -5,15 +5,28 @@ after all six checks and independent reviews passed. The
 [owning record](../prds/static-remote-actors.md#delivery-of-behavior-qualification--2026-11-11)
 preserves the paired registry adoption, three locks, local custody falsifiers,
 actual Linux runtime/minimum compiler/campaign scopes, matching delivery tree
-and normal worktree removal. Remaining remote acceptance is unchanged. R24's
-next [exhaustive/generated schedule stage](../prds/network-schedule.md#exhaustive-and-generated-incoming-schedules--2026-11-11)
-starts from this main with fresh feature-specific owner verification and its
-pre-edit law recorded. Fixed host extraction, all180 finite orders and bounded
-generated/shrunk/persisted replay qualify locally with paired source cuts and
-restorations. Measured4096-case profiles and actual narrow Darwin Nix seed
-replay pass. Routine/scheduled CI and its empty-filter guard are source-reviewed;
-actual hosted CI and reviewed delivery remain open. Native Query/Client,
+and normal worktree removal. R24's
+[bounded campaign delivery](../prds/network-schedule.md#delivery-of-the-bounded-campaign--2026-11-12)
+is now PR414/f09303c8 after passing routine/manual CI, independent reviews,
+matching delivery trees and normal worktree removal. Finite/generated orders,
+persisted and literal replay, independent falsifiers, Nix seed inclusion and
+the empty-filter guard retain their scoped evidence. Native Query/Client,
 arbitrary overlap, crash/restart and complete R24 retain their own open gates.
+The next [public Client overlap](../prds/network-schedule.md#public-client-overlap-prerequisites-and-first-law--2026-11-12)
+has fresh verification of all six owners and a recorded native Counter law.
+The ordinary caller prototype now passes independent source/outcome reviews,
+paired intended receipt-loss failures and exact-restored debug/optimized controls.
+The [fixed native witness](../prds/network-schedule.md#fixed-public-client-overlap-executed-controls)
+retains its original source-bound controls. Its [owned-retirement integration](../prds/network-schedule.md#incoming-custody-api-prerequisites--2026-11-12)
+then passes all eight hosted checks on34b0726a with maind575c614, including
+actual Linux debug/optimized execution and independent evidence reviews.
+[Main402 integration](../prds/network-schedule.md#current-main-integration-records-and-transport-fixtures--2026-11-12)
+passes all eight hosted checks onc6af64e2, conserving every runtime input.
+[Newer main899 integration](../prds/network-schedule.md#main-integration-startup-diagnostics--2026-11-13)
+preserves the witness and incoming startup diagnostic. Its record conflict is
+resolved and combined local gates pass; fresh hosted CI and actual PR416
+delivery remain open.
+This fixed witness does not close complete R24, AUTH1 or NET1.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
@@ -38,7 +51,7 @@ merged through PR411 after all six checks and independent reviews passed.
 Independent network campaigns, replay beyond the bounded incoming campaign,
 restart and full R24 remain open.
 
-Updated: 2026-11-12 UTC. This delivery snapshot uses main `814c96d1`. The
+Updated: 2026-11-13 UTC. This integration snapshot uses main `899af54f`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the
