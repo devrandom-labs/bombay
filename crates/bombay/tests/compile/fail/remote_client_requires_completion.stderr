@@ -13,7 +13,7 @@ note: expected this to be `u64`
 note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
    --> src/application/node.rs
     |
-    |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+    |     pub async fn run(
     |                  --- required by a bound in this associated function
 ...
     |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
@@ -34,7 +34,7 @@ note: expected this to be `u64`
 note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
    --> src/application/node.rs
     |
-    |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+    |     pub async fn run(
     |                  --- required by a bound in this associated function
 ...
     |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
@@ -55,7 +55,7 @@ note: expected this to be `u64`
 note: required by a bound in `Node::<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>::run`
    --> src/application/node.rs
     |
-    |     pub async fn run<Actor, StagingFailure, ChildFailures>(
+    |     pub async fn run(
     |                  --- required by a bound in this associated function
 ...
     |         Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,

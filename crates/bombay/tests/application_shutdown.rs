@@ -244,7 +244,7 @@ fn shutdown_requires_a_present_unambiguous_lane() {
 async fn http_ends_with_the_domain_session_without_a_shutdown_lane() {
     let (customer_publication, customer_receiving) = tokio::sync::oneshot::channel();
     let outcome = Application::with_topology(CounterSession { value: 0 }, ActorSpace::new())
-        .run_axum(
+        .run_axum::<_>(
             "127.0.0.1:0".parse().expect("local listener address"),
             move |application| {
                 let interface = application.interface(application.root().established_recipient());
