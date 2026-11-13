@@ -5,10 +5,10 @@ f09303c8 after successful routine/manual CI and independent reviews. The
 [delivery record](#delivery-of-the-bounded-campaign--2026-11-12) supersedes
 pending hosted-CI wording in the dated preparation checkpoints below. Earlier
 source, compiler and result epochs retain their original meanings.
-PR416's fixed public Client overlap passes hosted CI on34b0726a with main
-d575c614. [Integration with newer main402ff67f](#current-main-integration-records-and-transport-fixtures--2026-11-12)
-now passes resolved-source reviews and local combined qualification; fresh
-hosted CI and merged delivery remain open. Earlier source epochs stay separate.
+PR416's fixed public Client overlap passes all eight hosted checks onc6af64e2
+with main402ff67f. [Newer main899 integration](#main-integration-startup-diagnostics--2026-11-13)
+requires one record conflict resolution and fresh combined qualification;
+merged delivery remains open. Earlier source epochs stay separate.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
@@ -676,13 +676,86 @@ the common-Git `delivery/client-overlap/integration-402` evidence directory.
 Root's two-pass outcome review and independent reviews5b934247/78c46173
 pass. All readers are released. The unchanged canonical-omission controls
 keep their earlier source-bound failure/restore proof; no new inversion,
-minimum-native or hosted execution is claimed here. Fresh full hosted CI
-must qualify the submitted combined head before PR416 can merge.
+minimum-native or hosted execution was claimed at this local checkpoint.
+The laterc6af hosted result is recorded below; PR416 delivery remains open.
 
 Complete owned scope against main402, including tracked/untracked paths:
 production +0/-0/net0; tests +997/-0/net997; public API types +0/-0;
 records +720/-29/net691. Six owned paths, no untracked files. The separately
 imported nine upstream paths remain upstream delivery rather than owned growth.
+
+### Main integration: startup diagnostics — 2026-11-13
+
+Submittedc6af64e2/tree0c45077a passes all eight hosted checks with main402.
+Actual checkout893b4729 has that same tree. CI43311665655 finishes00:20:22UTC
+after full Linux flake success00:17:41 and both bounded fuzz campaigns.
+Actual28 Linux checks, remote530 per profile, workspace/LLVM1001 each,
+153 workspace/LLVM compiler cases and138 minimum diagnostic cases pass.
+Both126a overlap cases actually execute in both remote profiles, LLVM debug
+and optimized workspace. Minimum subsets supply no new native-overlap proof.
+Routine Miri is skipped. Root and independent reviews9d3ec5d5/fa18d45f pass.
+
+The separate559-payload current-source CI capsule is sealed: inventoryf22f748a,
+manifestceae2fda; independent retention reviews7b79922d/0bf1fc87 pass and all
+readers are released. Compiler/platform, security exceptions and isolated fuzz
+graph limits remain explicit. Current Observe ops reports67/974B in memory
+versus66/956B retained, with no inferred cause or full-memory retention claim.
+These results qualifyc6af/402, not a future parent integration or delivery.
+
+Main advanced through PR418 to899af54f/tree1692ce32 during CI. Its four paths
+are+76/-8: the existing recovery test adds a module-scope standard Error import
+and prints the actual startup refusal plus its borrowed optional source on
+setup panic; three paths update the owning DevX/backlog records. No production
+Rust, public API, manifest, lock, flake expression or compiler expectation changes.
+Healthy execution, all assertions and joined cleanup remain unchanged. This
+diagnostic neither explains nor repairs the historical Linux opening failure.
+
+Fresh prerequisites retain Core/Actors0.30 at628649da, Macros0.16 at55dbac2d,
+Address0.3, Communication0.1.6, Timers0.2 and the existing local Observe/Engine
+owners. The version/ownership map above remains exact, with no patch or new
+dependency edge. Root and all three reviewers reread the complete775-line
+selected Behavior instructions. Fresh archive/source/API/test/doc inspection
+includes304 exact payload comparisons. Author plan87e49f9a and independent
+owner/contract reviews96ae1dd7/f3e3f166 pass. No owner or migration blocker exists.
+
+All26 previously qualified inputs remain exact and the incoming paths touch
+none of them. The995-line126a witness and Querydfaae0a0 stay unchanged.
+After merging, add the exact incoming recoverya5869536 source as guard27.
+Existing Application::open_node returns the same original Application/Network
+with typed NodeStartupRefusal; its existing Error::source and redacted public
+Display/Debug supply the diagnostic. No wrapper, bound, callback, state,
+protocol, effect, interpreter, semantic law or public type is added.
+
+The concrete blocker is one status.md text conflict. Read-only merge-tree exits1
+only there, with stage blobs1136970d/b814a7d2/023de27b. Resolve by retaining
+incoming DX1 AND NET1 table rows verbatim, including unchanged states and
+reciprocal dependency edges. Keep this branch's current top PR414 delivery
+paragraph/link and its full owning record here. Removing the duplicate PR414
+clause from the adjacent NET1 row loses no delivery or acceptance fact and
+reduces repeated edits beside the independently maintained DX1 row.
+
+Expected author edits remain the four existing status/PRD records; no new
+owned path, production or test source edit, or public type. Integration delta:
+production+0/-0, authored tests+0/-0, public API types+0/-0. The four imported
+upstream paths remain separate from this PR's owned scope. Measure the complete
+tracked/untracked scope after resolution; do not count imported tests as a
+new PR416 capability or describe positive record growth as code reduction.
+
+Before submission, review the resolved source and run pinned five-case owning
+recovery/request-key tests in debug and optimized profiles, strict owning
+application_clients Clippy, formatting, and workspace Nextest with its complete
+catalogue. Guard all27 inputs before/after qualification and retain source.
+The original canonical-omission controls keep their exact earlier source/law
+proof; unchanged source and no new failure justify no repeated inversion.
+Fresh hosted full Nix/all reported CI must qualify the combined submitted head
+before reviewed PR416 delivery. Full R24/R07/AUTH1/NET1, generated public
+Client schedules, crash/restart, production identity and final distillation
+remain open; neither this diagnostic nor prior green parents close them.
+
+Before adding this census paragraph, the complete tracked/untracked branch
+delta versus402 is six owned paths: production+0/-0/net0, tests+997/-0/net997,
+records+788/-29/net759, public API+0types/-0types; no untracked files exist.
+The resolved899 checkpoint below will measure its own complete final scope.
 
 ## Exhaustive and generated incoming schedules — 2026-11-11
 
