@@ -735,6 +735,44 @@ tests+347/-83/net264; configuration+66/-0/net66;
 records+664/-37/net627; public API+0types/-0types.
 Nine tracked paths, no untracked source files; no SDK shutdown repair claimed.
 
+The broader logging review finds actual SDK stdout inserted inside diagnostic
+stderr fields in the merged file. Passing assertions and258 completions remain
+valid; complete byte-equal291-record text vectors cannot be credited or repaired
+by inventing rows. Preserve both original streams separately in the owning Nix
+remote-debug command, emit each in CI output, and apply its existing six named
+test guards to stdout. This changes capture only, not failure exit, test
+selection or semantics. Qualify the actual twelve-target command with its
+six named guards, separate streams and unchanged native assertions before
+retaining the capture change.
+
+The first split-stream execution passes all539 reported cases across twelve
+targets and all six named guards, but its outer diagnostic qualification ends1:
+libtest's default capture hides successful eprintln records, so no291 stderr
+records are available. Keep that actual result. Enable the standard libtest
+--nocapture option in this diagnostic check to expose those records to the
+separate streams; no test, assertion or runtime setting changes.
+
+The corrected pinned capture-visible execution78765 ends0. Its exact twelve
+targets report539 passes, zero failures/ignored cases and all six named stdout
+guards. Generated Client execution completes258 invocations. All291 physical
+stderr diagnostics are complete, including their independent Counter, ordered
+ACK and terminal fields; SDK observations remain separately on stdout. The
+stderr vector SHA256 is db1d6a07ca14cd17d8f48c43bca92064c1595e76e0aee7975110025160fe2b03.
+Printing the two files does not establish chronology between the streams.
+All five source/lock/configuration guards match; pinned Nix formatting passes.
+This executes the selected Cargo test command, not the later Clippy/doc phases
+or whole Nix derivation. Rust remains byte-exact to0e08f3ba; current flake hash
+is3469c70308bdcd5c5fb1f1a85b8ca6d7c81f27c32365c5ecfdfa342fc8344893.
+
+Independent source and outcome reviews b59ecf0c/e009a9ba pass and release all
+readers. Commands, original streams, input guards and both review receipts are
+retained under common Git session-archives/2026-11-13/client-schedules/
+close-diagnostic/logging/. The earlier mixed/default-capture limitations stay
+recorded. SDK stall cause/repair, updated-head CI, delivery and full R24 remain
+open. Complete nine-path tracked/untracked delta versus maineb08 follows:
+production+0/-0/net0; tests+347/-83/net264; configuration+77/-9/net68;
+records+702/-37/net665; public API+0types/-0types; no untracked source files.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
