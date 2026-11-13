@@ -874,7 +874,10 @@ async fn increments(deliveries: &[Delivery]) {
     );
 
     assert!(incoming_cleanup.is_ok() && outgoing_cleanup.is_ok());
-    assert!(receiver_closed.is_ok() && caller_closed.is_ok());
+    assert!(
+        receiver_closed.is_ok() && caller_closed.is_ok(),
+        "receiver native close: {receiver_closed:?}; caller native close: {caller_closed:?}"
+    );
     assert!(
         receiver_poll.is_none()
             && receiver_drop.is_none()

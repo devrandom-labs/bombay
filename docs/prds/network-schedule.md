@@ -588,6 +588,102 @@ tests+340/-82/net258; configuration+65/-0/net65;
 records+517/-37/net480; public API+0types/-0types.
 Nine tracked paths, no untracked source files; no example changes.
 
+### Native close refusal: investigation record — 2026-11-13
+
+PR420's required run43449396385 fails at the reviewed c2e0645b tree52666b15,
+identical to submitted341117df. Nix job131967280385 ends FAILURE in
+checks.x86_64-linux.bombay-remote-debug: application_clients58passed/1failed.
+The generated Client run reports204invocations/203completed and prints the
+standard seedccda749e3d136efded45bb677deb3bb203ff78100d471a69d8641ce266636c062e.
+Its last/minimized input is [Fresh(24),Repeat]. The actual Counter Read2 and
+earlier Work cleanup assertion pass; receiver native close is Err and caller
+close is Ok. The close assertion fails before later custody assertions, which
+receive no passing credit. The diagnostic retains only close=false/true,
+discarding the cause text. The full log6be8c73a and terminal metadata remain
+under hosted-pr420. Earlier allocation-profile failures are intended controls;
+subsequent Driver/Observe fuzz and Miri steps are skipped, not passing runs.
+
+The returned Node parts already preserve the original boxed Error Result;
+run_with stores the selected Session::close result directly. Locked SDK source
+has one returned Err path, expiry of its existing10-second close deadline.
+This narrows the error by source inspection; it does not identify the actual
+pending inner step, prove that the Session remained open, or explain a repair.
+Independent investigation43c43176 and proposal reviewa219de13 retain that scope.
+
+Before edits, limit the retained change to the existing unchanged close
+assertion's failure text and exact standard seed line, plus this owning record.
+Expected tests+5/-1/net4, production+0/-0/net0, public types+0/-0; the same
+nine cumulative paths. Borrow both full original Results in the failure text,
+including a primary Error whose source may be None. Keep all assertions,
+Counter-first order, inputs, close policy, waits and runtime composition.
+Add no retry, timeout increase, serialization, wrapper or guessed owner fix.
+The saved seed replays generated input, not native timing or guaranteed failure.
+Qualify ordinary debug/optimized consumers and the narrow observability change;
+any controlled refusal and exact restorations retain their distinct source
+epochs. Existing live manual341/old local460e runs keep their immutable scopes.
+Required integrated-head CI, real refusal investigation and delivery stay open.
+
+The observability control uses a disposable exact SDK copy:169 physical files
+match the registry source and all168 archive payloads match independently.
+After a source-equal positive, append one pending await after actual
+WeakSession close cleanup, preserving its early closed return and unchanged
+10-second builder deadline. The existing fixed two-Node test has a15-second
+watchdog, so both original close Results can reach the unchanged assertion.
+Use only ordinary temporary Cargo source patching; root owns and restores the
+registry lock byte-exact. A negative proves timeout-error observability only,
+not the original pending stage, production repair or deterministic seed replay.
+Restore the complete SDK source and qualify the same positive afterward.
+Print each actual SDK Session ID immediately before the temporary pending
+point and require two distinct markers, so an earlier unrelated timeout
+cannot earn control credit. This marker is temporary SDK instrumentation.
+
+The normal registry consumers pass all59 Client cases in both profiles,
+including258 generated completions (two saved inputs plus256 fresh). Formatting
+and owning strict Clippy pass. The pristine SDK copy then passes the existing
+fixed test in debug/optimized,1passed/58filtered each. Its temporary Cargo
+selection changes only the SDK record's source/checksum; no version or
+dependency changes. All original registry selections are restored afterward.
+
+The actual marker-plus-await cut62e5ee48 differs from the earlier unapplied
+one-await proposal76c8e33a. In both profiles, two distinct actual SDK Session
+markers prove the new pending point was reached. Both original close Results
+then contain the real SDK timeout error. The same close assertion fails after
+Read2 and the earlier cleanup assertion, with Cargo101/one failed test and
+58filtered. Runtime is10.03/10.02seconds; the15-second watchdog does not fire.
+The new failure text exposes both boxed errors, including their owning SDK
+location. Later custody assertions remain unexecuted. The outer negative
+qualification exits0 only after these intended failures and markers are checked.
+This proves observability, not a reproduction or repair of the original stall.
+
+The complete169-file SDK copy restores exactly. The same fixed test passes
+through the restored SDK copy in both profiles, then through the original
+registry graph in both profiles,1passed/58filtered each. Registry lock9bb2db13,
+all five guarded inputs and the complete SDK contents remain exact after the
+last commands. No temporary SDK change or Cargo patch is retained in the repo.
+Read-only source investigation also vetoes a guessed TLS-handshake repair:
+the selected owner already selects cancellation at accept and handshake and
+tests that law. Other task/drain/transport waits remain candidates, not causes.
+
+The older local full Nix run completes0 at immutable460e: all28 named native
+checks pass, with its package builds. This does not qualify the newer diagnostic
+or another platform. PR420's failed required run remains recorded. The old
+manual341 monitor ends on HTTP502; direct API verification finds its actual
+Nix job still running, so only its observation is resumed. No CI run is retried.
+
+The fresh current diagnostic Nextest run completes0:1010passed,6 existing
+child-registration skips,8slow and one leaky warning in96.546seconds. All
+1010 PASS/LEAK identities equal its1016-entry catalogue minus those six.
+The warning names actor_spaces::derive_selects_each_protocols_exact_named_space.
+Inspection2b7f290a finds only two empty AddressSpace tables and borrowed pointer
+checks on that test's path, with no process or I/O call. Nextest's label concerns
+output handles after process exit; their owner/cause remains unlocated. Keep
+this warning separate from the SDK close failure; no timeout or test is changed.
+
+Complete current branch versus maineb08: production+0/-0/net0;
+tests+345/-83/net262; configuration+65/-0/net65;
+records+613/-37/net576; public API+0types/-0types.
+Nine tracked paths, no untracked source files; required CI and delivery open.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
