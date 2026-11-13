@@ -518,6 +518,26 @@ Complete branch versus b383: production+0/-0/net0, tests+340/-82/net258;
 configuration+65/-0/net65, records+447/-37/net410;
 public API+0types/-0types; nine paths, no untracked source files.
 
+### Current-main integration: listener selection — 2026-11-13
+
+Main now contains reviewed PR419/eb08c152, merged after all eight checks pass.
+Its owning native socket regression proves the shared fixture selected an
+IPv4 port for a localhost listener whose TLS resolution can select IPv6.
+The fix uses the existing socket owner to select on localhost and renames the
+returned string listener_address. It still releases the reservation before
+opening a Node. This establishes the fixture mismatch, not the cause of our
+earlier cause-discarding Linux failure.
+
+Before integration, this branch is clean48fcc455. Merge delivered main without
+changing its socket law or any fixture input, and retain this branch's real
+NodeStartupRefusal/source diagnostic. Expected local resolutions are the two
+overlapping test imports/calls and the existing backlog record. Production,
+public API and dependency changes remain zero; selected locks and owner
+contracts are unchanged. Review the complete resulting diff against main,
+then run focused debug/optimized consumers and required integrated-head CI.
+The live local460e and hosted48fcc checks retain their original immutable
+source scopes; do not restart or relabel them as integrated-source results.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first
