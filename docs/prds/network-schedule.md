@@ -5,16 +5,82 @@ f09303c8 after successful routine/manual CI and independent reviews. The
 [delivery record](#delivery-of-the-bounded-campaign--2026-11-12) supersedes
 pending hosted-CI wording in the dated preparation checkpoints below. Earlier
 source, compiler and result epochs retain their original meanings.
-PR416's fixed public Client overlap passes all eight hosted checks onc6af64e2
-with main402ff67f. [Newer main899 integration](#main-integration-startup-diagnostics--2026-11-13)
-has its record conflict resolved and passes combined local gates; fresh hosted
-CI and merged delivery remain open. Earlier source epochs stay separate.
+[PR416's fixed public Client overlap delivery](#delivery-of-the-fixed-public-client-overlap--2026-11-13)
+is now mainb3833e50 after all eight checks and independent reviews passed.
+Its qualified and delivered trees match, and its worktree is removed. This
+supersedes pending delivery wording in earlier dated source checkpoints.
 
 Status: active for complete R24; the first fixed incoming schedule is delivered
 within Static remote actors. Original baseline is merged main
 `937fecc3f7b7bc5efe5dd7519e1bf223af76c350`. Complete network simulation,
-native Query/Client overlap, restart and full R24 remain open.
+generated native Query/Client schedules, restart and full R24 remain open.
 The user's complete R01–R25/AUTH1/NET1 goal remains unchanged.
+
+## Delivery of the fixed public Client overlap — 2026-11-13
+
+[PR416](https://github.com/devrandom-labs/bombay/pull/416) merged normally at
+2026-11-13T03:32:44Z as
+`b3833e5069bad23d03b9d4dd6b8e0dc23bf42f0d`, with parents main899af54f and
+reviewed head442bdbaab0bf6cfb4e48f009fcdc5f0442c34e2b. Actual merged tree
+`1ce2dfacfee09e8dcb46d4e5b4c69ae0b3c6680d` exactly equals the submitted tree
+and actual CI checkoutd1b6bf05's tree. No administrator bypass or source edit
+followed qualification. Main-push CI is separate; no crate publication is claimed.
+
+All eight reported checks pass on that head. [CI43343044778](https://github.com/devrandom-labs/bombay/actions/runs/43343044778)
+and Nix job131615718135 finish successfully at03:10:55UTC after flake success
+03:09:06 and both bounded campaigns. Deny43343045017 and CodeQL43343044868,
+including its changed-code aggregate, pass. Root and both independent source,
+outcome and retention reviews close; no required gate is waived or retried.
+
+The995-line witness126a16ee and Querydfaae0a0 stay exact. Both overlap tests
+actually pass in remote debug/release, LLVM debug coverage and optimized
+workspace cohorts. Earlier canonical-omission Read3-versus-2 failures and exact
+restorations retain their source-bound proof. Current Linux Nix executes28 checks:
+remote530 passes per profile with31 compiler cases; workspace/coverage1,001
+passes each with six existing parent-owned skips and153 actual compiler cases.
+Each153 comprises152 intact success rows plus external_actor_error.rs success
+split by a60-second notice. Current child feature checks have six intact cases
+each. Minimum diagnostics execute114 passes/one owned ignore across28 targets
+and138 compiler cases; minimum remote executes three passes and11 compiler
+cases. These subsets add no minimum-native overlap proof. Other platforms are
+omitted, and routine Miri is skipped. Bench entrypoints add no performance claim.
+
+All five fuzz campaigns complete under ASan: Driver2,048 inputs and four Observe
+targets1,024 each. All444 retained corpus files are checked:16 exact Git seeds
+and428 valid SHA1 names. Current Observe ops retains78 files/1,217 bytes versus
+DONE79/1,235; aggregate retention is325/5,428 versus DONE326/5,446. No cause or
+complete in-memory retention is inferred. Isolated unlocked fuzz graphs, CodeQL's
+six extraction-error files/new-alert scope, existing Deny exceptions, compiler
+and platform limits remain explicit in the complete evidence. None closes a
+production identity, resource, network simulation or full remote requirement.
+
+The separate603-payload CI capsule plus two self-excluded manifests is sealed
+under .git/session-archives/2026-11-13/ci-review/pr416/442bdbaa. Inventory49bb2e89
+and manifest1e54a915 verify every payload; independent seal reviews7d284873 and
+259f5470 pass. All six original ZIPs and full extracted contents remain retained.
+Nix outcome reviews833eb7f9/a407d112 and rootd83fa8a3 bind actual commands,
+profiles, source and outcomes. The128-payload local899 capsule remains separately
+sealed with inventorycf350053/manifest739005af. Earlier source epochs are not
+relabelled as current execution.
+
+All readers and command sessions are released. The clean
+/Users/joel/Code/devrandom/bombay-remote-admission worktree is removed normally;
+its branch is deleted after proving ancestry in origin/main. The remote branch
+was already absent. The protected root's existing dirty document is byte-exact,
+and the independent DevX worktree is retained. Merge and cleanup receipts remain
+outside the sealed capsules under delivery/client-overlap/pr416.
+
+Final PR416 owned scope versus899 is six files: production+0/-0/net0,
+tests+997/-0/net997, records+844/-28/net816, public API+0types/-0types, with no
+untracked files. Imported upstream changes retain their separate scope.
+This delivers one fixed public Client overlap and its correlation control;
+complete R24/R07/AUTH1/NET1, generated Client schedules, crash/restart,
+production identity, resource acceptance, example simplification and final
+distillation remain open. No additional complete acceptance row closes.
+
+The delivery reconciliation changes four existing records only:
+production+0/-0/net0, tests+0/-0/net0, records+91/-37/net54,
+public API+0types/-0types, no untracked files. It adds no new pipeline capability.
 
 ## Delivery of the bounded campaign — 2026-11-12
 
