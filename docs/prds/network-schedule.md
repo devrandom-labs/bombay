@@ -538,6 +538,56 @@ then run focused debug/optimized consumers and required integrated-head CI.
 The live local460e and hosted48fcc checks retain their original immutable
 source scopes; do not restart or relabel them as integrated-source results.
 
+The full integrated Client target actually passes59 cases in debug/optimized;
+its four imported socket-law instances include one inside outbound::overlap.
+Independent review therefore rejects retaining the old campaign's five-test
+completion guard: the inherited law makes its selected set six. First retain
+the real six-pass/old-guard refusal, then change only that guard to six and
+qualify the current workflow body in both profiles. Keep the inherited law
+selected and retain the existing saved/generated/finite guards. Fresh
+integrated workspace Nextest and required PR CI remain mandatory.
+
+The resolved mergec1806b48 preserves every incoming main change. Independent
+byte review0266f716 confirms both changed host bodies equal their prior bodies
+except listener naming/import ordering, with unchanged locks and all shipping
+source. The actual original workflow body then completes six tests with
+Cargo0 but qualification1. Only the Client completion guard changes5 to6;
+the incoming five-test guard and every other completion check stay unchanged.
+The corrected bodies each pass6/0/0 with53filtered,257 complete generated
+invocations,32 finite words and the fixed control. All290 native projections
+per profile and their fifteen artifact-input hashes pass independent review
+e96febcf. No inherited socket law is excluded.
+
+Integrated full Client controls pass59/0/0 in debug/optimized, including the
+earlier startup case and four actual socket-law instances. Pinned fmt and
+owning strict all-feature/all-target Clippy pass. The first combined wrapper
+then stops127 because actionlint is absent from the default shell; its queued
+Nextest does not execute. A separate invocation uses the same selected
+nixpkgs actionlint/ShellCheck packages as the earlier wiring proof and passes.
+The distinct subsequent Nextest invocation completes1010/1010 passes,6 existing
+child-registration skips and7 slow cases in89.069seconds across123binaries.
+Its complete PASS identities equal the1016-entry catalogue minus those six
+registrations. All12 corrected source/lock guards pass afterward. These results
+cover the integrated source and uncommitted one-line workflow correction;
+artifact revisionc180 is not relabelled as a later commit.
+
+Current scoped delivery still requires independently reviewed final records,
+submitted integrated-head CI and actual merge/cleanup. Existing live checks
+keep their older source identities. No full R24 or remote acceptance closes.
+
+Hosted diagnostic run43431667327 subsequently completes SUCCESS at48fcc455.
+All five jobs pass, including the full Linux flake check and its actual bounded
+Driver/Observe fuzz and Observe Miri campaigns. The terminal run/job metadata,
+complete new Nix log and three campaign archives are retained alongside the
+six already reviewed campaign/TLS artifacts. This freshly qualifies the older
+diagnostic head; the original failure's cause remains unknown. The integrated
+source still requires its own submitted-head CI and reviewed delivery.
+
+Complete branch versus delivered maineb08: production+0/-0/net0;
+tests+340/-82/net258; configuration+65/-0/net65;
+records+517/-37/net480; public API+0types/-0types.
+Nine tracked paths, no untracked source files; no example changes.
+
 ## Public Client overlap: prerequisites and first law — 2026-11-12
 
 This next R24 step starts at88dc44d7 over delivered mainf09303c8. The first

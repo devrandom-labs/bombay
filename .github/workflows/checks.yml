@@ -214,7 +214,7 @@ jobs:
           printf '%s\n' "$qualification_status" > "$evidence/cargo-exit.txt"
           if [[ "$qualification_status" -eq 0 ]]; then
             if ! {
-              grep -Eq '^test result: ok\. 5 passed; 0 failed; 0 ignored;' "$evidence/campaign.log" &&
+              grep -Eq '^test result: ok\. 6 passed; 0 failed; 0 ignored;' "$evidence/campaign.log" &&
               [[ "$(grep -c 'generated Client configuration:' "$evidence/campaign.log")" == 1 ]] &&
               [[ "$(grep -Fxc "generated Client observations: invocations=$expected_observations; completed=$expected_observations" "$evidence/campaign.log")" == 1 ]] &&
               [[ "$(grep -c '^Client delivery cases completed=' "$evidence/campaign.log")" == 32 ]]
