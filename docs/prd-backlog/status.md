@@ -1,5 +1,14 @@
 # Backlog status and dependencies
 
+R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
+has fresh prerequisites and local debug/optimized healthy, shared-close and
+undeclaration-omission evidence with exact restoration. Branch4489f1af,
+integrated with main2e328cd4, passes all28 native Nix checks and1011 workspace
+Nextest cases; source epochs and minimum-compiler scope remain explicit in the
+owning record. Independent withdrawal remains distinct from actor retirement/
+cache lifetime. No production/API change; public Node authority, resource
+baselines, complete R18 and reviewed CI delivery remain open.
+
 Published Behavior/Actors0.30 qualification merged through PR413/814c96d1
 after all six checks and independent reviews passed. The
 [owning record](../prds/static-remote-actors.md#delivery-of-behavior-qualification--2026-11-11)
@@ -10,7 +19,7 @@ and normal worktree removal. R24's
 is now PR414/f09303c8 after passing routine/manual CI, independent reviews,
 matching delivery trees and normal worktree removal. Finite/generated orders,
 persisted and literal replay, independent falsifiers, Nix seed inclusion and
-the empty-filter guard retain their scoped evidence. Generated Query/Client schedules,
+the empty-filter guard retain their scoped evidence. Broader Query/Client fault schedules,
 arbitrary overlap, crash/restart and complete R24 retain their own open gates.
 The [fixed public Client overlap delivery](../prds/network-schedule.md#delivery-of-the-fixed-public-client-overlap--2026-11-13)
 is PR416/b3833e50 after all eight checks and independent reviews pass. Both
@@ -18,13 +27,14 @@ overlap tests execute in four current Linux cohorts; delivered and qualified
 trees match. Complete evidence is sealed and the clean worktree is removed.
 Earlier omission/restoration controls retain their exact source limits.
 This fixed witness does not close complete R24/R07, AUTH1 or NET1.
-The next [public Client schedules](../prds/network-schedule.md#public-client-schedules-prerequisites-and-change-record--2026-11-13)
-stage records fresh owner verification and the proposed32-word campaign.
-Its reviewed finite32-word suite passes debug and optimized controls, with
-intended missing-word/replay-omission failures and exact restorations.
-Generated/shrunk words and actual saved-case replay now pass local controls;
-longer measurement and local Nix packaging/workflow controls also pass.
-Broader checks, hosted qualification and broader fault schedules remain open.
+The [bounded public Client campaign](../prds/network-schedule.md#delivery-of-the-public-client-campaign--2026-11-13)
+is now PR420/6ee3e676 after all eight checks and final reviews pass. Its32-word
+suite, generated/shrunk words, standard saved cases, falsifiers and restorations
+retain their source scopes. Current routine and long-manual evidence is sealed;
+qualified/delivered trees match and the merged worktree is removed. One Nix
+diagnostic is Cargo-split with original fragments retained; the earlier native
+close failure remains unexplained. Broader fault/restart, resource/security,
+example simplification and complete R24/R07/AUTH1/NET1 remain open.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
@@ -49,7 +59,7 @@ merged through PR411 after all six checks and independent reviews passed.
 Independent network campaigns, replay beyond the bounded incoming campaign,
 restart and full R24 remain open.
 
-Updated: 2026-11-13 UTC. This delivery snapshot uses main `b3833e50`. The
+Updated: 2026-11-13 UTC. This delivery snapshot uses main `6ee3e676`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the
