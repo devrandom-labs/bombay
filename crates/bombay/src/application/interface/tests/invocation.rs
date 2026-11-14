@@ -139,7 +139,7 @@ async fn absent_work_drives_root_and_nonempty_family_retirement() {
         );
         let (execution, (receiving, received_families)) = application
             .execute_with_entities_invocation::<
-                _, _, _, Never, fn(Never, _) -> Ready<Never>, Ready<Never>, (), _, _,
+                Never, fn(Never, _) -> Ready<Never>, Ready<Never>, (), _, _,
             >(
                 ApplicationWorkPresence::Absent(()),
                 Some(async |application: &ApplicationHandle<

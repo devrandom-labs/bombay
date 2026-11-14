@@ -11,30 +11,30 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "185bfbb37a385a82c33f34843a61a92ff4ec4beec2453d7365775a98125a1070",
+  "patch_sha256": "0a9e722ad422b6bd16a9cef7963344a58d767b359a735d5c677c79e3958b4532",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
-      "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
-      "minimum_sha256": "deefe05e352eea1d57d44814cc7f5883e10d05bb6296c7d50972c1782f5b38ea",
+      "canonical_sha256": "887ca7cfa0e44842be8429b65f9a58f82e967ffe3aafe5282d11751b69013b01",
+      "minimum_sha256": "326a0e21873f5ece46ffff49bf8d09e7b19c0f8f30daa01a2a90d0f3f1c9c25a",
       "fixture_sha256": "90c6c3f3987b27f8ce4282d974604f840b13150854f33276b27c1df301a4eb59"
     },
     "crates/bombay/tests/compile/fail/topology_cold_extra_birth.stderr": {
-      "canonical_sha256": "83ab0c75de95d0bbb71aad9d74fec1cdaba96979bc54fedfb96247bfb95d5950",
-      "minimum_sha256": "42c4b165d695bf770104843e033b5eda129616a1e48ce45311f4de65a454a385",
+      "canonical_sha256": "c33fcf6346c7d7ec5285291887bab810fb89172c61f717f2b547e756e9d1dfac",
+      "minimum_sha256": "63fe09250d8f78d27d170b9ec55806c6ff1cbbc241fb0ddc9868ca0e209ca67a",
       "fixture_sha256": "62541f12a97539a0b59dd868b45bc07dc1ace95401fc84a4529517cb66ceee77"
     },
     "crates/bombay/tests/compile/fail/topology_cold_wrong_host.stderr": {
-      "canonical_sha256": "ce50759cc2eaa3b466a3cb842aa61cee8076a3c33435c961e4e9be0f4a920fc1",
-      "minimum_sha256": "954fe67aa3cc7d503970300b7ebc9930f061de067c66e0fab2ecee03d7bf9381",
+      "canonical_sha256": "acea7da52565d91961af8cbfd0027a061903de0ebb4f401dc70f073b2c6eb758",
+      "minimum_sha256": "2060fe31cfacc9ace240df4bb6b26192fae2a53ae4012f22817d5cfec6e6abc2",
       "fixture_sha256": "95f0d118e8724c819d4d8acfcbd81491e00b422b6bb8d782c3a75f4d757b0ef0"
     },
     "crates/bombay/tests/compile/fail/topology_cold_wrong_role.stderr": {
-      "canonical_sha256": "027eb0d89c8abac1e6ee64441f520a398235b941014facea613309fff35f616d",
-      "minimum_sha256": "56f56e17b574e0cfc2db04e8f08661856b11577d14f2b37d1d1da6dbcd304cd6",
+      "canonical_sha256": "fff455b973dedefd46d6a8b185d6a908632a42592d66945cfda84dd6e93b6d5d",
+      "minimum_sha256": "49fdec71612716e59525662d7d7397c5d7238e36deaee37574f801f4ee524843",
       "fixture_sha256": "1328afe4cf04bc945bc1e0cbaf15c12b68b0279effa3ac27ee32c02758351f53"
     },
     "crates/bombay/tests/compile/fail/topology_duplicate_roles.stderr": {
-      "canonical_sha256": "2753ec0e6cfb06b268c5792438fd3145542bd82436cfd9a8666f4c3677aa0c3f",
+      "canonical_sha256": "1e4ddfa14baaabc0f3a9e476492d3f9e8c2dd1cc3d0a60f47a69f2ea0a5dbc38",
       "minimum_sha256": "8be255bdd266b4e52e0f589721ea841d465eacf362b7289d72551cd3f3369aff",
       "fixture_sha256": "28ae38325fbdd17c71dbf7cea5963989df7ff9035a6f11acb477d16b6df5657d"
     },
@@ -44,32 +44,32 @@
       "fixture_sha256": "5f67e22e47a2a7e7e58879c96862c3315db415be4452b4601bc6c9d26eef7e4e"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr": {
-      "canonical_sha256": "381298fd1fb41be7b6e19c234c3e039d9840fdb7eb6ff19068098043c7bc3058",
-      "minimum_sha256": "485a75c8eeb2c94bf20ae3b70972ed4152bf3b835cc7de6af0ce1747451b73cc",
+      "canonical_sha256": "8f3b197a31d185441322b2ca57d086b2664c7fccf9541f084cc4999cf79f12c1",
+      "minimum_sha256": "2ab880c694e926b9556e223aa18da29bec54ebec479545d2e1ad479b8a9fc959",
       "fixture_sha256": "e64b541ade5b22c2b78ba459979bf67aed3ee1efc0a16a34aaf4dbea0c1bfb88"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_forged_position.stderr": {
-      "canonical_sha256": "9a7802a9a87c6671ee8353b5febbcddbc26dec9eb8652cbaf3bc41d665fc2e4f",
-      "minimum_sha256": "8af984a894a2b73675189e3c91fa9cf99ad46b2e72c7441d4f1033c0de5d79bc",
+      "canonical_sha256": "2cc4d823e3bd99b50d6c08254452ba64b0e8de8ccf20356b9f80756ac79da56c",
+      "minimum_sha256": "74220a5832added9c89e7ea5902a281eaae71ce275594f3989dc1c9ef5e49b1b",
       "fixture_sha256": "96b8b5f8482c18d9394c33a9aa06bb9377730d467b10cae860ef0f71c530636d"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_forged_role.stderr": {
-      "canonical_sha256": "7ac3e5730734010e287fd7f4cc0ac5fe7452f9d424b1549380a97a7343c3bd2f",
-      "minimum_sha256": "8a697263581f29b4c0ad7fdb11897eb20430df21605de6f948d6696b1fb5e9c4",
+      "canonical_sha256": "38dc3c08d4ef5b3bd54f84355530c771d9c2742146fd74f2c8cd7f1062a68119",
+      "minimum_sha256": "bd288dababbe1ef2f00b704eb7b70923e2eac708b1ff1968b0d8f3635cb490c7",
       "fixture_sha256": "9f9b1cfa9d6dbf605daa08ee356e85a1a31c30b1035f79c100a949c01a4f7251"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_inconsistent_child.stderr": {
-      "canonical_sha256": "b64d19c1443481627c010d980c3da1a465e005a66c7de486193bb9a88f29828d",
-      "minimum_sha256": "972568f4d529edc1014c554b6cd9a24d0750c53ac9c5135f8ecb756d80cca1f2",
+      "canonical_sha256": "3e0d9b4ae11e2710cdf1a838e47f8a764a8b9ea12cc9c1511875b7e1c79359fd",
+      "minimum_sha256": "63707d32d2fa7d692893bce207204c2a6f080ae18a9ffe269f09f54cccc49906",
       "fixture_sha256": "e6fc97451a240916b72fa5c85ebf333a5fa38393978e1f0da6bffd50f2bafc9f"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_wrong_role_parent.stderr": {
-      "canonical_sha256": "b77fea0fd02261544bf447e12c07a149039ebf0b8df3016387309aeb909f6d28",
-      "minimum_sha256": "aefa04e8b1eaf56ceb7f96be9d108c59a13798ea3d704deb24f4e2ef2f47a4ad",
+      "canonical_sha256": "8640af9301158c68609c82c2c2bad443589af7712323ff9cd2b6c7f83e88916c",
+      "minimum_sha256": "6b7b2dde026755c63703a1a199106dc80c3f8491c4505721607cb7c749a37d0e",
       "fixture_sha256": "f07f122b9853377b3b07fcf48db3f5f1bac6a8a9d92a50064f7486284a278860"
     },
     "crates/bombay/tests/compile/fail/topology_swapped_roles.stderr": {
-      "canonical_sha256": "bc558efbe7269a31f636910d7edf9bf6237f5954c53e9bc557804bc4ebfd7634",
+      "canonical_sha256": "82bbcd0eefa75e363b2b8cf4833e830afb583b5d006a9b35e7a12c359c234a16",
       "minimum_sha256": "6a664ce9a82fb7f4aefef778075d1b414735902371a89521d27a9154131e0a18",
       "fixture_sha256": "fa9b7f99f434c28567a18879b1537f7f19b0821555c41270ec7acc9d4d342f01"
     },
@@ -99,8 +99,8 @@
       "fixture_sha256": "d01e2a73da8f8ee2d86b6483aed12903e266e02a28a7709a094888fc18c2a689"
     },
     "crates/bombay/tests/compile/fail/run_with_wrong_root_protocol.stderr": {
-      "canonical_sha256": "13a391ec2052c7f34d157d60f35f2c42e525137806e5122d6f719845cac9eca8",
-      "minimum_sha256": "569a851d29bf87aec6912a0b1e4178ee872f156dfeb0f31a664620f08edb4193",
+      "canonical_sha256": "c2c22195518e46a905872079cf02bf87586b99d70b40761d3d49855d50dc9310",
+      "minimum_sha256": "498ed0a3f0c055a2d8ff6df031753f0b564cb270845660017b00de5d9ffd291e",
       "fixture_sha256": "0ff12a80232d00b786243a89c711f0cbd52f2b6c37bb966a286d1fa2a36b71e0"
     },
     "crates/bombay/tests/compile/fail/removed_parallel_application.stderr": {
@@ -134,8 +134,8 @@
       "fixture_sha256": "9dc7fe2f01ae539641957ffa0d766eca52db7d58e4bbf59bdf027ab74a2b6f65"
     },
     "crates/bombay/tests/compile/fail/remote_export_requires_verification.stderr": {
-      "canonical_sha256": "a8b8b9e622272332596009227bfc361ef5cfc4e8e21fbe36aa11ee866e3e8bac",
-      "minimum_sha256": "2c50f46e412fdaa8f78ce4e5c7877169a7669329c7f09d826bdf9e3496842bcd",
+      "canonical_sha256": "615b968b3477c134af04a3241ec20d34da35ce48b7b9e9518d41ca1097e07ae0",
+      "minimum_sha256": "01e20ac03f1cc0f1bbdc7410b0e7cb53f2fc97f46169cab371f9fe3a6c5a2513",
       "fixture_sha256": "f98735601e19a98f2f8a52f5e0991a1ef6d1b46ecff692b4ca8272ef2bdffce4"
     }
   },
