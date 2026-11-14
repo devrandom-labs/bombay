@@ -15,8 +15,10 @@ debug/optimized runs, two intended fault controls and exact source restoration.
 It supplies no public Node withdrawal capability, callback/permit baseline or
 full R18 completion. Branch4489f1af, integrated with main2e328cd4, passes all28
 native Nix checks and1011 workspace Nextest cases with unchanged source limits.
-Final source/minimization review passes; hosted CI and reviewed delivery remain
-pending.
+Final source/minimization review and all eight hosted checks pass. PR422 merged
+as `63c50988` with matching qualified/delivered trees and the clean merged
+worktree removed. Actual Linux execution and minimum-compiler limits are recorded
+in the owning PRD; this scoped delivery leaves full R18 open.
 
 R01's literal witness is satisfied and delivered through PR410/f2832eea.
 Its [owning evidence map and delivery](../remote-protocols.md#delivery--2026-11-11)

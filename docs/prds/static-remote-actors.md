@@ -2,11 +2,41 @@
 
 ## Export withdrawal isolation — prerequisites and change record (2026-11-14)
 
-**Current scope:** the private owner isolation witness is qualified and minimized
-locally; full R18, AUTH1/NET1, public Node withdrawal and example distillation
+**Current scope:** the private owner isolation witness is qualified, minimized
+and delivered through PR422; full R18, AUTH1/NET1, public Node withdrawal and example distillation
 remain open.
 No shipping Rust, public type, dependency or example changes. Integrated Nix
-checks and final review pass; required CI and reviewed delivery remain pending.
+checks, all eight hosted checks and final independent reviews pass.
+
+### Delivery — 2026-11-14
+
+[PR422](https://github.com/devrandom-labs/bombay/pull/422) merged normally at
+20:26:31 UTC as `63c5098874b3989b556b07f19b25d036b97a8f58`, after all eight
+checks and independent source, outcome and readiness reviews passed. Submitted
+head `d4fd2b8be616b085faf02300deb694500b204410`, actual CI preview `da7c6925`
+and delivered merge share tree `14188f4effc770a86455cd5de5e69d65516577e0`.
+The clean merged worktree and local branch are removed; the remote branch is
+also absent. The protected user and DevX worktrees remain untouched.
+
+Hosted Linux CI run `43624251398` passes all28 Nix checks. Both retirement
+tests execute in remote debug/optimized (540 passed each), instrumented workspace
+and optimized workspace (1011 passed each, six parent-owned child registrations
+ignored). Minimum1.96 checks retain their compile/consumer scope; they do not
+execute these native retirement tests. Native TLS jobs and bounded incoming/
+Client campaigns pass their separate scopes. Driver2048 and four Observe1024
+ASan fuzz runs pass; their artifacts lack a standalone resolved-lock/source
+manifest, and optional Miri is skipped. No stronger reproducibility or new Miri
+claim follows from successful CI.
+
+Exact merge/check receipts, logs, artifact digests and independent reviews live
+under common Git `session-archives/2026-11-14/delivery/export-withdrawal/pr422/`.
+Local source epochs, fault controls and restorations below retain their original
+scope. Delivery adds no public withdrawal operation, resource baseline, SDK-close
+repair, full R18 acceptance or AUTH1/NET1 completion.
+
+Delivery-record reconciliation against main63c50988 touches three existing
+Markdown files: production +0/-0/net0; tests +0/-0/net0; public types +0/-0;
+records +44/-9/net35. No untracked files; `git diff --check` passes.
 
 **Current-main integration:** all28 native Nix checks passed at `c9dcf669`,
 including optimized workspace1011/0/6 and remote540/0/0 in both profiles.
@@ -37,7 +67,7 @@ workspace execution passes1011/0 with six unchanged parent-owned child
 registrations across123 target summaries, including both retirement tests.
 Minimum1.96 checks retain their selected compile/consumer scopes; they do not
 execute the new native retirement case. Later commits change records only;
-old c9 results retain their source. Hosted CI and reviewed delivery remain open.
+old c9 results retain their source. Hosted CI and delivery are recorded above.
 
 At main `6ee3e676`, actor retirement deliberately leaves its export/cache available
 until Application cleanup. Node has no public operation for removing one live
@@ -154,7 +184,7 @@ visibility is widened and no baseline is claimed. Public Node withdrawal, exact
 target endpoint retirement, every-boundary failures/drops, reconnect initialization
 and complete R18 remain open. These broader requirements retain full feature
 acceptance and minimization. The private witness passes local minimization and
-final review; required CI and merged delivery remain pending.
+final review; hosted CI and merged delivery are recorded above.
 
 ## Incoming campaign qualification — 2026-11-12
 
