@@ -907,12 +907,17 @@ unknown failures or complete remaining DX01–DX28 acceptance.
 
 `runner-types-delivery-summary.json` and `runner-types-pr421-final-ci-summary.json`
 in the existing restart handoff retain the full identities and logs. The
-`6ce3964f` archive proofs above remain source-bound; main-push CI and actual
-runtime publication are separate obligations.
+`6ce3964f` archive proofs above remain source-bound. Delivered-main
+[CI 43609315848](https://github.com/devrandom-labs/bombay/actions/runs/43609315848)
+now passes all five jobs, including all 28 Linux owners and both bounded fuzz
+campaigns. Its 723 frozen files, 513 artifact hashes and Client/incoming source
+hashes are verified against `2e328cd4`; Miri is skipped. Actual runtime
+publication remains a separate obligation. The existing restart handoff keeps
+the final log and `runner-types-main421-ci-summary.json`.
 
 ### Release publication, before metadata updates
 
-Release PR381 still proposes Engine 0.2.4 and macros 0.1.4 on a stale
+Before this refresh, release PR381 proposed Engine 0.2.4 and macros 0.1.4 on a stale
 Behavior 0.26 branch. The already approved release-boundary law requires
 Engine 0.3.0, macros 0.2.0 and runtime 0.2.0 with the same registry
 Behavior/Actors 0.30 contract. The historical unchanged Engine and topology
@@ -940,6 +945,42 @@ establish release delivery. Then notify the active existing Bombay Codex task,
 preserve its goal and confirm acknowledgment. Saving or queuing a notice is
 not acknowledgment. Full programme acceptance and the sole owner checklist
 remain open throughout this release preparation.
+
+### Release candidate verification (2026-11-14)
+
+Clean candidate `45bd862d` preserves both merge parents and changes six existing
+Markdown files against verified main `2e328cd4`. All 717 other tracked files,
+including production, tests, manifests, locks and the packaged guide, are exact.
+Production/test lines and public types change by zero; runtime control states
+and ownership contracts remain unchanged.
+
+All 28 Darwin builds and the subsequent normal `nix flake check` pass. All 28
+build records, roots, expected derivers and saved logs agree. All 723 frozen
+files and 695 filtered source files match; Nix content verification passes for
+all 28 outputs plus their source. Current tests report 1,010/0/6 with 153 UI
+fixtures; minimum 114/0/1 with 138; minimum remote 3/0/0 with eleven. Ignored
+registrations remain controlled child cases. Both remote profiles pass 539/0/0;
+Driver controls retain sixteen healthy references/eight intended kills, and
+the execution controls retain nine healthy cases, ten intended failures and
+two ownership denials with their actual causes. Observe/Entity models pass
+28/six. All four coverage floors pass; this Darwin run's Observe result is
+506/526, separate from the earlier 504/526 result.
+
+Clean joint all-feature packaging verifies all three crates on actual Rust
+1.99 and 1.96. Their archives are byte-identical across compilers: all 575
+extracted files, 113 shipped source files, original manifests and `45bd862d`
+VCS records are checked. The earlier archive consumers retain their exact
+executable-byte limits; they are not relabelled as new executions. Package
+logs, archive checksums and the complete owner/content proof are retained in
+`release381-package-results.json` and `release381-full-summary.json` in the
+existing restart handoff. Completed package target caches were removed only
+after rehashing all retained archives/files and checking for open files.
+
+Delivery-evidence updates preserve every executable and shipped source byte.
+Final submitted-head hosted checks, normal release-PR merge, actual registry,
+tag and consumer verification, and Bombay acknowledgment still precede release
+delivery. No workflow dispatch or publication is inferred; the whole
+DX01–DX28 programme remains active.
 
 ## Verification and remaining work
 
