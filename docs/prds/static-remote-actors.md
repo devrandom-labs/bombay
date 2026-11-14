@@ -2,10 +2,11 @@
 
 ## Export withdrawal isolation — prerequisites and change record (2026-11-14)
 
-**Current scope:** the private owner isolation witness is qualified locally;
-full R18, AUTH1/NET1, public Node withdrawal and example distillation remain open.
-No shipping Rust, public type, dependency or example changes. Required broad
-checks, final CI/review and reviewed delivery remain pending.
+**Current scope:** the private owner isolation witness is qualified and minimized
+locally; full R18, AUTH1/NET1, public Node withdrawal and example distillation
+remain open.
+No shipping Rust, public type, dependency or example changes. Integrated Nix
+checks and final review pass; required CI and reviewed delivery remain pending.
 
 **Current-main integration:** all28 native Nix checks passed at `c9dcf669`,
 including optimized workspace1011/0/6 and remote540/0/0 in both profiles.
@@ -20,7 +21,7 @@ schema failures. It changes no Some(binding)/Work/cleanup kernel behavior or
 native custody product. This test already uses fully inferred ordinary syntax;
 no caller, production or test edit is selected. Prior control kills retain their
 original epochs; fresh merged-tree focused debug/optimized and normal gates
-remain required. Integration evidence is retained separately under common Git
+now pass below. Integration evidence is retained separately under common Git
 `session-archives/2026-11-14/export-retirement/integration/`.
 
 The merged-tree two-test cohort passes2/0/0 (440 filtered),0.02s in each of
@@ -30,8 +31,13 @@ child registrations skipped,107.646s. Its retained withdrawal and cached-target
 tests both pass. Integrated remote debug and optimized gates each pass540/0/0
 across twelve targets including both retirement tests; debug strict Clippy and
 documentation also pass. Independent execution reviews confirm those scopes.
-Full integrated Nix verification remains live; old c9 results are not relabeled
-as merged-tree results.
+Full integrated `nix flake check --keep-going --max-jobs 2 --cores 2` exits0
+on code source `4489f1af`; all28 mapped native outputs are valid. Optimized
+workspace execution passes1011/0 with six unchanged parent-owned child
+registrations across123 target summaries, including both retirement tests.
+Minimum1.96 checks retain their selected compile/consumer scopes; they do not
+execute the new native retirement case. Later commits change records only;
+old c9 results retain their source. Hosted CI and reviewed delivery remain open.
 
 At main `6ee3e676`, actor retirement deliberately leaves its export/cache available
 until Application cleanup. Node has no public operation for removing one live
@@ -126,7 +132,9 @@ recipient inequality from assert! to assert_ne!, preserving the predicate;
 retained test SHA256 is
 `bf85f39754fd45cd4f136b16f0987fbb4bec85e90828b49ef8d78c238e999dea`.
 Strict remote library/test Clippy passes in15.70s and formatting check passes.
-Final integrated checks must execute this retained source.
+Integrated execution and closing independent reviews pass on this source.
+The integration archive retains `final-review.txt` and `final-readiness.txt`;
+local qualification and minimization of the private witness are accepted.
 
 ### Containment and remaining scope
 
@@ -136,16 +144,17 @@ production state, transition branch, module, public spelling, wrapper, registry,
 task or observation cell changes. Test fixture reuse needs a documented dead-code
 expectation for its unused Entity-family portion, without installing that family.
 
-Complete integrated branch census against main2e328cd4: six paths, two Rust test paths and
+Final branch census against main2e328cd4: six paths, two Rust test paths and
 four existing Markdown records including the earlier PR420 delivery reconciliation.
 Production +0/-0/net0; tests +434/-0/net434; public types +0/-0. Records
-+270/-13/net257 at this integrated-test checkpoint; no untracked source remains.
++284/-13/net271 before PR submission; no untracked source remains.
 
 Private completion tags and callback/permit counts are inaccessible here; no
 visibility is widened and no baseline is claimed. Public Node withdrawal, exact
 target endpoint retirement, every-boundary failures/drops, reconnect initialization
-and complete R18 remain open. Full acceptance, minimization, review, required CI
-and merged delivery retain their separate gates.
+and complete R18 remain open. These broader requirements retain full feature
+acceptance and minimization. The private witness passes local minimization and
+final review; required CI and merged delivery remain pending.
 
 ## Incoming campaign qualification — 2026-11-12
 

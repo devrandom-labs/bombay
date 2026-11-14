@@ -2,10 +2,12 @@
 
 R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
 has fresh prerequisites and local debug/optimized healthy, shared-close and
-undeclaration-omission evidence with exact restoration. Independent withdrawal
-remains distinct from actor retirement/cache lifetime. No production/API change;
-public Node authority, resource baselines, complete R18 and reviewed CI delivery
-remain open.
+undeclaration-omission evidence with exact restoration. Branch4489f1af,
+integrated with main2e328cd4, passes all28 native Nix checks and1011 workspace
+Nextest cases; source epochs and minimum-compiler scope remain explicit in the
+owning record. Independent withdrawal remains distinct from actor retirement/
+cache lifetime. No production/API change; public Node authority, resource
+baselines, complete R18 and reviewed CI delivery remain open.
 
 Published Behavior/Actors0.30 qualification merged through PR413/814c96d1
 after all six checks and independent reviews passed. The
