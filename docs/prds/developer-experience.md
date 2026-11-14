@@ -831,6 +831,72 @@ actual execution evidence, before updating PR421 and requiring fresh hosted
 CI. Do not infer a combined-tree pass, merge, publication or full DX01–DX28
 acceptance from either parent alone.
 
+### Main integration results
+
+Clean `6ce3964f` passes all 28 aarch64-darwin checks and the authoritative
+`nix flake check`. Registered outputs, derivers, 28 own roots, actual contents,
+695 included source files and 723 tracked inputs verify. The original process
+handles expired during the pause; complete build records and roots survive,
+and fresh authoritative flake and content verification both exit zero. Complete
+per-owner logs are retained. Rust1.99 reports 1,010 passes and six controlled
+child registrations, with 153 unique compiler fixtures; Rust1.96 reports
+114/0/1 with 138 fixtures, and minimum remote 3/0/0 with eleven fixtures.
+The two fixtures interrupted by slow-parent notices have their subsequent
+actual `ok` results; a notice alone is not credited as completion.
+
+Both remote profiles pass 539/0/0. The imported Client witness completes all
+32 finite words and 258 generated/saved invocations in the debug transcript.
+Driver evidence checks sixteen actual healthy results and eight intended
+kills; execution evidence checks nine healthy results, ten kills and two
+moved-value denials. All four coverage JSON floors pass. Observe's 28 models,
+Entity's six, the panic policy controls, protected child controls and executing
+remote-example parents retain their qualified results. Rendered documentation
+still shows thirteen public methods with sixteen real type parameters and no
+private invocation. Other platforms and actual Miri execution remain unclaimed.
+
+Actual integrated-source Engine0.3.0/macros0.2.0/runtime0.2.0 archives verify on
+Rust1.99 and1.96 and are byte-identical across compilers: 28/7/540 files,
+575 total, VCS `6ce3964f`. All 113 shipped src files, including source-local
+tests, match Git. Only the imported test/seed files, revision metadata and two
+staged Native checksum values differ from the previous archives; production,
+normalized manifests, other lock bytes and the packaged guide stay exact.
+The current package wrapper's exit status expired, but all three verification
+completions and subsequent archive copies survive; the minimum wrapper has an
+observed zero exit status. No package or source failure is inferred from that
+lost process handle.
+
+Both exact extracted-package consumers exit zero. Each compiler/profile passes
+80 owning Native cases with one controlled child registration and its actual
+executing parent, sixteen compiler fixtures and the separate inferred counter.
+Both compilers also check eight examples/all-targets, pass three renamed cases,
+run six real local examples and pass ten packaged doctests with no ignores.
+All 575 canonical archive files, 538 current or 535 minimum native-copy files,
+28 caller Rust files, two caller documents and prepared locks remain exact.
+Only the established manifest adapters and three shipped minimum-compiler
+diagnostics differ by design. HTTP/remote examples compile; real Node, family
+and HTTP lifecycle execution belongs to the owning Native targets. The minimum
+example check retains its existing unfulfilled dead-code expectation warning;
+no source suppression or minimum warning-free claim is made.
+
+Source and oracle reviews accept the unchanged production/ownership model and
+the exact result, source, fixture and failure controls. Independence is not
+claimed. The aggregate checkpoint remains `pass`: control sums 6/5/2,
+retirement 5/20/24, fourteen custody fields, all branches, production modules,
+public spellings and their required current values are unchanged. No arrival
+history, repeated cause, false cardinality or nested authority is introduced.
+Final scope remains 41 owned paths, production +88/-105/net -17, public types
++0/-0; the nine imported paths are separately preserved. Receipts are
+`runner-types-main-full-summary.json`, `runner-types-main-package-results.json`
+and both `runner-types-main-consumer-*-summary.json` in the existing handoff.
+
+Original PR421 CI also passes all eight checks on its earlier `dcde8e80`
+epoch, with actual Driver2048 and four Observe1024 campaigns and 505 artifact
+file hashes checked. That is not combined-tree CI. Only this result section
+and the two backlog lines change after the integrated verification freeze;
+all production, tests and configuration remain identical. The final evidence
+commit requires fresh exact-head hosted CI before normal PR merge. Runtime
+registry publication, remaining acceptance/costs and full DX01–DX28 stay open.
+
 ## Verification and remaining work
 
 ### Owned retirement recovery, before implementation (2026-11-11)
