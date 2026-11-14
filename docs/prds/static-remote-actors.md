@@ -27,8 +27,11 @@ The merged-tree two-test cohort passes2/0/0 (440 filtered),0.02s in each of
 debug and optimized builds, after39.76s and3m51s compilation respectively.
 The integrated workspace Nextest run exits0:1011 passed, six parent-owned
 child registrations skipped,107.646s. Its retained withdrawal and cached-target
-tests both pass. Full integrated Nix verification remains live; old c9 results
-are not relabeled as merged-tree results.
+tests both pass. Integrated remote debug and optimized gates each pass540/0/0
+across twelve targets including both retirement tests; debug strict Clippy and
+documentation also pass. Independent execution reviews confirm those scopes.
+Full integrated Nix verification remains live; old c9 results are not relabeled
+as merged-tree results.
 
 At main `6ee3e676`, actor retirement deliberately leaves its export/cache available
 until Application cleanup. Node has no public operation for removing one live
@@ -136,7 +139,7 @@ expectation for its unused Entity-family portion, without installing that family
 Complete integrated branch census against main2e328cd4: six paths, two Rust test paths and
 four existing Markdown records including the earlier PR420 delivery reconciliation.
 Production +0/-0/net0; tests +434/-0/net434; public types +0/-0. Records
-+267/-13/net254 at this integrated-test checkpoint; no untracked source remains.
++270/-13/net257 at this integrated-test checkpoint; no untracked source remains.
 
 Private completion tags and callback/permit counts are inaccessible here; no
 visibility is widened and no baseline is claimed. Public Node withdrawal, exact
