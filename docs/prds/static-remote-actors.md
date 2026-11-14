@@ -2,11 +2,11 @@
 
 ## Public export withdrawal — prerequisites (2026-11-14)
 
-**State: candidate.** PR422's private isolation witness and PR423's delivery
-reconciliation are merged. The current source is `011e7ad0`; PR423 passed all
+**State: active.** PR422's private isolation witness and PR423's delivery
+reconciliation are merged. The production baseline is `011e7ad0`; PR423 passed all
 eight checks and its reviewed, actual CI and merged trees match. Its clean
-merged worktree is removed. This prerequisite review selects no production
-interface and supplies no public withdrawal execution evidence.
+merged worktree is removed. The model and pre-edit record below select the
+public callable; native public withdrawal execution remains unverified.
 
 Fresh archive checksums and packaged VCS metadata verify Behavior/Actors0.30.0
 at `628649da`, Macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0 and
@@ -40,15 +40,13 @@ policy must survive. Target retirement alone must retain cached-reply eligibilit
 Two Nodes, a request acknowledgement or a fabricated completion signal cannot
 substitute for this trace.
 
-Before production edits, the ordinary-Rust comparison and focused prior-design
-regression must resolve cutoff timing, pending-producer disposition, startup
-refusal, live versus final ownership of the native result, cancellation and
-repeat requests. A lifetime future alone is not accepted merely because it is
-easy to compose; it must satisfy the same complete request/result law. Any new
-public value must own a proven distinct capability or invariant. No macro,
-registry, new observation cell, transport escape hatch or second lifecycle is
-selected. Expected production files/delta and public types remain unselected;
-the mandatory pre-edit change record is still required after model selection.
+The ordinary-Rust comparison and focused prior-design regression below select
+cutoff timing, pending-producer disposition, startup absence, live versus final
+native-result ownership, cancellation and repeat-request policy. Runtime
+acceptance remains required. A lifetime future alone cannot replace the complete
+request/result law. No macro, registry, new observation implementation,
+transport escape hatch or second lifecycle is selected. Expected production
+files/delta and zero new public types are recorded before production edits.
 
 The SDK's selected undeclaration returns Ready after synchronous work and does
 not by itself establish callback quiescence, a resource baseline or actor
@@ -63,6 +61,113 @@ in-memory-to-retained corpus equality is not claimed or attributed a cause.
 Prerequisite checkpoint against main011e7ad0: two existing Markdown files;
 production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
 Records +72/-1/net71; no untracked files. `git diff --check` passes.
+
+### Public withdrawal — model and pre-edit record (2026-11-15)
+
+The selected Bombay policy is one detachable, affine request for one exact
+Export. The proposed ordinary caller spelling is:
+
+```rust,ignore
+let withdraw = export.take_withdrawal().expect("fresh export authority");
+let mut node = node.exports(export, binding);
+node.run_with(async move |application| {
+    let native_withdrawal = withdraw().await;
+    // The sibling export and both actors remain available here.
+    (native_withdrawal, application.shutdown())
+}).await;
+```
+
+`take_withdrawal` transfers the actual unique request publisher using
+`Option::take`; a second take is absent. It returns an opaque ordinary
+`AsyncFnOnce`, not a new actor, public wrapper, generic strategy or macro.
+Calling it creates a cold operation. The first poll records intent; the owning
+Export then selects its cutoff. Dropping before first poll surrenders unused
+authority without requesting withdrawal. A pinned operation retained outside a
+cancelled borrowed wait can still complete; dropping the entire started
+operation surrenders its observation, without revoking intent or erasing the
+owner's acquired native result. Neither take nor request acknowledges native
+completion. Whole Node surrender retains the established incomplete-Observe
+contract and does not manufacture a result.
+
+Ordinary functions/closures express both issuance and observation. An extension
+trait, associated type or builder cannot supply authority through Node's live
+mutable borrow. A lifetime future alone misses actual-result observation; the
+complete callable supplies both obligations. Typestate would forbid a second
+take but adds an unnecessary generic dimension: storing and taking the real
+affine publisher already prevents duplicate authority. A named capability has
+no remaining proven advantage over the measured callable. No macro is eligible.
+
+Native results use `Result<(), Arc<Box<dyn Error + Send + Sync>>>`: success
+retains its actual unit and failure shares the exact original Box and pointee.
+This explicitly transforms the Result's error type; it does not preserve a
+Result carrier's address or claim that such an address is a domain fact.
+Whole-Result Arc sharing and exclusive transfer were compared. Sharing only the
+error avoids a successful-result allocation and a separate Transferred state.
+The public error-type change is real: existing success patterns still work,
+but unique extraction/automatic generic Error propagation may need migration.
+Borrowing `cause.as_ref().as_ref()` reaches the actual original Error. No new
+wrapper is authorized to hide a compiler bound.
+
+The existing Observe completion slot will be the one retained native-result
+owner. Export extraction and live observation read that same slot; no second
+mutable result cell or duplicate authoritative result field is selected. Two
+existing Observe pairs per Export own request and completion, including exports
+whose request authority remains unused. This is bounded allocation/refcount
+cost, not a zero-allocation claim. Completion is published only after actual
+undeclaration, or after a settled no-declaration path with None. Native Ok does
+not prove callback quiescence, resource reclamation or target retirement.
+
+The request branch surrenders only that Export's pending producers through
+the existing FuturesUnordered clear operation, then reuses its native
+undeclaration and request/reply drain. Completed work and originals remain in
+existing Request custody. Application-owned termination and cached replies
+after target retirement keep their existing policies. Node and tuple Exports
+remain the sole existing execution composition; no second loop is selected.
+
+The smallest prior-design regression extends the existing external
+remote_export_policies compile consumer with this detached request, moves Export
+into Node and awaits its native result in Work. The pinned-Nix corrected run
+exits101: exactly that consumer fails with E0599 for missing take_withdrawal,
+while the other six compile-pass/denial controls pass. This establishes the
+public API gap, not native withdrawal semantics. The runtime witness will strengthen the
+delivered private isolation test to use public Node.exports/run_with and the
+callable, preserving every independent effect/custody assertion. Owning tests
+will distinguish cold/started cancellation, settled absence, actual shared
+error identity and repeat completion; the ordinary compile suite will reject
+reuse of consumed authority. Native isolation inversions remain required.
+
+Expected production paths: remote/export/mod.rs and query.rs, roughly
+80–120 added /10–20 removed lines. Expected public types +0/-0. Expected
+remaining paths: owning Export tests, existing retirement witness, the existing
+compile consumer/runner and one reuse fixture with diagnostics, the runtime
+capability guide and these two requirement records (about ten paths total).
+No dependency, Observe implementation, Node kernel, protocol, example policy
+or runtime task is selected for change. This adds a capability; no code-reduction
+claim is made. Existing private caller startup/serve/cancel plumbing is removed
+from the strengthened witness in favor of the real public Node composition.
+
+Aggregate checkpoint: Export keeps its existing native declaration/ingress/
+request ownership. Unique request publication is either retained or transferred;
+unique completion publication is either retained or consumed. Those are actual
+owned capabilities, not arrival-history flags. Pending completion, settled None
+and acquired Some(Ok/Err) remain distinct in the existing Observe slot. One
+additional select branch interprets intent; one private completion operation
+records the actual result once. No actor phase, protocol alternative, semantic
+boolean, positional application route or public nominal type is added.
+
+Pinned-Nix Rust1.99 ownership probes pass three tests in debug and optimized
+builds. The compile-once control passes and reuse fails specifically with
+E0382 at the second callable invocation. The first optimized process handle was
+already missing at recovery; a fresh captured optimized run exits0. These
+simulated-error/std-only probes prove their narrow allocation/callable laws,
+not native runtime or minimum-compiler acceptance. The first public Cargo
+invocation selected the wrong package name and is not intended-failure evidence;
+the corrected bombay-rs consumer run supplies the focused failure above. The
+additional error-source probe passes1/0 and confirms generic question-mark
+conversion into Box fails with E0277, while matching shared-error propagation
+compiles. This compatibility cost is accepted explicitly. Independent model and
+two-pass probe reviews retain those limits. Exact sources and receipts are
+archived under public-withdrawal; full feature acceptance remains open.
 
 ## Export withdrawal isolation — prerequisites and change record (2026-11-14)
 

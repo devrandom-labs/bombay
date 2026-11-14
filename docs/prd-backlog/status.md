@@ -1,11 +1,13 @@
 # Backlog status and dependencies
 
 R18's [public withdrawal prerequisite review](../prds/static-remote-actors.md#public-export-withdrawal--prerequisites-2026-11-14)
-is candidate on main011e7ad0 after PR423 records the delivered private witness.
+is active on baseline main011e7ad0 after PR423 records the delivered private witness.
 Fresh locked-owner verification identifies no upstream version blocker. The
-public request/result ownership model and prior-design regression remain
-prerequisites before production edits; no new interface or full R18 acceptance
-is selected by this source audit.
+public request/result model selects an opaque cold one-shot callable and shares
+only the original native error through the existing Observe owner. The external
+compile consumer fails specifically at the missing take_withdrawal method;
+the pre-edit record selects the two owning production paths. Native public
+execution and complete R18 acceptance remain open.
 
 R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
 has fresh prerequisites and local debug/optimized healthy, shared-close and
