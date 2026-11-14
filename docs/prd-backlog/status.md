@@ -1,5 +1,12 @@
 # Backlog status and dependencies
 
+R18's [public withdrawal prerequisite review](../prds/static-remote-actors.md#public-export-withdrawal--prerequisites-2026-11-14)
+is candidate on main011e7ad0 after PR423 records the delivered private witness.
+Fresh locked-owner verification identifies no upstream version blocker. The
+public request/result ownership model and prior-design regression remain
+prerequisites before production edits; no new interface or full R18 acceptance
+is selected by this source audit.
+
 R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
 has fresh prerequisites and local debug/optimized healthy, shared-close and
 undeclaration-omission evidence with exact restoration. Branch4489f1af,
@@ -62,7 +69,7 @@ merged through PR411 after all six checks and independent reviews passed.
 Independent network campaigns, replay beyond the bounded incoming campaign,
 restart and full R24 remain open.
 
-Updated: 2026-11-14 UTC. This delivery snapshot uses main `63c50988`. The
+Updated: 2026-11-14 UTC. This delivery snapshot uses main `011e7ad0`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the

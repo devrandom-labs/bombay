@@ -1,5 +1,69 @@
 # Static remote actors and typed admission
 
+## Public export withdrawal — prerequisites (2026-11-14)
+
+**State: candidate.** PR422's private isolation witness and PR423's delivery
+reconciliation are merged. The current source is `011e7ad0`; PR423 passed all
+eight checks and its reviewed, actual CI and merged trees match. Its clean
+merged worktree is removed. This prerequisite review selects no production
+interface and supplies no public withdrawal execution evidence.
+
+Fresh archive checksums and packaged VCS metadata verify Behavior/Actors0.30.0
+at `628649da`, Macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0 and
+bombay-zenoh1.10.10. Observe and Engine remain workspace owners. The selected
+Cargo/flake locks are unchanged from the exact checksums in the private witness
+record below; there are no patches. The selected revision's complete775-line
+Behavior instructions match archive `aa5c4e70`. Current owner source, public
+APIs, relevant tests and documentation have been inspected afresh. No upstream
+contract/version change is identified as a prerequisite for this capability.
+
+| Owner | Contract retained for this work |
+| --- | --- |
+| Behavior / Actors | Pure Actions and exact actor shutdown policy; withdrawing an export grants no target actor stop authority. |
+| Address / Communication | Exact endpoint generations and admission/rejected originals; native callback retention is not actor admission. |
+| Observe | Existing shared/affine publication; a noncloneable native result cannot be moved to two independent consumers. |
+| Timers / Engine | Existing scheduling and causal execution; no new clock, actor turn or runtime is selected. |
+| Export | Actual declaration, query/producer custody and original native withdrawal result. |
+| Node | Shared Session, closed export product, Application execution and final close. |
+
+The public gap is source-proven: `Node::run_with` borrows the whole product and
+passes only the ordinary Application handle to Work. `Exports::withdraw` is
+crate-private; `Node::into_parts` requires final close. Neither actor messaging
+nor actor shutdown authority owns an export's declaration. Closing Node or
+extracting an unfinished Export cannot stand in for independent withdrawal.
+
+The required public witness must request one live export's withdrawal and
+observe its actual native result before final shared cleanup, then obtain real
+sibling effects and independent local Reads while the same Session remains
+open. Completed actor work and request/provider originals retained by the existing
+policy must survive. Target retirement alone must retain cached-reply eligibility.
+Two Nodes, a request acknowledgement or a fabricated completion signal cannot
+substitute for this trace.
+
+Before production edits, the ordinary-Rust comparison and focused prior-design
+regression must resolve cutoff timing, pending-producer disposition, startup
+refusal, live versus final ownership of the native result, cancellation and
+repeat requests. A lifetime future alone is not accepted merely because it is
+easy to compose; it must satisfy the same complete request/result law. Any new
+public value must own a proven distinct capability or invariant. No macro,
+registry, new observation cell, transport escape hatch or second lifecycle is
+selected. Expected production files/delta and public types remain unselected;
+the mandatory pre-edit change record is still required after model selection.
+
+The SDK's selected undeclaration returns Ready after synchronous work and does
+not by itself establish callback quiescence, a resource baseline or actor
+retirement. Full R18's boundary/drop/resource/reconnect matrix, AUTH1/NET1 and
+final example simplification remain open. Fresh source/provenance evidence is
+retained under common Git `session-archives/2026-11-14/public-withdrawal/prerequisites/`.
+PR423's separate final CI evidence lives under `delivery/export-withdrawal/pr423/`;
+its promotion-operations fuzz archive has an unexplained one-file retention
+difference from the run's final corpus count. Bounded execution passed; complete
+in-memory-to-retained corpus equality is not claimed or attributed a cause.
+
+Prerequisite checkpoint against main011e7ad0: two existing Markdown files;
+production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
+Records +72/-1/net71; no untracked files. `git diff --check` passes.
+
 ## Export withdrawal isolation — prerequisites and change record (2026-11-14)
 
 **Current scope:** the private owner isolation witness is qualified, minimized
