@@ -9,6 +9,12 @@ Other rows retain their independent states. Semantic acceptance, exact-head
 CI, record delivery and full feature completion remain separate; historical
 failures and passing runs keep their original source scope.
 
+R18's [private withdrawal witness](../static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
+qualifies existing declaration isolation with actual sibling effects, healthy
+debug/optimized runs, two intended fault controls and exact source restoration.
+It supplies no public Node withdrawal capability, callback/permit baseline or
+full R18 completion. Integrated checks and reviewed delivery remain pending.
+
 R01's literal witness is satisfied and delivered through PR410/f2832eea.
 Its [owning evidence map and delivery](../remote-protocols.md#delivery--2026-11-11)
 bind the actual separate public programs, complete sender/receiver Actions,

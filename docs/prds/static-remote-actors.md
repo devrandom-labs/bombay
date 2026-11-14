@@ -2,79 +2,124 @@
 
 ## Export withdrawal isolation — prerequisites and change record (2026-11-14)
 
-R18 remains open. At main `6ee3e676` (local delivery reconciliation
-`a6cd0c57`), stopping a target actor deliberately leaves its declaration/cache
-available until Application cleanup. Node has no public operation for withdrawing
-one live export. Actor retirement, export withdrawal and shared Session close
-are different operations; the existing cached-reply regression remains binding.
+**Current scope:** the private owner isolation witness is qualified locally;
+full R18, AUTH1/NET1, public Node withdrawal and example distillation remain open.
+No shipping Rust, public type, dependency or example changes. Required broad
+checks, final CI/review and reviewed delivery remain pending.
 
-Fresh source/API/test/document review selects registry Behavior/Actors0.30.0
-at `628649da`, Macros0.16.0 at `55dbac2d`, Address0.3.0 at `9f058dc0`,
-Communication0.1.6 at `963067e0`, Timers0.2.0 at `9369d1f6`, workspace
-Engine0.3.0 and local Observe. Native owners remain bombay-zenoh1.10.10 and
-config1.10.2. No patches or dependency changes are selected. Cargo.lock is
+At main `6ee3e676`, actor retirement deliberately leaves its export/cache available
+until Application cleanup. Node has no public operation for removing one live
+export. Actor retirement, declaration withdrawal and shared Session close remain
+distinct; the existing cached-reply regression is preserved.
+
+### Fresh prerequisites and pre-edit choice
+
+Registry Behavior/Actors0.30.0 at `628649da`, Macros0.16.0 at `55dbac2d`,
+Address0.3.0 at `9f058dc0`, Communication0.1.6 at `963067e0`, Timers0.2.0 at
+`9369d1f6`, workspace Engine0.3.0 and local Observe remain selected without patches.
+Native owners remain bombay-zenoh1.10.10 and config1.10.2. Cargo.lock SHA256 is
 `9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394`;
 flake.lock is
 `13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`.
-The fresh owner/coverage/model reports and lock copies are retained under common
-Git `session-archives/2026-11-14/export-retirement/prerequisites/`.
+Fresh source/API/test/document reviews, locks and selected-owner instructions
+are retained under common Git
+`session-archives/2026-11-14/export-retirement/prerequisites/`.
 
-Behavior owns pure Actions; Actors owns shutdown policy; Address and
-Communication own exact target leases and mailbox custody; Observe owns
-completion publication; Timers and Engine need no change. Bombay Export owns
-its declaration, bounded ingress, producers and original request facts. Node
-alone owns shared Session close. A target report is not export withdrawal.
-The locked SDK undeclaration future calls its synchronous withdrawal and returns
-Ready; do not invent a native Pending boundary or claim callback quiescence
-from its returned Ok alone.
+Behavior owns pure Actions; Actors owns shutdown policy; Address/Communication
+own leases and mailbox custody; Observe owns completion publication. Timers and
+Engine need no change. Export owns declarations, bounded ingress, producers and
+original requests; Node owns shared Session close. The selected SDK undeclaration
+returns Ready after synchronous withdrawal: no invented native Pending boundary
+or callback-quiescence credit follows from its Ok.
 
-The first accepted experiment is a real **private owner** isolation test, using
-existing concrete Exports, the actual Application startup/cleanup publication
-and shared Session. It cancels one serving operation at an observed provider
-wait, then awaits that export's existing withdrawal while another export keeps
-serving. Use two distinct Counter children from the existing Creator, with the
-first IncrementAndReply admitted and its real protection producer held Pending.
-Preserve canceled request originals, acquired reply/encoding, producer disposal
-and native query closure. Independent local Reads must observe first Counter1
-and sibling Counter1 after the sibling's real remote increment. Obtain that
-actor trace and the sibling remote reply after first withdrawal and before
-final Application cleanup. Acquire final original roots/children and retain
-their actual Stopped/OwnerCancelled classifications; do not stop additional
-actors to manufacture a graceful result.
+Pre-edit commit `3bde39ca` selects existing concrete Exports and lexical borrows
+before any new public abstraction. Expected test growth was250–450 lines over
+retirement.rs and a child module, production0/public types0. The exact blocker is
+missing executed evidence for cancelling one serving operation and withdrawing
+its declaration while another serves. Public detached authority remains a
+separate missing capability; this experiment cannot stand in for that API.
 
-Cancellation here surrenders that serving future; it is not a completed provider,
-actor retirement or graceful business completion. Do not publish a fixture
-signal as Application cleanup. Reuse the existing pure Creator/Counter/Ledger
-fixtures if needed; keep all orchestration inside the owning crate's tests.
-No example application, production API, task, observation cell or runtime is
-added. Existing test visibility permits observing producer disposal, ended loans
-through Request extraction, native query closure and actual withdrawal. It does
-not expose the private request completion tag or native callback/counting state;
-do not widen production access or claim a permit baseline. This does not itself
-prove a public Node withdrawal capability, retirement of the target's local
-endpoint, every-boundary resource recovery or reconnect.
+### Executed trace and independent oracles
 
-Before execution, review both the invariant/independent outcome and the
-counterexamples/nonvacuity. Run the healthy witness in debug and optimized
-builds. A real shared-Session close injected in the test-owned first-withdrawal
-orchestration must fail the sibling reply/effect oracle after cleanup. Retain an
-actual native Get Err rather than panicking during submission; finish Application
-cleanup even on that adverse path. This is an injected ownership fault, not a
-production-source inversion: the current Export holds no Session close authority.
-Restore the exact test source and repeat both healthy profiles. Missing setup,
-compilation failure or watchdog expiry does not count. A passing original design establishes
-the existing isolation law, not a defect repair or justification for new APIs.
+The test reuses the pure Creator and two distinct Counter children in one real
+Application/Session. Its private startup uses the same Some(binding) invocation
+spine as Node and receives the actual Application cleanup publication. No
+fixture signal claims Application cleanup. Native queries use SessionLocal;
+this is no separate-process/TLS-link journey.
 
-Expected test paths: application/node/tests/retirement.rs and, if its ownership
-is clearer, a child retirement module. Expected tests +250..450/-0; production
-+0/-0/net0; public types +0/-0. Existing PRD/status/acceptance records carry
-prerequisites and results. The pre-test checkpoint has no source change:
-production +0/-0/net0; tests +0/-0/net0; public types +0/-0. The existing local
-PR420 delivery record is four Markdown paths +110/-13/net97, separately scoped.
-No semantic runtime state, subordinate result, transition branch, module or
-public spelling changes at this design checkpoint. No macro or generic public
-interface is selected; ordinary owned values and lexical borrows are attempted
-first. Full R18, R24, AUTH1/NET1 and final example distillation remain open.
+First IncrementAndReply is admitted, processed and encoded, then its real
+protection producer returns Pending. Work cancels only that serving borrow and
+awaits its existing withdrawal twice, replaying teardown against the same owner.
+The first query closes without a publication; native matching becomes first
+absent/sibling present. A subsequent sibling native increment returns its actual
+correlated reply. Independent local FIFO Reads observe both Counters1 before
+Application cleanup. The shared Session is still open and its real cleanup
+publication is still pending at that point.
+
+Passing runs preserve original protected/proof bytes, receipts, admission and
+reply lanes, first encoding with absent protection/publication, sibling exact
+payload/proof, drained reply endpoints, producer disposal and ended extraction
+loans. Final native custody retains the actual two Counter/one Ledger origins:
+root Stopped and children OwnerCancelled. No extra actor stop manufactures a
+graceful classification. Cancellation surrenders a serving operation; it does
+not undo completed actor work or certify business completion.
+
+### Controls, restoration and review
+
+All commands use pinned Nix, Cargo --locked and the selected graph on Rust1.99.
+The two-test cohort is `cargo test --locked -p bombay-rs --features remote --lib
+application::node::tests::retirement::`; optimized adds `--release`. Each adverse
+command instead selects
+`application::node::tests::retirement::withdrawal::surrendered_export_withdraws_without_stopping_its_sibling`
+with `--exact`. Full commands/output and original sources live in the experiment
+archive; no new minimum-compiler execution is credited here.
+
+| Control | Debug | Optimized | Independent observed outcome |
+| --- | --- | --- | --- |
+| Existing cached-target baseline | 1 passed /0.03s | 1 passed /0.01s | Cached reply still retrievable after target retirement. |
+| Diagnostic healthy cohort | 2 passed /0.02s | 2 passed /0.02s | Both cache and withdrawal laws pass;440 filtered. |
+| Test-owned shared-Session close | exit101 /0.05s | exit101 /0.02s | Actual close Ok, sibling Get SessionClosedError, sibling Read0 rather than1 after actual owner joins return. |
+| Owning withdrawal omitted | exit101 /0.06s | exit101 /0.02s | Actual matching `(true, true)` instead of `(false, true)`, after both Counter1 checks, one sibling reply record and successful cleanup/close assertions. |
+| Exact restored cohort | 2 passed /0.05s | 2 passed /0.02s | Original source restored; both full healthy traces pass;440 filtered. |
+
+The shared-close injection lives only in test-owned orchestration; Export has
+no Session-close authority. The production omission replaces only its existing
+Queryable undeclare with mem::forget, bypassing automatic undeclaration on Drop
+and leaving withdrawal absent rather than forging Ok. Both fail their intended
+post-cleanup oracle, not setup or a watchdog. Later assertions after either
+failure are unexecuted and receive no credit. The omission's deliberately leaked
+allocation is no memory-baseline proof. Source comparisons restore querydfaae0a0,
+test26fe464c and mount3658701d byte-for-byte; neither cut remains.
+
+Author/coordinator, independent owner and cold reviews each check invariant/
+outcome and counterexample/nonvacuity. Reports record exact source hashes and
+resolve metadata scope, finite native Get Err cleanup, original child association
+and both matching values. Initial wrong-owner import and Clippy failures earn
+no semantic counterexample credit. The final lint correction changes only
+recipient inequality from assert! to assert_ne!, preserving the predicate;
+retained test SHA256 is
+`bf85f39754fd45cd4f136b16f0987fbb4bec85e90828b49ef8d78c238e999dea`.
+Strict remote library/test Clippy passes in15.70s and formatting check passes.
+Final integrated checks must execute this retained source.
+
+### Containment and remaining scope
+
+The retained code reuses existing owners/interpreters/products and adds only
+one test Future owning an observed Pending poll and its disposal count. No
+production state, transition branch, module, public spelling, wrapper, registry,
+task or observation cell changes. Test fixture reuse needs a documented dead-code
+expectation for its unused Entity-family portion, without installing that family.
+
+Complete branch census against main6ee3e676: six paths, two Rust test paths and
+four existing Markdown records including the earlier PR420 delivery reconciliation.
+Production +0/-0/net0; tests +434/-0/net434; public types +0/-0. Records
++244/-13/net231 at this pre-integration checkpoint; no untracked source remains.
+
+Private completion tags and callback/permit counts are inaccessible here; no
+visibility is widened and no baseline is claimed. Public Node withdrawal, exact
+target endpoint retirement, every-boundary failures/drops, reconnect initialization
+and complete R18 remain open. Full acceptance, minimization, review, required CI
+and merged delivery retain their separate gates.
 
 ## Incoming campaign qualification — 2026-11-12
 

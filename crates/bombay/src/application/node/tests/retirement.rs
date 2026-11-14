@@ -16,6 +16,14 @@ use std::time::Duration;
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
 
+#[path = "../../../../tests/application_clients/node_exports/actors.rs"]
+#[expect(
+    dead_code,
+    reason = "reuse the pure Creator and topology without installing their separate Entity-family fixture"
+)]
+mod actors;
+mod withdrawal;
+
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 enum Command {
     Increment,
