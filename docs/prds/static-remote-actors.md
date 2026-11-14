@@ -16,7 +16,7 @@ checks and independent source, outcome and readiness reviews passed. Submitted
 head `d4fd2b8be616b085faf02300deb694500b204410`, actual CI preview `da7c6925`
 and delivered merge share tree `14188f4effc770a86455cd5de5e69d65516577e0`.
 The clean merged worktree and local branch are removed; the remote branch is
-also absent. The protected user and DevX worktrees remain untouched.
+also absent. The protected user and DevX worktrees remain in place.
 
 Hosted Linux CI run `43624251398` passes all28 Nix checks. Both retirement
 tests execute in remote debug/optimized (540 passed each), instrumented workspace
