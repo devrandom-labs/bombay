@@ -15,7 +15,7 @@ async fn joined_work(network: Network, borrowed: &Cell<usize>, original: Rc<Vec<
         .await
         .unwrap_or_else(|_| panic!("the node opens"));
     let outcome = node
-        .run_with(|application| async move {
+        .run_with::<_, _>(|application| async move {
             let shutdown = application.shutdown();
             (borrowed, original, shutdown)
         })
@@ -33,7 +33,7 @@ async fn paired_work(network: Network, borrowed: &Cell<usize>, original: Rc<Vec<
         .await
         .unwrap_or_else(|_| panic!("the node opens"));
     let (execution, receiving) = node
-        .execute_with(|application| async move {
+        .execute_with::<_, _>(|application| async move {
             let shutdown = application.shutdown();
             (borrowed, original, shutdown)
         })

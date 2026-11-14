@@ -28,10 +28,10 @@ use tokio::runtime::{Handle, TryCurrentError};
     private_bounds,
     reason = "the running application and its launch proof remain private"
 )]
-impl<Root, Spaces, Members> Application<Root, Spaces, Members>
+impl<Root, Spaces, Members, Actor, StagingFailure> Application<Root, Spaces, Members>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-    Members: ComposeApplication<Root>,
+    Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     #[cfg(feature = "axum")]
@@ -58,7 +58,7 @@ where
         clippy::too_many_lines,
         reason = "retain original prebind and partial composition inputs beside exact HTTP/root results"
     )]
-    pub fn execute_axum<Actor, StagingFailure, ChildFailures, Router>(
+    pub fn execute_axum<Router>(
         self,
         address: SocketAddr,
         router: Router,
@@ -91,7 +91,7 @@ where
                         ActorRetirement<
                             Actor,
                             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
+                            Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                         >,
                     ),
                     (),
@@ -103,7 +103,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -128,7 +127,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -140,7 +139,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -148,7 +147,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
     {
         let executor = match Handle::try_current() {
@@ -306,7 +305,7 @@ where
     /// # Panics
     /// Native composition/serving causes propagate; dropping this combined future
     /// surrenders both owning execution and receiving, unlike a separately retained pair.
-    pub async fn run_axum<Actor, StagingFailure, ChildFailures, Router>(
+    pub async fn run_axum<Router>(
         self,
         address: SocketAddr,
         router: Router,
@@ -336,7 +335,7 @@ where
                 ActorRetirement<
                     Actor,
                     <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 >,
             ),
             (),
@@ -346,7 +345,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -371,7 +369,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -383,7 +381,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -391,7 +389,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
     {
         let (execution, receiving) = self.execute_axum(address, router)?;

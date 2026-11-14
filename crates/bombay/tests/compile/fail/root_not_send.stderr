@@ -13,7 +13,7 @@ note: required because it appears within the type `Counter`
 note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::execute_with`
   --> src/application/execution.rs
    |
-   |     pub fn execute_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+   |     pub fn execute_with<Work, WorkFuture>(
    |            ------------ required by a bound in this associated function
 ...
    |             + Send
@@ -34,7 +34,7 @@ note: required because it appears within the type `Counter`
 note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::execute_with`
   --> src/application/execution.rs
    |
-   |     pub fn execute_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+   |     pub fn execute_with<Work, WorkFuture>(
    |            ------------ required by a bound in this associated function
 ...
    |             + Send

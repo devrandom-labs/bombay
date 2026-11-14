@@ -3172,7 +3172,7 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             .expect("the synchronous disposal controller owns one enabled application host");
         let products = application_host
             .block_on(
-                application.run_with_entities(move |application| async move {
+                application.run_with_entities::<_, _>(move |application| async move {
                     let accounts = application.entities(AccountsRole(selection));
                     let account = accounts.entity(73);
                     let interface = application.interface(account);
@@ -5187,7 +5187,7 @@ mod family_cleanup {
             .expect("the actual family owns its original role");
         let paired = {
             let entered = selected_host.enter();
-            let paired = application.execute_with_entities(move |application| async move {
+            let paired = application.execute_with_entities::<_, _>(move |application| async move {
                 let entities = application.entities(TailAccounts {
                     original: selection_identity,
                     disposal_cause: None,

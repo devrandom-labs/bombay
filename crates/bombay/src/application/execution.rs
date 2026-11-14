@@ -54,10 +54,11 @@ impl fmt::Debug for RunError {
     private_bounds,
     reason = "native installation and launch proofs remain private static composition"
 )]
-impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Families>
+impl<Root, Spaces, Members, Families, Actor, StagingFailure>
+    Application<Root, Spaces, Members, Families>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-    Members: ComposeApplication<Root>,
+    Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
     Families: InstallEntityFamilies<Spaces> + Send,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
@@ -78,7 +79,7 @@ where
         clippy::type_complexity,
         reason = "retain independent work phase, original root reply and role-indexed shutdown receiving results"
     )]
-    pub fn execute_with_entities<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+    pub fn execute_with_entities<Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
@@ -106,7 +107,7 @@ where
                         ActorRetirement<
                             Actor,
                             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
+                            Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                         >,
                     ),
                     Families::Shutdowns,
@@ -118,7 +119,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -143,7 +143,7 @@ where
         >: ChildBindingsIn<Actor, Arc<Spaces>>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -155,7 +155,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -163,7 +163,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Families::Installed: 'static,
         Work: FnOnce(
             ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
@@ -194,9 +194,6 @@ where
         reason = "one owning family preparation, invocation and complete independent receiving product"
     )]
     pub(in crate::application) fn execute_with_entities_invocation<
-        Actor,
-        StagingFailure,
-        ChildFailures,
         Work,
         Invoke,
         WorkFuture,
@@ -236,7 +233,7 @@ where
                                 ActorRetirement<
                                     Actor,
                                     <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                                    ChildFailures,
+                                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                                 >,
                             ),
                             RecvError,
@@ -256,7 +253,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -281,7 +277,7 @@ where
         >: ChildBindingsIn<Actor, Arc<Spaces>>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -293,7 +289,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -301,7 +297,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Families::Installed: 'static,
         Invoke: FnOnce(
             Work,
@@ -440,7 +436,7 @@ where
     ///
     /// # Panics
     /// Setup and Work can unwind; original native causes remain caller-owned.
-    pub async fn run_with_entities<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+    pub async fn run_with_entities<Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
@@ -465,7 +461,7 @@ where
                 ActorRetirement<
                     Actor,
                     <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 >,
             ),
             Families::Shutdowns,
@@ -475,7 +471,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -500,7 +495,7 @@ where
         >: ChildBindingsIn<Actor, Arc<Spaces>>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -512,7 +507,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -520,7 +515,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Families::Installed: 'static,
         Work: FnOnce(
             ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
@@ -537,10 +532,10 @@ where
     private_bounds,
     reason = "the running application and its launch proof remain private"
 )]
-impl<Root, Spaces, Members> Application<Root, Spaces, Members>
+impl<Root, Spaces, Members, Actor, StagingFailure> Application<Root, Spaces, Members>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-    Members: ComposeApplication<Root>,
+    Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     /// Execute declared cold composition and caller-local work with an independent result receiver.
@@ -559,7 +554,7 @@ where
         clippy::type_complexity,
         reason = "return independent local work and actual cold-partial or joined actor products without another wrapper"
     )]
-    pub fn execute_with<Actor, StagingFailure, ChildFailures, Work, WorkFuture>(
+    pub fn execute_with<Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
@@ -580,7 +575,7 @@ where
                         ActorRetirement<
                             Actor,
                             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
+                            Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                         >,
                     ),
                     (),
@@ -592,7 +587,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -617,7 +611,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -629,7 +623,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -637,7 +631,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
@@ -751,7 +745,7 @@ where
         clippy::type_complexity,
         reason = "the existing concrete pair preserves original inputs and independent exact root custody without a new wrapper"
     )]
-    pub fn execute<Actor, StagingFailure, ChildFailures>(
+    pub fn execute(
         self,
     ) -> Result<
         (
@@ -771,7 +765,7 @@ where
                         ActorRetirement<
                             Actor,
                             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
+                            Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                         >,
                     ),
                     (),
@@ -783,7 +777,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -808,7 +801,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -820,7 +813,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -828,7 +821,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
     {
         let executor = match Handle::try_current() {
             Ok(executor) => executor,
@@ -937,7 +930,7 @@ where
     ///
     /// # Panics
     /// Execution propagates staging panics; receiving preserves the actual cleanup publication result.
-    pub async fn run<Actor, StagingFailure, ChildFailures>(
+    pub async fn run(
         self,
     ) -> Result<
         ApplicationOutcome<
@@ -954,7 +947,7 @@ where
                 ActorRetirement<
                     Actor,
                     <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 >,
             ),
             (),
@@ -964,7 +957,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -989,7 +981,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -1001,7 +993,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -1009,7 +1001,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
     {
         let (execution, result) = self.execute()?;
         execution.await;
@@ -1042,7 +1034,7 @@ where
         clippy::result_large_err,
         reason = "return the actual configured Builder and declaration without boxing originals"
     )]
-    pub fn run_blocking<Actor, StagingFailure, ChildFailures>(
+    pub fn run_blocking(
         self,
         mut builder: Builder,
     ) -> Result<
@@ -1061,7 +1053,7 @@ where
                     ActorRetirement<
                         Actor,
                         <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                        ChildFailures,
+                        Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                     >,
                 ),
                 (),
@@ -1073,7 +1065,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -1098,7 +1089,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -1110,7 +1101,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -1118,7 +1109,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
     {
         if let Ok(entered_executor) = Handle::try_current() {
             drop(entered_executor);
@@ -1128,7 +1119,7 @@ where
             Ok(application_host) => application_host,
             Err(source) => return Err((self, builder, RunError::Runtime(source))),
         };
-        Ok(application_host.block_on(self.run::<Actor, StagingFailure, ChildFailures>()))
+        Ok(application_host.block_on(self.run()))
     }
 
     /// Await declared composition, caller-local work and the exact joined result.
@@ -1142,7 +1133,7 @@ where
     ///
     /// # Panics
     /// Setup and work may unwind; the actual cause remains with the caller.
-    pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+    pub async fn run_with<Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
@@ -1160,7 +1151,7 @@ where
                 ActorRetirement<
                     Actor,
                     <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 >,
             ),
             (),
@@ -1170,7 +1161,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -1195,7 +1185,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -1207,7 +1197,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -1215,7 +1205,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Work: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> WorkFuture,
         WorkFuture: Future,
     {
