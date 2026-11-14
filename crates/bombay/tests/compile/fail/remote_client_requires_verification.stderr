@@ -1,0 +1,97 @@
+error[E0593]: closure is expected to take 2 arguments, but it takes 3 arguments
+   --> tests/compile/fail/remote_client_requires_verification.rs:57:18
+    |
+ 57 |       let client = Client::new(
+    |  __________________^
+ 58 | |         requests,
+ 59 | |         protocol::KEY,
+ 60 | |         counts,
+...   |
+ 74 | |         |receipt: &Receipt, bytes: &[u8], original: &User<MailAddr, Operation>| {
+    | |         ----------------------------------------------------------------------- takes 3 arguments
+...   |
+115 | |         },
+116 | |     );
+    | |_____^ expected closure that takes 2 arguments
+    |
+note: required by a bound in `Client::<Requests, (std::string::String, ClientLimits, Limits, Duration, Encode, Protect, Verify, Decode, CurrentRequest, CurrentReply), Receipt, Message, EncodingError, ProtectionError, VerificationError, DecodingError, RequestError, ReplyError>::new`
+   --> src/remote/client.rs
+    |
+    |     Verify: AsyncFn(&[u8], &[u8]) -> Result<Receipt, VerificationError>,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Client::<Requests, (String, ClientLimits, Limits, Duration, Encode, Protect, Verify, Decode, CurrentRequest, CurrentReply), Receipt, Message, EncodingError, ProtectionError, VerificationError, DecodingError, RequestError, ReplyError>::new`
+...
+    |     pub fn new(
+    |            --- required by a bound in this associated function
+
+error[E0631]: type mismatch in closure arguments
+   --> tests/compile/fail/remote_client_requires_verification.rs:57:18
+    |
+ 57 |       let client = Client::new(
+    |  __________________^
+ 58 | |         requests,
+ 59 | |         protocol::KEY,
+ 60 | |         counts,
+...   |
+ 90 | |         |original: &User<MailAddr, Operation>, runtime: &str, target: MailAddr| {
+    | |         ----------------------------------------------------------------------- found signature defined here
+...   |
+115 | |         },
+116 | |     );
+    | |_____^ expected due to this
+    |
+    = note: expected closure signature `for<'a, 'b, 'c> fn(&'a User<MailAddr, Operation>, &'b [u8], &'c behavior::User<MailAddr, Operation>) -> _`
+               found closure signature `fn(&User<MailAddr, Operation>, &str, MailAddr) -> _`
+note: required by a bound in `Client::<Requests, (std::string::String, ClientLimits, Limits, Duration, Encode, Protect, Verify, Decode, CurrentRequest, CurrentReply), Receipt, Message, EncodingError, ProtectionError, VerificationError, DecodingError, RequestError, ReplyError>::new`
+   --> src/remote/client.rs
+    |
+    |     Decode: Fn(&Receipt, &[u8], &User<MailAddr, Requests::Msg>) -> Result<Message, DecodingError>,
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Client::<Requests, (String, ClientLimits, Limits, Duration, Encode, Protect, Verify, Decode, CurrentRequest, CurrentReply), Receipt, Message, EncodingError, ProtectionError, VerificationError, DecodingError, RequestError, ReplyError>::new`
+...
+    |     pub fn new(
+    |            --- required by a bound in this associated function
+
+error[E0593]: closure is expected to take 3 arguments, but it takes 4 arguments
+   --> tests/compile/fail/remote_client_requires_verification.rs:57:18
+    |
+ 57 |        let client = Client::new(
+    |  ___________________^
+ 58 | |          requests,
+ 59 | |          protocol::KEY,
+ 60 | |          counts,
+...   |
+100 | |/         |receipt: &Receipt,
+101 | ||          original: &User<MailAddr, Operation>,
+102 | ||          runtime: &str,
+103 | ||          target: MailAddr| {
+    | ||__________________________- takes 4 arguments
+...   |
+115 | |          },
+116 | |      );
+    | |______^ expected closure that takes 3 arguments
+
+error[E0061]: this function takes 11 arguments but 10 arguments were supplied
+   --> tests/compile/fail/remote_client_requires_verification.rs:57:18
+    |
+ 57 |       let client = Client::new(
+    |  __________________^^^^^^^^^^^-
+ 58 | |         requests,
+ 59 | |         protocol::KEY,
+ 60 | |         counts,
+...   |
+115 | |         },
+116 | |     );
+    | |_____- argument #11 is missing
+    |
+note: associated function defined here
+   --> src/remote/client.rs
+    |
+    |     pub fn new(
+    |            ^^^
+help: provide the argument
+    |
+ 57 |     let client = Client::new(
+...
+115 |         },
+116 ~         /* current_reply */,
+117 ~     );
+    |

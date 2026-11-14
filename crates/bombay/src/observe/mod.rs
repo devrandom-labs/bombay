@@ -130,8 +130,8 @@ fn recover<T>(error: PoisonError<T>) -> T {
 /// Completion-state bits for [`Slot`].
 const COMPLETED: usize = 1 << 0;
 const HAS_WAITER: usize = 1 << 1;
-/// Set exactly while the outcome cell holds a live value. Rides the state
-/// word (set by `complete`'s RMW, cleared by `reset`'s recycle and
+/// Set while the published outcome awaits disposal or transfer. Rides the
+/// state word (set by `complete`'s RMW, cleared before `reset`'s disposal or
 /// an ownership-transferring take) so the outcome cell needs no separate tag:
 /// the validity gate is `COMPLETED` for readers, `OUTCOME_VALID` for droppers.
 const OUTCOME_VALID: usize = 1 << 2;
@@ -267,8 +267,8 @@ impl DerefMut for Waiters {
 /// - Reclamation is entirely `Arc`-based; no raw pointer outlives the slot.
 struct Slot<O> {
     state: AtomicUsize,
-    // O-sized (no Option tag): the OUTCOME_VALID bit in `state` is the
-    // liveness marker, and COMPLETED gates every read.
+    // O-sized (no Option tag): OUTCOME_VALID tracks unclaimed outcome
+    // ownership, and COMPLETED gates shared reads.
     outcome: UnsafeCell<MaybeUninit<O>>,
     // One waiter is retained inline in the slot allocation. Fan-out promotes
     // to a Vec only for a second distinct waiter.
@@ -340,15 +340,15 @@ impl<O> Slot<O> {
         });
     }
 
-    /// Drop the published outcome, if the cell holds one.
+    /// Drop the exclusively owned outcome.
     ///
     /// # Safety
-    /// No reader can observe the cell (a pooled slot has no observers; the
-    /// subsequent store of `state` publishes the drop), and the caller
-    /// guarantees `OUTCOME_VALID` is set (so the drop happens exactly once).
+    /// No reader can observe the cell, and the caller owns its live outcome.
+    /// A pooled caller must clear `OUTCOME_VALID` before invoking destruction
+    /// so unwinding cannot retry it; final slot destruction owns the cell alone.
     #[cfg(not(loom))]
     unsafe fn drop_outcome(&self) {
-        // SAFETY: no concurrent readers (pooled-slot invariant).
+        // SAFETY: the caller owns exclusive disposal authority.
         unsafe { (*self.outcome.get()).assume_init_drop() };
     }
 
@@ -550,10 +550,11 @@ impl<O> Slot<O> {
     fn reset(&self) {
         let state = self.state.load(Ordering::Relaxed);
         if state & OUTCOME_VALID != 0 {
+            self.state.store(state & !OUTCOME_VALID, Ordering::Relaxed);
             // SAFETY: pooled slots have no observers (see `Subject::drop`),
-            // so the cell is unobservable; the Release store below publishes
-            // the drop. OUTCOME_VALID is then cleared by the same store, so
-            // the slot's final drop will not double-drop.
+            // so this caller owns the live outcome. Claim its destruction
+            // before user Drop can unwind; final slot destruction cannot
+            // repeat it. The final Release store publishes completed reuse.
             unsafe { self.drop_outcome() };
         }
         if state & HAS_WAITER != 0 {
@@ -572,9 +573,9 @@ impl<O> Drop for Slot<O> {
     fn drop(&mut self) {
         // SAFETY: the last Arc reference is being dropped (reclamation is
         // entirely Arc-based), so no other thread can access the slot.
-        // OUTCOME_VALID is set exactly while the cell holds a live value:
-        // written by complete, cleared by reset's recycle or a unique take,
-        // so the drop fires exactly once.
+        // OUTCOME_VALID marks an outcome still awaiting disposal or transfer:
+        // set by complete, claimed before reset's drop or a unique take,
+        // so final destruction disposes only an unclaimed outcome.
         if self.state.load(Ordering::Relaxed) & OUTCOME_VALID != 0 {
             // SAFETY: see above.
             unsafe { self.drop_outcome() };
@@ -679,9 +680,9 @@ impl<K: Eq + Hash, O> SmallMap<K, O> {
 /// pool needs no lock of its own (a single `&mut` through the guard).
 struct Entries<K, O> {
     map: SmallMap<K, O>,
-    // Recycled slots that no observer can still read, cap-bounded so
-    // retention stays explicitly bounded. A pooled slot's strong count is
-    // exactly the pool's own reference (see `Subject::drop`).
+    // Recycled slots without live observers, with bounded pool retention.
+    // A retiring subject's Arc can remain until its fields finish dropping;
+    // it no longer has publication or observation authority.
     pool: Vec<Arc<Slot<O>>>,
 }
 
@@ -750,6 +751,7 @@ where
     ///
     /// # Panics
     /// Panics if the process exhausts all generations.
+    /// Propagates a retained outcome's or waiter's destructor panic during reuse.
     pub fn subject(&self, key: K) -> Result<Subject<K, O>, SubjectExists<K>> {
         let mut entries = write_lock(&self.inner.entries);
         let pooled = entries.pool.pop();

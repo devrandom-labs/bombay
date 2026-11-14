@@ -6,6 +6,7 @@ mod documents {
     //! shutdown. Behavior owns the closed roles and routes, Behavior Actors owns
     //! the shutdown plan, and Bombay only interprets and retains the result.
 
+    use bombay::RetirementOutcome;
     use bombay::WorkOutcome;
     use bombay::behavior::{
         BehaviorBase, BehaviorSettlements, ClassifySettlement, Never, SettlementStatus,
@@ -33,7 +34,7 @@ mod documents {
             .block_on(
                 Application::with_topology(application, document_application::Topology::new())
                     .run_with(|application| async move {
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         assert_eq!(shutdown, Ok(()));
                         application.termination().await
                     }),
@@ -49,6 +50,7 @@ mod documents {
                 output: termination,
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -81,7 +83,7 @@ mod documents {
         R: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
         R::Settlements: ClassifySettlement,
     {
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -99,10 +101,13 @@ mod documents {
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         } = terminal
         else {
             panic!("phased shutdown must preserve the completed application root")
@@ -159,7 +164,7 @@ mod documents {
     fn assert_indexer(
         terminal: ActorRetirement<StopOnShutdown<Indexer>, Never, Vec<Never>>,
     ) -> usize {
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -177,10 +182,13 @@ mod documents {
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         } = terminal
         else {
             panic!("the indexer must complete its explicit shutdown")
@@ -209,7 +217,7 @@ mod documents {
     fn assert_journal(
         terminal: ActorRetirement<StopOnShutdown<Journal>, Never, Vec<Never>>,
     ) -> String {
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -227,10 +235,13 @@ mod documents {
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         } = terminal
         else {
             panic!("the journal must complete its explicit shutdown")

@@ -1,9 +1,14 @@
 use core::num::NonZeroUsize;
 
+// Communication requires the rounded power of two to be below 2^31 slots.
+// A larger minimum would round past that native limit before allocation.
+const MAX_CAPACITY: usize = 1 << 30;
+
 /// A validated bounded user-mailbox size.
 ///
 /// Communication rounds a positive requested minimum up to a power of two,
-/// with a floor of two. This value stores that effective capacity once.
+/// with a floor of two. The largest supported capacity is 2^30 slots.
+/// This value stores that effective capacity once; it does not allocate slots.
 ///
 /// The validated representation cannot be forged:
 ///
@@ -17,9 +22,10 @@ impl MailboxCapacity {
     /// Validate the requested minimum before transferring or allocating a mailbox.
     ///
     /// # Errors
-    /// Returns the original minimum if it is zero or rounding would overflow.
+    /// Returns the original minimum if it is zero or exceeds the largest
+    /// supported capacity. No mailbox is allocated during validation.
     pub fn new(minimum: usize) -> Result<Self, MailboxCapacityError> {
-        if minimum == 0 {
+        if minimum == 0 || minimum > MAX_CAPACITY {
             return Err(MailboxCapacityError { minimum });
         }
         let effective = minimum
@@ -45,7 +51,7 @@ impl Default for MailboxCapacity {
 
 /// Rejected sizing with the original requested minimum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-#[error("mailbox minimum {minimum} must be positive and round to a representable power of two")]
+#[error("mailbox minimum {minimum} must be between 1 and {}", MAX_CAPACITY)]
 pub struct MailboxCapacityError {
     /// The complete original requested minimum.
     pub minimum: usize,

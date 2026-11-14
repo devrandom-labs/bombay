@@ -1,13 +1,14 @@
 //! Real elapsed reports establish readiness in both timer/shutdown orders.
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, BirthMode, ChildReport,
     CreationSequence, EventIngress, InterpreterRequests, MessageProtocol, Never, NoBirths, NoSends,
     ReportToParent, Step, User, UserEvent,
 };
-use bombay::prelude::{Exit, TimerId};
+use bombay::prelude::Exit;
 use bombay::{ActorNotificationReceipts, ActorRetirement, Application, MailAddr};
 use core::time::Duration;
 use std::collections::BTreeSet;
@@ -157,18 +158,18 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         payload: timer_payload,
     }
     .stop_on_shutdown()
-    .with_one_shot(TimerId(1), Duration::ZERO, |worker| {
+    .with_one_shot(Duration::ZERO, |worker| {
         Actions::cont().with_send(ReportToParent::new(worker.base().order))
     });
     let shutdown = TimedWorker {
         order: WrapperOrder::ShutdownOutside,
         payload: shutdown_payload,
     }
-    .with_one_shot(TimerId(1), Duration::ZERO, |worker| {
+    .with_one_shot(Duration::ZERO, |worker| {
         Actions::cont().with_send(ReportToParent::new(worker.order))
     })
     .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         TimedParent::new().stop_on_shutdown(),
         timed_application::Topology::new(),
     )
@@ -198,14 +199,14 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     let (_, retirement) = native.expect("joined root and exact child custody");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
                 descendants,
                 ..
             },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = retirement
     else {
         panic!("the reunion completed the root");
@@ -217,7 +218,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
         let retirement = match report {
             timed_application::RootRetirements::Timer { origin, retirement } => {
                 assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-                let ActorRetirement::OwnerCancelled {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -225,7 +226,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                             child_failures,
                             ..
                         },
-                    ..
+                    outcome: RetirementOutcome::OwnerCancelled { .. },
                 } = *retirement
                 else {
                     panic!("timer reaction continued, so owner cancellation returns its actor");
@@ -242,7 +243,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                 retirement
             }
         };
-        let ActorRetirement::OwnerCancelled {
+        let ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     behavior,
@@ -250,7 +251,7 @@ async fn actual_elapsed_reports_complete_both_orders_and_return_cancelled_child_
                     child_failures,
                     ..
                 },
-            ..
+            outcome: RetirementOutcome::OwnerCancelled { .. },
         } = *retirement
         else {
             panic!("shutdown outside preserves the same cancellation custody");

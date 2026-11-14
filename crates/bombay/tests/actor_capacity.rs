@@ -169,7 +169,7 @@ async fn root_limit_preserves_rejection_retry_prefix_and_complete_retirement() {
             .await
             .expect("all accepted documents precede the reply");
         assert_eq!(receipt.message, 5);
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         let report = application.retirement().await;
         assert_eq!(
@@ -234,7 +234,7 @@ async fn early_scope_limit_survives_root_assembly_and_shutdown_with_full_admissi
                 panic!("scope selection must apply to the actual root mailbox");
             };
             assert!(ptr::eq(identity, document.as_ptr()));
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let report = application.retirement().await;
             assert_eq!(
@@ -289,7 +289,7 @@ fn missing_host_returns_actor_configuration_and_original_work_for_retry() {
             .await
             .expect("the original work receives its actual reply");
         assert_eq!(receipt.message, 2);
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         original
     }) else {
@@ -396,7 +396,7 @@ async fn fresh_child_inherits_the_limit_and_returns_original_documents_at_retire
                 .expect("all three original child inputs are processed");
             assert_eq!(receipt.message, 3);
             identities.push(identity);
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let report = application.retirement().await;
             assert_eq!(

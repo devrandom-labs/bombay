@@ -1,4 +1,5 @@
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorSettlements, ClassifySettlement, Never, Protocol, SettlementStatus,
 };
@@ -13,7 +14,7 @@ where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     B::Settlements: ClassifySettlement,
 {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -31,10 +32,13 @@ where
                 retirement_failures,
                 terminal_report,
             },
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("actual native actor failed; no clean result is synthesized");

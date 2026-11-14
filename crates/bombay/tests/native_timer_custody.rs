@@ -3,6 +3,7 @@
 use behavior_actors::{
     ScheduleAfter, ScheduleAt, TimerElapsed, TimerGeneration, TimerId, TimerScheduled,
 };
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     Actions, ActiveTurn, Behavior, BehaviorActed, BehaviorBase, Here, InjectEvent, Interpretation,
     InterpretationProgress, InterpreterRequests, ItemSettlement, MessageProtocol, Never, NoBirths,
@@ -124,7 +125,7 @@ async fn conversion_panic_returns_timer_custody(clock: ReminderClock) {
     };
     let notes = Box::<[u8]>::from([31, 37]);
     let allocation = notes.as_ptr();
-    let (work, native, notifications, ()) = Application::new(Reminders { notes })
+    let (work, _root_report, native, notifications, ()) = Application::new(Reminders { notes })
         .run_with(|application| async move {
             let sender = application.sender().expect("ordinary application sender");
             sender
@@ -148,12 +149,15 @@ async fn conversion_panic_returns_timer_custody(clock: ReminderClock) {
     notifications.termination.expect("termination is published");
     notifications.retirement.expect("retirement is published");
     let (_, retirement) = native.expect("the complete native retirement survives");
-    let ActorRetirement::HostExecutionPanicked {
-        payload: _,
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::HostExecutionPanicked {
+                payload: _,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("conversion panics during active action interpretation");

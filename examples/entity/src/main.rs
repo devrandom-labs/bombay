@@ -65,9 +65,7 @@ async fn main() {
             .send(AccountCommand::Deposit(2))
             .await
             .expect("fresh incarnation admits deposit");
-        application
-            .request_shutdown()
-            .expect("root shutdown admitted");
+        application.shutdown().expect("root shutdown admitted");
     })
     .await
     .unwrap_or_else(|_| panic!("the application starts"));

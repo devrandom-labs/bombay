@@ -1,5 +1,6 @@
 //! Counter transition and native processing laws, exercised against the public example actor.
 
+use bombay::RetirementOutcome;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, SettlementStatus};
 use bombay::prelude::*;
 use tokio::runtime::Builder;
@@ -151,12 +152,15 @@ where
     R::Settlements: ClassifySettlement,
 {
     let (origin, terminal) = terminal;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")
@@ -183,6 +187,7 @@ where
 }
 
 mod tests {
+    use bombay::RetirementOutcome;
     use bombay::{ActorNotificationReceipts, WorkOutcome};
     use futures_util::FutureExt;
     use std::panic::AssertUnwindSafe;
@@ -206,7 +211,7 @@ mod tests {
     )]
     fn correlated_increments_publish_after_the_actual_mutation() {
         let host = Builder::new_current_thread().enable_all().build().unwrap();
-        let (execution, (work, native, notifications, ())) = host.block_on(async {
+        let (execution, (work, _root_report, native, notifications, ())) = host.block_on(async {
             let prepared = Application::new(Counter::new().stop_on_shutdown()).execute_with(
                 |application| async move {
                     let lifecycle = application.lifecycle();
@@ -249,7 +254,7 @@ mod tests {
                     };
                     let first_processing = first.receive().now_or_never();
                     let second_processing = second.receive().now_or_never();
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination = match observed_termination {
                         Some(termination) => termination,
                         None => lifecycle.termination().await,
@@ -349,7 +354,7 @@ mod tests {
     #[test]
     fn overflowing_increment_keeps_the_original_error_without_processing_success() {
         let host = Builder::new_current_thread().enable_all().build().unwrap();
-        let (execution, (work, native, notifications, ())) = host.block_on(async {
+        let (execution, (work, _root_report, native, notifications, ())) = host.block_on(async {
             let prepared = Application::new(Counter::at_maximum().stop_on_shutdown()).execute_with(
                 |application| async move {
                     let lifecycle = application.lifecycle();
@@ -379,7 +384,7 @@ mod tests {
                     };
                     let processing = increments.receive().now_or_never();
                     // A successful-overflow inversion must still retire its surviving root.
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination = match observed_termination {
                         Some(termination) => termination,
                         None => lifecycle.termination().await,
@@ -411,7 +416,11 @@ mod tests {
         let Ok((origin, retirement)) = &native else {
             panic!("the native actor result must be independently received");
         };
-        let ActorRetirement::BehaviorFailed { error, .. } = retirement else {
+        let ActorRetirement::Retained {
+            outcome: RetirementOutcome::BehaviorFailed { error, .. },
+            ..
+        } = retirement
+        else {
             panic!("overflow must retain the original native BehaviorFailed retirement");
         };
         assert_eq!(*error, CounterError::Overflow);
@@ -454,7 +463,7 @@ mod tests {
     )]
     fn separate_read_ports_preserve_cancelled_waits_and_refuse_late_replies() {
         let host = Builder::new_current_thread().enable_all().build().unwrap();
-        let (execution, (work, native, notifications, ())) = host.block_on(async {
+        let (execution, (work, _root_report, native, notifications, ())) = host.block_on(async {
             let prepared = Application::new(Counter::new().stop_on_shutdown()).execute_with(
                 |application| async move {
                     let lifecycle = application.lifecycle();
@@ -503,7 +512,7 @@ mod tests {
                         Ok(()) | Err(_) => (None, None),
                     };
                     let extra_reply = continuation.receive().now_or_never();
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination = match early_termination.or(later_termination) {
                         Some(termination) => termination,
                         None => lifecycle.termination().await,
@@ -545,7 +554,14 @@ mod tests {
         });
         drop(host);
         // All original owners are acquired before any semantic assertion.
-        let Ok((origin, ActorRetirement::Completed { settlements, .. })) = &native else {
+        let Ok((
+            origin,
+            ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { settlements, .. },
+                ..
+            },
+        )) = &native
+        else {
             panic!("the active Counter must retain its joined outcome");
         };
         let WorkOutcome::Completed {

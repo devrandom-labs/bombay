@@ -1,0 +1,20 @@
+[package]
+name = "bombay-example-remote-counter"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+bombay-rs = { path = "../../crates/bombay", features = ["remote"] }
+tokio = { workspace = true, features = ["macros", "net", "io-util", "time"] }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile = "3.27.0"
+futures-util = { version = "0.3.34", default-features = false, features = ["std"] }

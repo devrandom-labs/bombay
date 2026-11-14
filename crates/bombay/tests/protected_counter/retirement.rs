@@ -1,12 +1,14 @@
 use super::{Counter, CounterMessage, CounterProcessed, CounterValue};
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt as _;
-use bombay::atomic::{
-    ActivationPlan, ActivationPolicy, ActorDrainPolicy, CapabilityResult, DiagnosticDisposition,
-    FailureReaction, FixedSnapshot, FixedSupervisor, OrderedRoles, Recovery, StableProxy,
-    WorkerActivation, WorkerSubmission, fixed,
-};
-use bombay::behavior::{Behavior, BehaviorSettlements, Here, MessageProtocol, Never, RecoverEvent};
+use bombay::behavior::{Behavior, BehaviorSettlements, Here, Never, RecoverEvent};
+use bombay::composition::replies::ExactReplies;
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
 use bombay::prelude::*;
+use bombay::proxy::StableProxy;
+use bombay::supervisor::roster::{self, FailureReaction, FixedSupervisor, Recovery};
+use bombay::worker::{OrderedRoles, StartupLimit, StartupPlan, WorkerStartup, WorkerSubmission};
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, Application,
     RetirementAssessment, RetirementSchema, WorkOutcome,
@@ -30,10 +32,10 @@ struct HeldCounterActivation {
     release: oneshot::Receiver<()>,
     preparation_resource: OwnedSemaphorePermit,
 }
-impl ActivationPlan for HeldCounterActivation {
+impl StartupPlan for HeldCounterActivation {
     type Ready = ();
     type Rejection = oneshot::error::RecvError;
-    async fn activate(self) -> Result<Self::Ready, Self::Rejection> {
+    async fn start(self) -> Result<Self::Ready, Self::Rejection> {
         self.reached
             .send(())
             .expect("the controller owns the reached receiver");
@@ -43,26 +45,31 @@ impl ActivationPlan for HeldCounterActivation {
     }
 }
 type CounterProxy = StableProxy<Counter, HeldCounterActivation>;
-type CounterSupervisor =
-    FixedSupervisor<CounterRole, Counter, HeldCounterActivation, Never, Infallible, Infallible>;
+type CounterSupervisor = FixedSupervisor<
+    CounterRole,
+    Counter,
+    HeldCounterActivation,
+    Never,
+    Infallible,
+    Infallible,
+    ExactReplies,
+    ExactReplies,
+>;
 type CounterSupervisorRoot = StopOnShutdown<CounterSupervisor>;
-type CounterCapability = MessageProtocol<MailAddr, CapabilityResult<CounterRole, Counter>>;
-type CounterStatus = MessageProtocol<MailAddr, FixedSnapshot<Counter>>;
 
 bombay::topology! {
     counter_subtree_application {
         root: CounterSupervisor { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts { capabilities: CounterCapability; status: CounterStatus; }
     }
 }
 use counter_subtree_application::RootRetirements;
 fn held_counter_supervisor(activation: HeldCounterActivation) -> CounterSupervisor {
     let mut activation = Some(activation);
-    fixed(
+    roster::new(
         move |_: &CounterRole| {
-            Ok::<_, Infallible>(WorkerSubmission::activated(
+            Ok::<_, Infallible>(WorkerSubmission::with_startup(
                 Counter::new(),
                 activation
                     .take()
@@ -70,11 +77,13 @@ fn held_counter_supervisor(activation: HeldCounterActivation) -> CounterSupervis
             ))
         },
         OrderedRoles::new(CounterRole::Current, []).expect("the declared role is unique"),
-        ActivationPolicy::new(1).expect("explicit fixture activation capacity"),
-        Recovery::temporary(),
-        FailureReaction::StopSupervisor,
-        ActorDrainPolicy::WaitForActorGraph,
-        DiagnosticDisposition::terminate(),
+        roster::Config {
+            startup: StartupLimit::new(1).expect("explicit fixture activation capacity"),
+            recovery: Recovery::temporary(),
+            failure: FailureReaction::StopSupervisor,
+            shutdown: ActorDrainPolicy::WaitForActorGraph,
+            diagnostics: DiagnosticDisposition::terminate(),
+        },
     )
     .build()
     .unwrap_or_else(|_| panic!("the actual Counter is prepared"))
@@ -86,7 +95,7 @@ where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     Descendants: RetirementSchema,
 {
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 control,
@@ -104,33 +113,19 @@ where
                 retirement_failures,
                 ..
             },
-        interpretation,
-        source,
-        completion: Completion::Stopped,
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody:
-            ActorCustody {
-                control,
-                received_interpretation,
-                received_source,
-                source_index,
-                acquired_ingress,
-                user,
-                descendants,
-                child_failures,
-                capability_failures,
-                unread_owner_cancellation,
-                additional_failures,
-                terminal_report,
-                retirement_failures,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                completion: Completion::Stopped,
+                ..
+            }
+            | RetirementOutcome::OwnerCancelled {
+                interpretation,
+                source,
                 ..
             },
-        interpretation,
-        source,
-        ..
-    }) = retirement
+    } = retirement
     else {
         panic!("the original joined owner is normal or owner-cancelled");
     };
@@ -205,7 +200,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                     let target_address = target.root().address();
                     let reached_result = reached_receiver.await;
                     let lifecycle = target.lifecycle();
-                    let shutdown = lifecycle.request_shutdown();
+                    let shutdown = lifecycle.shutdown();
                     let termination_before = lifecycle.termination().now_or_never();
                     let report_before = lifecycle.retirement().now_or_never();
                     let retirement = lifecycle.retirement();
@@ -244,7 +239,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                             let target_termination = lifecycle.termination().await;
                             let replayed_report = lifecycle.retirement().await;
                             let permits_settled = resource.available_permits();
-                            let sibling_shutdown = sibling.lifecycle().request_shutdown();
+                            let sibling_shutdown = sibling.lifecycle().shutdown();
                             let sibling_termination = sibling.lifecycle().termination().await;
                             let sibling_report = sibling.lifecycle().retirement().await;
                             (
@@ -288,6 +283,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
             output: observations,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -312,6 +308,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
             output: progress,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((sibling_origin, sibling_native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -346,36 +343,23 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
     let mut native = (origin, native);
     inspect_joined_counter_subtree(native.0, &native.1, target_address);
     let terminal = &mut native.1;
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { descendants, .. },
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody: ActorCustody { descendants, .. },
-        ..
-    }) = terminal
+        outcome: RetirementOutcome::Completed { .. } | RetirementOutcome::OwnerCancelled { .. },
+    } = terminal
     else {
         unreachable!("the native root was checked");
     };
     let terminal = descendants[0].retirement.as_mut();
-    let (ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 control,
                 descendants,
                 ..
             },
-        ..
-    }
-    | ActorRetirement::OwnerCancelled {
-        custody:
-            ActorCustody {
-                control,
-                descendants,
-                ..
-            },
-        ..
-    }) = terminal
+        outcome: RetirementOutcome::Completed { .. } | RetirementOutcome::OwnerCancelled { .. },
+    } = terminal
     else {
         unreachable!("the native proxy was checked");
     };
@@ -386,7 +370,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         .into_iter()
         .map(|event| {
             <<CounterProxy as Behavior>::Event as RecoverEvent<
-                WorkerActivation<Counter, HeldCounterActivation>,
+                WorkerStartup<Counter, HeldCounterActivation>,
                 Here,
             >>::recover(event)
             .map(|activation| {
@@ -407,7 +391,7 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
         "the proxy retains exactly one original Ready activation and no recovery alternative"
     );
     eprintln!("NATIVE_RECOVERED_ACTIVATIONS {returned_activations}");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 child_failures,
@@ -417,8 +401,11 @@ fn supervisor_retirement_keeps_held_counter_activation_and_independent_progress(
                 descendants,
                 ..
             },
-        completion: Completion::Stopped,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                completion: Completion::Stopped,
+                ..
+            },
     } = &sibling_native
     else {
         panic!("the independent Counter retains its completed original");

@@ -19,7 +19,7 @@ jobs:
   checks:
     name: Nix Flake Check
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     permissions:
       actions: write
       contents: read
@@ -91,6 +91,153 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  incoming_schedules:
+    name: Incoming schedules (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [debug, release]
+    env:
+      CARGO_BUILD_JOBS: "2"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_PROFILE_RELEASE_DEBUG: "0"
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target/incoming-schedules
+      PROPTEST_CASES: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '4096' || '256' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
+        with:
+          nix_conf: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+      - name: Run incoming delivery orders
+        id: orders
+        shell: bash
+        run: |
+          nix develop -c env PROPTEST_CASES="$PROPTEST_CASES" bash -euo pipefail -c "$(cat <<'INCOMING_ORDERS'
+          profile_args=()
+          if [[ '${{ matrix.profile }}' == 'release' ]]; then
+            profile_args+=(--release)
+          fi
+          evidence="target/incoming-evidence/${{ matrix.profile }}"
+          mkdir -p "$evidence"
+          git rev-parse HEAD > "$evidence/revision.txt"
+          rustc --version > "$evidence/rustc.txt"
+          cargo --version > "$evidence/cargo.txt"
+          sha256sum Cargo.toml Cargo.lock flake.lock flake.nix \
+            crates/bombay/Cargo.toml examples/counter/src/counter.rs \
+            crates/bombay/src/remote/export/query.rs \
+            crates/bombay/src/remote/export/schedule.rs \
+            crates/bombay/proptest-regressions/remote/export/schedule.txt \
+            .github/workflows/checks.yml > "$evidence/inputs.sha256"
+          campaign=(cargo test --locked "${profile_args[@]}" -p bombay-rs
+            --all-features --lib remote::export::query::schedule
+            -- --nocapture --test-threads=1)
+          printf '%q ' "${campaign[@]}" > "$evidence/command.txt"
+          printf '\n' >> "$evidence/command.txt"
+          if "${campaign[@]}" > "$evidence/campaign.log" 2>&1; then
+            qualification_status=0
+          else
+            qualification_status=$?
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/cargo-exit.txt"
+          if [[ "$qualification_status" -eq 0 ]]; then
+            if ! {
+              grep -Eq '^test result: ok\. 5 passed; 0 failed; 0 ignored;' "$evidence/campaign.log" &&
+              [[ "$(grep -c 'generated incoming configuration:' "$evidence/campaign.log")" == 1 ]] &&
+              [[ "$(grep -c '^generated incoming observations:' "$evidence/campaign.log")" == 1 ]]
+            }; then
+              printf '%s\n' 'incoming campaign execution evidence is incomplete' >&2
+              qualification_status=1
+            fi
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/exit.txt"
+          cat "$evidence/campaign.log"
+          cp crates/bombay/proptest-regressions/remote/export/schedule.txt "$evidence/schedule.txt"
+          exit "$qualification_status"
+          INCOMING_ORDERS
+          )"
+      - name: Retain incoming schedules and saved cases
+        if: always() && (steps.orders.outcome == 'success' || steps.orders.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: incoming-schedules-${{ matrix.profile }}-${{ github.run_id }}
+          path: target/incoming-evidence/${{ matrix.profile }}/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Run public Client delivery orders
+        id: client_orders
+        shell: bash
+        run: |
+          nix develop -c env PROPTEST_CASES="$PROPTEST_CASES" bash -euo pipefail -c "$(cat <<'CLIENT_ORDERS'
+          profile_args=()
+          if [[ '${{ matrix.profile }}' == 'release' ]]; then
+            profile_args+=(--release)
+          fi
+          evidence="target/client-evidence/${{ matrix.profile }}"
+          seed=crates/bombay/tests/application_clients/outbound/overlap.proptest-regressions
+          mkdir -p "$evidence"
+          git rev-parse HEAD > "$evidence/revision.txt"
+          rustc --version > "$evidence/rustc.txt"
+          cargo --version > "$evidence/cargo.txt"
+          sha256sum Cargo.toml Cargo.lock flake.lock flake.nix \
+            crates/bombay/Cargo.toml examples/counter/src/counter.rs \
+            crates/bombay/src/remote/client.rs \
+            crates/bombay/src/remote/export/query.rs \
+            crates/bombay/src/remote/export/declaration.rs \
+            crates/bombay/tests/application_clients.rs \
+            crates/bombay/tests/application_clients/outbound.rs \
+            crates/bombay/tests/application_clients/outbound/overlap.rs \
+            crates/bombay/tests/application_clients/protocol.rs \
+            "$seed" .github/workflows/checks.yml > "$evidence/inputs.sha256"
+          saved_cases=$(grep -Ec '^cc [0-9a-f]{64}( |$)' "$seed")
+          expected_observations=$((PROPTEST_CASES + saved_cases))
+          campaign=(cargo test --locked "${profile_args[@]}" -p bombay-rs
+            --all-features --test application_clients outbound::overlap::
+            -- --nocapture --test-threads=1)
+          printf '%q ' "${campaign[@]}" > "$evidence/command.txt"
+          printf '\n' >> "$evidence/command.txt"
+          if "${campaign[@]}" > "$evidence/campaign.log" 2>&1; then
+            qualification_status=0
+          else
+            qualification_status=$?
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/cargo-exit.txt"
+          if [[ "$qualification_status" -eq 0 ]]; then
+            if ! {
+              grep -Eq '^test result: ok\. 6 passed; 0 failed; 0 ignored;' "$evidence/campaign.log" &&
+              [[ "$(grep -c 'generated Client configuration:' "$evidence/campaign.log")" == 1 ]] &&
+              [[ "$(grep -Fxc "generated Client observations: invocations=$expected_observations; completed=$expected_observations" "$evidence/campaign.log")" == 1 ]] &&
+              [[ "$(grep -c '^Client delivery cases completed=' "$evidence/campaign.log")" == 32 ]]
+            }; then
+              printf '%s\n' 'Client campaign execution evidence is incomplete' >&2
+              qualification_status=1
+            fi
+          fi
+          printf '%s\n' "$qualification_status" > "$evidence/exit.txt"
+          cat "$evidence/campaign.log"
+          cp "$seed" "$evidence/overlap.proptest-regressions"
+          exit "$qualification_status"
+          CLIENT_ORDERS
+          )"
+      - name: Retain public Client schedules and saved cases
+        if: always() && (steps.client_orders.outcome == 'success' || steps.client_orders.outcome == 'failure')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: client-schedules-${{ matrix.profile }}-${{ github.run_id }}
+          path: target/client-evidence/${{ matrix.profile }}/
+          if-no-files-found: error
+          retention-days: 14
+
   native_tls_research:
     name: Native TLS research (${{ matrix.profile }})
     runs-on: ubuntu-latest
@@ -115,106 +262,102 @@ jobs:
           nix_conf: |
             experimental-features = nix-command flakes
             accept-flake-config = true
-      - name: Format and lint native fixture
-        run: |
-          nix develop -c cargo fmt --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --all -- --check
-          nix develop -c cargo clippy --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --bin transport_custody -- -D warnings
-      - name: Build native fixture
-        shell: bash
-        run: |
-          profile_args=()
-          if [[ '${{ matrix.profile }}' == 'release' ]]; then
-            profile_args+=(--release)
-          fi
-          nix develop -c cargo build --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml --locked --bin transport_custody --jobs 2 "${profile_args[@]}"
-      - name: Observe both TLS layouts
-        run: |
-          nix develop -c python3 docs/prds/static-remote-actors/transport-custody/verify_transport_custody.py \
-            "$CARGO_TARGET_DIR/${{ matrix.profile }}/transport_custody" \
-            docs/prds/static-remote-actors/transport-custody/certificates \
-            "target/transport-evidence/${{ matrix.profile }}"
       - name: Build and verify protected Counter Applications
         shell: bash
         run: |
+          nix develop -c bash -euo pipefail -c "$(cat <<'PROTECTED_COUNTER'
           profile_args=()
           if [[ '${{ matrix.profile }}' == 'release' ]]; then
             profile_args+=(--release)
           fi
           evidence="target/transport-evidence/${{ matrix.profile }}"
           mkdir -p "$evidence"
-          nix develop -c cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
+          git rev-parse HEAD > "$evidence/protected-counter-revision.txt"
+          printf '%s\n' '${{ matrix.profile }}' > "$evidence/protected-counter-profile.txt"
+          sha256sum \
+            Cargo.toml Cargo.lock flake.lock examples/counter/Cargo.toml \
+            crates/bombay/Cargo.toml crates/bombay/src/remote/mod.rs \
+            crates/bombay/src/remote/ingress.rs crates/bombay/src/remote/verification.rs \
+            docs/prds/static-remote-actors/transport-custody/Cargo.toml \
+            docs/prds/static-remote-actors/transport-custody/Cargo.lock \
+            examples/counter/src/counter.rs crates/bombay/tests/protected_counter/mod.rs \
+            crates/bombay/tests/protected_counter/transport.rs \
+            crates/bombay/tests/protected_counter/retirement.rs \
+            crates/bombay/tests/protected_counter/protected/mod.rs \
+            crates/bombay/tests/protected_counter/protected/tests.rs \
+            > "$evidence/protected-counter-sources.sha256"
+          sha256sum docs/prds/static-remote-actors/transport-custody/certificates/*.pem \
+            > "$evidence/protected-counter-certificates.sha256"
+          cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
             --locked --jobs 2 --test protected_counter --features protected-transport --no-run --message-format=json \
             "${profile_args[@]}" > "$evidence/protected-counter-build.jsonl" \
             2> "$evidence/protected-counter-build.stderr"
-          executable=$(python3 - "$evidence/protected-counter-build.jsonl" '${{ matrix.profile }}' <<'PYTHON'
-          import json, sys
-          from pathlib import Path
-          source = Path("crates/bombay/tests/protected_counter/mod.rs").resolve()
-          executables = []
-          expected_optimization = "3" if sys.argv[2] == "release" else "0"
-          for line in Path(sys.argv[1]).read_text().splitlines():
-              try:
-                  artifact = json.loads(line)
-              except json.JSONDecodeError:
-                  continue
-              if (artifact.get("reason") == "compiler-artifact"
-                  and artifact["target"]["name"] == "protected_counter"
-                  and artifact["target"]["kind"] == ["test"]
-                  and Path(artifact["target"]["src_path"]).resolve() == source
-                  and artifact["profile"]["test"]
-                  and artifact["profile"]["opt_level"] == expected_optimization
-                  and "protected-transport" in artifact["features"]):
-                  executables.append(artifact["executable"])
-          if len(executables) != 1 or executables[0] is None:
-              raise SystemExit("exact protected Counter test executable was not built")
-          print(executables[0])
-          PYTHON
-          )
-          for campaign in "grant-stop target" "eof target" "release-query target" \
-            "grant-stop sibling-processing" "grant-stop sibling-read"; do
-            read -r grant_release evidence_source <<< "$campaign"
-            nix develop -c python3 docs/prds/static-remote-actors/transport-custody/verify_protected_counter.py \
-              "$executable" "$evidence/protected-counter-$grant_release-$evidence_source" \
-              --source-root "$PWD" \
-              --certificates docs/prds/static-remote-actors/transport-custody/certificates \
-              --grant-release "$grant_release" --evidence-source "$evidence_source"
-          done
-          nix develop -c "$executable" child_stop_keeps_original_target_and_sibling \
+          expected_optimization=0
+          if [[ '${{ matrix.profile }}' == 'release' ]]; then
+            expected_optimization=3
+          fi
+          artifact="$evidence/protected-counter-artifact.json"
+          jq -ces \
+            --arg optimization "$expected_optimization" '
+              [.[] | select(.reason == "compiler-artifact"
+                and .target.name == "protected_counter" and .target.kind == ["test"]
+                and .profile.test == true
+                and .profile.opt_level == $optimization
+                and ((.features | index("protected-transport")) != null))
+                | {source: .target.src_path, executable: .executable}]
+              | if length == 1 then
+                  .[0]
+                  | if ((.source | type) == "string"
+                      and (.executable | type) == "string"
+                      and (.source | length) > 0
+                      and (.executable | length) > 0) then .
+                    else error("protected Counter artifact paths must be strings") end
+                else error("exact protected Counter test executable was not built") end
+            ' "$evidence/protected-counter-build.jsonl" > "$artifact"
+          native_source=$(jq -er '.source' "$artifact")
+          executable=$(jq -er '.executable' "$artifact")
+          [[ "$native_source" -ef "$PWD/crates/bombay/tests/protected_counter/mod.rs" ]]
+          sha256sum "$executable" > "$evidence/protected-counter-executable.sha256"
+          controller=remote_counter::campaigns::all_release_and_evidence_cases_cross_actual_native_roles
+          if cargo test --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml \
+            --locked --jobs 2 --test protected_counter --features protected-transport \
+            "${profile_args[@]}" "$controller" -- --exact --nocapture \
+            > "$evidence/protected-counter-matrix.log" 2>&1; then
+            result=0
+          else
+            result=$?
+          fi
+          printf '%s\n' "$result" > "$evidence/protected-counter-matrix.exit"
+          sha256sum "$evidence/protected-counter-matrix.log" "$evidence/protected-counter-matrix.exit" \
+            > "$evidence/protected-counter-matrix.sha256"
+          cat "$evidence/protected-counter-matrix.log"
+          if [[ "$result" != 0 ]]; then
+            exit "$result"
+          fi
+          test "$(grep -Fxc "test $controller ... ok" "$evidence/protected-counter-matrix.log")" -eq 1
+          test "$(grep -c '^native configuration completed: ' "$evidence/protected-counter-matrix.log")" -eq 32
+          "$executable" child_stop_keeps_original_target_and_sibling \
             --nocapture > "$evidence/protected-child-stop.log" 2>&1
-          python3 - "$evidence/protected-child-stop.log" <<'PYTHON'
-          import re, sys
-          from pathlib import Path
-          output = Path(sys.argv[1]).read_text()
-          expected = {"remote_counter::child_stop_keeps_original_target_and_sibling_for_" + provider + "_proof" for provider in ("recorded", "scheduled")}
-          executed = re.findall(r"^test (\S+) \.\.\. ok$", output, re.MULTILINE)
-          summaries = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;", output, re.MULTILINE)
-          if len(executed) != 2 or set(executed) != expected or summaries != [("2", "0", "0")]:
-              raise SystemExit("exact child Stop witnesses did not execute successfully")
-          PYTHON
-          nix develop -c "$executable" native_query_count_covers_provider_and_queue \
+          test "$(grep -Ec '^test [^[:space:]]+ \.\.\. ok$' "$evidence/protected-child-stop.log")" -eq 2
+          test "$(grep -Fxc 'test remote_counter::child_stop_keeps_original_target_and_sibling_for_recorded_proof ... ok' "$evidence/protected-child-stop.log")" -eq 1
+          test "$(grep -Fxc 'test remote_counter::child_stop_keeps_original_target_and_sibling_for_scheduled_proof ... ok' "$evidence/protected-child-stop.log")" -eq 1
+          test "$(grep -c '^test result:' "$evidence/protected-child-stop.log")" -eq 1
+          test "$(grep -Ec '^test result: ok\. 2 passed; 0 failed; 0 ignored;' "$evidence/protected-child-stop.log")" -eq 1
+          "$executable" native_query_count_covers_provider_and_queue \
             --nocapture > "$evidence/protected-query-count.log" 2>&1
-          python3 - "$evidence/protected-query-count.log" <<'PYTHON'
-          import re, sys
-          from pathlib import Path
-          observed = Path(sys.argv[1]).read_text()
-          expected = {"remote_counter::native_query_count_covers_provider_and_queue_for_" + provider + "_proof" for provider in ("recorded", "scheduled")}
-          executed = re.findall(r"^test (\S+) \.\.\. ok$", observed, re.MULTILINE)
-          summaries = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;", observed, re.MULTILINE)
-          if len(executed) != 2 or set(executed) != expected or summaries != [("2", "0", "0")]:
-              raise SystemExit("exact native Query count witnesses did not execute successfully")
-          PYTHON
-          nix develop -c "$executable" --exact remote_counter::native_reply_count_keeps_active_and_unread_originals \
+          test "$(grep -Ec '^test [^[:space:]]+ \.\.\. ok$' "$evidence/protected-query-count.log")" -eq 2
+          test "$(grep -Fxc 'test remote_counter::native_query_count_covers_provider_and_queue_for_recorded_proof ... ok' "$evidence/protected-query-count.log")" -eq 1
+          test "$(grep -Fxc 'test remote_counter::native_query_count_covers_provider_and_queue_for_scheduled_proof ... ok' "$evidence/protected-query-count.log")" -eq 1
+          test "$(grep -c '^test result:' "$evidence/protected-query-count.log")" -eq 1
+          test "$(grep -Ec '^test result: ok\. 2 passed; 0 failed; 0 ignored;' "$evidence/protected-query-count.log")" -eq 1
+          "$executable" --exact remote_counter::native_reply_count_keeps_active_and_unread_originals \
             --nocapture > "$evidence/protected-reply-count.log" 2>&1
-          python3 - "$evidence/protected-reply-count.log" <<'PYTHON'
-          import re, sys
-          from pathlib import Path
-          observed = Path(sys.argv[1]).read_text()
-          expected = ["remote_counter::native_reply_count_keeps_active_and_unread_originals"]
-          executed = re.findall(r"^test (\S+) \.\.\. ok$", observed, re.MULTILINE)
-          summaries = re.findall(r"^test result: ok\. (\d+) passed; (\d+) failed; (\d+) ignored;", observed, re.MULTILINE)
-          if executed != expected or summaries != [("1", "0", "0")]:
-              raise SystemExit("exact native Reply count witness did not execute successfully")
-          PYTHON
+          test "$(grep -Ec '^test [^[:space:]]+ \.\.\. ok$' "$evidence/protected-reply-count.log")" -eq 1
+          test "$(grep -Fxc 'test remote_counter::native_reply_count_keeps_active_and_unread_originals ... ok' "$evidence/protected-reply-count.log")" -eq 1
+          test "$(grep -c '^test result:' "$evidence/protected-reply-count.log")" -eq 1
+          test "$(grep -Ec '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$evidence/protected-reply-count.log")" -eq 1
+          PROTECTED_COUNTER
+          )"
       - name: Retain native transport observations
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

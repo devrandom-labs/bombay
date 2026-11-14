@@ -155,23 +155,30 @@ pub(crate) mod tests {
     #[derive(Clone, Copy)]
     enum AllocationMeasurement {
         Disabled,
-        Counting(usize),
-        Overflow,
+        Counting { count: usize, largest: usize },
+        Overflow { largest: usize },
     }
 
     thread_local! {
         static ALLOCATION_MEASUREMENT: Cell<AllocationMeasurement> = const { Cell::new(AllocationMeasurement::Disabled) };
     }
 
-    fn record_allocation() {
+    fn record_allocation(size: usize) {
         ALLOCATION_MEASUREMENT.with(|measurement| {
             let next = match measurement.get() {
                 AllocationMeasurement::Disabled => AllocationMeasurement::Disabled,
-                AllocationMeasurement::Counting(count) => match count.checked_add(1) {
-                    Some(count) => AllocationMeasurement::Counting(count),
-                    None => AllocationMeasurement::Overflow,
+                AllocationMeasurement::Counting { count, largest } => match count.checked_add(1) {
+                    Some(count) => AllocationMeasurement::Counting {
+                        count,
+                        largest: largest.max(size),
+                    },
+                    None => AllocationMeasurement::Overflow {
+                        largest: largest.max(size),
+                    },
                 },
-                AllocationMeasurement::Overflow => AllocationMeasurement::Overflow,
+                AllocationMeasurement::Overflow { largest } => AllocationMeasurement::Overflow {
+                    largest: largest.max(size),
+                },
             };
             measurement.set(next);
         });
@@ -179,8 +186,11 @@ pub(crate) mod tests {
 
     pub(crate) fn begin_allocations() {
         ALLOCATION_MEASUREMENT.with(|measurement| match measurement.get() {
-            AllocationMeasurement::Disabled => measurement.set(AllocationMeasurement::Counting(0)),
-            AllocationMeasurement::Counting(_) | AllocationMeasurement::Overflow => {
+            AllocationMeasurement::Disabled => measurement.set(AllocationMeasurement::Counting {
+                count: 0,
+                largest: 0,
+            }),
+            AllocationMeasurement::Counting { .. } | AllocationMeasurement::Overflow { .. } => {
                 panic!("allocation measurement already owns this thread")
             }
         });
@@ -190,8 +200,8 @@ pub(crate) mod tests {
     pub(crate) fn finish_allocations() -> Result<usize, ()> {
         ALLOCATION_MEASUREMENT.with(|measurement| {
             match measurement.replace(AllocationMeasurement::Disabled) {
-                AllocationMeasurement::Counting(count) => Ok(count),
-                AllocationMeasurement::Overflow => Err(()),
+                AllocationMeasurement::Counting { count, .. } => Ok(count),
+                AllocationMeasurement::Overflow { .. } => Err(()),
                 AllocationMeasurement::Disabled => {
                     panic!("allocation measurement does not own this thread")
                 }
@@ -202,8 +212,8 @@ pub(crate) mod tests {
     #[cfg(tokio_unstable)]
     pub(crate) fn current_allocations() -> usize {
         ALLOCATION_MEASUREMENT.with(|measurement| match measurement.get() {
-            AllocationMeasurement::Counting(count) => count,
-            AllocationMeasurement::Disabled | AllocationMeasurement::Overflow => {
+            AllocationMeasurement::Counting { count, .. } => count,
+            AllocationMeasurement::Disabled | AllocationMeasurement::Overflow { .. } => {
                 panic!("current poll has no finite allocation count")
             }
         })
@@ -221,7 +231,7 @@ pub(crate) mod tests {
         unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
             let pointer = unsafe { System.alloc(layout) };
             if !pointer.is_null() {
-                record_allocation();
+                record_allocation(layout.size());
             }
             pointer
         }
@@ -233,7 +243,7 @@ pub(crate) mod tests {
         unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
             let pointer = unsafe { System.alloc_zeroed(layout) };
             if !pointer.is_null() {
-                record_allocation();
+                record_allocation(layout.size());
             }
             pointer
         }
@@ -241,7 +251,7 @@ pub(crate) mod tests {
         unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, size: usize) -> *mut u8 {
             let pointer = unsafe { System.realloc(pointer, layout, size) };
             if !pointer.is_null() {
-                record_allocation();
+                record_allocation(size);
             }
             pointer
         }
@@ -251,17 +261,33 @@ pub(crate) mod tests {
     static ALLOCATOR: CountingAllocator = CountingAllocator;
 
     pub(crate) fn allocations_during(operation: impl FnOnce()) -> usize {
+        allocation_sizes_during(operation).0
+    }
+
+    /// Count successful allocation calls and their largest requested size.
+    /// Reallocation records its new size; this is not retained or peak memory.
+    pub(crate) fn allocation_sizes_during(operation: impl FnOnce()) -> (usize, usize) {
         begin_allocations();
         let release = AllocationRelease;
         operation();
+        let largest = ALLOCATION_MEASUREMENT.with(|measurement| match measurement.get() {
+            AllocationMeasurement::Counting { largest, .. }
+            | AllocationMeasurement::Overflow { largest } => largest,
+            AllocationMeasurement::Disabled => {
+                panic!("allocation measurement does not own this thread")
+            }
+        });
         let count = finish_allocations().expect("successful-allocation count overflowed");
         drop(release);
-        count
+        (count, largest)
     }
 
     #[test]
     fn allocation_measurement_retains_overflow_and_releases_panicked_scope() {
-        ALLOCATION_MEASUREMENT.set(AllocationMeasurement::Counting(usize::MAX));
+        ALLOCATION_MEASUREMENT.set(AllocationMeasurement::Counting {
+            count: usize::MAX,
+            largest: 0,
+        });
         let original = Box::new(black_box(17_u64));
         black_box(&original);
         let count = finish_allocations();
@@ -279,6 +305,30 @@ pub(crate) mod tests {
         assert!(nested.is_err());
         let count = finish_allocations();
         assert!(count.is_ok());
+    }
+
+    #[test]
+    fn allocation_measurement_keeps_the_largest_requested_reservation() {
+        let mut original = Vec::<u8>::new();
+        let (initial_count, initial_largest) = allocation_sizes_during(|| {
+            original.reserve_exact(black_box(4096));
+            black_box(&original);
+        });
+        let initial_capacity = original.capacity();
+        let (grown_count, grown_largest) = allocation_sizes_during(|| {
+            original.reserve_exact(black_box(initial_capacity + 4096));
+            black_box(&original);
+        });
+        let grown_capacity = original.capacity();
+        let empty = allocation_sizes_during(|| {});
+        assert_eq!(initial_count, 1);
+        assert_eq!(initial_largest, initial_capacity);
+        assert!(initial_capacity >= 4096);
+        assert_eq!(grown_count, 1);
+        assert_eq!(grown_largest, grown_capacity);
+        assert!(grown_capacity > initial_capacity);
+        assert_eq!(empty, (0, 0));
+        drop(black_box(original));
     }
 
     #[derive(Debug, PartialEq, Eq)]

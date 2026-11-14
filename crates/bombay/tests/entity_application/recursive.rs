@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ClassifySettlement, CreateChild, CreationSequence,
@@ -226,7 +227,7 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
         .enable_all()
         .build()
         .unwrap();
-    let (outcome, root, notifications, (family, ())) = host
+    let (outcome, _root_report, root, notifications, (family, ())) = host
         .block_on(application.run_with_entities(|application| async move {
             let trees = application.entities(TreesRole);
             let caller = application
@@ -256,7 +257,7 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
                 }) => assert_eq!(command, 23),
                 other => panic!("expected complete launch rejection, got {other:?}"),
             }
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|original| {
@@ -301,7 +302,11 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
     let (
         id,
         EntityActivationError::Launch {
-            retirement: ActorRetirement::InitializationRejected { custody, error },
+            retirement:
+                ActorRetirement::Retained {
+                    custody,
+                    outcome: RetirementOutcome::InitializationRejected { error },
+                },
             retirement_report,
             termination_notification,
         },
@@ -349,12 +354,15 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
     let mut pointers = Vec::new();
     loop {
         let custody = match retirement {
-            ActorRetirement::Completed {
+            ActorRetirement::Retained {
                 custody,
-                interpretation,
-                source,
-                settlements,
-                completion,
+                outcome:
+                    RetirementOutcome::Completed {
+                        interpretation,
+                        source,
+                        settlements,
+                        completion,
+                    },
             } => {
                 assert_eq!(completion, Completion::Stopped);
                 assert!(interpretation.is_none());
@@ -362,11 +370,14 @@ fn recursive_hydration_preserves_each_actor_and_original_launch_refusal() {
                 assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
                 custody
             }
-            ActorRetirement::OwnerCancelled {
+            ActorRetirement::Retained {
                 custody,
-                interpretation,
-                source,
-                settlements,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        interpretation,
+                        source,
+                        settlements,
+                    },
             } => {
                 assert!(interpretation.is_none());
                 assert!(source.is_none());

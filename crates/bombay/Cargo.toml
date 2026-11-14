@@ -16,14 +16,14 @@ workspace = true
 
 [features]
 default = []
-remote = ["dep:serde", "dep:zenoh", "dep:zenoh_config", "dep:zenoh_protocol", "dep:json-event-parser", "dep:futures-util"]
+remote = ["dep:serde", "dep:serde_json", "dep:zenoh", "dep:zenoh_config", "dep:zenoh_protocol", "dep:json-event-parser", "dep:futures-util"]
 axum = ["dep:axum", "tokio/net"]
 
 [dependencies]
 behavior = { workspace = true }
 behavior-actors = { workspace = true }
 bombay-engine = { workspace = true }
-bombay-macros = { version = "0.1.4", path = "../bombay-macros" }
+bombay-macros = { version = "0.2.0", path = "../bombay-macros" }
 bombay-address = { workspace = true }
 communication = { workspace = true }
 parking_lot = { workspace = true }
@@ -33,14 +33,15 @@ timers = { workspace = true }
 triomphe = { workspace = true }
 axum = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
-futures-util = { version = "0.3.34", default-features = false, features = ["alloc"], optional = true }
+serde_json = { workspace = true, optional = true }
+futures-util = { version = "0.3.34", default-features = false, features = ["std"], optional = true }
 json-event-parser = { version = "=0.2.3", default-features = false, optional = true }
 zenoh = { package = "bombay-zenoh", version = "=1.10.10", default-features = false, features = ["transport_tls"], optional = true }
 zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-features = false, optional = true }
 zenoh_protocol = { package = "zenoh-protocol", version = "=1.10.1", default-features = false, optional = true }
 
 [dev-dependencies]
-behavior-macros = { package = "bombay-behavior-macros", version = "=0.14.2" }
+behavior-macros = { package = "bombay-behavior-macros", version = "=0.16.0" }
 http-body-util = "0.1.5"
 tower = { version = "0.5.3", features = ["util"] }
 futures-util = { version = "0.3.34", default-features = false, features = [

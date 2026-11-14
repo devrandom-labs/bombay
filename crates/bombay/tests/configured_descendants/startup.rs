@@ -3,6 +3,7 @@ use super::{
     Config, Document, DocumentChildrenNext, DocumentReady, FileAccess, Files, ManagedDocument,
     Root, RootChildrenDocument, file_request, inspect_file,
 };
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     BehaviorBase, ChildCreationOutcome, ClassifySettlement, CreationKind, CreationRejection,
@@ -112,13 +113,13 @@ async fn child_constructor_panic_keeps_original_creation_actions_and_independent
             constructors: Mutex::new(VecDeque::from([Ok(()), Err(cause)])),
         }),
     );
-    let (work, native, notifications, ()) = application
+    let (work, _root_report, native, notifications, ()) = application
         .run_with(|application| async move {
             let report = tokio::time::timeout(Duration::from_secs(5), replies.receive())
                 .await
                 .expect("root IO and readiness remain independent of its child's refused startup")
                 .expect("the root's real readiness request is delivered");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
@@ -148,12 +149,15 @@ async fn child_constructor_panic_keeps_original_creation_actions_and_independent
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(report.message, 157);
     assert_eq!(report.from, origin.address());
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!(

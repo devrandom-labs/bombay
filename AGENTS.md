@@ -153,6 +153,15 @@ Timers. Ordinary users do not choose those adapters. Pluggability belongs at
 typed effect-lane interpreters; whole-Environment replacement is an advanced
 extension and test-host boundary.
 
+With the opt-in `remote` feature, Bombay owns networking inside Application
+construction, execution and retirement. Keep Zenoh configuration, sessions,
+queries, replies, declarations and transport callbacks private, including from
+advanced public APIs. Applications configure and compose Bombay contracts;
+they must not import Zenoh or implement its request loops or cleanup. Public
+errors preserve actual causes through Bombay contracts without SDK-typed fields.
+Internal mechanism tests may inspect the actual transport owners. Public
+examples must use the same transport-independent Application API as users.
+
 ## Mandatory feature verification
 
 Before designing, implementing, unblocking, or auditing every Bombay feature:

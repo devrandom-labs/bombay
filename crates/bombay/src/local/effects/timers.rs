@@ -1,19 +1,23 @@
 use crate::address::MailAddr;
 use crate::local::effects::ApplicationCapabilities;
-use behavior::{ActionItem, Behavior, InjectEvent, InterpretItem, ItemSettlement, Protocol};
+use behavior::{
+    ActionItem, Behavior, Here, InjectEvent, Inside, InterpretItem, ItemSettlement, Protocol,
+};
 use behavior_actors::{
-    ScheduleAfter, ScheduleAfterRejection, ScheduleAt, ScheduleAtRejection, TimerElapsed, TimerId,
-    TimerScheduled,
+    OwnedScheduleAfter, OwnedScheduleAt, OwnedTimerElapsed, ScheduleAfter, ScheduleAfterRejection,
+    ScheduleAt, ScheduleAtRejection, TimerElapsed, TimerId, timer,
 };
 use core::future::Future;
 use std::time::Instant;
 use timers::{ScheduleError, TimerQueue};
 
-impl<C, N, P, Bindings, Origins, Path, Services> InterpretItem<ScheduleAt, C::Event, Path>
+impl<C, N, P, Bindings, Origins, Path, Services, Target>
+    InterpretItem<timer::ScheduleAt<Target>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<TimerElapsed, Path>,
+    Target: TimerDestination<Path>,
+    C::Event: InjectEvent<timer::TimerElapsed<Target>, Path>,
     Self: Send,
 {
     #[expect(
@@ -22,11 +26,11 @@ where
     )]
     fn interpret_item<'a>(
         &'a mut self,
-        input: <ScheduleAt as ActionItem>::Input<'a>,
-        received: &'a mut Option<<ScheduleAt as ActionItem>::Reply>,
+        input: <timer::ScheduleAt<Target> as ActionItem>::Input<'a>,
+        received: &'a mut Option<<timer::ScheduleAt<Target> as ActionItem>::Reply>,
     ) -> impl Future<Output = ()> + Send + 'a
     where
-        ScheduleAt: 'a,
+        timer::ScheduleAt<Target>: 'a,
     {
         async move {
             if received.is_some() {
@@ -37,8 +41,8 @@ where
                 return;
             };
             let settlement = {
-                match self.timers.schedule_at::<Path>(request) {
-                    Ok(()) => ItemSettlement::Accepted(TimerScheduled {
+                match Target::schedule_at(&mut self.timers, request) {
+                    Ok(()) => ItemSettlement::Accepted(timer::TimerScheduled {
                         id: request.id,
                         generation: request.generation,
                     }),
@@ -65,11 +69,13 @@ where
     }
 }
 
-impl<C, N, P, Bindings, Origins, Path, Services> InterpretItem<ScheduleAfter, C::Event, Path>
+impl<C, N, P, Bindings, Origins, Path, Services, Target>
+    InterpretItem<timer::ScheduleAfter<Target>, C::Event, Path>
     for ApplicationCapabilities<C, N, P, Bindings, Origins, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
-    C::Event: InjectEvent<TimerElapsed, Path>,
+    Target: TimerDestination<Path>,
+    C::Event: InjectEvent<timer::TimerElapsed<Target>, Path>,
     Self: Send,
 {
     #[expect(
@@ -78,11 +84,11 @@ where
     )]
     fn interpret_item<'a>(
         &'a mut self,
-        input: <ScheduleAfter as ActionItem>::Input<'a>,
-        received: &'a mut Option<<ScheduleAfter as ActionItem>::Reply>,
+        input: <timer::ScheduleAfter<Target> as ActionItem>::Input<'a>,
+        received: &'a mut Option<<timer::ScheduleAfter<Target> as ActionItem>::Reply>,
     ) -> impl Future<Output = ()> + Send + 'a
     where
-        ScheduleAfter: 'a,
+        timer::ScheduleAfter<Target>: 'a,
     {
         async move {
             if received.is_some() {
@@ -93,8 +99,8 @@ where
                 return;
             };
             let settlement = {
-                match self.timers.schedule_after::<Path>(request) {
-                    Ok(()) => ItemSettlement::Accepted(TimerScheduled {
+                match Target::schedule_after(&mut self.timers, request) {
+                    Ok(()) => ItemSettlement::Accepted(timer::TimerScheduled {
                         id: request.id,
                         generation: request.generation,
                     }),
@@ -124,6 +130,87 @@ where
     }
 }
 
+/// One actor has disjoint named and occurrence-owned replacement namespaces.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum TimerKey {
+    Named(TimerId),
+    Owned(usize),
+}
+
+trait TimerOccurrence {
+    const POSITION: usize;
+}
+
+impl TimerOccurrence for Here {
+    const POSITION: usize = 0;
+}
+
+impl<Path: TimerOccurrence> TimerOccurrence for Inside<Path> {
+    // Constant evaluation rejects overflow on every supported pointer width.
+    const POSITION: usize = Path::POSITION + 1;
+}
+
+/// Select the real scheduling port promised by the request's concrete target.
+trait TimerDestination<Path>: timer::TimerTarget {
+    fn schedule_at<Event>(
+        timers: &mut LocalTimers<Event>,
+        request: timer::ScheduleAt<Self>,
+    ) -> Result<(), TimerError>
+    where
+        Event: InjectEvent<timer::TimerElapsed<Self>, Path>;
+
+    fn schedule_after<Event>(
+        timers: &mut LocalTimers<Event>,
+        request: timer::ScheduleAfter<Self>,
+    ) -> Result<(), TimerError>
+    where
+        Event: InjectEvent<timer::TimerElapsed<Self>, Path>;
+}
+
+impl<Path> TimerDestination<Path> for TimerId {
+    fn schedule_at<Event>(
+        timers: &mut LocalTimers<Event>,
+        request: ScheduleAt,
+    ) -> Result<(), TimerError>
+    where
+        Event: InjectEvent<TimerElapsed, Path>,
+    {
+        timers.schedule_at::<Path>(request)
+    }
+
+    fn schedule_after<Event>(
+        timers: &mut LocalTimers<Event>,
+        request: ScheduleAfter,
+    ) -> Result<(), TimerError>
+    where
+        Event: InjectEvent<TimerElapsed, Path>,
+    {
+        timers.schedule_after::<Path>(request)
+    }
+}
+
+impl<Path: TimerOccurrence> TimerDestination<Path> for Here {
+    fn schedule_at<Event>(
+        timers: &mut LocalTimers<Event>,
+        request: OwnedScheduleAt,
+    ) -> Result<(), TimerError>
+    where
+        Event: InjectEvent<OwnedTimerElapsed, Path>,
+    {
+        timers.schedule_owned_at::<Path>(request)
+    }
+
+    fn schedule_after<Event>(
+        timers: &mut LocalTimers<Event>,
+        request: OwnedScheduleAfter,
+    ) -> Result<(), TimerError>
+    where
+        Event: InjectEvent<OwnedTimerElapsed, Path>,
+    {
+        timers.schedule_owned_after::<Path>(request)
+    }
+}
+
 impl<Event> Default for LocalTimers<Event> {
     fn default() -> Self {
         Self::new()
@@ -143,7 +230,7 @@ impl<Event> LocalTimers<Event> {
     {
         self.queue
             .schedule(
-                schedule.id,
+                TimerKey::Named(schedule.id),
                 schedule.at,
                 Event::inject_at(TimerElapsed::new(schedule.id, schedule.generation)),
             )
@@ -162,6 +249,35 @@ impl<Event> LocalTimers<Event> {
             .checked_add(schedule.after)
             .ok_or(TimerError::DeadlineOverflow)?;
         self.schedule_at::<Path>(ScheduleAt::new(schedule.id, schedule.generation, deadline))
+    }
+
+    fn schedule_owned_at<Path>(&mut self, schedule: OwnedScheduleAt) -> Result<(), TimerError>
+    where
+        Path: TimerOccurrence,
+        Event: InjectEvent<OwnedTimerElapsed, Path>,
+    {
+        self.queue
+            .schedule(
+                TimerKey::Owned(Path::POSITION),
+                schedule.at,
+                Event::inject_at(OwnedTimerElapsed::new(schedule.generation)),
+            )
+            .map(|_token| ())
+            .map_err(|error| match error {
+                ScheduleError::GenerationExhausted { .. } => TimerError::GenerationExhausted,
+                ScheduleError::SequenceExhausted { .. } => TimerError::SequenceExhausted,
+            })
+    }
+
+    fn schedule_owned_after<Path>(&mut self, schedule: OwnedScheduleAfter) -> Result<(), TimerError>
+    where
+        Path: TimerOccurrence,
+        Event: InjectEvent<OwnedTimerElapsed, Path>,
+    {
+        let deadline = Instant::now()
+            .checked_add(schedule.after)
+            .ok_or(TimerError::DeadlineOverflow)?;
+        self.schedule_owned_at::<Path>(OwnedScheduleAt::new(schedule.generation, deadline))
     }
 
     pub(crate) fn next_deadline(&mut self) -> Option<Instant> {
@@ -185,7 +301,7 @@ pub(crate) enum TimerError {
 
 /// The exact timer queue owned by one actor's capability interpreter.
 pub(crate) struct LocalTimers<Event> {
-    queue: TimerQueue<Instant, TimerId, Event>,
+    queue: TimerQueue<Instant, TimerKey, Event>,
 }
 
 #[cfg(test)]
@@ -200,12 +316,120 @@ mod tests {
     #[derive(Debug, PartialEq, Eq)]
     enum Event {
         Elapsed(TimerElapsed),
+        Owned(OwnedTimerElapsed),
+        Reminder(TimerElapsed),
+        Warning(TimerElapsed),
+    }
+
+    struct ReminderPort;
+    struct WarningPort;
+
+    impl InjectEvent<TimerElapsed, ReminderPort> for Event {
+        fn inject_at(event: TimerElapsed) -> Self {
+            Self::Reminder(event)
+        }
+    }
+
+    impl InjectEvent<TimerElapsed, WarningPort> for Event {
+        fn inject_at(event: TimerElapsed) -> Self {
+            Self::Warning(event)
+        }
+    }
+
+    #[test]
+    fn equal_named_timers_replace_across_distinct_custom_event_ports() {
+        let mut timers = LocalTimers::<Event>::new();
+        let at = Instant::now();
+        let id = TimerId(23);
+        timers
+            .schedule_at::<ReminderPort>(ScheduleAt::new(id, TimerGeneration(11), at))
+            .expect("the original named reminder is accepted");
+        timers
+            .schedule_at::<WarningPort>(ScheduleAt::new(id, TimerGeneration(12), at))
+            .expect("the same actor-local name replaces across genuine custom ports");
+        let replaced = timers.pop_due(at);
+        assert_eq!(
+            replaced,
+            Some(Event::Warning(TimerElapsed::new(id, TimerGeneration(12))))
+        );
+        let exhausted = timers.pop_due(at);
+        assert_eq!(exhausted, None);
     }
 
     impl InjectEvent<TimerElapsed, behavior::Here> for Event {
         fn inject_at(event: TimerElapsed) -> Self {
             Self::Elapsed(event)
         }
+    }
+
+    impl InjectEvent<OwnedTimerElapsed, Here> for Event {
+        fn inject_at(event: OwnedTimerElapsed) -> Self {
+            Self::Owned(event)
+        }
+    }
+
+    #[test]
+    fn relative_named_timers_replace_across_custom_destination_ports() {
+        let mut timers = LocalTimers::<Event>::new();
+        let id = TimerId(29);
+        <TimerId as TimerDestination<ReminderPort>>::schedule_after(
+            &mut timers,
+            ScheduleAfter::new(id, TimerGeneration(13), Duration::ZERO),
+        )
+        .expect("the named relative reminder is accepted through its real destination port");
+        <TimerId as TimerDestination<WarningPort>>::schedule_after(
+            &mut timers,
+            ScheduleAfter::new(id, TimerGeneration(14), Duration::ZERO),
+        )
+        .expect("the exact name replaces across a different custom destination port");
+        let now = Instant::now();
+        let latest = timers.pop_due(now);
+        let exhausted = timers.pop_due(now);
+        assert_eq!(
+            latest,
+            Some(Event::Warning(TimerElapsed::new(id, TimerGeneration(14))))
+        );
+        assert_eq!(exhausted, None);
+    }
+
+    #[test]
+    fn named_and_owned_timers_coexist_at_the_same_numeric_position() {
+        let mut timers = LocalTimers::<Event>::new();
+        let at = Instant::now();
+        let named = TimerElapsed::new(TimerId(0), TimerGeneration(7));
+        let owned = OwnedTimerElapsed::new(TimerGeneration(9));
+        timers
+            .schedule_at::<Here>(ScheduleAt::new(named.id, named.generation, at))
+            .expect("the named timer is accepted");
+        timers
+            .schedule_owned_at::<Here>(OwnedScheduleAt::new(owned.generation, at))
+            .expect("the owned timer is independent of every numeric name");
+
+        let first = timers.pop_due(at);
+        let second = timers.pop_due(at);
+        let exhausted = timers.pop_due(at);
+        assert_eq!(first, Some(Event::Elapsed(named)));
+        assert_eq!(second, Some(Event::Owned(owned)));
+        assert_eq!(exhausted, None);
+    }
+
+    #[test]
+    fn rejected_owned_deadline_preserves_the_previously_accepted_generation() {
+        let mut timers = LocalTimers::<Event>::new();
+        let at = Instant::now();
+        let original = OwnedTimerElapsed::new(TimerGeneration(1));
+        timers
+            .schedule_owned_at::<Here>(OwnedScheduleAt::new(original.generation, at))
+            .expect("the original owned schedule is accepted");
+        let rejection = timers.schedule_owned_after::<Here>(OwnedScheduleAfter::new(
+            TimerGeneration(2),
+            Duration::MAX,
+        ));
+        let retained = timers.pop_due(at);
+        let exhausted = timers.pop_due(at);
+        assert_eq!(rejection, Err(TimerError::DeadlineOverflow));
+        assert_eq!(retained, Some(Event::Owned(original)));
+        assert_eq!(exhausted, None);
     }
 
     #[test]

@@ -26,6 +26,6 @@ const fn route(_: &Root, message: &Never) -> StashRoute {
 }
 
 fn main() {
-    let root = Root.with_stash(route).stop_on_shutdown();
+    let root = bombay::composition::UnlimitedStash::new(Root, route).stop_on_shutdown();
     let _application = Application::new(root);
 }

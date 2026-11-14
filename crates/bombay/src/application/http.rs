@@ -18,7 +18,7 @@ use behavior::{
     Behavior, BehaviorBase, BehaviorMessage, BehaviorSettlements, BirthMode,
     ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
-use core::future::Future;
+use core::future::{Future, Ready};
 use std::io;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
@@ -28,10 +28,10 @@ use tokio::runtime::{Handle, TryCurrentError};
     private_bounds,
     reason = "the running application and its launch proof remain private"
 )]
-impl<Root, Spaces, Members> Application<Root, Spaces, Members>
+impl<Root, Spaces, Members, Actor, StagingFailure> Application<Root, Spaces, Members>
 where
     Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
-    Members: ComposeApplication<Root>,
+    Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
     #[cfg(feature = "axum")]
@@ -58,7 +58,7 @@ where
         clippy::too_many_lines,
         reason = "retain original prebind and partial composition inputs beside exact HTTP/root results"
     )]
-    pub fn execute_axum<Actor, StagingFailure, ChildFailures, Router>(
+    pub fn execute_axum<Router>(
         self,
         address: SocketAddr,
         router: Router,
@@ -91,7 +91,7 @@ where
                         ActorRetirement<
                             Actor,
                             <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            ChildFailures,
+                            Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                         >,
                     ),
                     (),
@@ -103,7 +103,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -128,7 +127,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -140,7 +139,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -148,7 +147,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
     {
         let executor = match Handle::try_current() {
@@ -183,6 +182,8 @@ where
             _,
             _,
             Never,
+            Ready<()>,
+            _,
         >(
             executor,
             (self, router, address),
@@ -212,32 +213,35 @@ where
                         });
                     }
                 };
-                let original_work = ApplicationWorkPublication {
-                    publication: Some((
-                        ApplicationWorkCustody::NotInvoked(
-                            ApplicationWorkPresence::Supplied((
-                                (router, listener),
-                                async |(router, listener): (Router, TcpListener),
-                                       application: ApplicationHandle<
-                                    Root::Protocol,
-                                    Actor::Event,
-                                >| {
-                                    let lifecycle = application.lifecycle();
-                                    let server_shutdown = lifecycle.termination();
-                                    axum::serve(listener, router(application.clone()))
-                                        .with_graceful_shutdown(async move {
-                                            match server_shutdown.await {
-                                                Ok(_) | Err(_) => {}
-                                            }
-                                        })
-                                        .await
-                                },
-                            )),
-                            None,
-                        ),
-                        publication,
-                    )),
-                };
+                let original_work =
+                    ApplicationWorkPublication {
+                        publication: Some((
+                            ApplicationWorkCustody::NotInvoked(
+                                ApplicationWorkPresence::Supplied((
+                                    (router, listener),
+                                    |(router, listener): (Router, TcpListener),
+                                     application: ApplicationHandle<
+                                        Root::Protocol,
+                                        Actor::Event,
+                                    >| {
+                                        async move {
+                                            let lifecycle = application.lifecycle();
+                                            let server_shutdown = lifecycle.termination();
+                                            axum::serve(listener, router(application.clone()))
+                                                .with_graceful_shutdown(async move {
+                                                    match server_shutdown.await {
+                                                        Ok(_) | Err(_) => {}
+                                                    }
+                                                })
+                                                .await
+                                        }
+                                    },
+                                )),
+                                None,
+                            ),
+                            publication,
+                        )),
+                    };
                 let (root, spaces, members, (), scope) = application.into_parts();
                 let scope = match scope {
                     Some(scope) => scope,
@@ -275,10 +279,17 @@ where
                 ))
             },
             ((), |_executor, (), ()| None),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
         );
         let receiving = async move {
-            let (work, root, termination_notification) = receiving.await;
-            ApplicationOutcome::new(work.into_http(), root, termination_notification, ())
+            let (work, root_report, root, termination_notification) = receiving.await;
+            ApplicationOutcome::new(
+                work.into_http(),
+                root_report,
+                root,
+                termination_notification,
+                (),
+            )
         };
         Ok((execution, receiving))
     }
@@ -294,7 +305,7 @@ where
     /// # Panics
     /// Native composition/serving causes propagate; dropping this combined future
     /// surrenders both owning execution and receiving, unlike a separately retained pair.
-    pub async fn run_axum<Actor, StagingFailure, ChildFailures, Router>(
+    pub async fn run_axum<Router>(
         self,
         address: SocketAddr,
         router: Router,
@@ -324,7 +335,7 @@ where
                 ActorRetirement<
                     Actor,
                     <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 >,
             ),
             (),
@@ -334,7 +345,6 @@ where
     where
         Spaces: ApplicationTopology<Root, Members> + NativeHost,
         Spaces::Runtime: NativeConstruction,
-        Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
         Actor: BehaviorBase
             + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
             + Send
@@ -359,7 +369,7 @@ where
         >: ChildBindingsIn<Actor, Spaces>
             + RetireChildTasks<
                 Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = ChildFailures,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
             > + Send
             + 'static,
         RootInterpreter<
@@ -371,7 +381,7 @@ where
                 Actor,
                 Retired = (
                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    ChildFailures,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 ),
             > + Send
             + 'static,
@@ -379,7 +389,7 @@ where
         RootOrigin<Root>: Send + 'static,
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
-        ChildFailures: Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
         Router: FnOnce(ApplicationHandle<Root::Protocol, Actor::Event>) -> axum::Router,
     {
         let (execution, receiving) = self.execute_axum(address, router)?;

@@ -1,4 +1,5 @@
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::behavior::{BehaviorSettlements, ClassifySettlement, Protocol, SettlementStatus};
 use bombay::prelude::*;
 use bombay::{ActorSpace, ApplicationLifecycle};
@@ -65,12 +66,15 @@ where
 {
     assert!(retirement.behavior().is_some());
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                interpretation,
+                source,
+                completion,
+            },
     } = retirement
     else {
         panic!("the original complete counter retirement must return");
@@ -98,14 +102,14 @@ where
 #[tokio::test(flavor = "current_thread")]
 async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
     let root = Counter::new()
-        .with_one_shot(TimerId(71), Duration::from_secs(60), |_| Actions::stop())
+        .with_one_shot(Duration::from_secs(60), |_| Actions::stop())
         .stop_on_shutdown();
     let outcome = Application::with_topology(root, ActorSpace::new())
         .run_with(|application| async move {
             let lifecycle = increment_counter(application).await;
-            let shutdown = lifecycle.request_shutdown();
+            let shutdown = lifecycle.shutdown();
             assert_eq!(shutdown, Ok(()));
-            let repeated_shutdown = lifecycle.request_shutdown();
+            let repeated_shutdown = lifecycle.shutdown();
             assert!(matches!(
                 repeated_shutdown,
                 Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped)
@@ -119,7 +123,7 @@ async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
             panic!("live application host");
         })
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -139,17 +143,15 @@ async fn shutdown_outside_timer_keeps_business_and_complete_retirement() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
-    let root = Counter::new().stop_on_shutdown().with_one_shot(
-        TimerId(71),
-        Duration::from_secs(60),
-        |_| Actions::stop(),
-    );
+    let root = Counter::new()
+        .stop_on_shutdown()
+        .with_one_shot(Duration::from_secs(60), |_| Actions::stop());
     let outcome = Application::with_topology(root, ActorSpace::new())
         .run_with(|application| async move {
             let lifecycle = increment_counter(application).await;
-            let shutdown = lifecycle.request_shutdown();
+            let shutdown = lifecycle.shutdown();
             assert_eq!(shutdown, Ok(()));
-            let repeated_shutdown = lifecycle.request_shutdown();
+            let repeated_shutdown = lifecycle.shutdown();
             assert!(matches!(
                 repeated_shutdown,
                 Err(ShutdownRejection::AlreadyStopping | ShutdownRejection::AlreadyStopped)
@@ -163,7 +165,7 @@ async fn timer_outside_shutdown_infers_the_actual_lifecycle_lane() {
             panic!("live application host");
         })
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -211,7 +213,7 @@ async fn natural_completion_needs_no_unused_shutdown_capability() {
             panic!("live application host");
         })
         .into_parts();
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -242,7 +244,7 @@ fn shutdown_requires_a_present_unambiguous_lane() {
 async fn http_ends_with_the_domain_session_without_a_shutdown_lane() {
     let (customer_publication, customer_receiving) = tokio::sync::oneshot::channel();
     let outcome = Application::with_topology(CounterSession { value: 0 }, ActorSpace::new())
-        .run_axum(
+        .run_axum::<_>(
             "127.0.0.1:0".parse().expect("local listener address"),
             move |application| {
                 let interface = application.interface(application.root().established_recipient());
@@ -279,7 +281,7 @@ async fn http_ends_with_the_domain_session_without_a_shutdown_lane() {
         .expect("original customer task returns")
         .await
         .expect("customer completes independently");
-    let (outcome, native, notifications, ()) = outcome;
+    let (outcome, _root_report, native, notifications, ()) = outcome;
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),

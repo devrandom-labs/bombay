@@ -5,6 +5,7 @@
 //! is a fresh incarnation after fenced retirement; it is not Behavior Actors'
 //! explicit `StableProxy` worker-replacement policy.
 
+use bombay::RetirementOutcome;
 use bombay::behavior::{Behavior, ChildCons, ChildHead, NoChildren};
 use bombay::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport,
@@ -247,7 +248,7 @@ fn run_cold_account_family<Spaces, Descendants>(
         .enable_all()
         .build()
         .expect("the synchronous example owns one enabled application host");
-    let (outcome, root_receiving, notifications, shutdowns) = application_host
+    let (outcome, _root_report, root_receiving, notifications, shutdowns) = application_host
         .block_on(
             application.run_with_entities(move |application| async move {
                 let accounts = application.entities(AccountsRole);
@@ -274,7 +275,7 @@ fn run_cold_account_family<Spaces, Descendants>(
                     .send(AccountCommand::Deposit(2))
                     .await
                     .expect("the same stable reference activates a replacement");
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
             }),
         )
@@ -349,7 +350,7 @@ fn assert_application_stopped<R, Descendants>(
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -367,10 +368,13 @@ fn assert_application_stopped<R, Descendants>(
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     ) = terminal
     else {
@@ -449,7 +453,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
             assert_eq!(report.retirement(), RetirementAssessment::Established);
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             let (behavior, settlements, user, descendants, capability_failures) = match retirement {
-                Ok(ActorRetirement::Completed {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -467,10 +471,13 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert!(interpretation.is_none());
                     assert!(source.is_none());
@@ -494,7 +501,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                         capability_failures,
                     )
                 }
-                Ok(ActorRetirement::OwnerCancelled {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -512,9 +519,12 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            settlements,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert!(interpretation.is_none());
                     assert!(source.is_none());
@@ -605,11 +615,11 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .enable_all()
         .build()
         .expect("actual caller host");
-    let (outcome, root, notifications, (family, ())) = host
+    let (outcome, _root_report, root, notifications, (family, ())) = host
         .block_on(
             application.run_with_entities(move |application| async move {
                 calls.fetch_add(1, Ordering::SeqCst);
-                let requested = application.request_shutdown();
+                let requested = application.shutdown();
                 assert_eq!(requested, Ok(()));
                 early
                     .send(&early.recipient(), payload)
@@ -662,7 +672,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .with_topology(root, spaces)
         .child(ColdAccount::Declared, actor)
         .entity_family(role, definition, directory, capacity);
-    let (outcome, root, notifications, (family, ())) = host
+    let (outcome, _root_report, root, notifications, (family, ())) = host
         .block_on(application.run_with_entities(work))
         .unwrap_or_else(|rejected| {
             drop(rejected);
@@ -748,7 +758,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
     let entered = host.enter();
     let (execution, receiving) = application
         .execute_with_entities(move |application| async move {
-            let requested = application.request_shutdown();
+            let requested = application.shutdown();
             assert_eq!(requested, Ok(()));
             payload
         })
@@ -758,7 +768,8 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
         });
     drop(entered);
     drop(execution);
-    let (outcome, root, notifications, (family, ())) = host.block_on(receiving).into_parts();
+    let (outcome, _root_report, root, notifications, (family, ())) =
+        host.block_on(receiving).into_parts();
     assert!(root.is_err());
     assert!(notifications.is_err());
     assert!(family.is_err());
@@ -771,7 +782,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
     let WorkOutcome::Unstarted { application, work } = outcome else {
         panic!("complete original cold declaration survives cancellation")
     };
-    let (outcome, root, notifications, (family, ())) = host
+    let (outcome, _root_report, root, notifications, (family, ())) = host
         .block_on(application.run_with_entities(work))
         .unwrap_or_else(|rejected| {
             drop(rejected);
@@ -885,7 +896,7 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
         .enable_all()
         .build()
         .expect("actual caller-owned host");
-    let (outcome, root, notifications, (family, ())) = host
+    let (outcome, _root_report, root, notifications, (family, ())) = host
         .block_on(application.run_with_entities(move |_| async move {
             drop((original_work, work_token));
             panic!("the original refused root never invokes work")
@@ -910,7 +921,11 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
     assert!(termination.is_ok());
     assert!(retirement_notification.is_ok());
     let (origin, retirement) = root.expect("actual complete refused root retirement");
-    let ActorRetirement::InitializationRejected { custody, error } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::InitializationRejected { error },
+    } = retirement
+    else {
         panic!("actual pure root error remains classified")
     };
     assert!(matches!(

@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.4](https://github.com/devrandom-labs/bombay/compare/bombay-macros-v0.1.3...bombay-macros-v0.1.4) - 2026-10-16
+## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-macros-v0.1.3...bombay-macros-v0.2.0) - 2026-11-14
+
+### Changed
+
+- **Breaking:** topology generation requires the Bombay 0.2 Runtime and NativeHost
+  contracts; keep older runtime consumers on macros 0.1.
 
 ### Added
 
-- *(application)* unify composition and preserve complete custody ([#375](https://github.com/devrandom-labs/bombay/pull/375))
+- Derive runtime ownership and complete custody for named application topologies,
+  including configured interpreters and finite descendants of cold members.
 
 ## [0.1.3](https://github.com/devrandom-labs/bombay/compare/bombay-macros-v0.1.2...bombay-macros-v0.1.3) - 2026-10-14
 

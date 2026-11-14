@@ -1,3 +1,12 @@
+#[path = "network.rs"]
+mod network;
+#[allow(
+    unused_imports,
+    reason = "the shared fixture exposes address reservation for Node unit consumers; this external cohort supplies its own addresses"
+)]
+pub(super) use network::listener_address;
+pub(super) use network::{EndpointRole, configuration};
+
 use bombay::behavior::{EstablishedRecipient, MessageProtocol};
 use bombay::lifecycle::{Task, TaskMessage, TaskResult};
 use bombay::prelude::{MailAddr, StopOnShutdown};
@@ -6,14 +15,10 @@ use bombay::{
     ActorFailureAssessment, ActorNotificationReceipts, ActorRetirementReport, RetirementAssessment,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use std::env;
 use std::future::{Ready, ready};
-use std::net::TcpListener;
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 use std::time::Instant;
 use tokio::sync::oneshot;
-use zenoh_config::Config;
 
 #[derive(Debug)]
 pub(super) struct ProtectedMessage {
@@ -42,6 +47,9 @@ pub(super) enum LedgerOperation {
 pub(super) enum Purpose {
     Request,
     ReadReply,
+    Processed,
+    Admitted,
+    Stopped,
 }
 #[derive(Clone, Copy)]
 pub(super) enum ProviderProfile {
@@ -56,20 +64,6 @@ impl ProviderProfile {
         }
     }
 }
-#[derive(Clone, Copy)]
-// Observation selector only: Resend requires an actual production retention mutant.
-pub(super) enum ReadRetention {
-    ReuseFirst,
-    Resend,
-}
-pub(super) fn read_retention() -> ReadRetention {
-    match env::var("BOMBAY_NODE_READ_REPLAY").as_deref() {
-        Err(env::VarError::NotPresent) | Ok("reuse-first") => ReadRetention::ReuseFirst,
-        Ok("resend") => ReadRetention::Resend,
-        original => panic!("unsupported explicit test comparison: {original:?}"),
-    }
-}
-
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct ReadRequest<Operation> {
@@ -121,6 +115,10 @@ pub(super) struct Binding {
 #[derive(Debug)]
 pub(super) enum VerificationError {
     Invalid,
+    #[expect(
+        dead_code,
+        reason = "the shared provider preserves its original JSON cause even when a nominal test cohort does not inspect malformed input"
+    )]
     Declaration(serde_json::Error),
     Unavailable(oneshot::error::RecvError),
 }
@@ -212,52 +210,6 @@ pub(super) mod scheduled {
     }
 }
 
-pub(super) fn configuration(address: &str, role: &EndpointRole) -> Config {
-    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-    let (listen, connect, certificate, key, certificate_owner, key_owner) = match role {
-        EndpointRole::Receiver => (
-            vec![address],
-            vec![],
-            "listen_certificate",
-            "listen_private_key",
-            "recipient-certificate.pem",
-            "recipient-private-key.pem",
-        ),
-        EndpointRole::Caller => (
-            vec![],
-            vec![address],
-            "connect_certificate",
-            "connect_private_key",
-            "caller-certificate.pem",
-            "caller-private-key.pem",
-        ),
-    };
-    let mut tls = serde_json::json!({
-        "root_ca_certificate": certificates.join("root-ca.pem"),
-        "enable_mtls": true, "verify_name_on_connect": true, "use_public_pki": false
-    });
-    tls[certificate] = serde_json::json!(certificates.join(certificate_owner));
-    tls[key] = serde_json::json!(certificates.join(key_owner));
-    let declaration = serde_json::json!({
-        "mode": "peer", "queries_max_retained": 2,
-        "listen": {"endpoints": listen},
-        "connect": {"endpoints": connect, "timeout_ms": 2000, "exit_on_failure": true},
-        "scouting": {"multicast": {"enabled": false, "listen": false}, "gossip": {"enabled": false}},
-        "transport": {"link": {"protocols": ["tls"], "tls": tls}}
-    }).to_string();
-    Config::from_deserializer(&mut serde_json::Deserializer::from_str(&declaration)).unwrap()
-}
-pub(super) enum EndpointRole {
-    Caller,
-    Receiver,
-}
-pub(super) fn reserved_address() -> String {
-    let reservation = TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let address = reservation.local_addr().unwrap();
-    drop(reservation);
-    format!("tls/localhost:{}", address.port())
-}
 pub(super) fn metadata(
     profile: ProviderProfile,
     protocol: &str,

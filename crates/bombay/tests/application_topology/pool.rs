@@ -2,18 +2,21 @@
 //! The pool owns admission, assignment, completion, and orderly worker drain.
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use tokio::runtime::Builder;
 
 use super::search_worker::{SearchJob, SearchResult, SearchWorker};
 use bombay::Application;
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, BacklogCapacity, DiagnosticDisposition, FifoCommand,
-    FifoOutcome, Interruption, OrderedRoles, PoolFailureReaction, PoolRecovery, SubmissionId,
-    WorkerSubmission, fifo,
-};
 use bombay::behavior::MessageProtocol;
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
+use bombay::pool::queue::{self, FifoCommand, FifoOutcome};
+use bombay::pool::{
+    BacklogCapacity, Interruption, PoolFailureReaction, PoolRecovery, SubmissionId,
+};
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr};
+use bombay::worker::{OrderedRoles, StartupLimit, WorkerSubmission};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum WorkerRole {
@@ -26,7 +29,6 @@ bombay::topology! {
     search_application {
         root { Worker => worker; }
         worker {}
-        hosts { customers: CustomerProtocol; }
     }
 }
 
@@ -38,16 +40,19 @@ fn run_search_pool() {
     let pool = {
         let roles =
             OrderedRoles::new(WorkerRole::Primary, []).expect("the single search role is unique");
-        fifo(
+        queue::new(
             |_: &WorkerRole| WorkerSubmission::immediate(SearchWorker),
             roles,
-            ActivationPolicy::new(1).expect("one activation is positive capacity"),
-            PoolRecovery::temporary(PoolFailureReaction::RetireRole),
-            BacklogCapacity::new(8),
-            Interruption::Retry,
-            ActorDrainPolicy::WaitForActorGraph,
-            DiagnosticDisposition::terminate(),
+            queue::Config {
+                startup: StartupLimit::new(1).expect("one activation is positive capacity"),
+                recovery: PoolRecovery::temporary(PoolFailureReaction::RetireRole),
+                backlog: BacklogCapacity::new(8),
+                interruption: Interruption::Retry,
+                shutdown: ActorDrainPolicy::WaitForActorGraph,
+                diagnostics: DiagnosticDisposition::terminate(),
+            },
         )
+        .build()
         .unwrap_or_else(|_| panic!("the declared search worker is prepared"))
     };
     let spaces = search_application::Topology::new();
@@ -55,7 +60,7 @@ fn run_search_pool() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let (application_outcome, native, notifications, ()) = application_host
+    let (application_outcome, _root_report, native, notifications, ()) = application_host
         .block_on(
             Application::with_topology(pool, spaces).run_with(|application| async move {
                 let mut customer = application
@@ -126,7 +131,7 @@ fn run_search_pool() {
     let origin = root_origin;
     let terminal = joined_actor;
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -134,8 +139,7 @@ fn run_search_pool() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("the pool completes after its worker graph");
@@ -153,7 +157,7 @@ fn run_search_pool() {
         .expect("the primary role retains one worker");
     let terminal = *terminal;
     assert_ne!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 capability_failures,
@@ -161,8 +165,7 @@ fn run_search_pool() {
                 descendants,
                 ..
             },
-        completion,
-        ..
+        outcome: RetirementOutcome::Completed { completion, .. },
     } = terminal
     else {
         panic!("orderly shutdown completes the exact worker");

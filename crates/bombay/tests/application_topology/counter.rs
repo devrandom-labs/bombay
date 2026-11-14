@@ -2,6 +2,7 @@
 //! messages, state, typed reply, domain error, and transition remain together.
 //! No reusable template is needed; the pure active fold remains the test oracle.
 
+use bombay::RetirementOutcome;
 use tokio::runtime::Builder;
 #[path = "../../../../examples/counter/src/counter.rs"]
 mod counter_actor;
@@ -19,13 +20,13 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
         .enable_all()
         .build()
         .expect("the synchronous caller owns its explicit current-thread host");
-    let (application_outcome, native, notifications, ()) = application_host
+    let (application_outcome, _root_report, native, notifications, ()) = application_host
         .block_on(
             Application::with_topology(
                 Counter::new().stop_on_shutdown(),
                 counter_application::Topology::new(),
             )
-            .run_with(|application| async move {
+            .run_with::<_, _>(|application| async move {
                 let mut caller = application
                     .client::<CounterValue>()
                     .expect("the counter customer is established");
@@ -42,7 +43,7 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
                     .await
                     .expect("the counter replies to the exact customer");
                 assert_eq!(value.message, 1);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let termination = application.termination().await;
                 assert_eq!(termination, Ok(Exit::Normal));
@@ -81,12 +82,15 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
     );
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
     let terminal = retirement;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = terminal
     else {
         panic!("the application must preserve the root's completed terminal state")

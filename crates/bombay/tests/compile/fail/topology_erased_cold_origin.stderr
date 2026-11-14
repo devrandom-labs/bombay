@@ -1,7 +1,7 @@
 error[E0308]: mismatched types
-  --> tests/compile/fail/topology_erased_cold_origin.rs:92:129
+  --> tests/compile/fail/topology_erased_cold_origin.rs:93:129
    |
-92 | ...nd", cold_child_origin(&custody.behavior, origin), retirement),
+93 | ...nd", cold_child_origin(&custody.behavior, origin), retirement),
    |         -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<_>, _>`
    |         |
    |         arguments to this function are incorrect
@@ -9,18 +9,18 @@ error[E0308]: mismatched types
    = note: expected struct `ChildOrigin<Root, _>`
               found struct `ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, BackgroundWorker>`
 note: function defined here
-  --> tests/compile/fail/topology_erased_cold_origin.rs:48:4
+  --> tests/compile/fail/topology_erased_cold_origin.rs:49:4
    |
-48 | fn cold_child_origin<OriginalRoot, Product, Role>(
+49 | fn cold_child_origin<OriginalRoot, Product, Role>(
    |    ^^^^^^^^^^^^^^^^^
-49 |     actor: &ApplicationBehavior<OriginalRoot, Product>,
-50 |     origin: ChildOrigin<Root, Role>,
+50 |     actor: &ApplicationBehavior<OriginalRoot, Product>,
+51 |     origin: ChildOrigin<Root, Role>,
    |     -------------------------------
 
 error[E0308]: mismatched types
-  --> tests/compile/fail/topology_erased_cold_origin.rs:93:119
+  --> tests/compile/fail/topology_erased_cold_origin.rs:94:119
    |
-93 | ...it", cold_child_origin(&custody.behavior, origin), retirement),
+94 | ...it", cold_child_origin(&custody.behavior, origin), retirement),
    |         -----------------                    ^^^^^^ expected `ChildOrigin<Root, _>`, found `ChildOrigin<StopOnShutdown<_>, _>`
    |         |
    |         arguments to this function are incorrect
@@ -28,10 +28,10 @@ error[E0308]: mismatched types
    = note: expected struct `ChildOrigin<Root, _>`
               found struct `ChildOrigin<bombay::prelude::StopOnShutdown<OneShot<Root>>, AuditWorker>`
 note: function defined here
-  --> tests/compile/fail/topology_erased_cold_origin.rs:48:4
+  --> tests/compile/fail/topology_erased_cold_origin.rs:49:4
    |
-48 | fn cold_child_origin<OriginalRoot, Product, Role>(
+49 | fn cold_child_origin<OriginalRoot, Product, Role>(
    |    ^^^^^^^^^^^^^^^^^
-49 |     actor: &ApplicationBehavior<OriginalRoot, Product>,
-50 |     origin: ChildOrigin<Root, Role>,
+50 |     actor: &ApplicationBehavior<OriginalRoot, Product>,
+51 |     origin: ChildOrigin<Root, Role>,
    |     -------------------------------

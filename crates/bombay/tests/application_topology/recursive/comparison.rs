@@ -2,6 +2,7 @@ use super::{
     ManagedLeaf, ManagedNode, Node, NodeError, NodeStartup, Root, RootStartup, Trace, garden,
     root_deadline_reached, stopped_root_deadline_reached,
 };
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Behavior, BehaviorBase, BehaviorSettlements, ChildCreationOutcome, ChildHead, ChildTail,
@@ -10,7 +11,7 @@ use bombay::behavior::{
     SettledItem, SettlementStatus,
 };
 use bombay::lifecycle::StopOnShutdown;
-use bombay::prelude::{Exit, TimerId};
+use bombay::prelude::Exit;
 use bombay::{
     ActorCustody, ActorRetirement, ActorSpace, Application, ApplicationTopology, ChildFailure,
     ChildOrigin, Completion, EstablishNativeChild, MailAddr, NativeChild, NativeHost, PendingChild,
@@ -263,11 +264,14 @@ where
     }
 }
 fn observe_node<D, F>(retirement: &ActorRetirement<ManagedNode, D, Vec<F>>) -> (&Node, &Vec<D>) {
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the root owns the complete cancelled recursive node");
@@ -282,11 +286,14 @@ fn observe_node<D, F>(retirement: &ActorRetirement<ManagedNode, D, Vec<F>>) -> (
     (custody.behavior.base(), &custody.descendants)
 }
 fn observe_audit(retirement: &ActorRetirement<ManagedLeaf, Never, Vec<Never>>) -> GardenRetirement {
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("both graphs own the original audit actor");
@@ -316,7 +323,10 @@ fn manual_nodes(
     retirement: &ActorRetirement<ManagedNode, NodeRetirement, Vec<NodeFailure>>,
     addresses: &mut HashSet<MailAddr>,
 ) -> GardenRetirement {
-    if let ActorRetirement::OwnerCancelled { custody, .. } = retirement
+    if let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::OwnerCancelled { .. },
+    } = retirement
         && let Some(original) = custody.child_failures.first()
     {
         match original {
@@ -400,12 +410,15 @@ where
         + BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
     B::Settlements: ClassifySettlement,
 {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the original root must complete its actual reports");
@@ -438,7 +451,7 @@ fn growing_garden_root() -> Root {
 async fn generated_recursive_garden_matches_manual_native_custody() {
     let generated = Application::with_topology(
         growing_garden_root()
-            .with_one_shot(TimerId(37), Duration::from_secs(10), root_deadline_reached)
+            .with_one_shot(Duration::from_secs(10), root_deadline_reached)
             .stop_on_shutdown(),
         garden::Topology::new(),
     )
@@ -446,7 +459,7 @@ async fn generated_recursive_garden_matches_manual_native_custody() {
     .await;
     let manual = Application::with_topology(
         growing_garden_root()
-            .with_one_shot(TimerId(37), Duration::from_secs(10), root_deadline_reached)
+            .with_one_shot(Duration::from_secs(10), root_deadline_reached)
             .stop_on_shutdown(),
         GardenSpaces {
             root: ActorSpace::new(),
@@ -454,13 +467,13 @@ async fn generated_recursive_garden_matches_manual_native_custody() {
     )
     .run_with(|application| async move { application.termination().await })
     .await;
-    let (generated_work, generated_native, generated_notifications, ()) = generated
+    let (generated_work, _root_report, generated_native, generated_notifications, ()) = generated
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the existing generated garden starts");
         })
         .into_parts();
-    let (manual_work, manual_native, manual_notifications, ()) = manual
+    let (manual_work, _root_report, manual_native, manual_notifications, ()) = manual
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the handwritten public garden starts");
@@ -544,34 +557,30 @@ fn compare_garden_retirements<B>(
 #[tokio::test(flavor = "current_thread")]
 async fn generated_outer_timer_matches_manual_native_custody() {
     let generated = Application::with_topology(
-        growing_garden_root().stop_on_shutdown().with_one_shot(
-            TimerId(37),
-            Duration::from_secs(10),
-            stopped_root_deadline_reached,
-        ),
+        growing_garden_root()
+            .stop_on_shutdown()
+            .with_one_shot(Duration::from_secs(10), stopped_root_deadline_reached),
         garden::Topology::new(),
     )
     .run_with(|application| async move { application.termination().await })
     .await;
     let manual = Application::with_topology(
-        growing_garden_root().stop_on_shutdown().with_one_shot(
-            TimerId(37),
-            Duration::from_secs(10),
-            stopped_root_deadline_reached,
-        ),
+        growing_garden_root()
+            .stop_on_shutdown()
+            .with_one_shot(Duration::from_secs(10), stopped_root_deadline_reached),
         GardenSpaces {
             root: ActorSpace::new(),
         },
     )
     .run_with(|application| async move { application.termination().await })
     .await;
-    let (generated_work, generated_native, generated_notifications, ()) = generated
+    let (generated_work, _root_report, generated_native, generated_notifications, ()) = generated
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated outer timer starts");
         })
         .into_parts();
-    let (manual_work, manual_native, manual_notifications, ()) = manual
+    let (manual_work, _root_report, manual_native, manual_notifications, ()) = manual
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the handwritten outer timer starts");
@@ -643,12 +652,15 @@ fn inspect_refused_garden<D, F>(
     original_id: CreationId,
     allocation: *const u8,
 ) -> Vec<u8> {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                interpretation,
+                source,
+                ..
+            },
     } = retirement
     else {
         panic!("the original finite refused creation remains in root custody");
@@ -702,13 +714,13 @@ async fn generated_singleton_matches_manual_original_initialization_refusal() {
     )
     .run()
     .await;
-    let (generated_work, generated_native, generated_notifications, ()) = generated
+    let (generated_work, _root_report, generated_native, generated_notifications, ()) = generated
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the generated singleton owns startup refusal");
         })
         .into_parts();
-    let (manual_work, manual_native, manual_notifications, ()) = manual
+    let (manual_work, _root_report, manual_native, manual_notifications, ()) = manual
         .unwrap_or_else(|original| {
             drop(original);
             panic!("the manual singleton owns startup refusal");

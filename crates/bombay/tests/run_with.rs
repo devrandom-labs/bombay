@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use core::time::Duration;
 
 use bombay::ActorCustody;
@@ -356,6 +357,7 @@ async fn live_boundary_receives_root_once_and_returns_its_exact_value() {
             output: rejected,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -411,6 +413,7 @@ async fn boundary_owned_error_remains_an_unaggregated_output() {
             output,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -469,6 +472,7 @@ fn run_is_the_unit_boundary_specialization() {
                 startup_error: Some(_startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -505,6 +509,7 @@ fn run_is_the_unit_boundary_specialization() {
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -528,6 +533,7 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -554,12 +560,12 @@ async fn application_handle_separates_shutdown_request_from_exact_termination() 
                 assert!(matches!(pending, Poll::Pending));
             }
 
-            let accepted = lifecycle.request_shutdown();
+            let accepted = lifecycle.shutdown();
             assert_eq!(accepted, Ok(()));
-            let repeated = lifecycle.request_shutdown();
+            let repeated = lifecycle.shutdown();
             assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
             let result = termination.await;
-            let stopped = lifecycle.request_shutdown();
+            let stopped = lifecycle.shutdown();
             (result, stopped)
         })
         .await
@@ -593,6 +599,7 @@ async fn terminal_outcome_report_selects_the_exact_publication_before_stop() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -638,6 +645,7 @@ async fn continuing_report_cannot_select_the_later_stop_outcome() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -690,6 +698,7 @@ async fn supervision_report_selects_the_typed_failure_publication_before_stop() 
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -745,6 +754,7 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -759,9 +769,9 @@ async fn supervision_report_from_a_continuing_action_cannot_override_later_shutd
     )
     .run_with(|application| async move {
         let lifecycle = application.lifecycle();
-        let shutdown = lifecycle.request_shutdown();
+        let shutdown = lifecycle.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = lifecycle.request_shutdown();
+        let repeated = lifecycle.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         lifecycle.termination().await
     })
@@ -795,6 +805,7 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
             output: finalization,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -819,9 +830,9 @@ async fn run_delegates_shutdown_to_the_explicit_root_policy() {
             .expect("the root accepts its finalization observer");
         let ready = observer.receive().await.map(|event| event.message);
         assert!(matches!(ready, Some(FinalizationEvent::Ready)));
-        let shutdown = lifecycle.request_shutdown();
+        let shutdown = lifecycle.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = lifecycle.request_shutdown();
+        let repeated = lifecycle.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let finalization = observer.receive().await.map(|event| event.message);
         let termination = lifecycle.termination().await;
@@ -895,6 +906,7 @@ async fn outer_finalization_keeps_its_notice_through_inner_timer() {
             output: finalization,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -903,7 +915,7 @@ async fn outer_finalization_keeps_its_notice_through_inner_timer() {
         (),
     ) = Application::new(
         FinalizationProbe { observer: None }
-            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop())
+            .with_one_shot(Duration::from_secs(60), |_| Actions::stop())
             .finalize_on_shutdown(|root, _request| {
                 let observer = root
                     .base()
@@ -927,9 +939,9 @@ async fn outer_finalization_keeps_its_notice_through_inner_timer() {
             .expect("the root accepts its finalization observer");
         let ready = observer.receive().await.map(|event| event.message);
         assert!(matches!(ready, Some(FinalizationEvent::Ready)));
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = application.request_shutdown();
+        let repeated = application.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let finalization = observer.receive().await.map(|event| event.message);
         let termination = application.termination().await;
@@ -965,6 +977,7 @@ async fn inner_finalization_keeps_its_notice_through_outer_timer() {
             output: finalization,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -974,7 +987,7 @@ async fn inner_finalization_keeps_its_notice_through_outer_timer() {
     ) = Application::new(
         FinalizationProbe { observer: None }
             .finalize_on_shutdown(record_finalization)
-            .with_one_shot(TimerId(7), Duration::from_secs(60), |_| Actions::stop()),
+            .with_one_shot(Duration::from_secs(60), |_| Actions::stop()),
     )
     .run_with(|application| async move {
         let mut observer = application
@@ -986,9 +999,9 @@ async fn inner_finalization_keeps_its_notice_through_outer_timer() {
             .expect("the root accepts its finalization observer");
         let ready = observer.receive().await.map(|event| event.message);
         assert!(matches!(ready, Some(FinalizationEvent::Ready)));
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
-        let repeated = application.request_shutdown();
+        let repeated = application.shutdown();
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let finalization = observer.receive().await.map(|event| event.message);
         let termination = application.termination().await;
@@ -1024,6 +1037,7 @@ async fn timer_expiry_stops_without_running_shutdown_finalization() {
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok(terminal),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1033,7 +1047,7 @@ async fn timer_expiry_stops_without_running_shutdown_finalization() {
     ) = Application::new(
         FinalizationProbe { observer: None }
             .finalize_on_shutdown(record_finalization)
-            .with_one_shot(TimerId(7), Duration::ZERO, |_| Actions::stop()),
+            .with_one_shot(Duration::ZERO, |_| Actions::stop()),
     )
     .run_with(|application| async move { application.lifecycle().termination().await })
     .await
@@ -1053,6 +1067,7 @@ async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result(
             output: termination,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1065,7 +1080,7 @@ async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result(
         }),
     )
     .run_with(|application| async move {
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         application.lifecycle().termination().await
     })
@@ -1077,12 +1092,15 @@ async fn finalization_panic_keeps_its_payload_actor_and_independent_work_result(
     };
     assert_eq!(termination, Err(Crash::Panicked));
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::TransitionPanicked {
+    let ActorRetirement::Retained {
         custody,
-        payload,
-        interpretation,
-        source,
-        settlements,
+        outcome:
+            RetirementOutcome::TransitionPanicked {
+                payload,
+                interpretation,
+                source,
+                settlements,
+            },
     } = retirement
     else {
         panic!("finalization is one pure event transition, not an activation failure");
@@ -1133,6 +1151,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
             startup_error: Some(startup_error),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1146,7 +1165,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
     drop((work, startup_error));
     let terminal: ApplicationTerminal<_> = (origin, retirement);
     let (origin, retirement) = terminal;
-    let ActorRetirement::InitializationRejected {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -1164,7 +1183,7 @@ async fn activation_failure_does_not_invoke_the_boundary() {
                 terminal_report,
                 unread_owner_cancellation,
             },
-        error,
+        outcome: RetirementOutcome::InitializationRejected { error },
     } = retirement
     else {
         panic!("the exact initialization refusal remains a distinct root outcome");
@@ -1203,6 +1222,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1238,7 +1258,7 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
 
     let (
         origin,
-        ActorRetirement::BehaviorFailed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -1256,10 +1276,13 @@ async fn behavior_failure_returns_the_exact_behavior_and_domain_error() {
                     user,
                     descendants,
                 },
-            interpretation,
-            source,
-            settlements,
-            error: RootFailure,
+            outcome:
+                RetirementOutcome::BehaviorFailed {
+                    interpretation,
+                    source,
+                    settlements,
+                    error: RootFailure,
+                },
         },
     ) = terminal
     else {
@@ -1291,6 +1314,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             output: ordinary,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1337,6 +1361,7 @@ async fn application_delegates_to_the_explicit_single_space_app() {
             output: explicit,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -1387,6 +1412,8 @@ async fn application_delegates_to_the_explicit_single_space_app() {
 fn run_with_protocol_is_compile_checked() {
     let cases = trybuild::TestCases::new();
     cases.pass("tests/compile/pass/shutdown_authority.rs");
+    cases.pass("tests/compile/pass/root_send.rs");
+    cases.compile_fail("tests/compile/fail/root_not_send.rs");
     cases.compile_fail("tests/compile/fail/run_with_wrong_root_protocol.rs");
     cases.compile_fail("tests/compile/fail/actor_ref_has_no_shutdown.rs");
     cases.compile_fail("tests/compile/fail/application_lifecycle_wrong_event.rs");
@@ -1415,7 +1442,7 @@ fn assert_blocking_root_retirement(
     retirement: ActorRetirement<StopOnShutdown<BlockingRoot>, Never, Vec<Never>>,
     allocation: *const u64,
 ) {
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -1433,10 +1460,13 @@ fn assert_blocking_root_retirement(
                 terminal_report,
                 unread_owner_cancellation,
             },
-        interpretation,
-        source,
-        settlements,
-        completion,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                completion,
+            },
     } = retirement
     else {
         panic!("the original finite root must return its complete stopped retirement");
@@ -1536,6 +1566,7 @@ fn public_run_blocking_returns_entered_host_inputs_and_retries_both_configuratio
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -1619,6 +1650,7 @@ fn public_run_blocking_recovers_real_build_error_in_limited_child() {
                 startup_error: Some(startup_error),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -1656,5 +1688,19 @@ fn public_run_blocking_recovers_real_build_error_without_limiting_other_tests() 
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("1 passed; 0 failed"));
+    assert_eq!(
+        stdout
+            .lines()
+            .filter(|line| {
+                *line
+                    == "test public_run_blocking_recovers_real_build_error_in_limited_child ... ok"
+            })
+            .count(),
+        1,
+        "the named descriptor-limited child must execute exactly once: {stdout}"
+    );
+    assert!(
+        stdout.contains("test result: ok. 1 passed; 0 failed; 0 ignored;"),
+        "successful process status alone does not prove the intended child ran: {stdout}"
+    );
 }

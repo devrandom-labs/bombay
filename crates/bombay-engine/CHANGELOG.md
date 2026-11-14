@@ -7,15 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.4](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.3...bombay-engine-v0.2.4) - 2026-10-16
+## [0.3.0](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.3...bombay-engine-v0.3.0) - 2026-11-14
 
-### Added
+### Changed
 
-- *(application)* unify composition and preserve complete custody ([#375](https://github.com/devrandom-labs/bombay/pull/375))
-
-### Other
-
-- *(devx)* preserve startup and source-policy checks
+- **Breaking:** use Behavior 0.30 in the public Driver and Environment contracts.
+  Callers must use the same Behavior release; this cannot ship as Engine 0.2.4.
 
 ## [0.2.3](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.2...bombay-engine-v0.2.3) - 2026-10-14
 

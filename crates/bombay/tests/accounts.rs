@@ -6,6 +6,7 @@
 //! explicit `StableProxy` worker-replacement policy.
 
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 use core::future::{Future, poll_fn};
 use core::num::NonZeroUsize;
 use core::pin::pin;
@@ -199,7 +200,7 @@ fn accounts_passivate_reactivate_and_preserve_complete_retirement() {
                     .send(AccountCommand::Deposit(2))
                     .await
                     .expect("the same stable reference activates a replacement");
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
             }),
         )
@@ -210,7 +211,8 @@ fn accounts_passivate_reactivate_and_preserve_complete_retirement() {
     let ((), retirement) = outcome.try_into_completed().unwrap_or_else(|_| {
         panic!("the original application work completes beside its joined cleanup");
     });
-    let (cleanup, root_receiving, notification_receiving, shutdowns) = retirement.into_parts();
+    let (cleanup, _root_report, root_receiving, notification_receiving, shutdowns) =
+        retirement.into_parts();
     cleanup.expect("the original application cleanup succeeds");
     let notifications = notification_receiving
         .expect("the existing cleanup owner transferred both original notifications");
@@ -261,7 +263,7 @@ where
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -279,10 +281,13 @@ where
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     ) = terminal
     else {
@@ -323,7 +328,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
             assert_eq!(report.retirement(), RetirementAssessment::Established);
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             let (behavior, settlements, user, descendants, capability_failures) = match retirement {
-                Ok(ActorRetirement::Completed {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -341,10 +346,13 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert_eq!(child_failures, &[]);
                     assert!(interpretation.is_none());
@@ -368,7 +376,7 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                         capability_failures,
                     )
                 }
-                Ok(ActorRetirement::OwnerCancelled {
+                Ok(ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             child_failures,
@@ -386,9 +394,12 @@ fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetiremen
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            settlements,
+                            interpretation,
+                            source,
+                        },
                 }) => {
                     assert_eq!(child_failures, &[]);
                     assert!(interpretation.is_none());
@@ -529,7 +540,7 @@ fn entity_retirement_waits_for_callback_and_preserves_independent_observers() {
             release
                 .send(())
                 .expect("release the unrelated account's eventual retirement");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|_| panic!("the application starts"));
@@ -600,7 +611,7 @@ fn entity_retirement_keeps_callback_failure_in_the_family_outcome() {
                 .expect("deposit");
             let mode = application.retire_entity(AccountsRole, &ACCOUNT_ID).await;
             assert_eq!(mode, Ok(RetirementMode::Graceful));
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|_| panic!("the application starts"));
@@ -692,7 +703,7 @@ fn entity_retirement_preserves_the_forced_fence_reason() {
                 bombay::entity::DrainStage::FenceEnqueue
                     | bombay::entity::DrainStage::FenceAcknowledgement
             ));
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             reason
         }))
@@ -712,7 +723,10 @@ fn entity_retirement_preserves_the_forced_fence_reason() {
     assert_eq!(records.len(), 1);
     assert!(matches!(
         &records[0].0,
-        Ok(ActorRetirement::TransitionPanicked { .. })
+        Ok(ActorRetirement::Retained {
+            outcome: RetirementOutcome::TransitionPanicked { .. },
+            ..
+        })
     ));
     assert_eq!(
         records[0].1.failures(),
@@ -789,7 +803,7 @@ fn reactivated_entity_cannot_reuse_the_previous_retirement_fact() {
                 let mode = waiting.await;
                 assert_eq!(mode, Ok(RetirementMode::Graceful));
             }
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         }))
         .unwrap_or_else(|_| panic!("the application starts"));
@@ -941,7 +955,7 @@ mod account_reports {
                             .send(AccountCommand::Deposit(2))
                             .await
                             .expect("fresh incarnation admits deposit");
-                        let shutdown = application.request_shutdown();
+                        let shutdown = application.shutdown();
                         assert_eq!(shutdown, Ok(()));
                     }),
                 )

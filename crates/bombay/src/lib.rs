@@ -24,8 +24,8 @@ pub use crate::address::MailAddr;
 pub use crate::application::{ActorInterface, ExternalActor, ExternalActorError, ExternalTarget};
 pub use ::behavior;
 pub use ::behavior_actors::{
-    atomic, composition, discovery, lifecycle, operations, persistence, routing, time as timing,
-    workflow,
+    composition, diagnostic, discovery, lifecycle, operations, persistence, pool, proxy, routing,
+    supervisor, time as timing, worker, workflow,
 };
 pub mod actors;
 pub use crate::application::{
@@ -70,7 +70,7 @@ pub(crate) use crate::retirement::Retirement;
 pub use crate::terminal::{
     ActorCustody, ActorFailureAssessment, ActorNotificationReceipts, ActorRetirement,
     ActorRetirementReport, ChildFailure, ChildOrigin, ProjectTerminal, RetirementAssessment,
-    RetirementNotificationError, RetirementSchema, RootOrigin,
+    RetirementNotificationError, RetirementOutcome, RetirementSchema, RootOrigin,
 };
 pub use crate::topology::{ApplicationTopology, Hosts, RootRegistration};
 pub use crate::worker_preparation::{

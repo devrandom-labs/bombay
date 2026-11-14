@@ -4,7 +4,7 @@ fn shutdown(client: bombay::ApplicationClient<
     >,
     bombay::behavior::MessageProtocol<bombay::MailAddr, u64>,
 >) {
-    let _shutdown = client.request_shutdown();
+    let _shutdown = client.shutdown();
 }
 
 fn main() {}

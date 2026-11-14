@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::ActorCustody;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
@@ -52,7 +53,7 @@ bombay::topology! {
 async fn main() {
     let entries: Box<[u8]> = Box::from([5, 11]);
     let allocation = entries.as_ptr();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         counter::Counter::new().stop_on_shutdown(),
         journal_application::Topology::new(),
     )
@@ -85,7 +86,7 @@ async fn main() {
             .await
             .expect("the actual counter replies");
         lifecycle
-            .request_shutdown()
+            .shutdown()
             .expect("the root admits shutdown");
         reply.message
     })
@@ -104,10 +105,7 @@ async fn main() {
     notifications.termination.expect("actual ordinary termination notification");
     notifications.retirement.expect("actual joined retirement notification");
     let (_, retirement) = native.expect("the complete component custody is joined");
-    let ActorRetirement::Completed {
-        custody: ActorCustody { descendants, .. },
-        ..
-    } = retirement
+    let ActorRetirement::Retained { custody: ActorCustody { descendants, .. }, outcome: RetirementOutcome::Completed { .. } } = retirement
     else {
         panic!("the actual root retires");
     };
@@ -120,10 +118,7 @@ async fn main() {
         origin: _,
         retirement,
     } = report;
-    let ActorRetirement::OwnerCancelled {
-        custody: ActorCustody { behavior, .. },
-        ..
-    } = *retirement
+    let ActorRetirement::Retained { custody: ActorCustody { behavior, .. }, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement
     else {
         panic!("the owner cancelled the component after startup");
     };

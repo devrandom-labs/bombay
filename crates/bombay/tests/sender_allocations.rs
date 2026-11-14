@@ -1,5 +1,6 @@
 //! One-way senders own identities and targets without allocating reply storage.
 
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{ClassifySettlement, MessageProtocol, SettlementStatus};
 use bombay::prelude::{ActorRetirement, Application, Completion, MailAddr};
@@ -110,7 +111,7 @@ async fn one_way_senders_need_no_reply_storage_and_keep_complete_delivery() {
                 .unwrap_or_else(|_| panic!("read admitted"));
             let reply = client.receive().await.expect("actual counter reply");
             assert_eq!(reply.from, root_address);
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             (
                 allocations,
@@ -144,12 +145,15 @@ async fn one_way_senders_need_no_reply_storage_and_keep_complete_delivery() {
         .expect("native root returns");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                ..
+            },
     } = root
     else {
         panic!("the original counter stops normally");

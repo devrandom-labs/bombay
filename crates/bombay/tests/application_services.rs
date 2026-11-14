@@ -1,9 +1,9 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, Interpretation, InterpretationProgress,
     InterpreterRequests, ItemSettlement, NoSends, SettledItem, Step,
 };
-use bombay::prelude::TimerId;
 use bombay::{ActorNotificationReceipts, ActorRetirement, Application, MailAddr};
 use core::future::pending;
 use core::pin::pin;
@@ -102,7 +102,7 @@ async fn file_and_environment_services_compose_beside_native_timers() {
         ],
     };
     let root = documents
-        .with_one_shot(TimerId(1), Duration::ZERO, |documents| {
+        .with_one_shot(Duration::ZERO, |documents| {
             let mut actions = Actions::stop();
             for request in documents.files.drain(..) {
                 actions = actions.with_send(request);
@@ -113,7 +113,7 @@ async fn file_and_environment_services_compose_beside_native_timers() {
             actions
         })
         .stop_on_shutdown();
-    let (work, native, notifications, ()) = Application::new(root)
+    let (work, _root_report, native, notifications, ()) = Application::new(root)
         .with_interpreter(|| Services)
         .run_with(|application| async move { application.termination().await })
         .await
@@ -131,12 +131,15 @@ async fn file_and_environment_services_compose_beside_native_timers() {
     termination.expect("termination publication succeeds");
     retirement.expect("retirement publication succeeds");
     let (_, retirement) = native.expect("the complete native retirement remains available");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the native timer stops the actor after both lanes execute");
@@ -254,7 +257,7 @@ async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both
         ],
         settings: vec![ReadEnvironment { name: setting }],
     };
-    let (work, native, notifications, ()) = Application::new(Documents {
+    let (work, _root_report, native, notifications, ()) = Application::new(Documents {
         files: vec![],
         settings: vec![],
     })
@@ -292,13 +295,15 @@ async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both
         .retirement
         .expect("retirement publication succeeds");
     let (_, retirement) = native.expect("the failed actor is independently acquired");
-    let ActorRetirement::HostExecutionPanicked {
+    let (custody, outcome) = retirement
+        .try_into_custody()
+        .unwrap_or_else(|_| panic!("the failed interpreter retains complete original custody"));
+    let RetirementOutcome::HostExecutionPanicked {
         payload,
-        custody,
         settlements,
         interpretation,
         source,
-    } = retirement
+    } = outcome
     else {
         panic!("the guarded interpreter panic must preserve its complete partial action");
     };
@@ -380,7 +385,8 @@ async fn native_interpreter_panic_retains_acquired_file_pending_request_and_both
     );
     assert_eq!(suffix.path, expected_path);
     assert!(matches!(suffix.access, FileAccess::Ready));
-    assert!(files.next().is_none());
+    let later_file = files.next();
+    assert!(later_file.is_none());
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -448,10 +454,11 @@ async fn owner_cancellation_waits_for_the_inflight_effect_and_keeps_its_complete
     );
     let released = release.send(());
     released.expect("the accepted effect receives its original permission");
-    let (work, native, notifications, ()) = tokio::time::timeout(Duration::from_secs(5), result)
-        .await
-        .expect("cancellation joins after the in-flight batch settles")
-        .into_parts();
+    let (work, _root_report, native, notifications, ()) =
+        tokio::time::timeout(Duration::from_secs(5), result)
+            .await
+            .expect("cancellation joins after the in-flight batch settles")
+            .into_parts();
     let bombay::WorkOutcome::Interrupted { cleanup } = work else {
         panic!("the original application work is interrupted");
     };
@@ -464,11 +471,14 @@ async fn owner_cancellation_waits_for_the_inflight_effect_and_keeps_its_complete
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the joined actor is independently acquired");
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the queued owner request is observed after effect settlement");
@@ -548,8 +558,8 @@ async fn timer_outside_shutdown_keeps_io_receipts_and_unemitted_requests() {
     };
     let root = documents
         .stop_on_shutdown()
-        .with_one_shot(TimerId(1), Duration::ZERO, |_| Actions::stop());
-    let (work, native, notifications, ()) = Application::new(root)
+        .with_one_shot(Duration::ZERO, |_| Actions::stop());
+    let (work, _root_report, native, notifications, ()) = Application::new(root)
         .with_interpreter(|| Services)
         .run_with(|application| async move { application.termination().await })
         .await
@@ -567,12 +577,15 @@ async fn timer_outside_shutdown_keeps_io_receipts_and_unemitted_requests() {
     termination.expect("termination publication succeeds");
     retirement.expect("retirement publication succeeds");
     let (_, retirement) = native.expect("the complete native retirement remains available");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("the native timer stops the actor after both lanes execute");

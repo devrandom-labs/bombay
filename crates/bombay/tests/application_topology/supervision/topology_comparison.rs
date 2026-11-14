@@ -1,24 +1,21 @@
 //! Handwritten native edge composition for the same real replacement journey.
 use super::{
-    Capability, ManagedSupervisor, NativeProxy, NativeWorker, ProxyOrigin, ProxyTerminal, Status,
-    WorkerOrigin, WorkerTerminal, run_supervision, supervisor_application,
+    ManagedSupervisor, NativeProxy, NativeWorker, ProxyOrigin, ProxyTerminal, WorkerOrigin,
+    WorkerTerminal, run_supervision, supervisor_application,
 };
 use bombay::behavior::{
     Behavior, ChildCreationOutcome, ChildHead, CreationId, CreationKind, CreationRejection,
     ItemSettlement, Never, RoutedCreation,
 };
 use bombay::{
-    ActorSpace, ApplicationTopology, ChildFailure, EstablishNativeChild, Hosts, MailAddr,
-    NativeChild, NativeHost, PendingChild, ProjectTerminal, RetirementSchema, RootRegistration,
-    Runtime,
+    ActorSpace, ApplicationTopology, ChildFailure, EstablishNativeChild, MailAddr, NativeChild,
+    NativeHost, PendingChild, ProjectTerminal, RetirementSchema, RootRegistration, Runtime,
 };
 use core::future::Future;
 
 type SupervisorProtocol = <ManagedSupervisor as Behavior>::Protocol;
 struct SupervisorHosts {
     root: ActorSpace<SupervisorProtocol>,
-    status: ActorSpace<Status>,
-    capability: ActorSpace<Capability>,
 }
 
 impl NativeHost for SupervisorHosts {
@@ -32,19 +29,7 @@ impl SupervisorHosts {
     fn new() -> Self {
         Self {
             root: ActorSpace::new(),
-            status: ActorSpace::new(),
-            capability: ActorSpace::new(),
         }
-    }
-}
-impl Hosts<Status> for SupervisorHosts {
-    fn space(&self) -> &ActorSpace<Status> {
-        &self.status
-    }
-}
-impl Hosts<Capability> for SupervisorHosts {
-    fn space(&self) -> &ActorSpace<Capability> {
-        &self.capability
     }
 }
 impl RootRegistration<SupervisorProtocol> for SupervisorHosts {

@@ -22,7 +22,7 @@ error[E0277]: the trait bound `bombay::local::effects::ApplicationCapabilities<D
 note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
   --> src/application/execution.rs
    |
-   |       pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |       pub async fn run(
    |                    --- required by a bound in this associated function
 ...
    |           >: CommitActions<
@@ -30,7 +30,7 @@ note: required by a bound in `bombay::application::execution::<impl Application<
    | |                 Actor,
    | |                 Retired = (
    | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-   | |                     ChildFailures,
+   | |                     Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
    | |                 ),
    | |             > + Send
    | |_____________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
@@ -59,7 +59,7 @@ error[E0277]: the trait bound `bombay::local::effects::ApplicationCapabilities<D
 note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`
   --> src/application/execution.rs
    |
-   |       pub async fn run<Actor, StagingFailure, ChildFailures>(
+   |       pub async fn run(
    |                    --- required by a bound in this associated function
 ...
    |           >: CommitActions<
@@ -67,7 +67,7 @@ note: required by a bound in `bombay::application::execution::<impl Application<
    | |                 Actor,
    | |                 Retired = (
    | |                     Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-   | |                     ChildFailures,
+   | |                     Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
    | |                 ),
    | |             > + Send
    | |_____________^ required by this bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run`

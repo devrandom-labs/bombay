@@ -1,6 +1,7 @@
 //! For learning how to select a standalone actor template and compose wrapper
 //! policy through `ActorExt` without implementing a custom Behavior.
 
+use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::{ActorCustody, ActorNotificationReceipts};
 use tokio::runtime::Builder;
@@ -16,7 +17,7 @@ use processor::{ProcessorMessage, ProcessorPhase, ProcessorState, transition};
 #[test]
 fn receive_timeout_replays_deferred_work_and_preserves_retirement() {
     let actor = Machine::new(ProcessorState::new(), ProcessorPhase::Closed, transition)
-        .with_receive_timeout(TimerId(1), Duration::from_millis(50), |processor| {
+        .with_receive_timeout(Duration::from_millis(50), |processor| {
             if processor.state().completed(7) {
                 Actions::stop()
             } else {
@@ -59,6 +60,7 @@ fn receive_timeout_replays_deferred_work_and_preserves_retirement() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -94,7 +96,7 @@ fn shutdown_preserves_the_complete_processor_retirement() {
                     .stop_on_shutdown(),
             )
             .run_with(|application| async move {
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let termination = application.termination().await;
                 assert_eq!(termination, Ok(Exit::Normal));
@@ -111,6 +113,7 @@ fn shutdown_preserves_the_complete_processor_retirement() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -140,7 +143,7 @@ where
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     child_failures,
@@ -158,10 +161,13 @@ where
                     retirement_failures,
                     terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation,
+                    source,
+                },
         },
     ) = terminal
     else {

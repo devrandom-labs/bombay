@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorBase, ClassifySettlement, EstablishedDelivery, MessageProtocol, NoSends,
     SettlementStatus, Step,
@@ -360,7 +361,7 @@ where
                             exhausted.is_none(),
                             "the complete processing reply trace has no duplicate"
                         );
-                        let stopped = application.lifecycle().request_shutdown();
+                        let stopped = application.lifecycle().shutdown();
                         assert_eq!(stopped, Ok(()));
                         (
                             actor_address,
@@ -385,9 +386,10 @@ where
                 output: (actor_address, sender, allocation, initial, retried, verification, after),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((
                 origin,
-                ActorRetirement::Completed {
+                ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -405,10 +407,13 @@ where
                             retirement_failures,
                             terminal_report,
                         },
-                    settlements,
-                    completion,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::Completed {
+                            settlements,
+                            completion,
+                            interpretation,
+                            source,
+                        },
                 },
             )),
             Ok(ActorNotificationReceipts {

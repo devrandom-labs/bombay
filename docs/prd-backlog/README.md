@@ -78,7 +78,11 @@ first release at all.
 | [Local runtime](local-runtime.md) | Activation, the six interpreter gaps found at this snapshot, supervisors, pools, execution, authoring and template verification. |
 | [Core integration and upstream changes](core-integration.md) | Source-level supervisor/pool diagnosis, reproduced contract failures and repository-by-repository implementation handoff. |
 | [Execution ownership PRD](../prds/execution-ownership.md) | Compact execution preservation contract, eight gates, source witnesses and pinned historical decisions. |
-| [Developer experience](../prds/developer-experience.md) | Paired Behavior PRD: one application path, inferred topology and native terminal custody. Integration and fresh combined checks remain required. |
+| [Observation disposal](../prds/observation-disposal.md) | Merged: PR403/50e0de42; minimal repair, local acceptance and six exact-head CI checks pass. |
+| [Request recovery](../prds/request-recovery.md) | Merged through PR404/9f542c18 after six passing checks; invalid-request recovery is delivered, full R09 remains open. |
+| [Cold command ownership](../prds/cold-overlap.md) | Merged through PR405/e6d43a63 after six passing checks and independent review; real two-Node trace and intended grant-omission failure qualify the finite witness, full R22 remains open. |
+| [Original request bytes](../prds/request-bytes.md) | Merged through PR406/937fecc3 after six passing checks and independent review; original bytes/proof survive actual Ledger processing, full R02 remains open. |
+| [Developer experience](../prds/developer-experience.md) | Scoped runner delivery merged through PR421/2e328cd4 after all eight checks; tested/delivered trees match. DX01–DX28 stays active for selected acceptance, costs and runtime registry delivery. Engine0.3/macros0.2/runtime0.2 remain unpublished candidates. |
 | [Static remote actor PRD](../prds/static-remote-actors.md) | Selected NET1/AUTH1 scope, dependency verification, correctness gates and parallel work plan; [post-EXEC audit](../prds/execution-ownership/post-delivery-audit.md) records the selection rationale. |
 | [Networking](networking.md) | Wire contracts, Zenoh sessions, remote delivery, discovery, queries and subscriptions. |
 | [Identity and placement](identity-and-placement.md) | Mockable identity, permissions, placement, failover, simulation and downstream Selo. |
@@ -103,10 +107,14 @@ Behavior lanes and other runtime capabilities are outside that denominator.
 
 EXEC delivered caller-host async execution and configured Builder-only owned
 blocking over one paired execution/result owner. Its accepted gates,
-verification and actual PR326 merge are recorded in the EXEC PRD. There is no standard
-integrated Zenoh, verified remote identity, distributed placement or
-Mnesis-backed actor execution path in this checkout. Neighboring repositories
-contain useful code; they are not interchangeable with a working integration.
+verification and actual PR326 merge are recorded in the EXEC PRD. The optional
+`remote` feature now supplies Node-owned Zenoh sessions and cold inbound Export
+composition. The current outbound Client slice interprets typed actor requests
+through the same Node lifecycle; its local evidence and delivery state belong
+to the static remote actor PRD. PR392 delivered the ordinary two-process
+remote-counter; full remote acceptance remains incomplete. Production identity, distributed
+placement and Mnesis-backed execution retain their separate backlog scopes;
+neighboring source is not evidence of a completed integration here.
 
 ## Candidate PRDs and dependency order
 

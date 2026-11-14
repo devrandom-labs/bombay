@@ -1,4 +1,5 @@
 //! Independent interpreter owners must not unwind through one another.
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     ActionItem, Actions, BehaviorActed, InterpretItem, InterpreterRequests, ItemSettlement, Never,
     SettledItem, Step,
@@ -140,7 +141,7 @@ async fn service_and_constructor_retirement_child() {
     let service_pointer = ptr::from_ref(service_cause.as_ref()).cast::<()>();
     let original = Box::new([83, 89]);
     let actor_pointer = original.as_ptr();
-    let (work, native, notifications, ()) = Application::new(Document {
+    let (work, _root_report, native, notifications, ()) = Application::new(Document {
         file: Some(OpenFile {
             path: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"),
             access: FileAccess::Ready,
@@ -172,12 +173,15 @@ async fn service_and_constructor_retirement_child() {
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original actor is independently received");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("disposal failures do not rewrite the actual completed actor transition");

@@ -1079,10 +1079,10 @@ mod tests {
         Protocol, User,
     };
     use behavior_actors::Activate;
-    use behavior_actors::atomic::{
-        ImmediateActivation, InitialWorkerOutcome, ProxyControl, ProxyOutcome, ProxyPhase,
-        StableProxy,
+    use behavior_actors::proxy::{
+        InitialWorkerOutcome, ProxyControl, ProxyOutcome, ProxyPhase, StableProxy,
     };
+    use behavior_actors::worker::ImmediateStartup;
 
     use super::{
         ActivationId, DispatchId, DrainStage, EntitySlot, Refusal, RetirementMode, SlotEffect,
@@ -1260,7 +1260,7 @@ mod tests {
         assert!(second.effects.as_slice().is_empty());
         assert!(matches!(second.state, EntitySlot::Activating(_)));
 
-        let initialized = StableProxy::<ProxyWorker, ImmediateActivation>::immediate()
+        let initialized = StableProxy::<ProxyWorker, ImmediateStartup>::immediate()
             .initialize()
             .unwrap_or_else(|_| panic!("proxy initialization is pure"));
         let mut proxy = initialized.behavior;
@@ -1288,12 +1288,12 @@ mod tests {
                 outcome:
                     InitialWorkerOutcome::Overlap {
                         worker,
-                        activation,
+                        startup: activation,
                         phase,
                     },
             } => {
                 assert_eq!(worker, ProxyWorker(2));
-                assert_eq!(activation, ImmediateActivation);
+                assert_eq!(activation, ImmediateStartup);
                 assert_eq!(phase, ProxyPhase::Creating);
             }
             _ => panic!("the proxy returned a different owner outcome"),

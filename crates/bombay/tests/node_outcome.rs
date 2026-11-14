@@ -8,17 +8,21 @@ mod counter {
     }
 }
 
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     BehaviorBase, ClassifySettlement, Never, NoSends, SettlementStatus, Stopped,
 };
 use bombay::prelude::*;
-use bombay::remote::NodeExecutionRefusal;
+use bombay::remote::{
+    ConnectionEndpoints, CredentialSource, Network, NetworkLayout, NodeExecutionRefusal,
+};
 use counter::{Counter, CounterMessage, CounterValue};
 use std::cell::Cell;
 use std::fs::File;
 use std::future::Future;
 use std::io::Read;
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::pin::pin;
 use std::ptr;
@@ -30,24 +34,22 @@ use std::time::Duration;
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
-use zenoh_config::Config;
 
-fn listening_configuration() -> Config {
+fn listening_configuration() -> Network {
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-    let declaration = serde_json::json!({
-        "mode": "peer", "queries_max_retained": 2,
-        "listen": {"endpoints": ["tls/localhost:0"]},
-        "scouting": {"multicast": {"enabled": false, "listen": false}, "gossip": {"enabled": false}},
-        "transport": {"link": {"protocols": ["tls"], "tls": {
-            "root_ca_certificate": certificates.join("root-ca.pem"),
-            "listen_certificate": certificates.join("recipient-certificate.pem"),
-            "listen_private_key": certificates.join("recipient-private-key.pem"),
-            "enable_mtls": true, "verify_name_on_connect": true, "use_public_pki": false
-        }}}
-    }).to_string();
-    Config::from_deserializer(&mut serde_json::Deserializer::from_str(&declaration))
-        .expect("the upstream native listening profile")
+    Network {
+        layout: NetworkLayout::Peer {
+            connect: None,
+            listen: Some(ConnectionEndpoints {
+                addresses: vec!["localhost:0".to_owned()],
+                certificate: CredentialSource::File(certificates.join("recipient-certificate.pem")),
+                private_key: CredentialSource::File(certificates.join("recipient-private-key.pem")),
+            }),
+        },
+        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+        max_retained_queries: NonZeroUsize::new(2).unwrap(),
+    }
 }
 
 #[test]
@@ -84,7 +86,7 @@ fn node_work_uses_only_actor_capabilities_and_returns_original_work_for_retry() 
                 .await
                 .unwrap_or_else(|_| panic!("the read is admitted"));
             let reply = caller.receive().await.expect("the actual typed reply");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (
                 original,
                 original_file,
@@ -149,12 +151,15 @@ fn assert_counter_retirement(
     expected_value: u64,
 ) {
     assert_eq!(root.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        interpretation,
-        source,
-        settlements,
-        ..
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                settlements,
+                ..
+            },
     } = root
     else {
         panic!("the original counter stops normally");
@@ -211,7 +216,7 @@ fn native_join_resumes_after_a_borrowed_wait_and_retains_caller_local_work() {
                 let published = entered.send(application.root().address());
                 let permitted = permission.await;
                 let current = application.root().address();
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (original, published, permitted, current, shutdown)
             });
             let mut operation = pin!(operation);
@@ -299,7 +304,7 @@ fn node_execution_uses_actor_capabilities_and_returns_original_work_for_retry() 
                 .await
                 .unwrap_or_else(|_| panic!("the read is admitted"));
             let reply = caller.receive().await.expect("the actual typed reply");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             (
                 original,
                 original_file,
@@ -380,7 +385,7 @@ fn node_execution_resumes_original_futures_with_borrowed_caller_local_work() {
                     let published = entered.send(application.root().address());
                     let permitted = permission.await;
                     let current = application.root().address();
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     (original, calls, published, permitted, current, shutdown)
                 })
                 .unwrap_or_else(|_| panic!("caller-local paired work is issued"));
@@ -460,7 +465,7 @@ fn native_join_returns_original_work_for_closed_and_already_issued_nodes() {
         let Err(NodeExecutionRefusal::SessionClosed { work }) = closed_node
             .run_with(|application| async move {
                 calls.set(calls.get() + 1);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (original, shutdown)
             })
             .await
@@ -503,7 +508,7 @@ fn native_join_returns_original_work_for_closed_and_already_issued_nodes() {
         let Err(NodeExecutionRefusal::ExecutionIssued { work }) = node
             .run_with(|application| async move {
                 calls.set(calls.get() + 1);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 (original, shutdown)
             })
             .await

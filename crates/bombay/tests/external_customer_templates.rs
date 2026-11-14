@@ -65,9 +65,9 @@ fn cache_preserves_an_exact_external_customer() {
                     .expect("the exact cache admits the get");
                 let hit = caller.receive().await.map(|reply| reply.message);
                 assert_eq!(hit, Some(CacheResult::Hit { key: 7, value: 42 }));
-                let shutdown = lifecycle.request_shutdown();
+                let shutdown = lifecycle.shutdown();
                 assert_eq!(shutdown, Ok(()));
-                let repeated = lifecycle.request_shutdown();
+                let repeated = lifecycle.shutdown();
                 assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
             }),
         )
@@ -82,6 +82,7 @@ fn cache_preserves_an_exact_external_customer() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -165,9 +166,9 @@ fn barrier_releases_two_exact_external_participants() {
                         generation: BarrierGeneration(0),
                     })
                 );
-                let shutdown = lifecycle.request_shutdown();
+                let shutdown = lifecycle.shutdown();
                 assert_eq!(shutdown, Ok(()));
-                let repeated = lifecycle.request_shutdown();
+                let repeated = lifecycle.shutdown();
                 assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
             }),
         )
@@ -182,6 +183,7 @@ fn barrier_releases_two_exact_external_participants() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -240,9 +242,9 @@ fn latch_releases_exact_external_participants() {
                 assert_eq!(first_release, Some(LatchReleased));
                 let second_release = second.receive().await.map(|reply| reply.message);
                 assert_eq!(second_release, Some(LatchReleased));
-                let shutdown = lifecycle.request_shutdown();
+                let shutdown = lifecycle.shutdown();
                 assert_eq!(shutdown, Ok(()));
-                let repeated = lifecycle.request_shutdown();
+                let repeated = lifecycle.shutdown();
                 assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
             }),
         )
@@ -257,6 +259,7 @@ fn latch_releases_exact_external_participants() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

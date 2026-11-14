@@ -1,5 +1,5 @@
-use bombay::atomic::{Assignment, pool_worker};
 use bombay::behavior::Actions;
+use bombay::pool::{Assignment, pool_worker};
 use bombay::prelude::MailAddr;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

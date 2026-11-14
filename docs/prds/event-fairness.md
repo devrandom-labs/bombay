@@ -448,19 +448,16 @@ new direct control trace independently establish why that distinction belongs
 in this owner. Debug focused suite: 13/13 passing. Corrected full gates and
 optimized defect replay remain in progress; this is not merged or distilled.
 
-Reproduce the evidence through the pinned shell (debug symbols and incremental
-artifacts are disabled to fit local storage; debug assertions remain enabled):
+Historical reproduction used the research runner retained in Git history.
+Debug symbols and incremental artifacts were disabled to fit local storage;
+debug assertions remained enabled. Git preserves the exact retired commands.
 
-```sh
-nix develop -c env CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 python3 crates/bombay/tests/fairness_evidence.py --profile debug --output /tmp/bombay-fairness-debug
-nix develop -c env CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 python3 crates/bombay/tests/fairness_evidence.py --profile release --output /tmp/bombay-fairness-release
-```
-
-The runner copies tracked and untracked project sources into an isolated
-temporary checkout, verifies a passing control, restores one concrete defect
-at a time, requires the named test to fail (a compilation failure is rejected),
-and verifies the restored suite. JSON receipts retain source hashes, exact
-commands and exits. It never mutates the live checkout.
+That runner copied tracked and untracked project sources into an isolated
+temporary checkout, verified a passing control, restored one concrete defect
+at a time, required the named test to fail (a compilation failure was rejected),
+and verified the restored suite. JSON receipts retain source hashes, exact
+commands and exits. It did not mutate the live checkout. Its retirement and
+the current native test commands are recorded below.
 
 ## Adversarial test audit requested by the user
 
@@ -501,12 +498,9 @@ old mailbox-priority characterization tests changed because their former
 assertions described the defect explicitly requested for removal. Their
 original production failures were recorded before the fix.
 
-Reproduce the independent public witness and original-source replay:
-
-```sh
-nix develop -c env CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 python3 crates/bombay/tests/fairness_evidence.py --suite public --profile debug --baseline-revision 406df116dd081593e1099a1f3301d2fb91bfc4fc --output /tmp/bombay-fairness-public-debug
-nix develop -c env CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_INCREMENTAL=0 python3 crates/bombay/tests/fairness_evidence.py --suite public --profile release --baseline-revision 406df116dd081593e1099a1f3301d2fb91bfc4fc --output /tmp/bombay-fairness-public-release
-```
+Git history preserves the exact retired commands for the independent public
+witness and original-source replay; their receipts and source epoch remain
+recorded here.
 
 Both reviews of the public witness are complete. The first checked the causal
 setup: synchronous admissions on a current-thread host precede the first actor
@@ -562,8 +556,9 @@ the PR was not ready to merge and FAIR1 remained active.
 
 Detailed local receipts are in `/tmp/bombay-fairness-causal-{debug,release}/`
 and `/tmp/bombay-fairness-public-{debug,release}/`. They retain exact commands,
-source hashes, exits and individual failure transcripts. The reproducible
-runner remains in `crates/bombay/tests/fairness_evidence.py`.
+source hashes, exits and individual failure transcripts. The historical runner
+is retained in Git history at `crates/bombay/tests/fairness_evidence.py`;
+it is not a current test or CI entrypoint.
 
 Complete tracked and untracked scope relative to `406df116` after this audit:
 
@@ -705,3 +700,141 @@ Rust +192/-44/net148, test source +1092/-55/net1037 and public types +0/-0.
 Delivery-record edits are documentation only. PERF-07 overload and elapsed-time
 latency policy, hosting PR365 and full remote acceptance are separate scopes;
 this merge does not complete them.
+
+## Research runner retirement — selection before deletion, 2026-10-23
+
+The unused `crates/bombay/tests/fairness_evidence.py` reproducer is selected
+for direct deletion. Its only callers were the retired historical commands;
+neither the flake, workflows nor another executable invokes it. Do not translate
+it into a second runner. Expected source delta: production +0/-0, tests
++0/-144, public types +0/-0; this document records the disposition separately.
+No scheduler, actor, native test, dependency, CI command or gate changes.
+
+The existing 13 owning tests remain: eight in `local/environment.rs` and five
+in `local/effects/fairness.rs`. The separate public `event_fairness` target
+retains the actual actor trace and every original payload. Current native
+controls must run through the pinned shell:
+
+```sh
+nix develop -c cargo test --locked --offline -p bombay-rs --all-features --lib fairness_
+nix develop -c cargo test --locked --offline --release -p bombay-rs --all-features --lib fairness_
+nix develop -c cargo test --locked --offline -p bombay-rs --all-features --test event_fairness actual_actor_bounds_both_sources_and_returns_every_original_payload -- --exact
+nix develop -c cargo test --locked --offline --release -p bombay-rs --all-features --test event_fairness actual_actor_bounds_both_sources_and_returns_every_original_payload -- --exact
+```
+
+Expected selections are 13 library tests and one public test per profile.
+These are commands selected for retirement verification, not new passing
+receipts. Execution results must be recorded before accepting the deletion.
+
+The historical negative receipts above remain evidence for their recorded
+source and dependency epochs. The deleted reproducer remains available from
+Git; deletion does not claim a new execution of those mutations on today's
+dependency graph. Its ten owning cuts cover child-stop provenance, closed-child
+fact custody, independent settlement selection, mailbox aging, mailbox/local/
+settlement priorities, and cooperative mailbox/observation/settlement polls.
+Its two public cuts force mailbox or timer priority. The optional original
+three-file replay used revision `406df116`; that historical source is not a
+current dependency-compatible replacement.
+
+No fairness mutation campaign was wired into current CI. Deletion retires its
+manual reproducer; it does not claim that the separate actor-execution shell
+runner executes these cuts. The merged FAIR1 semantics and their historical
+inversions remain unchanged. Full overload and elapsed-time policy stay open.
+
+### Fresh retirement selection (2026-10-24)
+
+This direct deletion is reselected on actual main277e6dfe, separately from
+the remote pressure implementation. The earlier outside proposal/review at
+68d73354 with root lockaf4406db is historical; current root lock83f01ca3
+selects patched Tokio1.53.3. Behavior/Actors0.29 at55dbac2d, Macros0.16,
+Address0.3/9f058dc0, Communication0.1.6/963067e0, Timers0.2/9369d1f6 and
+local Observe remain the selected contracts, with no patch override or owner
+changes. Full selected Behavior instructions and relevant owner APIs/tests/docs
+are verified for this stage. No dependency or ownership blocker remains.
+
+The smallest scope remains the144-line unused manual reproducer, this owning
+PRD's historical/current-command distinction and the reciprocal status record.
+Expected production+0/-0/net0, tests+0/-144/net-144, publicAPI+0types/-0types,
+three existing paths. No Rust body, Nix gate, manifest, lock or workflow changes.
+Reuse Cargo and the existing native tests directly; no replacement tool.
+Keep historical inversions at their recorded epochs; do not imply a fresh
+ten-plus-two mutation campaign, actor-execution substitution or full PERF-07.
+
+Before deletion, actual public controls run on3e1a5ab7 through the sole pinned
+Nix shell. Their seven-input ledger rehashes successfully after switching to
+main277e6dfe: all fairness production/test owners and current lock are exact.
+The recent complete library425/425 runs on3e1a5ab7 include all13 named fairness
+cases in each profile. That head adds only an unrelated private Client test
+and feature records to main; it changes no production or fairness source.
+Check those named cases and exact source equivalence rather than duplicate
+an already passing native suite. Public controls must select exactly one
+named case per profile. Record actual exits, independent reviews, complete
+delta and required new-head CI/main delivery after this selection.
+
+### Direct retirement — actual controls and containment
+
+The unused144-line reproducer is deleted directly. No executable, flake gate,
+workflow or other source invoked it; the only project references now explain
+its historical Git location and this retirement selection. The four former
+Python commands in two fenced blocks are removed. Historical receipts and the exact script
+remain available through Git; this change adds no replacement controller.
+
+The current full library runs on3e1a5ab7 pass425 tests/profile without filtering
+or ignored tests. Their raw logs independently contain all13 distinct fairness
+cases (eight environment, five effects). The actual commands are the full
+library selections recorded by the private remote-pressure stage, rather than
+new narrow13-case invocations. Comparing that head with main277e6dfe confirms
+every production/fairness source, manifest, lock and selected owner is exact;
+only an unrelated private Client test and feature records differ.
+
+The actual public `event_fairness` commands above execute exactly the named
+one-passed case in debug and optimized, exit0 each,0failed/0ignored/0filtered,
+0.01/0.00seconds. Outer script exit0 and the seven original source checks pass.
+After deletion, all six retained input checks still pass. Current native
+results therefore qualify the retained fairness owners on lock83/Tokio1.53.3.
+The old ten-plus-two source inversions are not rerun or relabelled. Deleting
+an unused tool adds no semantic law needing a new inverse; the unchanged laws
+retain their meaningful original-defect evidence at its documented scope.
+
+Complete current scope is three existing paths: production+0/-0/net0,
+tests+0/-144/net-144, publicAPI+0types/-0types, plus this existing PRD and status
+record. No Rust body, dependency, manifest, Nix filter/gate, workflow, module,
+aggregate state or branch changes. Source review and minimization prefer direct
+deletion over a translated framework. Existing FAIR1 delivery remains merged;
+this maintenance slice still requires its own reviewed PR, required CI and
+actual main merge. Full PERF-07 and remote acceptance remain open.
+
+Fresh independent source/outcome review3684be7c and final-record amendment
+fc8108f3 pass both review rounds with no scoped veto. Root review6474967c
+concurs. The amendment resolves the inherited advisory status and accurately
+counts four retired Python commands in two fenced blocks. Exact original,
+retained-input and actual public/library receipts are preserved outside under
+`/tmp/bombay-prd-resumption/fairness-runner-retirement-20261024`.
+
+Qualified archive `fairness-retirement-qualified-20261024.tar.gz`, SHA256
+`2185580eeee5f965fca3324932eeff0932bd1fc65f4a25ef9b0cef6c7a93c087`,
+is in the common Git session archive for2026-10-21. Fresh extraction passes
+all24 payload checks and base277 plus the actual patch reconstructs both
+records, the unchanged public test and Python absence. The actual3e1 library
+control source is retained separately. This later pointer is outside the
+capture; the archive is not a compiler closure or CI/main delivery certificate.
+
+### Integration after provider delivery
+
+PR394 has now delivered as actual mainb45c7566 after all six checks passed on
+ed72df92; verified/merge trees match20b77b91. This retirement integrates that
+main before its own PR submission. Only the shared status record conflicts:
+retain the delivered provider/R10 records, current fairness disposition and
+accurate historical source scopes. Main's provider UI fixtures and acceptance
+records are preserved; no retirement Rust, dependency or Nix change appears.
+The six retained fairness inputs rehash unchanged. The complete retirement
+delta against new main remains the same three paths, verification0/-144 and
+production/API0. Existing native receipts retain their original3e1/277 scope;
+source equivalence qualifies the unchanged fairness owners without relabelling
+those runs as execution of this new integration head. Fresh required CI and
+actual retirement delivery remain pending.
+
+Current retirement integration inherits immutable399/404acb361a2c24ffcde946c51fea19e7f330fe07;
+397→398→399 are temporary delivery prerequisites, not semantic dependencies.
+Final three-path census vs404: records+186/-20; tests0/-144; total+186/-164/net22.
+Including inherited source vs321: nine paths+2133/-406/net1727; production/API0; fresh CI pending.

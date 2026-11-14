@@ -23,10 +23,13 @@ impl Behavior for Phased {
     }
 }
 
-const fn deliver(_: &Phased, _: &()) -> StashRoute {
-    StashRoute::Deliver
+const fn stash(_: &Phased, _: &()) -> StashRoute {
+    StashRoute::Stash
 }
 
 fn main() {
-    let _ = Phased.with_stash(deliver);
+    let refused = bombay::behavior::Recipient::<
+        bombay::behavior::MessageProtocol<MailAddr, User<MailAddr, ()>>,
+    >::global(MailAddr::APPLICATION_ROOT);
+    let _ = Phased.with_stash(2, refused, stash);
 }

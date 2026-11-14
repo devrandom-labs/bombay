@@ -10,15 +10,18 @@ Implementation status is separate from this target contract. Local application,
 external interface, timer, Entity, supervisor, and worker-pool paths have
 executable coverage. Async methods use a caller-owned Tokio host. The explicitly
 owned `run_blocking` entry takes a configured Tokio Builder for current-thread
-or multithread execution. Durability and crate-owned remote networking remain
-planned. The merged optional `remote` feature provides `remote::verify` for
+or multithread execution. Durability remains planned. PR387 merged the cold
+remote Export/Node service; PR388 merged the outbound Client described below.
+Complete remote acceptance remains open. The optional `remote`
+feature also provides `remote::verify` for
 provider-result custody. The merged ingress primitive adds `remote::try_retain`
 for nonwaiting count retention (PR363). Neither supplies
 authentication, actor admission or multi-node Application assembly.
 Protected Counter transport regressions
 live in Bombay's tests, built by the isolated transport-custody test package.
-The local `examples/counter` and future `examples/remote-counter` applications
-remain separate.
+The local `examples/counter` and [remote Counter](../examples/remote-counter/README.md)
+are separate applications. The remote example selects an explicit finite test
+identity and refuses `production-required` before Node startup.
 See the [source-backed inventory](prd-backlog/evidence.md). This guide is included in crate rustdoc. The entry fragments below
 are owning doctests, awaiting the reconciled branch's complete verification; fragments labelled text or ignore omit surrounding
 definitions and remain schematic. The source-bound application spellings are:
@@ -39,6 +42,7 @@ each layer.
 | `Machine`, timers, and `ActorExt` wrappers | [actor-template example](../examples/actor-templates/src/main.rs), [template application tests](../crates/bombay/tests/template_application.rs) |
 | Actor facade and exact send lane | [counter example](../examples/counter/src/counter.rs), [macro parity tests](../crates/bombay/tests/macro_last_authoring.rs) |
 | Exact external request and reply | [actor interface tests](../crates/bombay/tests/actor_interface.rs) |
+| Node-owned remote request/reply and shutdown | [remote Counter](../examples/remote-counter/README.md), [process tests](../examples/remote-counter/tests/processes.rs) |
 | Native Entity definition and application | [Entity example](../examples/entity/src/main.rs), [Entity application test](../crates/bombay/tests/entity_application.rs) |
 
 ## Entry boundary
@@ -57,12 +61,13 @@ Execution returns one report containing independent work, root retirement and
 notification results. Borrowing or selecting work keeps every other result.
 For a started application, Bombay awaits cleanup before returning this report; `cleanup()`
 borrows the recorded result. The application still chooses when its root should
-stop, through a domain command, a policy or `request_shutdown()`. Joining does
+stop, through a domain command, a policy or `shutdown()`. Joining does
 not itself request a stop, and dropping a future does not promise completed
 asynchronous cleanup.
 This executable fragment checks that complete handoff.
 Ordinary actor composition uses the domain client/template path below; the
-simple multi-node application surface remains pending.
+complete multi-node contract remains pending. The separate remote Counter uses
+the explicit finite test profile described above.
 
 ```rust
 # struct Service;
@@ -74,7 +79,7 @@ simple multi-node application surface remains pending.
 let service = bombay::actors::ActorExt::stop_on_shutdown(Service);
 let outcome = bombay::Application::new(service)
     .run_with(|application| async move {
-        let shutdown = application.request_shutdown();
+        let shutdown = application.shutdown();
         assert_eq!(shutdown, Ok(()));
         application.termination().await
     })
@@ -88,6 +93,9 @@ let (termination, retirement) = outcome.try_into_completed()
         drop(original);
         panic!("the work must complete");
     });
+let report = retirement.root_report().expect("the joined root published its report");
+assert_eq!(report.retirement(), bombay::RetirementAssessment::Established);
+assert_eq!(report.failures(), bombay::ActorFailureAssessment::NoFailuresFound);
 retirement.cleanup().as_ref().expect("independent work cleanup");
 let (_origin, root) = retirement.retirement().as_ref().expect("actual joined native root");
 let notifications = retirement.notifications().as_ref().expect("actual notification transfer");
@@ -126,7 +134,7 @@ let root = bombay::actors::ActorExt::stop_on_shutdown(Service {
 });
 let outcome = scope.with_root(root).run_with(|application| async move {
     let announcement = announcements.receive().await.expect("root ready");
-    let shutdown = application.request_shutdown();
+    let shutdown = application.shutdown();
     assert_eq!(shutdown, Ok(()));
     announcement.message
 }).await.unwrap_or_else(|original| {
@@ -157,19 +165,9 @@ The [topology tests](../crates/bombay/tests/application_topology.rs) and
 execute these paths. No default policy or dummy capability fills an unused lane.
 
 Finite singleton chains infer their actors from the constructed root and its
-births. For example, a fixed supervisor declares only its relationships and
-external protocols:
-
-```rust,ignore
-bombay::topology! {
-    supervisor_application {
-        root { Proxy => proxy; }
-        proxy { Worker => worker; }
-        worker {}
-        hosts { status: Status; capability: Capability; }
-    }
-}
-```
+births. A fixed supervisor declares the root-to-proxy and proxy-to-worker
+relationships once. The complete declaration and its owning constructor are in
+the [supervision example](../examples/supervision/src/main.rs).
 
 The [executed supervisor](../crates/bombay/tests/application_topology/supervision.rs)
 uses the owning constructor directly, without composed return aliases. For
@@ -182,21 +180,9 @@ actors, forged roles and missing report lanes. The
 [recursive tests](../crates/bombay/tests/application_topology/recursive.rs)
 exercise both wrapper orders and complete failure/retirement custody.
 
-Cold classes also infer their actor types from `.child(role, actor)`:
-
-```rust,ignore
-bombay::topology! {
-    timed_application {
-        root: TimedParent {}
-        members {
-            Timer(TimerOutside) => timer;
-            Shutdown(ShutdownOutside) => shutdown;
-        }
-        timer {}
-        shutdown {}
-    }
-}
-```
+Cold classes also infer their actor types from `.child(role, actor)`. The
+declaration names each member role and its class; the constructed actors supply
+their actual wrapper types.
 
 The [native timer journey](../crates/bombay/tests/native_timer_retirement.rs)
 constructs both actual wrapper orders and consumes every original retirement
@@ -209,20 +195,10 @@ The [cold-descendant journey](../crates/bombay/tests/inferred_cold_descendants.r
 executes creation, its same-action reply and complete retained actor state without
 a wrapped child alias or application-written retirement enum.
 
-Entity families are independent hydrated roots in that same declaration:
-
-```rust,ignore
-bombay::topology! {
-    entity_application {
-        root: Root {}
-        hosts { accounts: Account; profiles: Profile; }
-        families { account: Accounts; profile: Profiles; }
-        account {}
-        profile { worker(ProfileChildrenWorker) => worker; }
-        worker {}
-    }
-}
-```
+Entity families are independent hydrated roots in that same declaration. Its
+`hosts` section names the external protocols, and `families` names each role
+and its definition. The complete declaration lives with its
+[two-family journey](../crates/bombay/tests/entity_application.rs).
 
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated
@@ -233,7 +209,13 @@ executes simultaneous hydration, refusals, reactivation and child retirement.
 Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
 supplies its real policy and owned definition.
 
-The successful outer result owns one `ApplicationOutcome`. Its `work()`,
+The successful outer result owns one `ApplicationOutcome`. Its `root_report()`
+returns the runtime-issued assessment of the root and its owned subtree. It
+remains available after Work finishes and after `try_into_completed()` transfers
+the business value. `None` means no report was published. Root retirement and
+failure evidence are separate; work, notifications and Entity families retain
+their independent results. Reading the report consumes no detailed custody.
+Its `work()`,
 `retirement()` and `notifications()` methods borrow the original independent
 results. An Entity application also selects a family with `family(role)`,
 without naming its product position. The borrowed `FamilyRetirement` exposes
@@ -260,7 +242,7 @@ phase and values:
 Use `work_output()` to borrow completed work and `cleanup()` to borrow the
 independent cleanup Result. `try_into_completed()` consumes a completed outcome
 into `(output, retirement)` even when cleanup failed. The named
-`ApplicationRetirement` retains cleanup, root retirement, notifications and
+`ApplicationRetirement` retains cleanup, root report, root retirement, notifications and
 families independently. Another phase returns the entire original report in
 `Err`, including every receiving result. These operations require no `Clone`, `Debug`
 or `Send` bound on caller values and do not classify actor success. The
@@ -294,9 +276,11 @@ native policies retain their original task context and failure causes.
 `ApplicationOutcome`, `ApplicationRetirement` and `WorkOutcome` are explicit
 `bombay` root imports, not prelude exports. Ordinary construction infers them.
 For owned inspection of every work phase, `into_parts()` peels the complete
-work/root/notification/family product; root-only applications own `()` for
+work/report/root/notification/family product; root-only applications own `()` for
 families. `WorkOutcome::try_into_completed()` then returns output and cleanup
 only, because the other results have already transferred to the caller.
+The additional report is the second part; existing four-part decompositions
+must include it when migrating. Ordinary inspection uses the named methods.
 
 Advanced custom hosting supplies `RootRegistration` for its physical root
 namespace and `ApplicationTopology` for complete custody. A custom accessor's
@@ -353,7 +337,7 @@ completion and failure alternatives; its presence does not imply success.
 `ActorTaskFailed`, `Panicked` and `Cancelled` have no retained actor and return
 `None`. Inspection preserves every cause, effect, unread message and child
 value in the original retirement. Existing matches remain appropriate when
-your decision needs the exact phase or owned fields.
+your decision needs an unavailable alternative's original values.
 
 `ActorRetirement::custody()` borrows the common `ActorCustody` product: actor
 state, unread control/user messages, descendants, child failures and acquired
@@ -362,25 +346,24 @@ original actor is still available through `behavior()`. Executor outcomes
 without returned actor state also have no custody product. Presence never
 certifies successful completion.
 
-Migration: the 20 alternatives with runtime custody now contain `custody`
-instead of repeating those 14 fields. Match `Completed { custody, completion,
-.. }` to consume the original product, or the exact failure variant to retain
-its primary cause. Read or move `custody.behavior`, `custody.user` and
-`custody.descendants` directly. Initialization progress, active interpretation,
-source progress, settlements and phase-specific errors remain in their original
-variants. All 24 alternatives and all owned values are preserved.
+`ActorRetirement::outcome()` borrows the exact primary `RetirementOutcome` with
+the same availability as `custody()`. Match its domain variant to inspect a
+behavior error, rejected effects, normal completion or another retained phase.
+Inspection leaves the original cause and every other value owned by the retirement.
 
-Supplied Work receives the activated application's concrete handle:
+`try_into_custody()` consumes the complete `(ActorCustody, RetirementOutcome)`
+pair. Read or move `custody.behavior`, `custody.user` and `custody.descendants`
+directly; initialization progress, interpretation, source progress, settlements
+and the primary error belong to the typed outcome. When custody is unavailable,
+the method returns the complete original retirement for the application's decision.
 
-```text
-let outcome = Application::new(service.stop_on_shutdown())
-    .run_with(|application| async move {
-        let reply = boundary(application.root()).await;
-        let shutdown = application.request_shutdown();
-        (reply, shutdown)
-    })
-    .await;
-```
+Migration: match `RetirementOutcome::Completed` after consuming that pair, rather
+than the former `ActorRetirement::Completed` variant. The 20 retained primary
+phases and four alternatives without runtime custody preserve all 24 logical
+outcomes and their original values.
+
+Supplied Work receives the activated application's concrete handle. Its typed
+client sends domain commands and receives their separate replies.
 
 Returning from Work does not request shutdown. The root's concrete Behavior
 must accept or transform `ShutdownRequested`; topology does not select policy.
@@ -391,7 +374,7 @@ mailbox. Its target keeps its own lifetime when the sender is dropped. For an
 exact local recipient, `sender.try_send(command)` attempts admission without a
 capacity wait and returns the complete command in `Full` or `Closed`. Stable
 Entity references use asynchronous `send`, which can resolve and hydrate them.
-`request_shutdown()` and `termination()` delegate to the existing lifecycle
+`shutdown()` and `termination()` delegate to the existing lifecycle
 owner. Request acknowledgement, observed termination and joined cleanup remain
 distinct. `lifecycle()` remains the explicit projection when another consumer
 needs only lifecycle authority. Clients and senders gain no such authority.
@@ -417,7 +400,7 @@ This limit applies to subsequently established external actors, bound clients
 and exported interfaces. Changing a scope/application setting does not resize an
 existing endpoint. Communication rounds a positive minimum up to a power of two
 with floor2: requesting3 means4 effective slots, available through `get()`.
-Zero or overflowing rounding returns `MailboxCapacityError` with the original
+Zero or a requested minimum above 2^30 returns `MailboxCapacityError` with the original
 minimum, before mailbox allocation. Closing admission preserves accepted replies;
 `try_send` returns the original input when full or closed.
 
@@ -565,50 +548,176 @@ check versions, profiles, SDK identities, replay and permission. Metadata neithe
 authenticates input nor grants actor access. Providers protect the exact original
 transmitted bytes; deserializing and reserializing is not proof verification.
 
-The `remote` feature provides `application.open_node(config).await`. Its input is the configuration owner's `Config` from
-`bombay-zenoh-config` 1.10.2 (aliased as `zenoh_config` in Cargo). Build
-root/child topology with ordinary Application first. Its returned
-`remote::Node` owns that declaration and one fresh native Session. Await the
-complete application with
+The `remote` feature uses `application.open_node(network).await`. Supply Bombay's
+`remote::Network`: explicit deployment roots, native query capacity and
+`NetworkLayout`. Peer layout has independent connecting/listening directions;
+`RouterClient` requires connecting endpoints. Each `ConnectionEndpoints` owns an
+all-of plain-address list, its certificate and private key. `CredentialSource`
+selects each file or base64 value independently. There are no implicit
+credentials, shared identities or query limits, and no public SDK Config input.
+Build topology, children and Entity families with ordinary Application first. The returned
+`remote::Node` owns that declaration and one private fresh network connection.
+Await the complete application with
 `node.run_with(|application| async move { ... }).await`.
 Work receives the same inferred Application handle as local execution and can
 return caller-local, non-`Send` values. The joined result is the ordinary
 `ApplicationOutcome`, including independent native retirement and both
-notification results. Finish receiving before `node.close().await`, retaining
-the independent close result.
-For independently driven operations, use
+notification results. For the basic transport owner, finish receiving before
+`node.close().await`, retaining the independent close result.
+For independently driven basic transport operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
 
-Transport hiding remains unfinished: startup configuration, exported query
-custody and native failures still expose SDK types. These are
-remaining interface work, not the canonical business callback. Zenoh is Bombay's
-internal network; application authors compose actors and use typed Bombay
-clients and recipients. Both execution entry points preserve the original
-callable on refusal. Missing-host refusal also restores the original declaration;
+For remote metadata, `node.runtime_id()` returns the connection owner's identity
+as a string. `application.actor_address(&recipient)` returns an actor's address
+only after checking its association with that Application; foreign actors and
+external reply endpoints return `ExportError::UnownedTarget`. Association survives
+actor retirement, and the runtime ID survives connection close. These projections
+do not grant operation permission or establish readiness.
+
+Declared Entity families use that same Node path. Work selects their existing
+receptionists with `application.entities(role)`; receiving retains the actual
+family shutdown results alongside the root, Work and notifications.
+
+The cold service merged through PR387 attaches declarations with
+`node.exports(exports, binding)`. The asynchronous binding returns the actual
+root/child target proofs after staging. `Export::new` selects explicit limits,
+wire decoding, operation declarations, verification/protection, request identity
+and current request/reply permission. `reply`, `submission` and `stop` each
+take operation selection and wire encoding; they require no terminal reporting
+callback. Existing actor behaviors and their `ActorExt` policies stay unchanged.
+
+Run an attached node with `run_with` for supplied caller work or `run` for genuine
+work absence. The node owns declaration startup, receiving, withdrawal, joined
+Application/family cleanup and connection close. Optional `node.into_parts()`
+returns exports, the original binding result, actual close result and separate
+kernel poll/disposal panic payloads only after joined execution has acquired
+close and a binding result; otherwise it returns the same Node.
+Cached replies remain available after target retirement while supplied Work
+continues. The existing Application cleanup signal ends declaration serving;
+each new native operation still observes its target's actual retirement.
+An export's `into_parts` and a retained Request's `try_into_parts` provide deliberate
+advanced inspection of originals. Request extraction needs no declaration or
+presentation callback and returns the same Request while custody is borrowed.
+
+`ExportLimits::refusals` explicitly chooses `RefusalRetention::Retain` or
+`Discharge`. Retain keeps completed refusal originals for later inspection and
+charges their capacity for the export's lifetime. Discharge releases an ordinary
+refusal only after it has no issued key, native Query or producer loan. Acquired
+provider panics and all keyed requests remain retained in either mode. Thus a
+completed invalid request need not exclude a later valid one, while replay
+references stay stable. Discharge deliberately gives up later inspection of
+those refusal originals; its extracted rows have storage order, not request
+chronology. These request-count limits are not aggregate byte or CPU bounds.
+
+The local outgoing slice attaches a `Client` through the same
+`node.exports(client, binding)` owner. The binding returns the actual actor
+recipient that will receive checked replies; Node checks its Application
+association. Construct the source with `ApplicationScope::external` before
+building the actor, and give its recipient to that actor's typed send lane.
+The actor returns ordinary `Actions`; Work contains no network loop.
+
+`Client::new` takes the original source, query key, required `ClientLimits`,
+separate `json::Limits`, native query timeout, and the concrete encoder,
+protector, verifier, decoder and current request/reply permission policies.
+For example, with caller-supplied nonzero maxima:
+
+```text
+let client = Client::new(
+    source,
+    key,
+    ClientLimits {
+        concurrent_requests,
+        retained_requests,
+        retained_responses,
+    },
+    json_limits,
+    query_timeout,
+    encode,
+    protect,
+    verify,
+    decode,
+    current_request,
+    current_reply,
+);
+let mut node = node.exports(client, binding);
+let outcome = node.run().await?;
+```
+
+The encoder's `Ok(None)` selects no Get, for example for a protocol
+acknowledgment. A real Get waits for the first successfully observed matching
+native route after protection and framing checks. It acquires fresh request
+permission after that wait; no permission guard spans the wait. No-Get messages
+remain independent. This initial snapshot promises neither identity, delivery
+nor continued availability: later route loss retains ordinary Get/EOF results.
+Joined cleanup cancels the initial wait. The native query timeout starts with
+Get, so it does not bound the initial visibility wait.
+
+Concurrent requests bounds operations holding a permit through
+protection, initial visibility waiting, Get and response handling. Retained requests bounds acquired source
+rows, including no-Get messages; reaching it closes admission and keeps any
+accepted unread prefix in the original source. Retained responses bounds charged
+native replies per query across queue and acquired responses. The first refused
+original is retained separately, so native reply custody is at most that count
+plus one; later overflow is explicitly discharged. These are not aggregate byte,
+provider allocation or accepted-prefix bounds. The query timeout does not
+certify actor termination. The public read consumer uses the existing
+`ActorExt::with_deadline` policy for its actual one-shot actor lifetime.
+
+Node owns outgoing protection, native queries, callback retirement and joined
+cleanup. The source capability and the checked return recipient are separate:
+comparing declared numeric origins is routing policy, not authentication.
+Optional consuming `Client::into_parts` returns the original source and policy
+inputs, actual startup/withdrawal/joined/EOF observations and original request
+rows, followed by a triple for listener creation, observed visibility and listener
+withdrawal. These native results stay independent: successful Querier startup
+can coexist with failed listener creation, while an observation error leaves
+Get unattempted. An absent visibility result does not certify a matching route.
+A quota stop is not EOF; the returned source keeps its unread accepted
+prefix. An acquired `Response` offers borrowed payload/proof fragments and the
+actual error through standard `Error`, with no public SDK type. Its consuming
+handoff preserves typed results and deliberately disposes unused native
+success-envelope metadata. A returned native error retains its original cause
+and count charge until that error is dropped. `ClientError` distinguishes
+declared-route mismatch, JSON refusal and absent proof without exposing payloads
+in its outer diagnostics. Advanced inspection is optional, not a reporting
+callback required to run the application.
+
+This outgoing slice is verified and merged through PR388; complete remote support
+remains pending. Initial visibility waiting is a subsequent local change with
+its own qualification; it is not evidence of a delivery or authentication promise.
+Full cancellation/unwind, pressure/retry, public privacy/authentication and
+resource acceptance remain open. Zenoh stays an internal networking owner; ordinary
+applications must not assemble its request/reply loops. Refusal preserves the
+original callable. Missing-host refusal also restores the original declaration;
 a second execution returns `NodeExecutionRefusal::ExecutionIssued`, including
 when that already-issued Node's Session is closed.
 
-Startup returns the original Application/configuration on profile, host or
-native refusal. The selected profile requires configured TLS addresses, disabled
-discovery, mutual TLS, configured private roots, verified names and explicit
-native query capacity. No default capacity is selected. Per-endpoint overrides
-and `OneOf` fallback are rejected. SDK parsing verifies actual credentials; policy
-checks alone prove no handshake. Opening requires an entered multithreaded Tokio
-host. Native SDK configuration and query access must move into their runtime
-owners before the network interface work is complete.
+Startup returns the original Application/Network on mapping, host or native
+refusal. Bombay constructs TLS-only connections with disabled discovery,
+mutual TLS, supplied private roots and verified names. Empty directions,
+endpoint metadata/options and unsupported file-path encoding are refused.
+Outgoing addresses retain all-of semantics; no fallback is inferred. Actual
+credential parsing remains native; construction establishes no peer handshake.
+Opening requires an entered multithreaded Tokio host. Native startup timeout
+and retry defaults establish no bounded startup or readiness guarantee. The
+input-privacy stage passes its focused mapping, caller and original-input
+controls; those scoped results do not establish complete interface acceptance.
 Whole operation disposal is surrender, not proof of joined retirement.
 
-Node and `ApplicationHandle::export` are delivered on main. Export uses
-its Node's private Session and actual Application ownership. Each request
-retains its originals with an independent reply client and preserves native
-nonwaiting admission results. Concurrent receiving preserves query/native
-acquisitions independently of provider verification, reply protection and
-current permission. Authenticated remote operations and the ordinary multi-node
-API remain pending. The developer experience coordination tracks joined-node
-verification and the remaining SDK configuration/query interfaces to encapsulate.
-The local `examples/counter` and future `examples/remote-counter` are separate
-applications; owning tests retain custody and fault assertions.
+The former imperative `ApplicationHandle::export`, `retain`/`attempt`/`retry`
+and manual `undeclare` path is retired by the cold service. Historical main delivery
+is recorded in the remote PRD; it does not select a second current spelling.
+Retained requests preserve original protected bytes, opaque receipts, actual
+native attempts and replies independently of verification, protection and
+permission. In particular, native `Full` preserves its exact rejected command;
+automatic retry waits for native capacity and obtains fresh authority. The
+owning Ledger and Counter Reply laws pass locally, including original Full retry
+custody. The local public read/provider/count controls exercise the outgoing
+slice; full remote gates remain open. The separate
+[remote Counter](../examples/remote-counter/README.md) demonstrates the ordinary
+application with a finite test identity; owning tests retain custody and fault
+assertions.
 
 ## Application composition
 
@@ -725,7 +834,7 @@ timed termination without application code implementing `Behavior`:
 
 ```text
 let root = Machine::new(state, phase, transition)
-    .with_one_shot(TimerId(1), Duration::from_secs(1), stop)
+    .with_one_shot(Duration::from_secs(1), stop)
     .stop_on_shutdown();
 
 Application::new(root).run().await
@@ -970,8 +1079,9 @@ The intended ordinary public surface is:
 
 Explicit hosting uses `Application::with_topology` with deliberately imported
 `bombay::{ActorSpace, ActorSpaces, Hosts}`. `Application` remains in the ordinary
-prelude. One declared topology deriving hosting and retirement remains the target
-for complex graphs.
+prelude. For child graphs, one `topology!` declaration derives static hosting and
+complete native descendant custody. `TerminalProjection` remains an optional
+owned presentation of those results.
 
 Users never manually construct or implement:
 
@@ -1038,7 +1148,7 @@ let application_receiving = application.run_with_entities(
         caller.send(AccountCommand::Deposit(amount)).await.expect("deposit admitted");
         let mode = application.retire_entity(AccountsRole, &account_id)
             .await.expect("the captured incarnation retired");
-        application.request_shutdown().expect("root shutdown admitted");
+        application.shutdown().expect("root shutdown admitted");
         mode
     },
 ).await;

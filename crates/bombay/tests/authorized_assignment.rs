@@ -1,4 +1,5 @@
 //! Finite assignment/deadline evidence; raw serial equality is not caller authentication or KERI proof.
+use bombay::RetirementOutcome;
 use bombay::behavior::{Behavior, BehaviorBase, EstablishedDelivery, MessageProtocol, User};
 use bombay::prelude::*;
 use bombay::{ActorCustody, ActorNotificationReceipts, TrySendError, WorkOutcome};
@@ -262,7 +263,7 @@ fn authorized_assignments_survive_application_replacement() {
                         .send(&recipient, Command::Snapshot(service.recipient()))
                         .await;
                     let snapshot = service.receive().await;
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     (
                         recipient,
                         allocation,
@@ -283,6 +284,7 @@ fn authorized_assignments_survive_application_replacement() {
                     output: observed,
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -304,9 +306,9 @@ fn authorized_assignments_survive_application_replacement() {
                 drained,
                 drained_barrier,
             ) = observed;
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             } = &terminal
             else {
                 panic!("first native state");
@@ -354,7 +356,7 @@ fn authorized_assignments_survive_application_replacement() {
                         .send(&recipient, Command::Snapshot(service.recipient()))
                         .await;
                     let snapshot = service.receive().await;
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     (
                         stale_allocation,
                         fresh_allocation,
@@ -376,6 +378,7 @@ fn authorized_assignments_survive_application_replacement() {
                     output: observed,
                     cleanup: Ok(()),
                 },
+                _root_report,
                 Ok((origin, terminal)),
                 Ok(ActorNotificationReceipts {
                     termination: Ok(()),
@@ -398,9 +401,9 @@ fn authorized_assignments_survive_application_replacement() {
                 snapshot,
                 shutdown,
             ) = observed;
-            let ActorRetirement::Completed {
+            let ActorRetirement::Retained {
                 custody: ActorCustody { behavior, .. },
-                ..
+                outcome: RetirementOutcome::Completed { .. },
             } = &terminal
             else {
                 panic!("replacement native state");
@@ -490,7 +493,7 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
                         .send(&recipient, Command::Snapshot(service.recipient()))
                         .await;
                     let snapshot = service.receive().await;
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     (
                         allocation,
                         actual_allocation,
@@ -515,6 +518,7 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
             output: observed,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, terminal)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -539,9 +543,9 @@ fn cached_deadlines_and_full_retries_sample_current_time() {
         snapshot,
         shutdown,
     ) = observed;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { behavior, .. },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = &terminal
     else {
         panic!("expiry native state");
@@ -599,7 +603,7 @@ async fn export_assignment(
                 )
                 .await;
             let snapshot = service.receive().await;
-            let shutdown = application.lifecycle().request_shutdown();
+            let shutdown = application.lifecycle().shutdown();
             (
                 serial,
                 allocation,
@@ -618,6 +622,7 @@ async fn export_assignment(
             output: observed,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, terminal)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -629,9 +634,9 @@ async fn export_assignment(
         panic!("complete startup export native and both notifications");
     };
     let (serial, allocation, sender, admitted, barrier, snapshot, shutdown) = observed;
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody: ActorCustody { behavior, .. },
-        ..
+        outcome: RetirementOutcome::Completed { .. },
     } = &terminal
     else {
         panic!("native authorized export");

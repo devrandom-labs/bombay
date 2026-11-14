@@ -1,4 +1,5 @@
 use bombay::ActorCustody;
+use bombay::RetirementOutcome;
 
 use bombay::behavior::{BehaviorSettlements, Never, Protocol};
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin};
@@ -15,7 +16,7 @@ where
 {
     let (
         origin,
-        ActorRetirement::Completed {
+        ActorRetirement::Retained {
             custody:
                 ActorCustody {
                     capability_failures,
@@ -33,10 +34,13 @@ where
                     retirement_failures: retirement_native_failures,
                     terminal_report: retirement_terminal_report,
                 },
-            settlements,
-            completion,
-            interpretation: retirement_interpretation,
-            source: retirement_source,
+            outcome:
+                RetirementOutcome::Completed {
+                    settlements,
+                    completion,
+                    interpretation: retirement_interpretation,
+                    source: retirement_source,
+                },
         },
     ) = terminal
     else {

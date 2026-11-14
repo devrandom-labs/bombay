@@ -63,13 +63,19 @@ src/main.rs       executable Application request/reply and lifecycle shutdown
 src/counter.rs    state, protocol, messages, receive logic, and invariant
 ```
 
-## Remote Counter prerequisites
+## `remote-counter`
 
-The local application lives in `examples/counter`. A separate
-`examples/remote-counter` application will consume Bombay's crate-owned
-network/export/admission APIs behind `remote`. It remains pending; the existing
-`remote::verify` acquisition function and candidate `remote::try_retain`
-count-retention function do not provide multi-node hosting.
+The [remote Counter](remote-counter/README.md) runs the Counter and its customer
+as separate programs through Bombay's public `remote` capabilities. The pure
+customer requests a correlated increment, reads the value and requests an
+authorized stop; Node owns networking and cleanup. Only the customer selects
+a receive timeout, which reports an uncertain operation without retrying it.
+
+This application uses an explicitly selected finite test identity supplied by
+a trusted assignment operator. `production-required` refuses that provider
+before Node startup. It is separate from the local `counter`; its package tests
+own subprocess control and assertions. Full remote and production identity
+acceptance remain in the remote PRD.
 
 Protected Counter fault and transport regressions live under
 `crates/bombay/tests/protected_counter`, built by the isolated transport-custody

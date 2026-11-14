@@ -3,7 +3,7 @@
 use bombay::ApplicationScope;
 use bombay::actors::ActorExt as _;
 use bombay::behavior::{BehaviorBase, EstablishedRecipient, MessageProtocol, Never};
-use bombay::composition::StashRoute;
+use bombay::composition::{StashRoute, UnlimitedStash};
 use bombay::prelude::{Completion, Exit, MailAddr, StopOnShutdown};
 use bombay::routing::{WorkQueue, WorkQueueMessage, WorkQueueOutcome, WorkQueueRejection};
 use bombay::{
@@ -188,7 +188,7 @@ fn work_queue_preserves_exact_dispatch_and_full_rejection_through_shutdown() {
                     .await
                     .expect("idempotent withdrawal");
             }
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
@@ -197,7 +197,7 @@ fn work_queue_preserves_exact_dispatch_and_full_rejection_through_shutdown() {
     let Err((application, work, _missing_host)) = unstarted else {
         panic!("missing host returns the entire scope, root and uninvoked work");
     };
-    let (outcome, native, notifications, ()) = host
+    let (outcome, _root_report, native, notifications, ()) = host
         .block_on(application.run_with(work))
         .unwrap_or_else(|original| {
             drop(original);
@@ -250,7 +250,7 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
         .enable_all()
         .build()
         .expect("caller host");
-    let (outcome, native, notifications, ()) = host
+    let (outcome, _root_report, native, notifications, ()) = host
         .block_on(async {
             let (execution, receiver) = scope
                 .with_topology(root, spaces)
@@ -282,7 +282,7 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
                         .await
                         .expect("original early worker")
                         .message;
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     assert_eq!(shutdown, Ok(()));
                     let termination = application.termination().await;
                     assert_eq!(termination, Ok(Exit::Normal));
@@ -301,7 +301,7 @@ fn prepared_setup_rejection_keeps_early_endpoints_and_namespace_for_retry() {
             .await;
             drop(execution);
             assert!(failed_setup.is_err());
-            let (outcome, native, notifications, ()) = receiver.await.into_parts();
+            let (outcome, _root_report, native, notifications, ()) = receiver.await.into_parts();
             assert!(native.is_err());
             assert!(notifications.is_err());
             let WorkOutcome::Prepared {
@@ -360,18 +360,15 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
     let mut admissions = scope.external::<Admissions>().expect("early admission");
     let value = Box::new(String::from("released work"));
     let pointer = ptr::from_ref(value.as_ref());
-    let root = WorkQueue::new(0)
-        .with_stash(|queue, message| match message {
-            WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
-                StashRoute::Stash
-            }
-            WorkQueueMessage::Available { .. } => StashRoute::Release,
-            WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => {
-                StashRoute::Deliver
-            }
-        })
-        .stop_on_shutdown();
-    let (outcome, native, notifications, ()) = scope
+    let root = UnlimitedStash::new(WorkQueue::new(0), |queue, message| match message {
+        WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
+            StashRoute::Stash
+        }
+        WorkQueueMessage::Available { .. } => StashRoute::Release,
+        WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => StashRoute::Deliver,
+    })
+    .stop_on_shutdown();
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");
@@ -401,7 +398,7 @@ async fn shutdown_outside_stash_preserves_early_dispatch_and_retirement() {
                 .await
                 .expect("exact released payload")
                 .message;
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
@@ -444,18 +441,20 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
     let mut admissions = scope.external::<Admissions>().expect("early admission");
     let value = Box::new(String::from("released work"));
     let pointer = ptr::from_ref(value.as_ref());
-    let root = WorkQueue::new(0)
-        .stop_on_shutdown()
-        .with_stash(|queue, message| match message {
-            WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
-                StashRoute::Stash
-            }
-            WorkQueueMessage::Available { .. } => StashRoute::Release,
-            WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => {
-                StashRoute::Deliver
-            }
-        });
-    let (outcome, native, notifications, ()) = scope
+    let root =
+        UnlimitedStash::new(
+            WorkQueue::new(0).stop_on_shutdown(),
+            |queue, message| match message {
+                WorkQueueMessage::Submit { .. } if queue.base().state().available().is_empty() => {
+                    StashRoute::Stash
+                }
+                WorkQueueMessage::Available { .. } => StashRoute::Release,
+                WorkQueueMessage::Submit { .. } | WorkQueueMessage::Withdraw { .. } => {
+                    StashRoute::Deliver
+                }
+            },
+        );
+    let (outcome, _root_report, native, notifications, ()) = scope
         .with_root(root)
         .run_with(|application| async move {
             let caller = application.sender().expect("live root sender");
@@ -485,7 +484,7 @@ async fn stash_outside_shutdown_preserves_early_dispatch_and_retirement() {
                 .await
                 .expect("exact released payload")
                 .message;
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));

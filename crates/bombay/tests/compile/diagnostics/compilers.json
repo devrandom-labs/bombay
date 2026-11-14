@@ -11,82 +11,210 @@
       "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)"
     }
   },
-  "patch_sha256": "95c19b5b1f3a41f542f294b1c1f20f1779904bac0e99f8030ddbd0b144a80e11",
+  "patch_sha256": "0a9e722ad422b6bd16a9cef7963344a58d767b359a735d5c677c79e3958b4532",
   "snapshots": {
     "crates/bombay/tests/compile/fail/axum_wrong_root_protocol.stderr": {
-      "canonical_sha256": "1616a8c2d64b5a404de8284dd46d7ed61d26f57a80f9ea024f469b651511e139",
-      "minimum_sha256": "deefe05e352eea1d57d44814cc7f5883e10d05bb6296c7d50972c1782f5b38ea",
+      "canonical_sha256": "887ca7cfa0e44842be8429b65f9a58f82e967ffe3aafe5282d11751b69013b01",
+      "minimum_sha256": "326a0e21873f5ece46ffff49bf8d09e7b19c0f8f30daa01a2a90d0f3f1c9c25a",
       "fixture_sha256": "90c6c3f3987b27f8ce4282d974604f840b13150854f33276b27c1df301a4eb59"
     },
     "crates/bombay/tests/compile/fail/topology_cold_extra_birth.stderr": {
-      "canonical_sha256": "c4e8f9ab02b594e0dce5eca570933e3a1b3f0c8f9c12c7d2692a9c2583c9687f",
-      "minimum_sha256": "92163c4169096f5d81fa42ea24ff3beba55e7bddf9ea503584ff0d6efac28f55",
-      "fixture_sha256": "75d93ffa72412a72aa28b3d848b71f1b5d259ba628866fdde263fbc07336aa96"
+      "canonical_sha256": "c33fcf6346c7d7ec5285291887bab810fb89172c61f717f2b547e756e9d1dfac",
+      "minimum_sha256": "63fe09250d8f78d27d170b9ec55806c6ff1cbbc241fb0ddc9868ca0e209ca67a",
+      "fixture_sha256": "62541f12a97539a0b59dd868b45bc07dc1ace95401fc84a4529517cb66ceee77"
     },
     "crates/bombay/tests/compile/fail/topology_cold_wrong_host.stderr": {
-      "canonical_sha256": "ce2798b47f67a54c5e72d9288d0ab03c33ea55ff7dbd9e8c206552fe9ed28818",
-      "minimum_sha256": "7ce13ada39fe8776562710414712caf5dc9bb19e5dbf44a11abf8eeacabf7f13",
-      "fixture_sha256": "a7b0514d676229ceb1e337c47624e14d8477ebb5d2a8facfc44f541cc608cc19"
+      "canonical_sha256": "acea7da52565d91961af8cbfd0027a061903de0ebb4f401dc70f073b2c6eb758",
+      "minimum_sha256": "2060fe31cfacc9ace240df4bb6b26192fae2a53ae4012f22817d5cfec6e6abc2",
+      "fixture_sha256": "95f0d118e8724c819d4d8acfcbd81491e00b422b6bb8d782c3a75f4d757b0ef0"
     },
     "crates/bombay/tests/compile/fail/topology_cold_wrong_role.stderr": {
-      "canonical_sha256": "a38edb57f0dc5407a6807a0d5149950597cbc6fae7813edf2526075bf4e5cbf9",
-      "minimum_sha256": "603bc5f9c9db84726a95f4bfb2d90e9b337a24f55a087aef830cc0b649c51c6f",
-      "fixture_sha256": "f0c55546143d8196589c76d56ab15456522f2fefdba0c2f3f1a9b669c6f2d7e8"
+      "canonical_sha256": "fff455b973dedefd46d6a8b185d6a908632a42592d66945cfda84dd6e93b6d5d",
+      "minimum_sha256": "49fdec71612716e59525662d7d7397c5d7238e36deaee37574f801f4ee524843",
+      "fixture_sha256": "1328afe4cf04bc945bc1e0cbaf15c12b68b0279effa3ac27ee32c02758351f53"
     },
     "crates/bombay/tests/compile/fail/topology_duplicate_roles.stderr": {
-      "canonical_sha256": "8f03cd257435f412d429c496eed0a7f2b3f8f44cb1ec87286119ae5b1383c3f8",
-      "minimum_sha256": "73b6893c117e50ccdb8e7bca7349b56127a69b7a3fea4a637302a0ad2be65244",
-      "fixture_sha256": "06ccc8b704c338d0c5e316fc050b42780207e43cf1174628362be0d4113249fd"
+      "canonical_sha256": "1e4ddfa14baaabc0f3a9e476492d3f9e8c2dd1cc3d0a60f47a69f2ea0a5dbc38",
+      "minimum_sha256": "8be255bdd266b4e52e0f589721ea841d465eacf362b7289d72551cd3f3369aff",
+      "fixture_sha256": "28ae38325fbdd17c71dbf7cea5963989df7ff9035a6f11acb477d16b6df5657d"
     },
     "crates/bombay/tests/compile/fail/topology_erased_cold_origin.stderr": {
-      "canonical_sha256": "1a82ff5b49a5721013408c9579c2fb6dfc7247308e233ddd3cebeacc571f37c7",
-      "minimum_sha256": "1b3f9669266dd677806d42f97a019a5189da411993f60720bef14e5b65967528",
-      "fixture_sha256": "0c422e499e5b2a1f83190b127fcb1495c6c1a8b44eeb55355e6632c7b5ae3d88"
+      "canonical_sha256": "ee16fae68a914f9b1d7cc5b09f40a6286de95d0a005caaa5cb3b77964f40dea8",
+      "minimum_sha256": "162ffe14e0d24b481db0df1552396f7fe00f579e5fde7607abd53bd7241ae3e7",
+      "fixture_sha256": "5f67e22e47a2a7e7e58879c96862c3315db415be4452b4601bc6c9d26eef7e4e"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_extra_birth.stderr": {
-      "canonical_sha256": "381298fd1fb41be7b6e19c234c3e039d9840fdb7eb6ff19068098043c7bc3058",
-      "minimum_sha256": "485a75c8eeb2c94bf20ae3b70972ed4152bf3b835cc7de6af0ce1747451b73cc",
-      "fixture_sha256": "b734feaa270862259d11afbd438fb0abc226a4a65369dba2d4bdf500d0046824"
+      "canonical_sha256": "8f3b197a31d185441322b2ca57d086b2664c7fccf9541f084cc4999cf79f12c1",
+      "minimum_sha256": "2ab880c694e926b9556e223aa18da29bec54ebec479545d2e1ad479b8a9fc959",
+      "fixture_sha256": "e64b541ade5b22c2b78ba459979bf67aed3ee1efc0a16a34aaf4dbea0c1bfb88"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_forged_position.stderr": {
-      "canonical_sha256": "9a7802a9a87c6671ee8353b5febbcddbc26dec9eb8652cbaf3bc41d665fc2e4f",
-      "minimum_sha256": "8af984a894a2b73675189e3c91fa9cf99ad46b2e72c7441d4f1033c0de5d79bc",
+      "canonical_sha256": "2cc4d823e3bd99b50d6c08254452ba64b0e8de8ccf20356b9f80756ac79da56c",
+      "minimum_sha256": "74220a5832added9c89e7ea5902a281eaae71ce275594f3989dc1c9ef5e49b1b",
       "fixture_sha256": "96b8b5f8482c18d9394c33a9aa06bb9377730d467b10cae860ef0f71c530636d"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_forged_role.stderr": {
-      "canonical_sha256": "7ac3e5730734010e287fd7f4cc0ac5fe7452f9d424b1549380a97a7343c3bd2f",
-      "minimum_sha256": "8a697263581f29b4c0ad7fdb11897eb20430df21605de6f948d6696b1fb5e9c4",
+      "canonical_sha256": "38dc3c08d4ef5b3bd54f84355530c771d9c2742146fd74f2c8cd7f1062a68119",
+      "minimum_sha256": "bd288dababbe1ef2f00b704eb7b70923e2eac708b1ff1968b0d8f3635cb490c7",
       "fixture_sha256": "9f9b1cfa9d6dbf605daa08ee356e85a1a31c30b1035f79c100a949c01a4f7251"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_inconsistent_child.stderr": {
-      "canonical_sha256": "b64d19c1443481627c010d980c3da1a465e005a66c7de486193bb9a88f29828d",
-      "minimum_sha256": "972568f4d529edc1014c554b6cd9a24d0750c53ac9c5135f8ecb756d80cca1f2",
+      "canonical_sha256": "3e0d9b4ae11e2710cdf1a838e47f8a764a8b9ea12cc9c1511875b7e1c79359fd",
+      "minimum_sha256": "63707d32d2fa7d692893bce207204c2a6f080ae18a9ffe269f09f54cccc49906",
       "fixture_sha256": "e6fc97451a240916b72fa5c85ebf333a5fa38393978e1f0da6bffd50f2bafc9f"
     },
     "crates/bombay/tests/compile/fail/topology_inferred_wrong_role_parent.stderr": {
-      "canonical_sha256": "b77fea0fd02261544bf447e12c07a149039ebf0b8df3016387309aeb909f6d28",
-      "minimum_sha256": "aefa04e8b1eaf56ceb7f96be9d108c59a13798ea3d704deb24f4e2ef2f47a4ad",
+      "canonical_sha256": "8640af9301158c68609c82c2c2bad443589af7712323ff9cd2b6c7f83e88916c",
+      "minimum_sha256": "6b7b2dde026755c63703a1a199106dc80c3f8491c4505721607cb7c749a37d0e",
       "fixture_sha256": "f07f122b9853377b3b07fcf48db3f5f1bac6a8a9d92a50064f7486284a278860"
     },
     "crates/bombay/tests/compile/fail/topology_swapped_roles.stderr": {
-      "canonical_sha256": "dcd9df98c886e4e83d3754bab6b428565ea213458a0f7607e722290944440bf5",
-      "minimum_sha256": "48d6eeea1102f65b78d7c71102dc6a16e8a5a0dbc799f408ff65706a3185ae2d",
-      "fixture_sha256": "6beed97507e989884df13c1a04df721a820f962af81a1059c8d0644414619179"
+      "canonical_sha256": "82bbcd0eefa75e363b2b8cf4833e830afb583b5d006a9b35e7a12c359c234a16",
+      "minimum_sha256": "6a664ce9a82fb7f4aefef778075d1b414735902371a89521d27a9154131e0a18",
+      "fixture_sha256": "fa9b7f99f434c28567a18879b1537f7f19b0821555c41270ec7acc9d4d342f01"
     },
     "crates/bombay/tests/compile/fail/worker_factory_not_callable.stderr": {
       "canonical_sha256": "df0f015bb3e2c67168334356bab6488d7cdc9f0a6daddbf4f112c62d4f7b0109",
       "minimum_sha256": "0b389cfd3432ce8749361acf8f2dd56928a9be86713db6efd1bcc674b5d03fc6",
       "fixture_sha256": "1cca36456928fcebe254528aae7b4c769401ef18447c22207f809cc05574c8e8"
+    },
+    "crates/bombay/tests/compile/fail/actor_spaces_wrong_field.stderr": {
+      "canonical_sha256": "4443c74d5965cc3b56605f9200d1107eadb1e6057143d938df464298e768ace7",
+      "minimum_sha256": "38fbe5ca0143de09a0b734d4aee015e3606bb4ce868c043dbf87d8363c515851",
+      "fixture_sha256": "b3b079b46b475cc21da4028c27fa8c6cdf55c0afd988cdaf78f7f153026af462"
+    },
+    "crates/bombay/tests/compile/fail/application_scope_cannot_declare_second_root.stderr": {
+      "canonical_sha256": "1b1fdbe85771351be92efc8b1f4b63d108fe3065d5cba116c2e285d80f6c7378",
+      "minimum_sha256": "80be9d615fae03b9f59cb855034a7a2f328965c9888ee6bdbfcfab6454cb8839",
+      "fixture_sha256": "5e3a89c8df73e04ad5a3a64e6ad60bf27d70070aeaa4eed2d537df4937dc5170"
+    },
+    "crates/bombay/tests/compile/fail/application_shutdown_ambiguous.stderr": {
+      "canonical_sha256": "3122143f590bb37b5dab05d8e825de99c68c8b46dd9cbfd28ecdd3eebefc7825",
+      "minimum_sha256": "8d4fa5e7f384f1c97ce289f55278005bc03bdcd7665ef121c0e1dc82dfb9c52d",
+      "fixture_sha256": "1517738a69e4bfc32d7dfdcb121593db9723a75af570c1bd91a3eeffdc0b14dc"
+    },
+    "crates/bombay/tests/compile/fail/entity_lifecycle_representation_is_private.stderr": {
+      "canonical_sha256": "5bbcf40359567a7f76fd41dd62cab12ef55de853a905efd3c0035a3e8e63f2b6",
+      "minimum_sha256": "fe1a489d3a19b4f1c51a811bf02c82c8a2c45e5b60213278d37981f258e0651a",
+      "fixture_sha256": "d01e2a73da8f8ee2d86b6483aed12903e266e02a28a7709a094888fc18c2a689"
+    },
+    "crates/bombay/tests/compile/fail/run_with_wrong_root_protocol.stderr": {
+      "canonical_sha256": "c2c22195518e46a905872079cf02bf87586b99d70b40761d3d49855d50dc9310",
+      "minimum_sha256": "498ed0a3f0c055a2d8ff6df031753f0b564cb270845660017b00de5d9ffd291e",
+      "fixture_sha256": "0ff12a80232d00b786243a89c711f0cbd52f2b6c37bb966a286d1fa2a36b71e0"
+    },
+    "crates/bombay/tests/compile/fail/removed_parallel_application.stderr": {
+      "canonical_sha256": "197f018ff748ed776c24b61e5c6e90e21fb9196805d6dbe374a5515d30ffc750",
+      "minimum_sha256": "0209438f8bcdfb5a66d1ef688ff2f312632a0249c713844dbbfe44bb842fcb05",
+      "fixture_sha256": "25b69e027bda5eac5dd8384e43351f78080d61d05a876d96438ab307df033820"
+    },
+    "crates/bombay/tests/compile/fail/application_actor_projection_requires_attribute.stderr": {
+      "canonical_sha256": "1ca84d774e6d126f92dc8a585adc29c7eb42bdacc3b214e969d488fd7d601087",
+      "minimum_sha256": "1a7141c5523b1ca7506dc7ef3bb6f7c9cc9397d1ce66ad9ff1ad2cc9ded7c9e0",
+      "fixture_sha256": "979c4981d51be2124d11f9daa59f2d8da1258efc680aa57a51daa8b155d64451"
+    },
+    "crates/bombay/tests/compile/fail/application_child_must_be_behavior.stderr": {
+      "canonical_sha256": "e7b1a90222f717de646f2c80837fd24288ec2a4ec375ff3750a48d3abd03eeb9",
+      "minimum_sha256": "97ffc0232142eb02f25cc3d7a0e1815a9fa4900d994d9e5678cb0c833d8554e2",
+      "fixture_sha256": "31411f50f93a79ef584cafafee4ca345ba4b76045a34acdd125e56c20aa15565"
+    },
+    "crates/bombay-engine/tests/compile/fail/no_lifecycle_controls.stderr": {
+      "canonical_sha256": "5d145eae289ac35d7f1b4eeb9739cfcfc8b263ebdc13222ba8365ea59f591afc",
+      "minimum_sha256": "8f09ad15065e5066995faec3764afb17679ea24e9e67672b680b74503e05244f",
+      "fixture_sha256": "793af39ec966dad4c60aad946abf656ba02158f343f76ac62a56325d5bd6895b"
+    },
+    "crates/observe-tests/tests/compile/fail/publisher_cannot_complete_twice.stderr": {
+      "canonical_sha256": "c891428356c8b2abeece24572d6603bc2962a9a613f16038ad8d6918d5a35434",
+      "minimum_sha256": "73de2e1ddd861fd34504be4135ea40571d42b6c1b0de1d8e640eb47b56ca5bbc",
+      "fixture_sha256": "c24a16578db568fbc7be86dbba069d83fa479b6f044db4ac42c423142c8c8cc8"
+    },
+    "crates/bombay/tests/compile/fail/remote_client_requires_verification.stderr": {
+      "canonical_sha256": "7c0bcb79869de9081c9f0b310083ba4d85f85de2374204479b591d8239fcaf6d",
+      "minimum_sha256": "f70e51d843fa4610fe49639770e73263a67f94b55c353bf3034f619a69cb4aea",
+      "fixture_sha256": "9dc7fe2f01ae539641957ffa0d766eca52db7d58e4bbf59bdf027ab74a2b6f65"
+    },
+    "crates/bombay/tests/compile/fail/remote_export_requires_verification.stderr": {
+      "canonical_sha256": "615b968b3477c134af04a3241ec20d34da35ce48b7b9e9518d41ca1097e07ae0",
+      "minimum_sha256": "01e20ac03f1cc0f1bbdc7410b0e7cb53f2fc97f46169cab371f9fe3a6c5a2513",
+      "fixture_sha256": "f98735601e19a98f2f8a52f5e0991a1ef6d1b46ecff692b4ca8272ef2bdffce4"
     }
   },
   "cases": [
+    "tests/compile/fail/active_cannot_initialize_again.rs",
+    "tests/compile/fail/actor_bad_arity.rs",
+    "tests/compile/fail/actor_duplicate_argument.rs",
+    "tests/compile/fail/actor_interface_has_no_entity_retirement.rs",
+    "tests/compile/fail/actor_interface_has_no_lifecycle.rs",
+    "tests/compile/fail/actor_message_is_inferred.rs",
+    "tests/compile/fail/actor_ref_ambiguous_send.rs",
+    "tests/compile/fail/actor_ref_has_no_shutdown.rs",
+    "tests/compile/fail/actor_ref_wrong_established_protocol.rs",
+    "tests/compile/fail/actor_spaces_alias_duplicate.rs",
+    "tests/compile/fail/actor_spaces_duplicate.rs",
+    "tests/compile/fail/actor_spaces_missing_host.rs",
+    "tests/compile/fail/actor_spaces_tuple.rs",
+    "tests/compile/fail/actor_spaces_wrong_field.rs",
+    "tests/compile/fail/actor_unknown_argument.rs",
+    "tests/compile/fail/application_actor_projection_requires_attribute.rs",
+    "tests/compile/fail/application_child_must_be_behavior.rs",
+    "tests/compile/fail/application_client_forged_root.rs",
+    "tests/compile/fail/application_client_has_no_lifecycle.rs",
+    "tests/compile/fail/application_client_receiver_is_affine.rs",
+    "tests/compile/fail/application_client_wrong_root_message.rs",
+    "tests/compile/fail/application_client_wrong_selected_message.rs",
+    "tests/compile/fail/application_lifecycle_wrong_event.rs",
+    "tests/compile/fail/application_scope_cannot_clone.rs",
+    "tests/compile/fail/application_scope_cannot_declare_second_root.rs",
+    "tests/compile/fail/application_scope_receiver_cannot_clone.rs",
+    "tests/compile/fail/application_sender_cannot_try_entity.rs",
+    "tests/compile/fail/application_sender_has_no_receive.rs",
+    "tests/compile/fail/application_sender_requires_target_capability.rs",
+    "tests/compile/fail/application_shutdown_absent.rs",
+    "tests/compile/fail/application_shutdown_ambiguous.rs",
+    "tests/compile/fail/application_shutdown_has_no_lane.rs",
+    "tests/compile/fail/application_shutdown_requires_event_lane.rs",
     "tests/compile/fail/axum_wrong_root_protocol.rs",
+    "tests/compile/fail/behavior_owner_bad_receiver.rs",
+    "tests/compile/fail/child_origin_cannot_be_root.rs",
     "tests/compile/fail/discarded_actor_policy_and_terminal.rs",
+    "tests/compile/fail/entity_application_missing_host.rs",
+    "tests/compile/fail/entity_application_role_exchange.rs",
+    "tests/compile/fail/entity_cannot_import_machine.rs",
+    "tests/compile/fail/entity_configuration_fields_are_private.rs",
+    "tests/compile/fail/entity_configuration_is_immutable.rs",
+    "tests/compile/fail/entity_id_family_mismatch.rs",
+    "tests/compile/fail/entity_lifecycle_representation_is_private.rs",
+    "tests/compile/fail/entity_retirement_error_has_no_success.rs",
+    "tests/compile/fail/external_actor_receiver_is_affine.rs",
     "tests/compile/fail/fluent_template_order_is_static.rs",
+    "tests/compile/fail/inhabited_result_is_not_infallible.rs",
+    "tests/compile/fail/installed_actor_wrong_behavior.rs",
     "tests/compile/fail/interpreter_missing.rs",
     "tests/compile/fail/interpreter_owner.rs",
+    "tests/compile/fail/prelude_hides_actor_space.rs",
+    "tests/compile/fail/prelude_hides_app.rs",
+    "tests/compile/fail/prelude_hides_behavior_trait.rs",
+    "tests/compile/fail/prelude_hides_delivery_interpreter.rs",
+    "tests/compile/fail/prelude_hides_hosts.rs",
+    "tests/compile/fail/prelude_hides_logical_host_requirements.rs",
+    "tests/compile/fail/prelude_hides_send_input.rs",
+    "tests/compile/fail/prelude_hides_unsettled_observation.rs",
+    "tests/compile/fail/removed_parallel_application.rs",
+    "tests/compile/fail/retirement_report_constructor_is_private.rs",
+    "tests/compile/fail/retirement_report_is_runtime_issued.rs",
+    "tests/compile/fail/root_not_send.rs",
+    "tests/compile/fail/root_origin_cannot_be_child.rs",
+    "tests/compile/fail/run_with_wrong_root_protocol.rs",
+    "tests/compile/fail/stash/address.rs",
+    "tests/compile/fail/stash/host.rs",
+    "tests/compile/fail/stash/message.rs",
     "tests/compile/fail/stash_requires_closed_phase.rs",
     "tests/compile/fail/stash_requires_infallible_error.rs",
+    "tests/compile/fail/terminal_origin_cannot_change_role.rs",
+    "tests/compile/fail/terminal_projection_duplicate_pair.rs",
+    "tests/compile/fail/terminal_projection_incomplete_variant.rs",
+    "tests/compile/fail/terminal_projection_wrong_actor.rs",
+    "tests/compile/fail/terminal_projection_wrong_role.rs",
     "tests/compile/fail/topology_cold_extra_birth.rs",
     "tests/compile/fail/topology_cold_recursive_owner.rs",
     "tests/compile/fail/topology_cold_wrong_host.rs",
@@ -121,27 +249,103 @@
     "tests/compile/fail/worker_factory_reuse.rs",
     "tests/compile/fail/worker_factory_source_refusal.rs",
     "tests/compile/fail/worker_factory_wrong_output.rs",
+    "tests/compile/pass/actor_facade_full.rs",
+    "tests/compile/pass/actor_spaces_named.rs",
+    "tests/compile/pass/advanced_behavior_imports.rs",
+    "tests/compile/pass/advanced_runtime_imports.rs",
+    "tests/compile/pass/application_children.rs",
+    "tests/compile/pass/application_component_custody.rs",
+    "tests/compile/pass/application_inferred_custody.rs",
+    "tests/compile/pass/application_recursive_custody.rs",
+    "tests/compile/pass/application_timer_custody.rs",
+    "tests/compile/pass/behavior_facade_named_children.rs",
+    "tests/compile/pass/behavior_root_authoring.rs",
+    "tests/compile/pass/entity_public_surface.rs",
+    "tests/compile/pass/external_actor_error.rs",
     "tests/compile/pass/fluent_template_stack.rs",
+    "tests/compile/pass/infallible_result_errors.rs",
+    "tests/compile/pass/root_send.rs",
+    "tests/compile/pass/shutdown_authority.rs",
+    "tests/compile/pass/stash.rs",
     "tests/compile/pass/stash_machine.rs",
-    "tests/compile/pass/topology_inferred_cold_classes.rs"
+    "tests/compile/pass/terminal_inclusion_sources.rs",
+    "tests/compile/pass/topology_inferred_cold_classes.rs",
+    "tests/compile/pass/send_not_sync.rs",
+    "tests/compile/fail/environment_phase_authority.rs",
+    "tests/compile/fail/missing_environment.rs",
+    "tests/compile/fail/no_lifecycle_controls.rs",
+    "tests/compile/fail/not_a_behavior.rs",
+    "tests/compile/fail/publisher_cannot_clone.rs",
+    "tests/compile/fail/publisher_cannot_complete_twice.rs",
+    "tests/compile/fail/affine_observation_cannot_clone.rs"
   ],
   "suites": [
+    "active_behavior_cannot_be_initialized_twice",
+    "interface_denies_lifecycle_and_receive_authority_duplication",
+    "actor_reference_and_installed_authority_remain_distinct",
+    "actor_spaces_compile_contract",
+    "application_children_are_checked_from_caller_syntax",
+    "root_clients_preserve_authority_and_protocol_denials",
+    "application_shutdown_requires_its_original_event_capability",
+    "application_scope_and_early_receiving_authority_are_affine",
+    "shutdown_requires_a_present_unambiguous_lane",
     "topology_rejects_missing_capabilities_and_invalid_custody",
     "topology_inference_rejects_forged_roles_and_incomplete_declarations",
     "topology_rejects_invalid_entity_class_sources",
     "axum_protocol_inversion_is_compile_checked",
-    "behavior_layer_authoring_contract",
-    "worker_factory_rejects_invalid_capabilities",
-    "native_interpreter_rejects_absence_and_wrong_owner",
     "cold_topology_rejects_incomplete_births_hosts_and_roles",
-    "cold_topology_accepts_actual_member_types_without_annotations"
+    "cold_topology_accepts_actual_member_types_without_annotations",
+    "entity_identity_is_nominally_typed_by_domain_family",
+    "invalid_or_mutated_directory_configuration_cannot_be_forged",
+    "entity_has_no_second_machine_dependency",
+    "ordinary_and_advanced_entity_exports_remain_addressable",
+    "lifecycle_representation_is_private_to_the_entity_owner",
+    "infallible_test_extraction_is_statically_bounded",
+    "native_interpreter_rejects_absence_and_wrong_owner",
+    "owning_macro_receiver_mismatch_is_rejected_at_the_authored_method",
+    "actor_facade_compile_contract",
+    "ordinary_prelude_keeps_foundational_mechanisms_deliberate",
+    "run_with_protocol_is_compile_checked",
+    "behavior_layer_authoring_contract",
+    "projection_shape_is_compile_checked",
+    "worker_factory_rejects_invalid_capabilities",
+    "finite_stashes_preserve_static_capabilities",
+    "driver_surface_conformance",
+    "observe_authority_is_affine_at_the_public_compilation_boundary"
   ],
   "targets": {
+    "activation_authoring": 2,
+    "actor_interface": 4,
+    "actor_ref_authoring": 1,
+    "actor_spaces": 3,
+    "application_children": 1,
+    "application_clients": 9,
+    "application_scope_authority": 1,
+    "application_shutdown": 5,
     "application_topology": 18,
     "axum": 7,
-    "template_authoring": 1,
-    "worker_factory": 4,
+    "cold_member_retirement": 7,
+    "entity_authoring": 1,
+    "entity_configuration": 4,
+    "entity_machine_boundary": 1,
+    "entity_public_surface": 2,
+    "infallible_testing": 1,
     "interpreter_selection": 2,
-    "cold_member_retirement": 7
+    "macro_last_authoring": 5,
+    "node_borrowing": 0,
+    "outer_authoring": 2,
+    "prelude_levels": 1,
+    "run_with": 22,
+    "template_authoring": 1,
+    "terminal_projection": 3,
+    "worker_factory": 4,
+    "stash_limits": 4,
+    "compile": 1,
+    "observe_contract": 2
+  },
+  "ignored": {
+    "run_with": {
+      "public_run_blocking_recovers_real_build_error_in_limited_child": "public_run_blocking_recovers_real_build_error_without_limiting_other_tests"
+    }
   }
 }

@@ -45,7 +45,7 @@ async fn place_order(
 }
 
 async fn shutdown(State(application): State<OrderApplication>) -> StatusCode {
-    match application.request_shutdown() {
+    match application.shutdown() {
         Ok(()) => StatusCode::ACCEPTED,
         Err(_rejection) => StatusCode::SERVICE_UNAVAILABLE,
     }

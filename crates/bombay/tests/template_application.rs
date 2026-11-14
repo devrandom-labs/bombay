@@ -3,8 +3,8 @@ use core::time::Duration;
 use std::time::Instant;
 
 use behavior_actors::{
-    Activate, Machine, Move, Stash, StashRoute, StopOnShutdown, TimerElapsed, TimerGeneration,
-    TimerId,
+    Activate, Machine, Move, OwnedTimerElapsed, StashRoute, StopOnShutdown, TimerGeneration,
+    UnlimitedStash,
 };
 use bombay::actors::ActorExt;
 use bombay::behavior::{
@@ -70,12 +70,7 @@ fn stop_at_deadline(_: &mut TimerRoot) -> Become {
 
 #[tokio::test(flavor = "current_thread")]
 async fn one_shot_template_runs_as_an_ordinary_application_root() {
-    let root = OneShot::new(
-        TimerRoot,
-        TimerId(1),
-        Duration::from_millis(1),
-        stop_after_timer,
-    );
+    let root = OneShot::new(TimerRoot, Duration::from_millis(1), stop_after_timer);
 
     let application_outcome = Application::new(root.stop_on_shutdown())
         .run()
@@ -90,6 +85,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -106,6 +102,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -123,12 +120,7 @@ async fn one_shot_template_runs_as_an_ordinary_application_root() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
-    let root = ReceiveTimeout::new(
-        TimerRoot,
-        TimerId(2),
-        Duration::from_millis(1),
-        stop_after_timer,
-    );
+    let root = ReceiveTimeout::new(TimerRoot, Duration::from_millis(1), stop_after_timer);
 
     let application_outcome = Application::new(root.stop_on_shutdown())
         .run()
@@ -143,6 +135,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -159,6 +152,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -176,12 +170,7 @@ async fn receive_timeout_template_runs_as_an_ordinary_application_root() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn periodic_template_runs_as_an_ordinary_application_root() {
-    let root = Periodic::new(
-        TimerRoot,
-        TimerId(3),
-        Duration::from_millis(1),
-        stop_after_timer,
-    );
+    let root = Periodic::new(TimerRoot, Duration::from_millis(1), stop_after_timer);
 
     let application_outcome = Application::new(root.stop_on_shutdown())
         .run()
@@ -196,6 +185,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -212,6 +202,7 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -231,7 +222,6 @@ async fn periodic_template_runs_as_an_ordinary_application_root() {
 async fn deadline_template_runs_as_an_ordinary_application_root() {
     let root = Deadline::new(
         TimerRoot,
-        TimerId(4),
         Some(Instant::now() + Duration::from_millis(1)),
         stop_at_deadline,
     );
@@ -249,6 +239,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -265,6 +256,7 @@ async fn deadline_template_runs_as_an_ordinary_application_root() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -322,6 +314,7 @@ async fn machine_template_runs_as_an_ordinary_application_root() {
             output: (),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((root_origin, joined_actor)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -392,24 +385,20 @@ fn every_fluent_method_returns_its_existing_owner_type() {
     let delay = Duration::from_millis(1);
 
     same_type(
-        &TimerRoot.with_stash(deliver_never),
-        &Stash::new(TimerRoot, deliver_never),
+        &TimerRoot.with_one_shot(delay, stop_after_timer),
+        &OneShot::new(TimerRoot, delay, stop_after_timer),
     );
     same_type(
-        &TimerRoot.with_one_shot(TimerId(6), delay, stop_after_timer),
-        &OneShot::new(TimerRoot, TimerId(6), delay, stop_after_timer),
+        &TimerRoot.with_periodic(delay, stop_after_timer),
+        &Periodic::new(TimerRoot, delay, stop_after_timer),
     );
     same_type(
-        &TimerRoot.with_periodic(TimerId(7), delay, stop_after_timer),
-        &Periodic::new(TimerRoot, TimerId(7), delay, stop_after_timer),
+        &TimerRoot.with_deadline(None, stop_at_deadline),
+        &Deadline::new(TimerRoot, None, stop_at_deadline),
     );
     same_type(
-        &TimerRoot.with_deadline(TimerId(8), None, stop_at_deadline),
-        &Deadline::new(TimerRoot, TimerId(8), None, stop_at_deadline),
-    );
-    same_type(
-        &TimerRoot.with_receive_timeout(TimerId(9), delay, stop_after_timer),
-        &ReceiveTimeout::new(TimerRoot, TimerId(9), delay, stop_after_timer),
+        &TimerRoot.with_receive_timeout(delay, stop_after_timer),
+        &ReceiveTimeout::new(TimerRoot, delay, stop_after_timer),
     );
     same_type(
         &TimerRoot.stop_on_shutdown(),
@@ -424,15 +413,13 @@ fn every_fluent_method_returns_its_existing_owner_type() {
 )]
 async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
     let delay = Duration::from_millis(1);
-    let fluent = TimerRoot
-        .with_stash(deliver_never)
-        .with_receive_timeout(TimerId(5), delay, stop_wrapped::<Stash<TimerRoot>>)
+    let fluent = UnlimitedStash::new(TimerRoot, deliver_never)
+        .with_receive_timeout(delay, stop_wrapped::<UnlimitedStash<TimerRoot>>)
         .stop_on_shutdown();
     let direct = StopOnShutdown::new(ReceiveTimeout::new(
-        Stash::new(TimerRoot, deliver_never),
-        TimerId(5),
+        UnlimitedStash::new(TimerRoot, deliver_never),
         delay,
-        stop_wrapped::<Stash<TimerRoot>>,
+        stop_wrapped::<UnlimitedStash<TimerRoot>>,
     ));
 
     same_type(&fluent, &direct);
@@ -445,7 +432,7 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .expect("the direct stack initializes through the owning wrappers");
     assert!(fluent.actions == direct.actions);
 
-    let elapsed = TimerElapsed::new(TimerId(5), TimerGeneration(0));
+    let elapsed = OwnedTimerElapsed::new(TimerGeneration(0));
     let fluent_elapsed = fluent
         .behavior
         .on_path(elapsed)
@@ -456,9 +443,8 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
         .expect("the direct stack accepts its exact timer generation");
     assert!(fluent_elapsed == direct_elapsed);
 
-    let runtime = TimerRoot
-        .with_stash(deliver_never)
-        .with_receive_timeout(TimerId(5), delay, stop_wrapped::<Stash<TimerRoot>>)
+    let runtime = UnlimitedStash::new(TimerRoot, deliver_never)
+        .with_receive_timeout(delay, stop_wrapped::<UnlimitedStash<TimerRoot>>)
         .stop_on_shutdown();
     let application_outcome = Application::new(runtime)
         .run()
@@ -473,6 +459,7 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
             output: _,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((_, ActorRetirement::ActorTaskFailed(_))),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -489,6 +476,7 @@ async fn fluent_template_composition_is_the_exact_existing_wrapper_stack() {
             output: None,
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, retirement)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),

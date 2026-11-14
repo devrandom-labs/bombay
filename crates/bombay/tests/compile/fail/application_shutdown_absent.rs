@@ -5,7 +5,7 @@ use bombay::ApplicationLifecycle;
 mod counter;
 
 fn request(lifecycle: ApplicationLifecycle<counter::Counter, <counter::Counter as Behavior>::Event>) {
-    lifecycle.request_shutdown().expect("a shutdown lane must exist");
+    lifecycle.shutdown().expect("a shutdown lane must exist");
 }
 
 fn main() {}

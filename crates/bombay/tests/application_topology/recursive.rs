@@ -8,6 +8,7 @@ use behavior::{
 };
 use bombay::Application;
 use bombay::MailAddr;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::lifecycle::StopOnShutdown;
 use bombay::{ActorCustody, ActorRetirement};
@@ -142,11 +143,7 @@ impl Behavior for Node {
                 Leaf {
                     payload: Box::from([13]),
                 }
-                .with_one_shot(
-                    bombay::prelude::TimerId(41),
-                    Duration::from_secs(60),
-                    leaf_deadline_reached,
-                )
+                .with_one_shot(Duration::from_secs(60), leaf_deadline_reached)
                 .stop_on_shutdown(),
             )),
         ));
@@ -296,7 +293,7 @@ fn inspect_node(
     retirement: ActorRetirement<ManagedNode, NodeRetirements, NodeFailures>,
     actual: &mut Trace,
 ) {
-    let ActorRetirement::OwnerCancelled {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -306,9 +303,12 @@ fn inspect_node(
                 received_source,
                 ..
             },
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("parent cancellation owns every exact node")
@@ -346,7 +346,7 @@ fn inspect_node(
             }
             NodeRetirements::Audit { origin, retirement } => {
                 assert_eq!(origin.creation_kind(), CreationKind::Birth);
-                let ActorRetirement::OwnerCancelled {
+                let ActorRetirement::Retained {
                     custody:
                         ActorCustody {
                             behavior,
@@ -356,9 +356,12 @@ fn inspect_node(
                             received_source,
                             ..
                         },
-                    settlements,
-                    interpretation,
-                    source,
+                    outcome:
+                        RetirementOutcome::OwnerCancelled {
+                            settlements,
+                            interpretation,
+                            source,
+                        },
                 } = *retirement
                 else {
                     panic!("audit retains original leaf")
@@ -381,17 +384,13 @@ fn inspect_node(
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_return_full_native_retirement() {
     pure_alias_definitions();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
             readiness: Vec::new(),
         }
-        .with_one_shot(
-            bombay::prelude::TimerId(37),
-            Duration::from_secs(10),
-            root_deadline_reached,
-        )
+        .with_one_shot(Duration::from_secs(10), root_deadline_reached)
         .stop_on_shutdown(),
         Arc::new(Spaces::new()),
     )
@@ -422,7 +421,7 @@ async fn recursive_reports_return_full_native_retirement() {
         .retirement
         .expect("actual joined retirement notification");
     let (_, retirement) = native.expect("native root joined");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -430,8 +429,7 @@ async fn recursive_reports_return_full_native_retirement() {
                 child_failures: failures,
                 ..
             },
-        settlements,
-        ..
+        outcome: RetirementOutcome::Completed { settlements, .. },
     } = retirement
     else {
         panic!("root completed actual report")
@@ -468,18 +466,14 @@ async fn recursive_reports_return_full_native_retirement() {
 #[tokio::test(flavor = "current_thread")]
 async fn recursive_reports_keep_custody_with_outer_timer() {
     pure_alias_definitions();
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Grow { remaining: 3 }),
             trace: None,
             readiness: Vec::new(),
         }
         .stop_on_shutdown()
-        .with_one_shot(
-            bombay::prelude::TimerId(37),
-            Duration::from_secs(10),
-            stopped_root_deadline_reached,
-        ),
+        .with_one_shot(Duration::from_secs(10), stopped_root_deadline_reached),
         Arc::new(Spaces::new()),
     )
     .run_with(|application| async move {
@@ -509,7 +503,7 @@ async fn recursive_reports_keep_custody_with_outer_timer() {
         .retirement
         .expect("actual joined retirement notification");
     let (_, retirement) = native.expect("native root joined");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -517,8 +511,7 @@ async fn recursive_reports_keep_custody_with_outer_timer() {
                 child_failures: failures,
                 ..
             },
-        settlements,
-        ..
+        outcome: RetirementOutcome::Completed { settlements, .. },
     } = retirement
     else {
         panic!("root completed actual report")
@@ -571,7 +564,7 @@ async fn recursive_scope_returns_original_initialization_refusal() {
         }
         .stop_on_shutdown(),
     );
-    let (outcome, native, notifications, ()) = Application::with_topology(
+    let (outcome, _root_report, native, notifications, ()) = Application::with_topology(
         Root {
             startup: Some(RootStartup::Refuse { creation }),
             trace: None,
@@ -602,15 +595,14 @@ async fn recursive_scope_returns_original_initialization_refusal() {
         .retirement
         .expect("actual joined startup retirement notification");
     let (_, retirement) = native.expect("exact original startup root retirement");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 descendants,
                 child_failures: failures,
                 ..
             },
-        settlements,
-        ..
+        outcome: RetirementOutcome::Completed { settlements, .. },
     } = retirement
     else {
         panic!("exact startup refusal settled")

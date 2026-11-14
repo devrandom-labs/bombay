@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::prelude::*;
 use core::time::Duration;
@@ -62,25 +63,25 @@ fn main() {
     let second = vec![10].into_boxed_slice();
     let third = vec![20].into_boxed_slice();
     let originals = BTreeSet::from([first.as_ptr() as usize, second.as_ptr() as usize, third.as_ptr() as usize]);
-    let application = Application::with_topology(Root { born: Some(Worker { original: first }.stop_on_shutdown()) }.with_one_shot(TimerId(53), Duration::from_secs(60), |_| Actions::stop()).stop_on_shutdown(), workshop::Topology::new())
+    let application = Application::with_topology(Root { born: Some(Worker { original: first }.stop_on_shutdown()) }.with_one_shot(Duration::from_secs(60), |_| Actions::stop()).stop_on_shutdown(), workshop::Topology::new())
         .child(BackgroundWorker, Worker { original: second }.stop_on_shutdown())
         .child(BackgroundWorker, Worker { original: third }.stop_on_shutdown());
     let host = Builder::new_current_thread().enable_all().build().expect("caller-owned host");
     let outcome = host.block_on(application.run_with(|application| async move {
-        let shutdown = application.lifecycle().request_shutdown();
+        let shutdown = application.lifecycle().shutdown();
         assert_eq!(shutdown, Ok(()));
         let termination = application.lifecycle().termination().await;
         assert_eq!(termination, Ok(Exit::Normal));
     })).unwrap_or_else(|original| { drop(original); panic!("original declaration retained on missing host"); });
     drop(host);
-    let (outcome, native, notifications, ()) = outcome.into_parts();
+    let (outcome, _root_report, native, notifications, ()) = outcome.into_parts();
     let ((), cleanup) = outcome.try_into_completed().unwrap_or_else(|original| { drop(original); panic!("complete original outcome"); });
     cleanup.expect("the cleanup producer completes");
     let bombay::ActorNotificationReceipts { termination: Ok(()), retirement: Ok(()) } = notifications.expect("both notification receipts are acquired") else { panic!("both notifications succeed"); };
     let (root_origin, retirement) = native.expect("independent root custody");
     assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody, .. } = retirement else { panic!("root completes") };
+    let ActorRetirement::Retained { custody, outcome: RetirementOutcome::Completed { .. } } = retirement else { panic!("root completes") };
     assert!(custody.child_failures.is_empty());
     assert_eq!(custody.descendants.len(), 3);
     let mut returned = BTreeSet::new();
@@ -96,7 +97,7 @@ fn main() {
         assert!(inserted_role);
         let inserted_address = addresses.insert(origin);
         assert!(inserted_address, "each occurrence has its original fresh binding");
-        let ActorRetirement::OwnerCancelled { custody, .. } = *retirement else { panic!("root retirement cancels original worker") };
+        let ActorRetirement::Retained { custody, outcome: RetirementOutcome::OwnerCancelled { .. } } = *retirement else { panic!("root retirement cancels original worker") };
         let inserted_original = returned.insert(custody.behavior.base().original.as_ptr() as usize);
         assert!(inserted_original);
         assert!(custody.descendants.is_empty());

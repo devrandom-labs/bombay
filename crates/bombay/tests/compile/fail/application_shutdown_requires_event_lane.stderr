@@ -1,8 +1,8 @@
 error[E0277]: the trait bound `(): InjectEvent<behavior_actors::protocol::ShutdownRequested, _>` is not satisfied
   --> tests/compile/fail/application_shutdown_requires_event_lane.rs:11:33
    |
-11 |     let _accepted = application.request_shutdown();
-   |                                 ^^^^^^^^^^^^^^^^ the trait `InjectEvent<behavior_actors::protocol::ShutdownRequested, _>` is not implemented for `()`
+11 |     let _accepted = application.shutdown();
+   |                                 ^^^^^^^^ the trait `InjectEvent<behavior_actors::protocol::ShutdownRequested, _>` is not implemented for `()`
    |
    = help: the following other types implement trait `InjectEvent<Input, Path>`:
              `EventLayer<Owned, Inner>` implements `InjectEvent<Input, Inside<Path>>`
@@ -12,13 +12,13 @@ error[E0277]: the trait bound `(): InjectEvent<behavior_actors::protocol::Shutdo
              `ShutdownCoordinatorEvent<E, P>` implements `InjectEvent<behavior_actors::protocol::ChildShutdownRejected, Here>`
              `ShutdownCoordinatorEvent<E, P>` implements `InjectEvent<behavior_actors::protocol::ChildStopped<<E as UserEvent>::Addr>, Here>`
              `ShutdownCoordinatorEvent<E, P>` implements `InjectEvent<behavior_actors::protocol::ShutdownRequested, Here>`
-             `bombay::atomic::stable_proxy::protocol::ProxyEvent<W, P>` implements `InjectEvent<CreationsSettled<<<W as bombay::behavior::Behavior>::Protocol as bombay::prelude::Protocol>::Addr, StopOnShutdown<W>>, Here>`
+             `proxy::protocol::ProxyEvent<W, P>` implements `InjectEvent<CreationsSettled<<<W as bombay::behavior::Behavior>::Protocol as bombay::prelude::Protocol>::Addr, StopOnShutdown<W>>, Here>`
            and $N others
-note: required by a bound in `bombay::ApplicationHandle::<P, Event, Families>::request_shutdown`
+note: required by a bound in `bombay::ApplicationHandle::<P, Event, Families>::shutdown`
   --> src/application/interface.rs
    |
-   |     pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
-   |            ---------------- required by a bound in this associated function
+   |     pub fn shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
+   |            -------- required by a bound in this associated function
    |     where
    |         Event: InjectEvent<ShutdownRequested, ShutdownPath>,
-   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `ApplicationHandle::<P, Event, Families>::request_shutdown`
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `ApplicationHandle::<P, Event, Families>::shutdown`

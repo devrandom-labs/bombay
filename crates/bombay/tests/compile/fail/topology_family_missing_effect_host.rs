@@ -74,6 +74,6 @@ fn main() {
             NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(1).unwrap()));
     let host = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
     let _outcome = host.block_on(application.run_with_entities(|application| async move {
-        application.request_shutdown().unwrap();
+        application.shutdown().unwrap();
     }));
 }

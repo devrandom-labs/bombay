@@ -5,4 +5,4 @@ error[E0382]: use of moved value: `source`
    |                 ------                                            ------        ^^^^^^ value used here after move
    |                 |                                                 |
    |                 |                                                 value moved here
-   |                 move occurs because `source` has type `WorkerFactory<u8, for<'a> fn(&'a u8) -> WorkerSubmission<Worker, ImmediateActivation> {worker}, WorkerSubmission<Worker, ImmediateActivation>>`, which does not implement the `Copy` trait
+   |                 move occurs because `source` has type `WorkerFactory<u8, for<'a> fn(&'a u8) -> WorkerSubmission<Worker, ImmediateStartup> {worker}, WorkerSubmission<Worker, ImmediateStartup>>`, which does not implement the `Copy` trait

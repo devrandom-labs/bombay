@@ -31,7 +31,7 @@ fn expects_timer_then_shutdown(_: StopOnShutdown<OneShot<Root>>) {}
 fn main() {
     let shutdown_then_timer = Root
         .stop_on_shutdown()
-        .with_one_shot(TimerId(1), Duration::from_secs(1), |_| Actions::stop());
+        .with_one_shot(Duration::from_secs(1), |_| Actions::stop());
 
     expects_timer_then_shutdown(shutdown_then_timer);
 }

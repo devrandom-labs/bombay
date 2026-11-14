@@ -8,7 +8,7 @@ use crate::local::endpoint::{ActorRef, ExtractLocalEndpoint, SendError, request_
 use crate::local::ingress::{Admission, AdmissionClosure};
 use crate::observe::{Observation, Publisher, pair};
 #[cfg(feature = "remote")]
-use crate::remote::{Export, ExportError, ExportLimits, IngressError};
+use crate::remote::ExportError;
 use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
 use behavior::{
@@ -18,23 +18,11 @@ use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested};
 use communication::{Consumer, ControlSender, Received, TrySendError, mailbox_channel};
 use core::fmt;
 use core::future::Future;
+#[cfg(feature = "remote")]
+use futures_util::future::Shared;
 use std::sync::{Arc, Weak};
 #[cfg(feature = "remote")]
-use tokio::sync::Semaphore;
-#[cfg(feature = "remote")]
-use zenoh::Session;
-#[cfg(feature = "remote")]
-use zenoh::query::Query;
-
-#[cfg(feature = "remote")]
-fn owns_actor<P>(target: &EstablishedRecipient<P>, allocations: &ApplicationAddresses) -> bool
-where
-    P: Protocol<Addr = MailAddr>,
-{
-    let mut interpreter = ExtractLocalEndpoint;
-    let endpoint = target.clone().interpret(&mut interpreter);
-    endpoint.belongs_to(allocations)
-}
+use tokio::sync::oneshot;
 
 impl<P, Event, Families> fmt::Debug for ApplicationHandle<P, Event, Families>
 where
@@ -60,7 +48,7 @@ impl<P: Protocol, Event, Families: Clone> Clone for ApplicationHandle<P, Event, 
             client_capacity: self.client_capacity,
             families: self.families.clone(),
             #[cfg(feature = "remote")]
-            session: self.session.clone(),
+            cleanup: self.cleanup.clone(),
         }
     }
 }
@@ -73,6 +61,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         allocations: ApplicationAddresses,
         client_capacity: MailboxCapacity,
         families: Families,
+        #[cfg(feature = "remote")] cleanup: Option<Shared<oneshot::Receiver<()>>>,
     ) -> Self {
         Self {
             root,
@@ -82,8 +71,13 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
             client_capacity,
             families,
             #[cfg(feature = "remote")]
-            session: None,
+            cleanup,
         }
+    }
+
+    #[cfg(feature = "remote")]
+    pub(in crate::application) fn cleanup(&self) -> Option<Shared<oneshot::Receiver<()>>> {
+        self.cleanup.clone()
     }
 
     /// Borrow the exact live root's delivery reference.
@@ -127,6 +121,31 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         ApplicationClient::establish(target, &self.allocations, self.client_capacity)
     }
 
+    /// Read an actor's address after checking its association with this Application.
+    ///
+    /// Association survives actor retirement. This returns the address used in
+    /// metadata; operation permission remains the provider's separate policy.
+    ///
+    /// # Errors
+    /// Returns [`ExportError::UnownedTarget`] for a foreign actor or an external
+    /// reply endpoint, without allocating a new endpoint.
+    #[cfg(feature = "remote")]
+    pub fn actor_address<TargetProtocol>(
+        &self,
+        target: &EstablishedRecipient<TargetProtocol>,
+    ) -> Result<MailAddr, ExportError>
+    where
+        TargetProtocol: Protocol<Addr = MailAddr>,
+    {
+        let mut interpreter = ExtractLocalEndpoint;
+        let endpoint = target.clone().interpret(&mut interpreter);
+        if endpoint.belongs_to(&self.allocations) {
+            Ok(endpoint.address())
+        } else {
+            Err(ExportError::UnownedTarget)
+        }
+    }
+
     /// Construct a reply client only for an actor owned by this Application.
     ///
     /// The exact root and any owned child use the same operation. Foreign actor
@@ -155,75 +174,12 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
         Replies: Protocol<Addr = MailAddr>,
         Replies::Msg: Send,
     {
-        if !owns_actor(&target, &self.allocations) {
-            return Err((target, ExportError::UnownedTarget));
+        if let Err(cause) = self.actor_address(&target) {
+            return Err((target, cause));
         }
         match ApplicationClient::establish(target, &self.allocations, self.client_capacity) {
             Ok(client) => Ok(client),
             Err((target, cause)) => Err((target, ExportError::Endpoint { cause })),
-        }
-    }
-
-    /// Declare an actor owned by this Application through its actual Node.
-    ///
-    /// Only Node invocation supplies the native Session. Local-only handles and
-    /// closed Sessions refuse before declaration. Exact native actor ownership
-    /// is checked without allocating a reply endpoint. Each new retained request
-    /// later owns one independently allocated native reply client.
-    ///
-    /// Limits are explicit counts, not byte or whole-service bounds. The supplied
-    /// predicate compares provider-owned logical request identities; it does not
-    /// authenticate them. The refusal callable receives each exact native ingress
-    /// refusal synchronously and must implement the deployment's bounded policy.
-    /// This constructor does not establish readiness, authorization or unique
-    /// targeting across overlapping declarations.
-    ///
-    /// # Errors
-    /// Returns the original target and actual construction cause. Limits and the
-    /// callable are consumed. No native reply endpoint is allocated by construction.
-    /// Cancelling the whole operation surrenders its inputs.
-    #[cfg(feature = "remote")]
-    pub async fn export<Target, Replies, Receipt>(
-        &self,
-        target: EstablishedRecipient<Target>,
-        key: &str,
-        limits: ExportLimits,
-        same_request: fn(&Receipt, &Receipt) -> bool,
-        refused: impl Fn(IngressError<Query>) + Send + Sync + 'static,
-    ) -> Result<Export<Target, Replies, Receipt>, (EstablishedRecipient<Target>, ExportError)>
-    where
-        Target: Protocol<Addr = MailAddr>,
-        Target::Msg: Send + 'static,
-        Replies: Protocol<Addr = MailAddr>,
-        Replies::Msg: Send,
-    {
-        let Some(session) = self.session.as_ref() else {
-            return Err((target, ExportError::NodeAbsent));
-        };
-        if session.is_closed() {
-            return Err((target, ExportError::SessionClosed));
-        }
-        if limits.queued_queries.get() > Semaphore::MAX_PERMITS
-            || limits.retained_queries.get() > Semaphore::MAX_PERMITS
-        {
-            return Err((target, ExportError::QueryCapacity));
-        }
-        if !owns_actor(&target, &self.allocations) {
-            return Err((target, ExportError::UnownedTarget));
-        }
-        let interface = self.interface(target.clone());
-        match Export::declare(
-            session.clone(),
-            interface,
-            key,
-            limits,
-            same_request,
-            refused,
-        )
-        .await
-        {
-            Ok(export) => Ok(export),
-            Err(cause) => Err((target, cause)),
         }
     }
 
@@ -257,11 +213,11 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     ///
     /// # Errors
     /// Returns the exact already-stopping or already-stopped rejection.
-    pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
+    pub fn shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
     where
         Event: InjectEvent<ShutdownRequested, ShutdownPath>,
     {
-        self.lifecycle().request_shutdown()
+        self.lifecycle().shutdown()
     }
 
     /// Observe termination of the exact root through its lifecycle owner.
@@ -439,7 +395,8 @@ where
     }
 
     /// Receive the next typed reply and its actual emitting actor's identity.
-    /// Closed admission yields its accepted prefix before returning `None`.
+    /// Closed admission yields its accepted prefix followed by one terminal
+    /// `None`. Stop receiving after `None`; see [`ExternalActor::receive`].
     pub async fn receive(&mut self) -> Option<User<MailAddr, Replies::Msg>> {
         self.caller.receive().await
     }
@@ -564,7 +521,7 @@ impl<P: Protocol, Event> ApplicationLifecycle<P, Event> {
     ///
     /// Returns the exact rejection when the root is already stopping or has
     /// already stopped.
-    pub fn request_shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
+    pub fn shutdown<ShutdownPath>(&self) -> Result<(), ShutdownRejection>
     where
         Event: InjectEvent<ShutdownRequested, ShutdownPath>,
     {
@@ -856,7 +813,8 @@ where
     /// Receive the next message and its truthful actor origin.
     ///
     /// Returns `None` after admission closes and every accepted message has
-    /// been yielded.
+    /// been yielded. This end marker is delivered once: stop receiving after
+    /// `None`. Receiving again can wait while the control lane remains open.
     pub async fn receive(&mut self) -> Option<User<MailAddr, P::Msg>> {
         match self.receiver.recv().await? {
             Received::User(message) => Some(message),
@@ -900,7 +858,7 @@ pub struct ApplicationHandle<P: Protocol, Event, Families = ()> {
     client_capacity: MailboxCapacity,
     families: Families,
     #[cfg(feature = "remote")]
-    pub(super) session: Option<Session>,
+    cleanup: Option<Shared<oneshot::Receiver<()>>>,
 }
 
 /// Explicit application lifecycle authority, separate from actor messaging.
@@ -946,6 +904,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    mod invocation;
+    use crate::RetirementOutcome;
     use crate::actors::ActorExt;
     #[cfg(feature = "remote")]
     use crate::application::{ApplicationScope, MailboxCapacity};
@@ -1084,7 +1044,7 @@ mod tests {
         );
         let original = Box::<[u64]>::from([79, 83]);
         let allocation = original.as_ptr();
-        let (outcome, root, notifications, families) = Application::new(
+        let (outcome, _root_report, root, notifications, families) = Application::new(
             ShutdownLedger {
                 entries: vec![73],
                 received: Vec::new(),
@@ -1128,7 +1088,7 @@ mod tests {
                 .send(vec![89, 97])
                 .await
                 .expect("native Entity admission activates the original logical identity");
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             sender.address()
         })
@@ -1173,15 +1133,17 @@ mod tests {
                     assert_eq!(&**id.get(), &[79, 83]);
                     let retirement = retirement.as_ref().expect("exact account task custody");
                     let custody = match retirement {
-                        ActorRetirement::Completed {
+                        ActorRetirement::Retained {
                             custody,
-                            completion,
-                            ..
+                            outcome: RetirementOutcome::Completed { completion, .. },
                         } => {
                             assert_eq!(*completion, Completion::Stopped);
                             custody
                         }
-                        ActorRetirement::OwnerCancelled { custody, .. } => custody,
+                        ActorRetirement::Retained {
+                            custody,
+                            outcome: RetirementOutcome::OwnerCancelled { .. },
+                        } => custody,
                         _ => panic!("fenced retirement returns completion or owner cancellation"),
                     };
                     let actor = custody.behavior.base();
@@ -1210,7 +1172,7 @@ mod tests {
 
     #[tokio::test]
     async fn failed_root_client_allocation_preserves_live_application_authority() {
-        let (outcome, root, notifications, ()) = Application::new(
+        let (outcome, _root_report, root, notifications, ()) = Application::new(
             ShutdownLedger {
                 entries: vec![13, 17],
                 received: Vec::new(),
@@ -1235,7 +1197,7 @@ mod tests {
                 ))
             ));
             assert_eq!(application.root().address(), root);
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
         })
         .await
@@ -1272,7 +1234,7 @@ mod tests {
         let external = scope.external::<MessageProtocol<MailAddr, u64>>().unwrap();
         let external_recipient = external.recipient();
         let expected_external = external_recipient.clone();
-        let (outcome, native, notifications, ()) = scope
+        let (outcome, _root_report, native, notifications, ()) = scope
             .with_root(
                 ShutdownLedger {
                     entries: vec![13, 17],
@@ -1289,7 +1251,7 @@ mod tests {
                     application.export_client::<_, MessageProtocol<MailAddr, u64>>(root.clone());
                 let construction =
                     application.export_client::<_, MessageProtocol<MailAddr, u64>>(root);
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 let report = application.lifecycle().retirement().await;
                 (
                     unowned,
@@ -1382,6 +1344,7 @@ mod tests {
 #[cfg(test)]
 mod installed_shutdown_contract {
 
+    use crate::RetirementOutcome;
     use behavior::{Become, BehaviorBase, Never, NoSends, Step, Stopped};
     use behavior_actors::{Exit, ShutdownRejection, StopOnShutdown};
     use bombay_engine::Completion;
@@ -1453,8 +1416,8 @@ mod installed_shutdown_contract {
             retirement: old_retirement,
         };
         let repeated_lifecycle = lifecycle.clone();
-        let accepted = lifecycle.request_shutdown();
-        let repeated = repeated_lifecycle.request_shutdown();
+        let accepted = lifecycle.shutdown();
+        let repeated = repeated_lifecycle.shutdown();
         assert_eq!(accepted, Ok(()));
         assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
         let old_termination = lifecycle.termination().await;
@@ -1554,8 +1517,8 @@ mod installed_shutdown_contract {
             control: fresh.shutdown_control.clone(),
             retirement: fresh_retirement,
         };
-        let old_request = lifecycle.request_shutdown();
-        let replay = repeated_lifecycle.request_shutdown();
+        let old_request = lifecycle.shutdown();
+        let replay = repeated_lifecycle.shutdown();
         assert_eq!(old_request, Err(ShutdownRejection::AlreadyStopped));
         assert_eq!(replay, Err(ShutdownRejection::AlreadyStopped));
         let mut fresh_termination = pin!(fresh_lifecycle.termination());
@@ -1566,7 +1529,7 @@ mod installed_shutdown_contract {
         let allocation = values.as_ptr();
         let delivered = fresh.actor.send_from(MailAddr(61), values).await;
         assert!(delivered.is_ok());
-        let new_request = fresh_lifecycle.request_shutdown();
+        let new_request = fresh_lifecycle.shutdown();
         assert_eq!(new_request, Ok(()));
         let stopped = fresh_termination.await;
         assert_eq!(stopped, Ok(Exit::Normal));
@@ -1649,9 +1612,9 @@ mod installed_shutdown_contract {
         }
         let absent = actors.resolve(&address);
         assert!(absent.is_none());
-        let fresh_replay = fresh_lifecycle.request_shutdown();
+        let fresh_replay = fresh_lifecycle.shutdown();
         assert_eq!(fresh_replay, Err(ShutdownRejection::AlreadyStopped));
-        let old_replay = lifecycle.request_shutdown();
+        let old_replay = lifecycle.shutdown();
         assert_eq!(old_replay, Err(ShutdownRejection::AlreadyStopped));
     }
     enum LedgerSpaceDisposal {
@@ -1750,7 +1713,7 @@ mod installed_shutdown_contract {
                     assert!(matches!(pending, Poll::Pending));
                 }
                 let independent = lifecycle.clone();
-                let requested = lifecycle.request_shutdown();
+                let requested = lifecycle.shutdown();
                 requested.expect("the exact root accepts its first stop request");
                 let report = application.retirement().await;
                 let independently_observed = independent.retirement().await;
@@ -1784,7 +1747,7 @@ mod installed_shutdown_contract {
             let released = release_work.send(());
             released.expect("the report did not finish or cancel application work");
             execution.await;
-            let (work, native, notifications, ()) = receiving.await.into_parts();
+            let (work, _root_report, native, notifications, ()) = receiving.await.into_parts();
             let WorkOutcome::Completed {
                 output,
                 cleanup: Ok(()),
@@ -1804,11 +1767,7 @@ mod installed_shutdown_contract {
             let (origin, native) =
                 native.expect("the native root result remains independently retained");
             assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-            let ActorRetirement::Completed {
-                completion: Completion::Stopped,
-                interpretation: None,
-                source: None,
-                settlements,
+            let ActorRetirement::Retained {
                 custody:
                     ActorCustody {
                         behavior,
@@ -1825,6 +1784,13 @@ mod installed_shutdown_contract {
                         retirement_failures,
                         terminal_report: None,
                         unread_owner_cancellation: None,
+                    },
+                outcome:
+                    RetirementOutcome::Completed {
+                        completion: Completion::Stopped,
+                        interpretation: None,
+                        source: None,
+                        settlements,
                     },
             } = native
             else {
@@ -1916,7 +1882,7 @@ mod installed_shutdown_contract {
             })
             .await;
             drop(failure);
-            let stopped = lifecycle.request_shutdown();
+            let stopped = lifecycle.shutdown();
             stopped.expect("the actual root accepts shutdown");
             let report = application.retirement().await;
             let independently_observed = observer.await;
@@ -1924,11 +1890,12 @@ mod installed_shutdown_contract {
             report
         })
         .unwrap_or_else(|_| panic!("the public application uses the entered executor"));
-        let ((), (work, native, notifications, ())) = timeout(Duration::from_secs(10), async {
-            tokio::join!(execution, async { receiving.await.into_parts() })
-        })
-        .await
-        .expect("a report observer panic cannot lose the actor result or stall cleanup");
+        let ((), (work, _root_report, native, notifications, ())) =
+            timeout(Duration::from_secs(10), async {
+                tokio::join!(execution, async { receiving.await.into_parts() })
+            })
+            .await
+            .expect("a report observer panic cannot lose the actor result or stall cleanup");
         let WorkOutcome::Completed {
             output: report,
             cleanup: Ok(()),
@@ -1949,10 +1916,13 @@ mod installed_shutdown_contract {
         };
         assert_eq!(retained_failure.strong_count(), 1);
         let (_, native) = native.expect("the complete native root survives report notification");
-        let ActorRetirement::Completed {
+        let ActorRetirement::Retained {
             custody: ActorCustody { behavior, .. },
-            completion: Completion::Stopped,
-            ..
+            outcome:
+                RetirementOutcome::Completed {
+                    completion: Completion::Stopped,
+                    ..
+                },
         } = native
         else {
             panic!("the native stopped actor retains its original state");

@@ -1,5 +1,5 @@
-error[E0599]: no method named `request_shutdown` found for struct `ApplicationClient<Target, Replies>` in the current scope
+error[E0599]: no method named `shutdown` found for struct `ApplicationClient<Target, Replies>` in the current scope
  --> tests/compile/fail/application_client_has_no_lifecycle.rs:7:28
   |
-7 |     let _shutdown = client.request_shutdown();
-  |                            ^^^^^^^^^^^^^^^^ method not found in `ApplicationClient<EstablishedRecipient<MessageProtocol<bombay::MailAddr, u8>>, MessageProtocol<bombay::MailAddr, u64>>`
+7 |     let _shutdown = client.shutdown();
+  |                            ^^^^^^^^ method not found in `ApplicationClient<EstablishedRecipient<MessageProtocol<bombay::MailAddr, u8>>, MessageProtocol<bombay::MailAddr, u64>>`

@@ -9,7 +9,7 @@ primitive concurrency semantics.
 
 The workspace selects published Behavior Core, Actors and Macros through
 `Cargo.lock`. Current archive and source verification is recorded in the
-[developer experience coordination](prds/developer-experience.md).
+[published Behavior qualification](prds/static-remote-actors.md#published-behavior-qualification--2026-11-11).
 Evidence must name the revision of each owner it exercises.
 
 Behavior owns initialization, synchronous folds, complete `Actions`, ordered
@@ -32,18 +32,20 @@ it cannot be used to pass or block an Engine law.
 ## Actor-template boundary inventory
 
 `driver-template-manifest.json` schema 3 is the revision-bound ownership
-inventory checked against published Behavior Actors 0.26.0. It records the exact
-45 public Behavior compositions by family, public spelling, event boundary,
+inventory for published Behavior Actors0.30.0 at verified source
+`628649da014a527d47f21567a859c5c78494df13`, selected together with Core0.30.0
+and Macros0.16.0 through the registry manifest/lock. It records the
+46 public Behavior compositions by family, public spelling, event boundary,
 ordered effect lanes, composition edge, owning source, and upstream evidence.
 It separately records all 19 actor-owned interpreter-request/source-action
-types, their emitters, and whether Bombay currently has a matching
+families, their emitters, and whether Bombay source mentions a matching
 `InterpretItem` implementation. Behavior-owned delivery, child-input,
 creation, and parent-report products are listed as structural lanes rather
 than redefined as actor capabilities.
 
 `engine_does_not_mirror_actor_template_laws` compares both inventories with
 independent exact sets, rejects duplicate or malformed rows, checks each
-template record has its boundary fields, derives interpreter status from the
+template record has its boundary fields, inventories interpreter spellings in the
 Bombay source, requires an empty mirror list, and rejects an Engine dependency
 or import of Behavior Actors. Removing one template or adding one mirror is a
 failing mutation. This remains an Engine ownership gate only: the manifest
@@ -51,7 +53,7 @@ points to upstream source/tests and does not copy template transition law into
 Engine.
 
 The audit identified six Bombay interpreter boundaries in the locked
-atomic surface: `BeginActivation`, `CustomerDelivery`, `DiagnosticAction`,
+supervisor/pool surface: `StartWorker`, `CustomerDelivery`, `DiagnosticAction`,
 `InitializeWorker`, `AssignWorker`, and `ProxyOperation`. Each now has a
 typed Bombay interpreter and a compile-contract witness under ARC-010; the
 manifest records all 19 actor-owned request types as implemented. The
@@ -63,13 +65,25 @@ proof. `ObserveEstablishedCreation` and `CancelObservation` are
 public capability contracts with no current public-template emitter and stay
 listed so a later emitter cannot appear outside the inventory.
 
-This identity is source-revalidated at `2bb4510077bfa5aed82e08d25453c146b3184285`.
-The 45 template and 19 capability entries retain their declared boundaries;
-initial-factory preparation and creation-refusal custody changed within Actors.
-Conditional child membership, private-input recovery and composed send routing
-remain Behavior-owned. Revision fields bind the current reproduction contract;
-old execution receipts remain historical. The law and inventory gates must run
-again against this integrated selection before acceptance.
+The selected ordinary timer wrappers use
+EventLayer<OwnedTimerElapsed, B::Event> and the shared timer::ScheduleAt/After
+family with closed TimerId/Here targets. Lease, Presence, CircuitBreaker and
+template restart requests retain their named contracts. Machine distinguishes
+unbounded holding from InputLimit refusal delivery carrying complete User values.
+The inventory records owning source facts; consumer execution requires its
+separate native/static evidence.
+The inventory follows the current supervisor, pool, proxy and worker owners;
+all46 template and19 capability-family entries remain. The presence scan includes
+test source and checks no complete type equation; its green result is catalogue
+consistency, not runtime interpreter correctness. Native/static consumer tests
+own that evidence. Conditional child membership, private-input recovery and
+composed send routing remain Behavior-owned.
+
+The law manifest's top-level selection identifies the current reproduction
+contract. Its24 evidence revisions preserve the historical98983 baseline and
+are checked separately. They neither certify a new execution nor change when
+the selected package changes. The evidence script copies these labels; current
+verification requires actual commands and separately bound source/results.
 
 ## Schema-2 manifest
 
@@ -82,7 +96,7 @@ records:
 - `inversion`: one unique edit to the real owning source plus the exact test
   that must kill it.
 
-Every record contains a unique evidence identifier, the selected Behavior
+Every record contains a unique evidence identifier, its historical Behavior
 revision, an exact claim, and a pinned-Nix reproduction command. Positive and
 boundary records name an integration-test target and exact test. Inversion
 records additionally name the edited repository path, the semantic mutation,

@@ -1,4 +1,5 @@
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorActed, Never};
 
@@ -59,8 +60,8 @@ async fn matching_incoming_births_preserve_declaration_order_independence() {
         drop(original);
         panic!("right declaration keeps its original application");
     });
-    let (left_outcome, left_native, left_notifications, ()) = left.into_parts();
-    let (right_outcome, right_native, right_notifications, ()) = right.into_parts();
+    let (left_outcome, _root_report, left_native, left_notifications, ()) = left.into_parts();
+    let (right_outcome, _root_report, right_native, right_notifications, ()) = right.into_parts();
     let Ok(ActorNotificationReceipts {
         termination: Ok(()),
         retirement: Ok(()),
@@ -81,10 +82,22 @@ async fn matching_incoming_births_preserve_declaration_order_independence() {
     assert!(matches!(right, Some(Ok(()))));
     assert!(matches!(
         left_native,
-        Ok((_, bombay::ActorRetirement::Completed { .. }))
+        Ok((
+            _,
+            bombay::ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { .. },
+                ..
+            }
+        ))
     ));
     assert!(matches!(
         right_native,
-        Ok((_, bombay::ActorRetirement::Completed { .. }))
+        Ok((
+            _,
+            bombay::ActorRetirement::Retained {
+                outcome: RetirementOutcome::Completed { .. },
+                ..
+            }
+        ))
     ));
 }

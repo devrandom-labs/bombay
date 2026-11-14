@@ -205,9 +205,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior"
-version = "0.26.0"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c3a8988ead92a6772aa3c9aa012cb66cad3021d6fffd9cdfe6eeaf90d63cb01"
+checksum = "a053cef32c83bfd0df2fb146d2163a9d78a5e71534febfbd5601087040776b27"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",
@@ -215,9 +215,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-actors"
-version = "0.26.0"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78662d4f467c193b77b82b885b17459ea77fb892f22b876e269a20321dbb0959"
+checksum = "af2978fe3eda8157844a8929b82df5c0454bc4946478993a5c0740fdf4259641"
 dependencies = [
  "bombay-behavior",
  "bombay-behavior-macros",
@@ -226,9 +226,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-behavior-macros"
-version = "0.14.2"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed0c7ca28319afeb7d199bdfc76ae778b0b7a9bf28bea7aa6f0ca851a8487e54"
+checksum = "2c72e980d373e4f422f93b4a1efd156d875a4ac60abc5e39e3030f0f4c98c45e"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -249,7 +249,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-engine"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "bombay-behavior",
  "thiserror",
@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-macros"
-version = "0.1.3"
+version = "0.2.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -267,7 +267,7 @@ dependencies = [
 
 [[package]]
 name = "bombay-rs"
-version = "0.1.3"
+version = "0.2.0"
 dependencies = [
  "bombay-address",
  "bombay-behavior",
@@ -283,6 +283,7 @@ dependencies = [
  "loom",
  "parking_lot",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "triomphe",
@@ -1434,9 +1435,9 @@ checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
 name = "loom"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "419e0dc8046cb947daa77eb95ae174acfbddb7673b4151f56d1eed8e93fbfaca"
+checksum = "f1611ddbf89dc6ae42cfbd51fc207836140130257646eab8d6d2fb16577db2d2"
 dependencies = [
  "cfg-if",
  "generator",
@@ -2030,9 +2031,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.15"
+version = "0.103.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
+checksum = "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -2475,9 +2476,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.53.1"
+version = "1.53.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed"
+checksum = "ce3335fa71841cda333a58d7615b03901380ecf09d59b3296d21f8bbac0dde4e"
 dependencies = [
  "bytes",
  "libc",
@@ -2774,9 +2775,9 @@ dependencies = [
 
 [[package]]
 name = "webpki-roots"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dcd9d09a39985f5344844e66b0c530a33843579125f23e21e9f0f220850f22a"
+checksum = "1c1c8e20c8a38fc7d65abfe74eb7280e4aa667e8eec8bc84996d2874810748d9"
 dependencies = [
  "rustls-pki-types",
 ]

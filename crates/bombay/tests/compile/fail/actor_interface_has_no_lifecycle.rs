@@ -1,7 +1,7 @@
 use bombay::ActorInterface;
 
-fn request_shutdown(interface: ActorInterface<()>) {
-    interface.request_shutdown();
+fn shutdown(interface: ActorInterface<()>) {
+    interface.shutdown();
 }
 
 fn main() {}

@@ -1,34 +1,242 @@
 # Static remote actor acceptance
 
-The focused main-based declaration diagnostic stage requires bounded outer
-ExportError Display/Debug plus the same exact native Error::source. Its existing
-actual seven-constructor test acquires original targets and all Application/Node
-cleanup before the paired format oracle. Actual main prior-source debug and
-optimized runs reach that intended assertion; fixed focused1/0/0 and full-client
-21/0/0 pass per profile. Main default773/0/2 plus7/0/3 docs, all-features840/0/2
-plus7/0/3 docs, strict Clippy and formatting pass on exact export91b7562/test2c16483b.
-The final post-tuple assertion is unexecuted only in the intended failing runs.
-Research runs are not relabeled as this tree. Final review/PR/required CI remain
-pending; this prerequisite closes no full R25 or other acceptance row and
-includes no separate Network/family service work. See the
-[pre-edit change record](../static-remote-actors.md#declaration-diagnostics--focused-main-contribution-2026-10-16).
+The dated prerequisite checkpoints below are historical evidence at their
+stated revisions. The [current feature status](../static-remote-actors.md#current-delivery--2026-11-11)
+owns current dependency, implementation and verification facts. R10's selected
+semantic witness is locally satisfied by the [current evidence](#r10--explicit-test-identity-and-production-refusal-2026-10-23).
+R17 is locally satisfied for its [recorded fixed TLS profile](#current-r17-support-record--fixed-tls-profile-2026-10-24).
+Other rows retain their independent states. Semantic acceptance, exact-head
+CI, record delivery and full feature completion remain separate; historical
+failures and passing runs keep their original source scope.
+
+R01's literal witness is satisfied and delivered through PR410/f2832eea.
+Its [owning evidence map and delivery](../remote-protocols.md#delivery--2026-11-11)
+bind the actual separate public programs, complete sender/receiver Actions,
+unexported local protocol and intended compiler denials to passing current and
+minimum checks. This is no claim that every mapped inventory family is complete.
+PR411/2b7acf12 delivers one fixed incoming schedule; PR412/3bf270cb delivers
+the four native-access/application-grant rows. Their owning records preserve
+remaining R24 and R07 obligations; neither full row is closed.
+PR413/814c96d1 delivers paired registry Behavior/Actors0.30 qualification after
+all six checks and independent reviews. Its [owning delivery record](../static-remote-actors.md#delivery-of-behavior-qualification--2026-11-11)
+keeps local falsifiers, actual CI scopes and merged delivery separate; no
+remote acceptance row closes from this prerequisite.
+
+The [bounded incoming campaign delivery](../network-schedule.md#delivery-of-the-bounded-campaign--2026-11-12)
+records PR414/f09303c8 after routine/manual CI, independent reviews, matching
+merge trees and worktree cleanup. Its finite/generated/falsifier/replay and
+Nix seed claims retain their exact scopes. Generated Query/Client schedules, arbitrary
+overlap, crash/restart and full R24 remain open.
+The [fixed public Client overlap delivery](../network-schedule.md#delivery-of-the-fixed-public-client-overlap--2026-11-13)
+is PR416/b3833e50 after all eight checks and independent reviews pass. Both
+tests execute in four current Linux cohorts; delivered/qualified trees match,
+complete evidence is sealed and the clean worktree is removed. No complete
+acceptance row is added; generated native schedules and the full goal remain open.
+
+On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
+byte-preservation witnesses after all six checks passed. PR404's R09 recovery
+is also merged. These contributions do not close their complete rows. Legacy
+transport-research retirement preserves the cohort-to-owner map and remaining
+debts in the parent PRD; deleting a historical controller adds no acceptance
+credit. R10/PR394 and R17/PR398 have actual reviewed delivery; dated pending
+wording inside their original records preserves the earlier source epoch.
+
+## Current R17 support record — fixed TLS profile (2026-10-24)
+
+R17's literal dependency/configuration witness is locally satisfied for the tested profile below. This records existing executed evidence; it adds no networking implementation, public API or support for an untested platform. PR398 delivered this record as `e50f6e1c` after all six checks passed. Every other acceptance row retains its independently recorded state.
+
+### Reproducible inputs
+
+Delivered main `277e6dfe2c5377b8b31810c025509322640a588e` contains PR392's public two-program application, PR395's patched dependency and PR393's required-gate execution. Root lock SHA256 `83f01ca3ff82f49f485cb017d14279a654fafc2dfb592f4818b9b726686a3578`; isolated native lock `667a182086669aab92209509ad8646b189818918a68328655c318fd81a242982`.
+
+Bombay's `remote` feature is explicit; crate defaults are empty. Its manifests select `bombay-zenoh=1.10.10`, `bombay-zenoh-config=1.10.2`, `zenoh-protocol=1.10.1`, defaults disabled and SDK `transport_tls` only. Locked TLS link/transport are1.10.4 and Tokio1.53.3. These are declared/locked profile facts, not a relabelled fresh all-features metadata expansion. No experimental, UDP or shared-memory transport is selected.
+
+| Configuration and exact owner | Executed evidence | Supported claim and limit |
+| --- | --- | --- |
+| `NetworkLayout::Peer`, explicit listen-only or connect-only; public example `src/network.rs` | Delivered `examples/remote-counter/tests/processes.rs::separate_programs_increment_read_and_stop_through_real_tls`: distinct actual OS PIDs/runtime bindings; real encoded Increment→processed101→Read1→Stop; both clean application exits. Required patched-lock Nix reruns it in debug and optimized profiles. | Direct TLS Peer-to-Peer on tested Unix localhost; current required CI is Linux. This is public application evidence, not shared-process Sessions or a configuration-only example. No container, Kubernetes, arbitrary multi-host/DNS or Windows assignment-socket certification. |
+| Peer connect-only/listen-only/both-direction and `NetworkLayout::RouterClient`; `Network::to_configuration` | `remote::network::tests::layouts_preserve_addresses_credentials_and_the_fixed_profile` compares actual selected native getters: exact supplied address lists with native AllOf, independent deployment/connect/listen credential sources, mode and query limits, TLS-only/mTLS/name verification. Current patched-lock Nix passes debug and optimized. | All four configuration alternatives are mapped without implicit direction or credential fallback. IPv6/address-list forms have getter/configuration coverage; that is not runtime deployment certification for each address/platform. |
+| RouterClient to an external Router; same Network owner | `remote::network::tests::ingress::refused_queries_complete_while_accepted_queries_remain_retained` opens actual TLS Sessions for both a Peer listener and a controlled Router listener; the Router branch uses RouterClient. Real queries, transfer refusals, native FINAL/EOF, permit return, undeclarations and both Session closes are acquired. Current patched-lock Nix passes both profiles. | Selected RouterClient connectivity is tested at the actual native transport boundary. This retained witness has multiple Sessions in one OS process. Router remains external infrastructure, not a third public Network layout. There is no delivered public two-process Router application claim or invented requirement that every alternative have one. |
+| Missing/empty required directions; same Network owner | `empty_directions_and_absent_peer_connections_refuse_without_consuming_inputs` observes exact typed `NodeStartupRefusal::Unsupported` for no Peer direction and every supplied empty direction, including RouterClient, preserving originals. Native getter tests also reject injected endpoint options. Both profiles execute in current required Nix. | Disabled required configuration cannot silently choose another layout/address or discovery profile. This is typed configuration refusal, not a promise that an asynchronously reconnecting remote peer's absence makes Session open fail immediately. |
+| Missing required TLS input; actual public `Application::open_node` | `public_node::public_node_native_open_refusal_preserves_usable_application_and_original_configuration` removes the actual required PEM, requires native `NodeStartupRefusal::Open`, exact standard source identity and original inputs, then uses the recovered Application for a real local Read and joined cleanup. Current required Nix runs the six-case public_node cohort debug/optimized,6passed/0failed/0ignored/63filtered each. | Actual native startup fails closed with originals/cause retained and no profile substitution. Missing-PEM failure is not a wrong-trust-root, peer-authentication or ACL-denial witness; R20 and R07 remain distinct. |
+
+The fixed profile disables **all three** discovery controls: multicast discovery `enabled=false`, multicast `listen=false`, gossip `enabled=false`. Only TLS is permitted, mutual TLS/name verification are enabled, public PKI is disabled, and directions carry explicit credentials. This is enforced by the exact Network source and independent native-getter assertions; successful native/application traces use those same owners. There is no discovery/experimental fallback on configuration or native-open failure. Matching visibility is not identity, actor readiness, hosting authority or delivery assurance.
+
+### Actual provenance and durable evidence
+
+Required [Nix job120622350998/run40014264183](https://github.com/devrandom-labs/bombay/actions/runs/40014264183/job/120622350998) succeeds on submitted `90ecb176982844c057aae3fab05bf6ca6e27f926` at2026-10-23T21:57:46Z; reviewed/merge source tree matches main277e6dfe. Raw job log SHA256 `9b1d2ddd9200cce088564af614382cc50a1e173ac905e421ee5ab033b9322905` names the mapping/native-ingress/application passes and actual public_node commands/results in both profiles. Public native-open refusal appears at raw lines20018/20032; six-case summaries at20022/20038. The separate empty `pr393-final-nix-job-20261024.json` API attempt is not evidence; actual check metadata is `pr393-merged-20261024.json`, SHA256 `662eb82f0a57208e623e88fb28014a7a1892fe072fb14869c2395e9f4ec497d2`.
+
+Durable original CI evidence is `/Users/joel/Code/devrandom/bombay/.git/session-archives/2026-10-21/child-retirement-patched-ci-20261024.tar.gz`, SHA256 `ccbc947310b69c858a1156423c59562ce34c81db0fa2960c46de28c26d02e1af`, including that exact raw Nix log. This support record is not a compiler/binary closure or certification of every historical external artifact.
+
+### Completion boundary
+
+This populates the literal R17 record: exact versions/features, explicit tested topologies, real processes using the declared profile, and typed failure when required configuration is absent. No further implementation or mandatory every-layout public application was identified for that scoped witness. The selected PRD explicitly defers broader ZEN-04 container/Kubernetes deployment certification; that backlog debt remains. Neither this table nor Peer success closes authenticated metadata/availability/deployment isolation in R21, R23 pressure/exit/scenario mapping, security, production identity, full AUTH1/NET1 or the full PRD. No existing row's literal required oracle is reduced.
+
+## Historical source checkpoints
+
+Main reconciliation (2026-10-16, historical): mainf25e4a0c includes PR375 and
+the reviewed, CI-passing PR382 test-only compatibility repair. It selects
+Behavior/Actors0.26.0 and complete Application/Work outcomes. The earlier
+connection-entry prototype is retired from current source. Its distinct
+configuration, startup-disposal, connection-retirement, public-entry and family
+controls below retain their historical source scope; upstream tests do not
+replace all of those laws. Current service ownership and consumer witnesses
+remain required. No full remote acceptance row closes from this cleanup.
+
+Current input-privacy work uses the same Node opener with Network instead of
+raw SDK Config. Four public input tests, eight owning mapping tests, migrated
+callers and six native public Node controls pass in debug and optimized builds.
+Mapping, credential disclosure and original-input reconstruction inversions
+reach their intended assertions; exact source is restored. Concrete Config now
+receives the intended E0308 denial; existing Session and close-borrow denials
+retain their original diagnostics. Default workspace execution and strict
+all-feature lint pass. Full-feature execution passes847 tests and7 doctests,
+failing only the kept Query privacy target. Query privacy, peer
+handshake and full service acceptance remain open. Historical raw
+Config/Session/privacy statements below retain their original source scope.
+
+The following family-composition checkpoint uses the same Node owner and
+existing family invocation, with a real reply before and after root retirement
+while Work remains live, exact family receiving and original borrowed/non-Send
+Work. Both50-case consumer cohorts and the report-loss/restored controls pass
+their intended profile-specific checks. Default workspace773/0/2 and all-feature
+848/1/2 (only the known Query privacy failure), plus7/0/3 doctests in each run,
+bind its unchanged production. Two later equivalent test assertion spellings
+receive independent two-pass review and focused1/0/0 reruns in both profiles.
+Strict lint/format pass; isolated native fixture68/0/1 per profile leaves its
+controlled subprocess unexecuted. Node's existing public type gains Families;
+empty-Node staging and prepared Arc products change explicitly. No additional
+runtime, service/privacy acceptance or full witness is established.
+
+The separate declaration-diagnostic correction keeps the exact native error
+source and original target while bounding outer Display/Debug. Its real native
+constructor-refusal oracle fails on prior source in both profiles; fixed focused
+and all21 Application-client controls pass in each profile. Strict lint and
+formatting pass. Focused main delivery merged through PR384 asf25e4a0c after
+all six CI checks and independent review; its exact main-specific evidence is
+in the [owning record](../static-remote-actors.md#declaration-diagnostics--focused-main-contribution-2026-10-16).
+This closes no Query privacy, full R25 or service lifecycle requirement.
 
 Normative companion to the [PRD](../static-remote-actors.md). This document
 contains full planned oracles and scoped prerequisite evidence, not proof of
 feature completion.
-Every full R01–R25 witness is **unexecuted** until its evidence record is
-populated. Executed prerequisite probes do not close a full witness. The PRD's
+Each full R01–R25 witness receives credit only when its complete evidence record
+is populated; R10 and R17 have their scoped local records populated here. The following
+shared-native replay checkpoint retains its historical source scope: that design stage was recorded in the
+PRD: real Counter processing/value/Stop and unrelated Ledger native consumers
+must pass focused controls and intended inversions before caller migration.
+Cold retention, entered-constructor uncertainty, permission loans and permanent
+native-acquisition suppression are independent gates; no executed service or
+full-row credit follows from the existing compiler-only comparison. Executed prerequisite probes do not close a full witness. The PRD's
 profile limits and user-steering requirements apply to every row. The user
 now delegates automatic selection of recommended choices until revoked; the
 PRD records those decisions. Delegation does not establish any passing witness.
 
-Communication0.1.6 adoption PR377 merged76dbd849 with all six checks passing;
-required38820049280 succeeds and reviewed/tested/main tree25bc63d2 matches.
-PR379 now integrates actual main67a286c, including PR374. Its startup kernel
-and test remain byte-identical to17fec54; the merged futures-util dependency
-edge belongs to PR374. Documentation is resolved; fresh head CI is required.
-The startup correction remains unmerged. Capacity observation reserves no slot
-and cannot replace fresh permission checks; no full remote row advances.
+## Historical prerequisite evidence
+
+The following checkpoints retain their exact earlier revisions and execution
+scope. Removed research is not a current API or current passing witness.
+
+The connection-entry stage now executes five public Application caller tests
+in debug and release: original cold input recovery, actual startup-refusal
+custody, cancelled borrowed execution waiting, run_remote result products, and
+acquired Ready output preservation when actual Work producer disposal panics.
+The last control catches its original allocated panic and acquires native actor,
+both notification and joined connection-close results before asserting output
+custody. Delaying Completed publication past producer disposal fails its intended
+post-cleanup oracle in both profiles; exact production source is restored. This
+does not prove recovery of future-local service rows from Interrupted Work.
+Restoring the old coupled cold/prepared Work mapper fails compilation at the
+intended outcome projection in both profiles. This is static denial only.
+These local Counter controls establish no remote admission, handshake, service
+or whole-PRD witness. A separate actual nonempty Entity-family control now
+receives before and after root retirement while Work remains live, then acquires
+the exact family shutdown after Work completes. Its missing-publication cut
+fails after cleanup in both profiles; restored Application/completed-receiving
+controls pass81 cases per profile. This establishes the scoped local family
+composition law only. The owning connection association/surrender test retains
+its separate execution record in the PRD.
+The startup-acquisition prerequisite PR379 merged38774de with all six checks
+and required/native execution reviews passing. It closes no full remote row.
+PR378 and replacement PR380 were closed unmerged by the release bot; PR381
+is the current successor. PR374 merged67a286c; the full service and private
+transport API remain open.
+
+Communication adoption [PR377](https://github.com/devrandom-labs/bombay/pull/377)
+merged76dbd849 at2026-10-16T00:31:25Z after all six checks and scoped reviews
+passed. Reviewed/submitted329, actual CI429 and merged main share tree25bc63d2.
+Required Nix38820049280 succeeds: workspace703/0/1, remote406/profile,
+requester6/profile, primitive fuzz passing and Miri skipped. Required/native
+reviews005a8147/98d0443b and actual merge receiptcf93122f preserve attribution.
+This delivers the dependency prerequisite, not a full remote witness. Below,
+older preparation facts retain their historical source and execution scope.
+
+Earlier private composition adds actual missing-host and executor-loss controls
+and generated reply protection for both Counter/Ledger provider families.
+Restored combined library348 and application38 cases pass in both profiles;
+the intended failure-erasure, literal-proof, metadata and bound cuts fail their
+specific oracles after cleanup. Strict lint remains blocked by eight unused
+private connection declarations; the scoped command does not reach test lint.
+The public Application service and SDK privacy replacement remain absent, so
+these facts close no full row. Owning Communication PR13 merged as39fd717e
+with all five checks passing and exact reviewed/tested/main tree agreement.
+It separately verifies capacity readiness and exact custody. Its version-only
+release PR14 merged963067e0 after all five checks passed. Actual registry,
+archive and tag verification passes. The coordinator selects0.1.6 with every
+other package retained and348 library/38 Application cases passing per profile;
+independent main-based adoption PR377 is ready after its eight actual checks
+and independent source/execution reviews pass. Main controls are333 library,
+36 Application and70/0/1 protected-counter per profile. Required CI/merge remain.
+Actual Application integration remains required.
+Provider PR376 mergedc249044a after all six exact-head checks and required-Nix/
+native/source reviews passed; tested/reviewed/main trees match54451654.
+Actual six requester cases execute once per profile, with primitive fuzz passing
+and conditional Miri skipped. Actual merge receipt095a3c42 retains provenance.
+PR377 integrates that main as3299340; fresh combined checks/CI remain required.
+Neither prerequisite closes any full acceptance row.
+
+The private acquired-Connection preparation handoff adds two focused ownership
+laws (plus two inherited Counter cases), passing debug and optimized builds.
+Dropping only the prepared Connection fails the intended None-versus-actual-ID
+oracle in both profiles after cleanup; exact restoration passes. Combined
+Application/HTTP/Entity coverage passes421 cases per profile on the original
+test source. Sharing Counter removes two duplicate inherited cases; fresh350
+library controls pass in both profiles. Formatting and local strict lint pass.
+Remote strict lint returns101 for eight unused private production declarations
+only, with no test diagnostics. This remains an explicit delivery gate; this does not solve startup-producer disposal,
+pre-spawn unwind, the public service or SDK privacy. No full row closes.
+
+The final pending-protection comparison32c534a5 executes both finite providers
+in debug and optimized builds; restored complete Counter targets pass72/0/1
+per profile. Borrowing instead of sharing is statically denied; substituting an
+equal receipt or including authority revision in replay identity reaches the
+intended post-cleanup failures in both profiles. This proves one original
+receipt can support concurrent immutable consumers while another native request
+progresses. It proves no Query traffic, current revocation, protected publication
+or finished public service. All full rows stay open. The public API must expose
+only Bombay contracts, with transport configuration, sessions, queries, replies,
+declarations and callbacks private even for advanced consumers. PR374 merged
+its prerequisite and PR373 was superseded; release PR381 and full-service
+delivery remain held pending that integration.
+
+Current compiler counterexamples make the privacy defect executable:
+`remote_surface` fails its expected-denial assertions because ordinary Bombay
+consumers can infer native configuration, access the lent Session and acquire
+a native Query without importing the SDK. All three snippets compile; both
+outer debug/release test invocations return101 for that intended reason.
+Trybuild uses dev compilation in either outer profile. This is an intentional
+red acceptance gate, not a passing witness. Actual Application replacement and
+a complete public-surface audit must establish privacy before delivery.
+
+### Earlier main-delivery evidence
+
+The following preparation snapshot predates the PR377 merge recorded above.
+Its pending-delivery statements retain their original source qualification.
+
+Communication0.1.6 publication is verified after reviewed owning PR13 and release
+PR14 merges with passing CI. Narrow Bombay adoption is selected; its main-based
+tests and PR delivery remain pending. Capacity observation neither reserves a
+slot nor substitutes for fresh permission checks. Arbitrary foreign-waker-panic
+sibling progress is unsupported. This prerequisite closes no full row.
 
 [Provider conservation PR376](https://github.com/devrandom-labs/bombay/pull/376)
 mergedc249044a0425f3704e7836b31f696069f5d78d63 at2026-10-15T22:50:52Z.
@@ -166,6 +374,14 @@ Keep the local counter in `examples/counter` and the remote counter in
 `examples/remote-counter`. Each teaches one complete application through public
 composition. Assertions and transport/fault campaigns stay in owning tests or
 isolated research; relocating a fixture does not prove shipping remote support.
+Ordinary remote composition must use Bombay APIs without importing Zenoh,
+opening or closing its Session, declaring queryables, or writing transport
+request/reply loops. Bombay owns those operations and their cleanup within the
+Application lifecycle. The public remote-counter application must demonstrate
+this boundary. Advanced public APIs also use Bombay contracts and must not
+expose native Zenoh Config, Session, Query, Reply or declaration types. Review
+all public signatures, callbacks, exports, examples and rustdoc for those leaks;
+transport fixtures cannot substitute for the session-free Application witness.
 First reconcile the committed DevX Application APIs with the proven admission
 and retirement laws, preserving the active worktree's uncommitted changes.
 
@@ -533,10 +749,111 @@ strict workspace Clippy and formatting. Its own CI and delivery remain required.
 No full R01–R25, AUTH1 or NET1 obligation closes from these results.
 
 
-Application startup-custody regression: prior main fails exactly the acquired
-affine-owner release oracle in debug and optimized builds after real Ready and
-original producer-disposal panic. The six-line existing-kernel correction and
-193-line owning test preserve cold Application/Work and original panic, without
-Zenoh or a new API. Fixed debug/optimized controls each pass the actual test; affected combined
-checks, required CI and actual PR delivery remain pending in the PRD. No full
-remote row closes.
+Earlier private startup checkpoint (before PR379 delivery): original owner loss fails deterministically in
+both profiles; separate success/refusal publication omissions each fail their
+report oracle in both profiles. Exact restored source passes353 owning library
+tests per profile. Generic Application correction is submitted separately as
+PR379, with reviewed capacity dependency integrated early; actual required CI
+and merges remain pending. This closes no full remote acceptance or privacy gate.
+
+The generic startup law delivered in PR379 preserves the actual acquired
+affine owner when its Ready producer disposal panics. Prior source fails the
+release oracle in both profiles; the merged correction and193-line owning
+test preserve cold Application/Work and the allocated panic without a new API.
+All six CI checks pass; merged38774de is recorded above.
+
+## R10 — explicit test identity and production refusal (2026-10-23)
+
+**Locally satisfied for the selected milestone.** This assembles the whole R10
+row rather than crediting one missing-provider constructor diagnostic. It closes
+neither other remote rows nor the broader RELEASE-04 production-provider example.
+R10 explicitly leaves the real Selo example outside this milestone. PR392's
+application merged as632bf184 after all six checks passed on95c1105a. This
+R10 evidence/interface follow-up still needs its own required CI and delivery.
+
+| Required clause | Current owning source and independent observation |
+| --- | --- |
+| Fake evidence is selected explicitly in tests. | [Command::read](../../../examples/remote-counter/src/main.rs) requires the literal mode `test` or `production-required` after exact Serve5/Call6 arity. There is no default test mode. The trusted assignment separately supplies an explicit finite profile; [Deployment validation](../../../examples/remote-counter/src/deployment.rs) requires it and all three grants/six paired records, without serde defaults. The actual two-program Test journey executes Increment/Read/Stop successfully. |
+| Production cannot start using fake or missing required identity. | The application has only the finite test provider; it has no production-capable identity implementation. ProductionRequired therefore returns the bounded provider refusal before constructing Configuration, opening Node, connecting for assignment or declaring Export. Fake-only availability and missing production capability share this truthful refusal. The [process owner](../../../examples/remote-counter/tests/processes.rs) executes both roles, reaps them, observes no assignment acceptance and checks exact exit1/empty stdout/provider diagnostic. The [five CLI cases](../../../examples/remote-counter/tests/processes/arguments.rs) also check role-specific arity and required positive caller duration. |
+| The refusal boundary is falsifiable. | Removing only ProductionRequired's return lets the program reach deterministic existing endpoint-metadata refusal. Both profiles then fail the exact provider diagnostic after both real outputs/reaps and directory cleanup: actual `counter Node could not open` instead of the required provider refusal. The initial absent-TLS watchdog attempts are excluded. Healthy/restored controls inspect both roles; the negative reaches only the first role's diagnostic assertion. |
+| Both deterministic provider implementations compile with the same port. | The existing cold [construction](../../../crates/bombay/tests/application_clients/network_replay/construction.rs), [replay](../../../crates/bombay/src/application/node/tests/replay.rs) and [proof refusal](../../../crates/bombay/src/application/node/tests/protection.rs) owners actually execute their Recorded/Scheduled cases in both workspace profiles. The construction/replay [provider owner](../../../crates/bombay/tests/application_clients/protocol.rs) and the separate [protection providers](../../../crates/bombay/tests/protected_counter/providers.rs) return distinct nominal receipts and concrete Ready/async futures through the same generic callbacks. No provider registry, downcast, erased future or caller-dependent cast selects them. |
+
+The trusted-provider assumption remains explicit: these tests prove Bombay's
+policy interpretation, not cryptography or protection from a malicious trusted
+Rust implementation. Callback/receipt generic types remain concrete. Actual
+validated Deployment and Receipt fields remain private. Missing-verifier UI
+controls strengthen the required-input interface separately; they are not the
+whole R10 witness and do not create a dynamic provider-presence requirement.
+
+### Sources and commands
+
+The policy source is main `11087d2af47b385f3a516e69a09db799b381b2092f436e84dcf086eebbb95abb`
+and Deployment `816f6b391512b94f1879fa2d7c030f5ed9349990090de806b8c94680a3955e78`.
+Final process and arguments owners are respectively `c932574883884647c5797658e9b610202efc1f2fb9a1c5919c96d1b2545d6873`
+and `5fe49c99ec3720b8bb35cbdc8b98c34326c35bc36bec4c87e3a109416f4b6771`.
+The guard cut is main `f7dd3c694f7a2d2c581ab2fae906dc893cccf8001895071eba6ffa2c159b871c`:
+only its ProductionRequired arm continues instead of returning. Exact healthy
+source is restored before replay; later directory/lint epochs do not rewrite
+that earlier source-bound inversion.
+
+The pinned-shell workspace commands are `cargo test --locked --offline --workspace --all-features`
+and the same command with `--release`. The actual `counter-workspace-{debug,release}`
+receipts exit0 and explicitly contain all ten names below as `ok`, not filtered:
+
+- `network_replay::construction::recorded_counter_joined_node_issues_export`
+- `network_replay::construction::scheduled_counter_joined_node_issues_export`
+- `network_replay::construction::recorded_ledger_public_node_issues_export`
+- `network_replay::construction::scheduled_ledger_public_node_issues_export`
+- `application::node::tests::replay::recorded_counter_node_reuses_first_read_outcome`
+- `application::node::tests::replay::scheduled_counter_node_reuses_first_read_outcome`
+- `application::node::tests::replay::recorded_ledger_node_reuses_first_read_outcome`
+- `application::node::tests::replay::scheduled_ledger_node_reuses_first_read_outcome`
+- `application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations`
+- `application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations`
+
+Current provider/construction/replay/protection hashes are respectively
+`c142411edf2197b2b283b52f82667973cf62fe4cad72650d78e66380cb49bbba`,
+`c1b5dc839c0d21f857a7a6b30ddbcca4906037e03d8545a46259e25b25051917`,
+`39aa7b1a1bd3942991676052c87ae3564e3f267837afac416f26a4f106788da8`
+and `b48408f06a8ca6be7289630342fc9716bb38ca84cb6637af4be04720d9e8646c`.
+The final two proof-refusal cases use the separately mounted
+`protected_counter/providers.rs`, SHA256
+`5bc4a39f6f8c39d75b54634cf1db53ab6afe9169c09f708e49ea7047c659c88e`;
+the first eight construction/replay cases use the protocol provider above.
+
+Workspace runs precede the directory contraction and bind Cargo.lock
+`4edede11cc08549f422a75fdd21d511f5ba1a3732b0d89040fc1f3b910ef2073`
+through the sealed final-source review1ae5cd93 in the application archive.
+The final package/TempDir runs bind
+`af4406dbc4338dfd77e13cc89ffa59d8c85a8da3f2eead9a4c6baf057b85f4ed`.
+That later lock adds the already selected tempfile dev edge; provider source
+and selected owning dependency versions remain unchanged. The workspace logs
+are not described as a recompilation of that final lock.
+
+The final package commands select `-p bombay-example-remote-counter` in each
+profile, without a case filter. The guard campaign selects its actual
+`production_required_refuses_before_tls_or_assignment` process leaf separately
+in each profile, applies only the recorded source cut and restores it before
+the four-control replay. Command/harness custody is retained in the owning PRD
+records; no optional capture flags are inferred from the raw output.
+
+### Raw receipts and limits
+
+Raw logs are retained under `/tmp/bombay-outbound-client-comparison` and in the
+application's recorded evidence custody. SHA256 pairs below are debug/optimized.
+
+| Receipt | Actual result | Raw log SHA256 pair |
+| --- | --- | --- |
+| `counter-workspace` | Both exit0; all provider construction4/replay4/refusal2 names above execute. | `e155e80d0d00d3196ad863e8c1a52fce094e052af4c912e90c3bcc40215ac1ea` / `38a472cffdd6ae6b82280adf96bcdf9d04d620d4911e960926bd7baae9ff5b8c` |
+| `counter-tempdir` | Both exit0; five process parents and three pure tests pass, none filtered. Relevant production/CLI names and ordinary Test success all execute. | `58b784211628ff70cd9e626b5e2c46e7dadb02782f4a646e8f41143d372e3ee8` / `96d982d6819bbe523382c2a0cdf09c0a55c6ef8fca020d4195132cb0d542fa1c` |
+| `counter-provider-controlled-inverse` | Both exit101 only at the intended post-cleanup provider-diagnostic assertion, .91/.39s; five other leaves filtered. | `a0d102157fe7d6b53bf655c277f69e6cbb5a6bed23696278580d73e0ec2f6f29` / `141056dd3aed82f783c770f3634587d232955a3c6561df5492d8514604628b86` |
+| `counter-provider-restored` | Both exit0, all four selected process/CLI controls pass, two unrelated leaves filtered. | `dadff12809f4bab99045d8b9f45a569227e455de9afd1fa14fa27b6cd767d808` / `21b34f0497020577745b38e2af80f4b3e40d8a6b625c6928719db670eb82c586` |
+
+Two source/evidence passes checked the entire clause mapping, actual named
+provider outcomes, shared guard policy, exact source cut, reached negative
+oracle, restoration and final source epoch. The actual inverse's second role
+diagnostic assertions are unexecuted; acquired outputs do not substitute for
+them. No watchdog, setup failure, zero-case binary harness or filtered case
+supplies credit. These facts satisfy the selected R10 semantic row without
+claiming production authentication, Selo, the complete RELEASE inventory,
+required submitted-head CI or merged feature delivery.

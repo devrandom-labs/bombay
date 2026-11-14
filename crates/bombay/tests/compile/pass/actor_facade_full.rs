@@ -58,7 +58,7 @@ struct Parent;
 impl Parent {}
 
 // Declaring a child's reports does not promise a runnable local interpreter.
-type Proxy = bombay::atomic::StableProxy<Child, bombay::atomic::ImmediateActivation>;
+type Proxy = bombay::proxy::StableProxy<Child, bombay::worker::ImmediateStartup>;
 
 struct ProxyParent;
 

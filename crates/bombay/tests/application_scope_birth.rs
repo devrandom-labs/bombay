@@ -1,18 +1,20 @@
 //! Early external endpoints and one root share one affine application scope.
 
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt as _;
-use bombay::atomic::{
-    ActivationPolicy, ActorDrainPolicy, CancelAuthority, CancellationReceipt,
-    DiagnosticDisposition, DynamicCommand, DynamicLifecycle, DynamicStatus, EntryCapacity,
-    EntryRetirement, ImmediateActivation, QueryReply, ReplaceRejection, StartRejection,
-    StopRejection, UnexpectedExit, WorkerChangeReceipt, WorkerChangeRejection, WorkerSubmission,
-    dynamic,
-};
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, EstablishedDelivery, EstablishedRecipient,
     MessageProtocol,
 };
+use bombay::diagnostic::DiagnosticDisposition;
+use bombay::lifecycle::ActorDrainPolicy;
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr, StopOnShutdown};
+use bombay::supervisor::directory::{
+    self, CancelAuthority, CancellationReceipt, DynamicCommand, DynamicLifecycle, DynamicStatus,
+    EntryCapacity, EntryRetirement, QueryReply, ReplaceRejection, StartRejection, StopRejection,
+    UnexpectedExit, WorkerChangeReceipt, WorkerChangeRejection,
+};
+use bombay::worker::{ImmediateStartup, StartupLimit, WorkerSubmission};
 use bombay::{ActorNotificationReceipts, ApplicationScope};
 use std::collections::BTreeMap;
 use std::ptr;
@@ -41,25 +43,25 @@ impl Worker {
 
 type ManagedWorker = StopOnShutdown<Worker>;
 type Lifecycle =
-    MessageProtocol<MailAddr, DynamicLifecycle<String, ManagedWorker, ImmediateActivation>>;
+    MessageProtocol<MailAddr, DynamicLifecycle<String, ManagedWorker, ImmediateStartup>>;
 type Starts = MessageProtocol<
     MailAddr,
     Result<
         WorkerChangeReceipt<String>,
-        WorkerChangeRejection<String, ManagedWorker, ImmediateActivation, StartRejection>,
+        WorkerChangeRejection<String, ManagedWorker, ImmediateStartup, StartRejection>,
     >,
 >;
 type Replacements = MessageProtocol<
     MailAddr,
     Result<
         WorkerChangeReceipt<String>,
-        WorkerChangeRejection<String, ManagedWorker, ImmediateActivation, ReplaceRejection>,
+        WorkerChangeRejection<String, ManagedWorker, ImmediateStartup, ReplaceRejection>,
     >,
 >;
 type Stops = MessageProtocol<MailAddr, Result<String, StopRejection<String>>>;
 type Queries = MessageProtocol<MailAddr, QueryReply<String, Worker>>;
 type Cancellations =
-    MessageProtocol<MailAddr, CancellationReceipt<String, ManagedWorker, ImmediateActivation>>;
+    MessageProtocol<MailAddr, CancellationReceipt<String, ManagedWorker, ImmediateStartup>>;
 
 bombay::topology! {
     service_application {
@@ -87,14 +89,14 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         .external::<Lifecycle>()
         .expect("durable lifecycle endpoint");
     let lifecycle_address = lifecycle.address();
-    let root = dynamic(
-        EntryCapacity::new(2).expect("bounded service table"),
-        ActivationPolicy::new(1).expect("one active preparation"),
-        UnexpectedExit::KeepEmpty,
-        ActorDrainPolicy::WaitForActorGraph,
-        lifecycle.recipient(),
-        DiagnosticDisposition::terminate(),
-    );
+    let root = directory::new(directory::Config {
+        entries: EntryCapacity::new(2).expect("bounded service table"),
+        startup: StartupLimit::new(1).expect("one active preparation"),
+        exit: UnexpectedExit::KeepEmpty,
+        shutdown: ActorDrainPolicy::WaitForActorGraph,
+        lifecycle: lifecycle.recipient(),
+        diagnostics: DiagnosticDisposition::terminate(),
+    });
     let worker_value = Box::new(41);
     let worker_pointer = ptr::from_ref(worker_value.as_ref());
     let rejected_value = Box::new(99);
@@ -103,7 +105,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         .enable_all()
         .build()
         .expect("caller host");
-    let (outcome, native, notifications, ()) = host
+    let (outcome, _root_report, native, notifications, ()) = host
         .block_on(
             scope
                 .with_topology(root, service_application::Topology::new())
@@ -303,7 +305,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                         assert_eq!(key, service);
                         assert_eq!(cause, EntryRetirement::Stop);
                     }
-                    let shutdown = application.request_shutdown();
+                    let shutdown = application.shutdown();
                     assert_eq!(shutdown, Ok(()));
                     let termination = application.termination().await;
                     assert_eq!(termination, Ok(Exit::Normal));
@@ -329,7 +331,11 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
     let (origin, retirement) = native.expect("joined root cleanup");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
     assert_eq!(retirement.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Completed { custody, .. } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { .. },
+    } = retirement
+    else {
         drop(retirement);
         panic!("root completed");
     };
@@ -339,7 +345,11 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
     let mut workers = BTreeMap::new();
     for proxy in custody.descendants {
         assert_eq!(proxy.retirement.completion(), Some(&Completion::Stopped));
-        let ActorRetirement::Completed { custody, .. } = *proxy.retirement else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::Completed { .. },
+        } = *proxy.retirement
+        else {
             panic!("proxy completed");
         };
         assert!(custody.capability_failures.is_empty());
@@ -347,7 +357,11 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         assert_eq!(custody.descendants.len(), 1);
         let worker = custody.descendants.into_iter().next().expect("one worker");
         assert_eq!(worker.retirement.completion(), Some(&Completion::Stopped));
-        let ActorRetirement::Completed { custody, .. } = *worker.retirement else {
+        let ActorRetirement::Retained {
+            custody,
+            outcome: RetirementOutcome::Completed { .. },
+        } = *worker.retirement
+        else {
             panic!("worker completed");
         };
         let value = custody.behavior.base().value.as_ref();

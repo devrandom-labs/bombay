@@ -27,7 +27,7 @@ fn receive(
 
 fn main() {
     let machine = bombay::prelude::Machine::new(Vec::new(), Door::Closed, receive);
-    let stash = bombay::actors::ActorExt::with_stash(machine, |machine, parcel| match parcel {
+    let stash = bombay::composition::UnlimitedStash::new(machine, |machine, parcel| match parcel {
         Parcel::Arrived(_) if machine.phase() == Door::Closed => {
             bombay::composition::StashRoute::Stash
         }

@@ -1,3 +1,4 @@
+use bombay::RetirementOutcome;
 use bombay::behavior::{
     BehaviorBase, ClassifySettlement, EstablishedDelivery, MessageProtocol, NoSends,
     SettlementStatus, Step,
@@ -153,7 +154,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
                         exhausted.is_none(),
                         "the root emits exactly its one useful reply"
                     );
-                    let shutdown = application.lifecycle().request_shutdown();
+                    let shutdown = application.lifecycle().shutdown();
                     assert_eq!(shutdown, Ok(()));
                     (original_cause, acquired, root_address, source_address)
                 },
@@ -170,6 +171,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
             output: (original_cause, acquired, root_address, source_address),
             cleanup: Ok(()),
         },
+        _root_report,
         Ok((origin, native)),
         Ok(ActorNotificationReceipts {
             termination: Ok(()),
@@ -185,7 +187,7 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
         cause_allocation
     );
     assert_eq!(cause_custody.strong_count(), 1);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody:
             ActorCustody {
                 behavior,
@@ -203,10 +205,13 @@ fn notification_unwind_preserves_the_admitted_original_and_independent_actor_pro
                 retirement_failures,
                 terminal_report,
             },
-        settlements,
-        completion,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                settlements,
+                completion,
+                interpretation,
+                source,
+            },
     } = native
     else {
         panic!("the independent actor's full original native result remains acquired")

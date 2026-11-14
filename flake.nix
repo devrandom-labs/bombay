@@ -24,6 +24,13 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        compilerTools = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.darwin.cctools ];
+        diagnostics = builtins.fromJSON (
+          builtins.readFile ./crates/bombay/tests/compile/diagnostics/compilers.json
+        );
+        diagnosticCargoArgs = "-p bombay-rs -p bombay-engine -p observe-tests --features axum";
+        minimumRemoteCargoArgs = "-p bombay-rs --all-features";
+        minimumRust = (builtins.fromTOML (builtins.readFile ./Cargo.toml)).workspace.package.rust-version;
 
         # Nix and rustup resolve the same pinned toolchain declaration.
         toolchain =
@@ -33,11 +40,26 @@
           }).overrideAttrs
             (previous: {
               # Fenix patches compiler-library paths with this tool on macOS.
-              nativeBuildInputs =
-                (previous.nativeBuildInputs or [ ])
-                ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [ pkgs.darwin.cctools ];
+              nativeBuildInputs = (previous.nativeBuildInputs or [ ]) ++ compilerTools;
             });
         craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
+        minimumToolchain =
+          assert pkgs.lib.versions.majorMinor diagnostics.compilers.msrv.release == minimumRust;
+          (
+            (fenix.packages.${system}.toolchainOf {
+              channel = diagnostics.compilers.msrv.release;
+              sha256 = "sha256-mvUGEOHYJpn3ikC5hckneuGixaC+yGrkMM/liDIDgoU=";
+            }).withComponents
+            [
+              "cargo"
+              "rustc"
+              "rust-std"
+            ]
+          ).overrideAttrs
+            (previous: {
+              nativeBuildInputs = (previous.nativeBuildInputs or [ ]) ++ compilerTools;
+            });
+        minimumCraneLib = (crane.mkLib pkgs).overrideToolchain minimumToolchain;
         src =
           let
             withoutCargoTargets = pkgs.lib.fileset.fromSource (
@@ -60,10 +82,10 @@
               ./.cargo/mutants.toml
               ./.config/nextest.toml
               ./docs/prds/static-remote-actors/transport-custody/certificates
+              (pkgs.lib.fileset.maybeMissing ./crates/bombay/proptest-regressions/remote/export/schedule.txt)
+              (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/application_clients/outbound/overlap.proptest-regressions)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay-engine/tests/driver-law-evidence.sh)
               (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/actor-execution-law-evidence.sh)
-              (pkgs.lib.fileset.maybeMissing ./crates/bombay/tests/child_preparation_retirement_evidence.py)
-              (pkgs.lib.fileset.maybeMissing ./tools/verify-owner-coverage.py)
               ./nix/references.sh
               ./tools/references.sh
               ./flake.nix
@@ -117,6 +139,12 @@
           '';
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        minimumCargoArtifacts = minimumCraneLib.buildDepsOnly (
+          commonArgs // { cargoExtraArgs = "--locked ${diagnosticCargoArgs}"; }
+        );
+        minimumRemoteCargoArtifacts = minimumCraneLib.buildDepsOnly (
+          commonArgs // { cargoExtraArgs = "--locked ${minimumRemoteCargoArgs}"; }
+        );
         protectedCounterVendor = craneLib.vendorCargoDeps {
           inherit src;
           cargoLock = ./docs/prds/static-remote-actors/transport-custody/Cargo.lock;
@@ -174,6 +202,34 @@
               cargoTestExtraArgs = "--workspace --all-targets";
             }
           );
+          bombay-minimum-compiler = minimumCraneLib.cargoTest (
+            commonArgs
+            // {
+              cargoArtifacts = minimumCargoArtifacts;
+              patches = [ ./crates/bombay/tests/compile/diagnostics/minimum.patch ];
+              cargoTestExtraArgs =
+                "${diagnosticCargoArgs} "
+                + pkgs.lib.concatMapStringsSep " " (target: "--test ${pkgs.lib.escapeShellArg target}") (
+                  builtins.attrNames diagnostics.targets
+                );
+              preCheck = ''
+                rustc --version --verbose
+                cargo --version
+              '';
+            }
+          );
+          bombay-minimum-remote = minimumCraneLib.cargoTest (
+            commonArgs
+            // {
+              cargoArtifacts = minimumRemoteCargoArtifacts;
+              patches = [ ./crates/bombay/tests/compile/diagnostics/minimum.patch ];
+              cargoTestExtraArgs = "${minimumRemoteCargoArgs} --test remote_surface";
+              preCheck = ''
+                rustc --version --verbose
+                cargo --version
+              '';
+            }
+          );
           bombay-child-no-default-features = craneLib.mkCargoDerivation (
             commonArgs
             // {
@@ -194,16 +250,23 @@
               inherit cargoArtifacts;
               env = commonArgs.env // {
                 RUSTDOCFLAGS = "--deny warnings";
+                RUST_LOG = "zenoh::api::session=info,zenoh::net::runtime=trace,zenoh_transport=trace,zenoh_link_tls=debug";
               };
               buildPhaseCargoCommand = ''
-                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-debug.log" 2>&1
-                cat "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::recorded_pending_protection_preserves_other_requests_and_replay ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_pending_protection_preserves_other_requests_and_replay ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.log"
+                cargo test --locked -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery -- --nocapture > "remote-debug.stdout.log" 2> "remote-debug.stderr.log" || {
+                  cargo_status=$?
+                  cat "remote-debug.stdout.log"
+                  cat "remote-debug.stderr.log"
+                  exit "$cargo_status"
+                }
+                cat "remote-debug.stdout.log"
+                cat "remote-debug.stderr.log"
+                grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::requests::recorded_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_cold_protection_preserves_requests_and_replay ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.stdout.log"
+                grep -Fx 'test application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-debug.stdout.log"
                 cargo clippy --locked -p bombay-rs --features remote --all-targets -- --deny warnings
                 cargo doc --locked -p bombay-rs --features remote --no-deps
               '';
@@ -214,14 +277,18 @@
             // {
               inherit cargoArtifacts;
               buildPhaseCargoCommand = ''
-                cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-release.log" 2>&1
+                cargo test --locked --release -p bombay-rs --features remote --lib --test remote_verification --test remote_ingress --test remote_metadata --test remote_json --test remote_surface --test remote_node --test application_clients --test node_outcome --test node_borrowing --test actor_interface --test fixed_supervisor_recovery > "remote-release.log" 2>&1 || {
+                  cargo_status=$?
+                  cat "remote-release.log"
+                  exit "$cargo_status"
+                }
                 cat "remote-release.log"
                 grep -Fx 'test application::node::tests::requests::recorded_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
                 grep -Fx 'test application::node::tests::requests::scheduled_live_requester_stores_checked_read_reply ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::recorded_pending_protection_preserves_other_requests_and_replay ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_pending_protection_preserves_other_requests_and_replay ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
-                grep -Fx 'test application::node::tests::requests::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::recorded_cold_protection_preserves_requests_and_replay ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::requests::scheduled_cold_protection_preserves_requests_and_replay ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::protection::recorded_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
+                grep -Fx 'test application::node::tests::protection::scheduled_outbound_request_protection_refuses_untrusted_declarations ... ok' "remote-release.log"
               '';
             }
           );
@@ -256,14 +323,58 @@
               inherit cargoArtifacts;
               nativeBuildInputs = [
                 pkgs.cargo-llvm-cov
-                pkgs.python3
+                pkgs.jq
               ];
               buildPhaseCargoCommand = ''
                 mkdir -p "$out"
                 cargo llvm-cov --locked --workspace --all-targets \
                   --json --output-path "$out/coverage.json"
-                python3 tools/verify-owner-coverage.py "$out/coverage.json" \
-                  | tee "$out/owner-coverage.txt"
+                set -o pipefail
+                jq -ers '
+                  if length != 1 then error("expected one coverage JSON document") else .[0] end
+                  | if type != "object" or (.data | type) != "array" then
+                      error("expected coverage data array")
+                    elif any(.data[]; type != "object" or (.files | type) != "array") then
+                      error("expected coverage file arrays")
+                    else . end
+                  | [.data[].files[]] as $files
+                  | if any($files[]; type != "object" or (.filename | type) != "string") then
+                      error("expected coverage files with names")
+                    else . end
+                  | {
+                      "crates/bombay-engine/src/driver.rs": 90,
+                      "crates/bombay/src/actor_execution.rs": 93,
+                      "crates/bombay/src/actor_outcome.rs": 90,
+                      "crates/bombay/src/observe/mod.rs": 90
+                    }
+                  | to_entries
+                  | map(
+                      . as $floor
+                      | [$files[] | select(
+                          (.filename | gsub("\\\\"; "/")) | endswith("/" + $floor.key)
+                        )] as $owners
+                      | if ($owners | length) != 1 then
+                          error("\($floor.key): expected one owner report, found \($owners | length)")
+                        else
+                          $owners[0].summary.lines as $lines
+                          | if ($lines.count | type) != "number"
+                              or ($lines.covered | type) != "number"
+                              or $lines.count <= 0 or $lines.covered < 0
+                              or $lines.covered > $lines.count
+                              or ($lines.count | floor) != $lines.count
+                              or ($lines.covered | floor) != $lines.covered
+                              # Keep both percentage products exact in jq arithmetic.
+                              or $lines.count > 90071992547409 then
+                              error("\($floor.key): invalid line accounting")
+                            elif 100 * $lines.covered < $floor.value * $lines.count then
+                              error("\($floor.key): line coverage below \($floor.value)%")
+                            else
+                              "\($floor.key): \($lines.covered)/\($lines.count) lines, floor \($floor.value)%"
+                            end
+                        end
+                    )
+                  | .[]
+                ' "$out/coverage.json" | tee "$out/owner-coverage.txt"
               '';
               doInstallCargoArtifacts = false;
               doCheck = false;
@@ -309,12 +420,10 @@
               nativeBuildInputs = [
                 pkgs.jq
                 pkgs.perl
-                pkgs.python3
               ];
               buildPhaseCargoCommand = ''
                 mkdir -p "$out"
                 bash crates/bombay/tests/actor-execution-law-evidence.sh --output "$out"
-                env -u CARGO_TARGET_DIR python3 crates/bombay/tests/child_preparation_retirement_evidence.py --output "$out/child-preparation"
               '';
               doInstallCargoArtifacts = false;
               doCheck = false;
@@ -349,6 +458,18 @@
               buildPhaseCargoCommand = ''
                 cargo test --locked -p bombay-example-counter
                 cargo run --locked -p bombay-example-counter
+              '';
+            }
+          );
+          bombay-example-remote-counter = craneLib.mkCargoDerivation (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              # Both roles require an assignment operator; package tests own
+              # their real subprocess exchange and cleanup.
+              buildPhaseCargoCommand = ''
+                cargo test --locked -p bombay-example-remote-counter
+                cargo test --locked --release -p bombay-example-remote-counter
               '';
             }
           );

@@ -1,5 +1,6 @@
 #![cfg(test)]
 use bombay::ActorNotificationReceipts;
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, ClassifySettlement, CreateChild, CreationKind, CreationRejection,
@@ -110,6 +111,7 @@ async fn recorded_creation_correlation_rejects_the_original_child_and_keeps_late
                 startup_error: Some(_),
                 cleanup: Ok(()),
             },
+            _root_report,
             Ok((root_origin, retirement)),
             Ok(ActorNotificationReceipts {
                 termination: Ok(()),
@@ -122,13 +124,16 @@ async fn recorded_creation_correlation_rejects_the_original_child_and_keeps_late
             panic!("the creator stops after its complete initialization effects");
         };
         assert_eq!(root_origin.address(), MailAddr::APPLICATION_ROOT);
-        let ActorRetirement::EffectsFailed {
+        let ActorRetirement::Retained {
             custody,
-            settlements,
-            initialization,
-            error,
-            interpretation,
-            source,
+            outcome:
+                RetirementOutcome::EffectsFailed {
+                    settlements,
+                    initialization,
+                    error,
+                    interpretation,
+                    source,
+                },
         } = retirement
         else {
             panic!("creator retirement owns both children");
@@ -230,11 +235,14 @@ async fn recorded_creation_correlation_rejects_the_original_child_and_keeps_late
         assert_eq!(descendants.len(), 2);
         let mut actual = Vec::new();
         for native_application::RootRetirements { origin, retirement } in descendants {
-            let ActorRetirement::OwnerCancelled {
+            let ActorRetirement::Retained {
                 custody,
-                settlements,
-                interpretation,
-                source,
+                outcome:
+                    RetirementOutcome::OwnerCancelled {
+                        settlements,
+                        interpretation,
+                        source,
+                    },
             } = *retirement
             else {
                 panic!("the parent joins each original cancelled child");

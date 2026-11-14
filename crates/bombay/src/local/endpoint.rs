@@ -5,10 +5,14 @@ use crate::local::ingress::{Admission, AdmissionClosure, EndpointMailbox, LocalI
 use crate::observe::{Observation, affine_pair};
 use crate::terminal::ActorRetirementReport;
 use crate::termination::Termination;
+#[cfg(feature = "remote")]
+use behavior::InterpretInstalledActor;
 use behavior::{
     Behavior, EstablishedRecipient, Ingress, InjectEvent, InterpretEstablished, Protocol, User,
 };
 use behavior_actors::{ShutdownRejection, ShutdownRequested};
+#[cfg(feature = "remote")]
+use communication::Capacity;
 use communication::{ControlSender, MailboxRef, TrySendError, UserClosed};
 use core::fmt;
 use core::future::Future;
@@ -256,6 +260,14 @@ impl<P: Protocol> ActorRef<P> {
         }
     }
 
+    #[cfg(feature = "remote")]
+    pub(crate) async fn wait_for_capacity(&self) -> Capacity {
+        match &self.endpoint {
+            EndpointMailbox::Standard { mailbox, .. } => mailbox.wait_for_capacity().await,
+            EndpointMailbox::Entity { mailbox, .. } => mailbox.wait_for_capacity().await,
+        }
+    }
+
     pub(crate) fn try_send_from(
         &self,
         from: P::Addr,
@@ -405,6 +417,17 @@ where
 pub struct SendError<M>(M);
 
 pub(crate) struct ExtractLocalEndpoint;
+
+#[cfg(feature = "remote")]
+impl<B> InterpretInstalledActor<B> for ExtractLocalEndpoint
+where
+    B: Behavior<Protocol: Protocol<Addr = MailAddr>>,
+{
+    type Output = InstalledActor<B>;
+    fn interpret_actor(&mut self, installed: InstalledActor<B>) -> Self::Output {
+        installed
+    }
+}
 
 #[cfg(test)]
 mod delivery_rejection {

@@ -1,4 +1,5 @@
 //! Guarded service construction preserves the actor, original actions and callable.
+use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ClassifySettlement, EstablishedDelivery,
@@ -139,7 +140,7 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
                     .expect("the original reply recipient survives recovery");
                 assert_eq!(report.message, 17);
                 assert_eq!(report.from, application.root().address());
-                let shutdown = application.request_shutdown();
+                let shutdown = application.shutdown();
                 assert_eq!(shutdown, Ok(()));
                 let termination = application.termination().await;
                 assert_eq!(termination, Ok(Exit::Normal));
@@ -148,7 +149,7 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
         })
         .unwrap_or_else(|_| panic!("the actual host is entered"));
     let ((), outcome) = tokio::join!(execution, receiving);
-    let (work, native, notifications, ()) = outcome.into_parts();
+    let (work, _root_report, native, notifications, ()) = outcome.into_parts();
     let WorkOutcome::NotInvoked {
         work,
         startup_error,
@@ -170,10 +171,13 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
         .expect("actual retirement publication");
     let (origin, retirement) = native.expect("the failed native actor is independently received");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::HostCommitPanicked {
+    let ActorRetirement::Retained {
         custody,
-        initialization: Some(InterpretationProgress::Original(initialization)),
-        payload,
+        outcome:
+            RetirementOutcome::HostCommitPanicked {
+                initialization: Some(InterpretationProgress::Original(initialization)),
+                payload,
+            },
     } = retirement
     else {
         panic!("constructor failure preserves untouched initialization before host commitment");
@@ -223,14 +227,17 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
     let mut actor = custody.behavior.into_inner();
     actor.file = Some(request);
     actor.ready = ready_delivery.to;
-    let (work, native, notifications, ()) = Application::new(actor.stop_on_shutdown())
-        .with_interpreter(|| Services)
-        .run_with(work)
-        .await
-        .unwrap_or_else(|_| {
-            panic!("the original actor and callable recover under a fresh runtime configuration")
-        })
-        .into_parts();
+    let (work, _root_report, native, notifications, ()) =
+        Application::new(actor.stop_on_shutdown())
+            .with_interpreter(|| Services)
+            .run_with(work)
+            .await
+            .unwrap_or_else(|_| {
+                panic!(
+                    "the original actor and callable recover under a fresh runtime configuration"
+                )
+            })
+            .into_parts();
     let (work, cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the retained original callable runs during recovery"));
@@ -251,12 +258,15 @@ async fn constructor_unwind_preserves_actor_original_actions_cause_and_uninvoked
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the recovered actor remains independently owned");
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("recovered service construction permits normal actor completion");
@@ -313,7 +323,7 @@ async fn pure_initialization_refusal_never_constructs_services_even_during_retir
     let expected_ready = replies.recipient();
     let attempts = Arc::new(AtomicUsize::new(0));
     let observed_attempts = Arc::clone(&attempts);
-    let (work, native, notifications, ()) = scope
+    let (work, _root_report, native, notifications, ()) = scope
         .with_root(
             Notice {
                 original,
@@ -351,7 +361,11 @@ async fn pure_initialization_refusal_never_constructs_services_even_during_retir
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original refused actor is independently received");
-    let ActorRetirement::InitializationRejected { custody, error } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::InitializationRejected { error },
+    } = retirement
+    else {
         panic!("the original pure refusal must not become a constructor failure");
     };
     let NoticeError::Restricted(restriction) = error;
@@ -404,7 +418,7 @@ async fn pure_initialization_panic_retains_the_original_actor_request_and_cause_
     let cause_pointer = ptr::from_ref(cause.as_ref()).cast::<()>();
     let attempts = Arc::new(AtomicUsize::new(0));
     let observed_attempts = Arc::clone(&attempts);
-    let (work, native, notifications, ()) = scope
+    let (work, _root_report, native, notifications, ()) = scope
         .with_root(
             Notice {
                 original,
@@ -440,7 +454,11 @@ async fn pure_initialization_panic_retains_the_original_actor_request_and_cause_
         .retirement
         .expect("actual retirement publication");
     let (_, retirement) = native.expect("the original actor is independently received");
-    let ActorRetirement::InitializationPanicked { custody, payload } = retirement else {
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::InitializationPanicked { payload },
+    } = retirement
+    else {
         panic!("the original pure cause must not become a service-constructor failure");
     };
     assert_eq!(ptr::from_ref(payload.as_ref()).cast::<()>(), cause_pointer);
@@ -520,7 +538,7 @@ fn missing_host_returns_the_original_application_constructor_and_work_for_retry(
                 .expect("the original recipient accepts actual file readiness");
             assert_eq!(report.message, 127);
             assert_eq!(report.from, application.root().address());
-            let shutdown = application.request_shutdown();
+            let shutdown = application.shutdown();
             assert_eq!(shutdown, Ok(()));
             let termination = application.termination().await;
             assert_eq!(termination, Ok(Exit::Normal));
@@ -536,7 +554,7 @@ fn missing_host_returns_the_original_application_constructor_and_work_for_retry(
         .enable_all()
         .build()
         .expect("enter the actual native host only after recovering the owned inputs");
-    let (work, native, notifications, ()) = host.block_on(async move {
+    let (work, _root_report, native, notifications, ()) = host.block_on(async move {
         application
             .run_with(work)
             .await
@@ -560,12 +578,15 @@ fn missing_host_returns_the_original_application_constructor_and_work_for_retry(
         .expect("actual retirement publication");
     let (origin, retirement) = native.expect("the original actor remains independently owned");
     assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
-    let ActorRetirement::Completed {
+    let ActorRetirement::Retained {
         custody,
-        completion,
-        settlements,
-        interpretation,
-        source,
+        outcome:
+            RetirementOutcome::Completed {
+                completion,
+                settlements,
+                interpretation,
+                source,
+            },
     } = retirement
     else {
         panic!("retry reaches the actual normal actor stop");
