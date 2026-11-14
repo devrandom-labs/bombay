@@ -29,7 +29,7 @@ note: required for `Topology<StopOnShutdown<Root>>` to implement `NativeChild<St
 note: required by a bound in `bombay::application::execution::<impl Application<Root, Spaces, Members>>::run_with`
   --> src/application/execution.rs
    |
-   |     pub async fn run_with<Actor, ChildFailures, StagingFailure, Work, WorkFuture>(
+   |     pub async fn run_with<Work, WorkFuture>(
    |                  -------- required by a bound in this associated function
 ...
    |         >: ChildBindingsIn<Actor, Spaces>

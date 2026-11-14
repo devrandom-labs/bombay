@@ -196,9 +196,12 @@ Rust1.99 project checks pass: all five recovery/request-key scenarios, workspace
 formatting and strict remote application_clients Clippy. The complete diff
 retains every original assertion and all other Rust files. Two author source/
 oracle reviews pass; independent review is unclaimed. Full repository gates
-and delivery subsequently passed: PR418 merged as `899af54f` after all eight
-hosted checks and28 local checks passed. The historical opening cause remains
-unknown. The separate main-push run is qualified below.
+and delivery for this diagnostic subsequently passed: PR418 merged as
+`899af54f25b69478c4bc75e3a2811b7df78f7a1d`, with all eight hosted checks and
+28 local checks passing. The delivered tree equals the tested tree. Actual
+Driver 2,048 and four Observe 1,024-run campaigns passed; PR-event Miri was
+skipped. This diagnostic does not establish the historical startup cause.
+The separate main-push opening failure is recorded below.
 
 All three tracked root, protected-consumer and Engine-fuzz locks select the
 published owners without Behavior patches. The root preserves all396 complete
@@ -327,6 +330,572 @@ The revised scope is23 paths,20 test-source paths plus three records, with
 production/API0. Locks and production source did not change in that main
 advance. Fresh metadata, both-profile real overlap controls and full gates on
 the reconciled tree remain required before delivery.
+
+Listener correction delivery: PR419 merged as `eb08c152a7643cbb479dee69d03af963d87b1eb0`
+after all28 local build/flake/content gates and all eight hosted checks passed.
+The delivered tree equals the tested tree. Actual Linux remote debug and release
+each report536 passes, no failures or ignores, including six socket laws and
+the original overlap/refusal witnesses. Driver2,048 and four Observe1,024-run
+campaigns completed; PR-event Miri was skipped. The complete raw job log and
+512 artifact files are retained in the existing handoff. Neither this successful
+fixture correction nor later passing runs establishes the historical refusal's
+cause. No runtime crate publication is established by this merge.
+
+### Runner types, before implementation
+
+DX05 still has a concrete public-interface gap at main `899af54f`: thirteen
+runner methods expose `Actor`, `StagingFailure` and `ChildFailures` as method
+parameters, although the application's existing associated equations determine
+all three. The desired caller syntax is `application.run_with::<_, _>(work)`
+and `application.execute_with::<_, _>(work)`: only the genuinely supplied work
+and its future remain method parameters. Ordinary inferred calls remain valid.
+This is Bombay interface policy derived from the existing type equations, not
+a change to actor semantics or a new interpreter capability.
+
+Before production changes, change only the counter interpreter witness's
+`run_with` call to the two-parameter form. Its existing increment/reply,
+shutdown, complete retirement, fourteen custody fields and independent
+notification checks remain the oracle. The old interface must reject that
+call with E0107, rather than a runtime or ownership failure. Preserve this
+baseline and the original source. This is the first design-stage regression;
+it does not by itself establish the whole DX05 acceptance contract.
+
+Fresh locked/offline all-feature metadata confirms Behavior/Actors0.30.0,
+macros0.16.0, Address0.3.0, Communication0.1.6 and Timers0.2.0, without owner
+patches. The selected Behavior revision is `628649da`; its complete agent
+instructions were read. Behavior owns the unchanged fold/actions contract,
+Actors the existing policies, Address endpoints, Communication admission,
+Timers tokens and Native Observe/task retirement. No owner contract changes. The first actual pinned1.96 counter baseline is\nterminal101: exactly one E0107 at the changed call, five method parameters\nrequired versus two supplied. Its complete log is retained externally.
+
+The ordinary-Rust candidate moves the existing associated equalities to the
+owning inherent implementation: `ComposeApplication` determines actor and
+staging failure; `RetireChildTasks` determines child failures. Retain the
+existing `ChildOccurrenceProduct`, topology, retirement and commit proofs
+needed to form those projections. Keep operational bounds at their current
+method unless the same equation itself requires them. No new bound, trait,
+alias, default, callback, marker, visibility widening or erased type is allowed
+as a reaction to compiler diagnostics. A rejected candidate reopens the model.
+
+Design-stage scope is the owning execution implementation, this PRD, two
+backlog coordination records and the existing counter witness: five paths,
+production delta expected between -150 and +80 lines, public types +0/-0.
+Whole-surface scope subsequently includes execution's seven entrypoints,
+Node's four and HTTP's two, plus necessary focused callers and useful static
+denials. Do not migrate that catalogue until the focused mechanism is proven.
+Work/future/router/binding inputs remain real substitution points. Application
+construction, Node metadata/close and original host-refusal inputs retain their
+availability. Before retaining the batch, prove local non-Send work, transported
+Send denials, host ownership, cancellation and complete failure custody;
+exercise two real policies and two wrapper orders without placeholders.
+
+The aggregate checkpoint starts from unchanged WorkOutcome's six alternatives
+(StagingRejected, Unstarted, Prepared, NotInvoked, Completed, Interrupted),
+ApplicationWorkCustody's five alternatives and WorkPresence's supplied/absent
+sum. Their original inputs, work, output, startup cause and cleanup remain
+needed by the caller. Retirement retains five outer/twenty retained/twenty-four
+logical alternatives and fourteen custody fields. This typing experiment must
+add zero control states, result alternatives, transition branches, runtime
+modules or public spellings. Compare complete pre/post source measurements and
+law/ownership residues before retention; the implementation remains unproven.
+
+The first ordinary-Application candidate passes the exact counter on actual
+Rust1.96 debug/release and Rust1.99 optimized. On1.96 both profiles also pass
+15 topology/policy cases,21 runner cases and42 complete-receiving cases. The
+runner's one unchanged child-only registration has its actual passing parent;
+the compile harness is a separate pending gate. These cases include the real
+pool/supervisor policies, both timer/shutdown wrapper orders, local Rc/borrowed
+work, distinct actor/caller hosts, cold retry, cancellation and exact custody.
+All five method bodies remain byte-identical except deleting the redundant
+internal `run::<...>` arguments. Production is +45/-99/net-54, public types0.
+
+Both compiler probes preserve the original valid Arc control and the two
+E0277 Rc denials; the wrong-root callback still fails E0631. Current1.99's
+eight-case harness has exactly two source-excerpt mismatches: the shorter
+method generic lists and the same Send bound's new layout. Update only those
+two snapshots and the existing inventory's two corresponding hashes. The
+original minimum.patch still applies byte-for-byte and yields all25 expected
+compiler-specific files. The focused scope is consequently eight paths; no
+Rust denial input, assertion, compiler version, harness or fixture list changes.
+No snapshot is accepted as a substitute for rerunning the actual harness.
+
+The reruns now pass: actual1.99 and1.96 optimized counter execution plus all
+eight original compiler fixtures each, with the minimum patch applied by its
+existing Nix owner. Both source inputs match the eight inspected owning Rust/
+test files. The measured aggregate checkpoint is `pass` for these five methods:
+control states6/5/2, retirement5/20/24, fourteen custody fields, branch count,
+module count and every public spelling remain unchanged. No new semantic
+symbol or bound exists. Exact measurements, source/body hashes, both test
+reviews, per-compiler logs and registered outputs are retained in the existing
+restart handoff's runner-types-progress.json. This is focused proof; full
+repository checks and delivery remain pending.
+
+Mechanical extension now applies the same proven equations to the two family,
+four Node and two HTTP methods. Retain real work/future/router and binding
+substitutions at their existing owners; Node metadata, exports and close stay
+in their original unconstrained implementations. Remove the now-repeated
+method topology predicate where the implementation already owns it. Retain
+all original operational bounds and every runtime body. Existing family,
+borrowed-Node and HTTP witnesses will explicitly select only the real method
+parameters; ordinary inferred callers stay unchanged. Old explicit actor/error
+arguments migrate to two work parameters, one router parameter or no method
+parameters as appropriate; no compatibility alias is added.
+
+The family's existing private `execute_with_entities_invocation` seam has the
+same three determined parameters. Remove those there as well, including their
+explicit occurrences in bound Node's no-work call and the owning interface
+unit test. Its six real invocation,
+work, absence, exporting and binding parameters and every runtime operation
+remain unchanged. This is fourteen method signatures, thirteen public; it
+adds no semantic surface or new caller input.
+
+The first broad compiler check identified the unit test's old nine-argument
+call; both compilers report E0107 there, with downstream E0277/E0308 caused by
+the shifted argument positions. Delete only its first three inferred arguments
+under the same already-proven equation. No missing capability, new semantic
+bound or model alternative was found. Retain the exact failed log; rerun the
+existing checks after this mechanical caller correction.
+
+Expected cumulative scope: three production files, three coordination files,
+four existing caller-test files, compiler inventory and necessary diagnostic
+snapshots/patch, at most40 paths; production net between-200 and+100 lines,
+public types+0/-0. The user's standing automatic approval applies. This is a
+mechanical stage with no new abstraction, policy, type, bound or test fixture.
+Preserve every invalid Rust input and named protocol/role denial. A degraded
+diagnostic or a required new semantic symbol reopens the design. Finish both
+compiler/profile controls and the complete repository gates before delivery;
+the full DX01–DX28 checklist remains open.
+
+### Runner diagnostic review and revised hypothesis, before implementation
+
+The preserved full candidate is not accepted. Complete extraction of its
+terminal diagnostic logs finds25 current,18 minimum and four minimum-remote
+fixture mismatches; the earlier summary missed unbracketed fixture labels.
+Thirty-three compiler/fixture pairs differ only in the proven method excerpts
+or capture ordering. Two current pairs also omit one repeated NativeChild
+diagnostic and require separate review. Six topology fixtures on each compiler
+instead change to E0599 because ApplicationTopology was lifted onto the
+inherent implementation. Wrong-role errors lose the owning message and the
+instruction to match each .child role and actor; their new advice is to
+implement ApplicationTopology. That diagnostic regression reopens the design,
+including the earlier five-method retention. Do not bless those snapshots.
+The original candidate, exact stash, complete reconciled patch,47 extracted
+expected/actual pairs and all raw logs remain preserved in the existing handoff.
+
+The required interface law is unchanged: only real Work and Future inputs are
+method parameters, and invalid role/actor declarations must retain the owning
+topology diagnosis. Existing wrong-role and duplicate-role fixtures are the
+negative regression; their expected diagnosis and correction remain unchanged.
+Update only their already-proven method-source spellings before production,
+along with the two focused missing-report snapshots. The existing counter's
+two-argument call remains the positive regression. No invalid Rust input or
+expected domain error is changed. The saved E0599 outputs falsify this law on
+the preceding candidate; the original1.96 E0107 counter falsifies the desired
+syntax on the published interface.
+
+The revised hypothesis uses the existing public failure equation directly.
+Both actual RetireChildTasks implementations return
+Vec<<Root as RetirementSchema>::Failure>; no alternate failure representation
+exists at this seam. Keep ApplicationTopology, ChildOccurrenceProduct,
+RetireChildTasks and interpretation requirements on each method. Only Actor
+and StagingFailure move to the inherent implementation through the existing
+ComposeApplication equations. Replace ChildFailures with the existing public
+Descendants/RetirementSchema failure projection, rather than hoisting topology
+requirements to constrain an implementation parameter. No new alias, trait,
+bound, public type, visibility change or compatibility constructor is allowed.
+The existing execution bodies and original complete custody remain unchanged.
+
+Return production and mechanical callers to delivered eb08c152 before trying
+this hypothesis. Limit the new design experiment to the five ordinary
+Application methods, the existing counter/run_with/topology regressions and
+their necessary excerpt/inventory changes. Node, family and HTTP migration
+stays deferred until this focused law passes both compilers, real policies and
+wrapper orders. Expected production delta is between-150 and+100 lines; public
+types0. Work control states6/5/2 and retirement5/20/24 with14 custody fields
+remain the baseline; no state, branch or runtime operation may be added.
+This is a new candidate, not a pass inferred from the preceding candidate.
+
+The first revised focused run compiles both profiles and passes the debug
+counter. Its debug run_with harness stops at one source-excerpt mismatch:
+root_not_send still emits exactly the original two E0277 errors for Rc<u8>,
+at execute_with and disposal. The retained first-candidate snapshot displayed
+the hoisted Actor: Send line, while the revised candidate restores the original
+method-local multiline Send bound. The actual diagnostic equals the published
+snapshot after only the already-proven shorter execute_with signature is
+substituted. Restore that original excerpt; preserve both errors, positions,
+invalid source and ownership denial. No production edit follows this mismatch.
+Topology and optimized regression execution were not reached by that run.
+
+The corrected focused candidate is now retained for the five ordinary methods.
+Actual1.99 debug/release counter, eight runner fixtures and six topology fixtures
+pass; the original domain diagnosis and correction text are preserved. Actual
+1.96 passes the same counter/topology checks. Original runner/policy controls
+pass on both compilers/profiles: current36 and minimum38 reported passes per
+profile, with one existing controlled child registration each. Its actual parent
+requires the named child exactly once and1passed0ignored. Pool, supervision,
+keyed pool, recursive children and both timer/shutdown orders execute. All42
+original receiving cases additionally pass on each compiler/profile with zero
+failures/ignores, including borrowed Rc outputs, cancellation, real retry,
+distinct hosts and independent complete root/family failure custody.
+
+Each component retains its exact source:722 tracked inputs and694 included Nix
+source files, expected derivation/output, own root and verified contents. Separate
+complete compiler logs are inspected; interleaved same-pname output is not a
+per-compiler count. Trybuild children retain their owning dev profile under
+either parent profile. The current, controls and custody summaries are retained
+under runner-types-method-topology-* in the existing handoff. None proves the
+whole13-method interface or whole DX01–DX28 programme.
+
+Aggregate checkpoint: `pass` for this focused design. Production execution.rs
+2089→2084 lines, +28/-33/net-5;108 production Rust files and77 match-arm tokens
+before/after. The five public method names remain; their method type parameters
+19→4, with no new public type, runtime module, state or branch. WorkOutcome's
+six alternatives, ApplicationWorkCustody's five and WorkPresence's supplied/
+absent product retain every original input, callable, prepared input, startup
+cause, output and independent cleanup. Retirement remains5outer/20retained/
+24logical alternatives and14custody fields. Five runtime bodies are conserved
+apart from one redundant internal generic list. Existing failure vectors retain
+zero or more schema-owned values without a new selection or cardinality policy.
+No arrival history, repeated cause, nested authority, semantic boolean, erased
+type or structural caller path is introduced. Source ownership is cross-checked
+against ComposeApplication, both native retirement implementations, public
+RetirementSchema, module boundaries, Driver ownership and the public capability
+contract. Two author source/ownership and oracle/falsifier reviews pass; no
+independent review is claimed. Exact state/data equations and measurements are
+in runner-types-method-topology-retention.json.
+
+### Mechanical runner extension, before production
+
+Apply only that retained equation to the remaining family, Node and HTTP
+methods and the existing private family invocation. Actor and staging failure
+are derived by ComposeApplication on each existing owning implementation;
+native child failures are the same public descendant-schema failure vector.
+Keep topology, child occurrence, retirement and interpreter predicates on the
+methods, including their original operational bounds. Node exports, metadata
+and close stay in their existing unconstrained owners. Work/Future and Router
+remain real method inputs; no-work operations require no method argument.
+
+The final scope is13 public and one private signatures across the existing
+three production files. Preserve every execution body, original error/input
+product and existing wrapper/interpreter path. Copy only the already-planned
+explicit generic selections in the four owning caller-test files; preserve
+every operation and assertion. Review actual diagnostics on both compilers
+before changing necessary method excerpts or capture hints. Domain correction
+guidance, original rejection causes and all invalid Rust inputs remain mandatory.
+A new semantic type, bound, alias, route, callback, visibility or fixture reopens
+the design instead of becoming migration plumbing.
+
+The cumulative authorized budget remains at most40 paths, production net
+between-200 and+100 lines, public types0. Measure this migration separately from
+the retained focused design, preserve all existing compiler inventory and
+minimum-compilation controls, then complete owning and full repository gates.
+Normal PR review/delivery and actual runtime publication remain separate work.
+
+### Listener ownership postcondition dispute, before test correction
+
+The full runner candidate compiles with actual1.99 and1.96 using
+`cargo check --release --locked --workspace --all-features --all-targets`.
+Minimum retains two unchanged dead_code expectation warnings; this is neither
+warning-clean nor runtime proof. The first current verification expression
+mistakenly added checkPhase to the existing remote-debug owner, whose doCheck
+is disabled. Its actual build phase ran the remote suite. A corrected current
+expression put the intended compilation in buildPhase and passed. Both actual
+commands, source hashes and results are preserved without relabeling that run.
+
+The remote suite instead fails the shared listener test at network.rs85:
+library441 and actor-interface5 pass; application_clients reports55pass/1fail.
+The first held-listener refusal succeeds, but the later bind after dropping the
+reservation returns actual AddrInUse/os48. The exact intervening holder or
+kernel timing is unknown. Do not attribute it to runner types, the earlier
+Linux Node openings or a newly proven transport cause.
+
+The unconditional post-release assertion is disputed with independent native
+evidence before changing it. released_listener.rs, executed through pinned1.99
+in debug and optimized builds, drops the first listener, successfully establishes
+a new listener at that exact address, then applies the unchanged original
+post-release bind assertion while the new owner remains live. Both executions
+exit101 at that assertion with native AddrInUse. This controlled legal
+interleaving falsifies the global availability promise; it does not identify
+the holder in the original failing run. The standard library documents binding,
+the owned local address and socket closure on drop:
+<https://doc.rust-lang.org/std/net/struct.TcpListener.html>.
+The current stable page is1.100; the actual counterexample compiler is pinned1.99.
+Raw logs, binaries, source hashes and the version qualification are in
+listener-release-counterexample.json. No existing test was ignored or blessed.
+
+The fixture law is the address selected while the actual reservation is owned,
+not a global guarantee after its release. Retain the native bind refusal and
+its exact AddrInUse check while the reservation is held. Replace the invalid
+post-release acquisition with equality between the actual reserved SocketAddr
+and the configured TLS owner's first resolved SocketAddr. This adds direct
+namespace/owner proof instead of the former assertion that a successful bind
+reports its requested address. Keep the original unexpected-success cleanup
+and diagnostic. No retry, serialized test runner, shared lock or ignored test
+is allowed. The same shared source still serves all six protocol scopes.
+
+Scope adds one cfg(test) file to the runner candidate,20 paths in total; runner
+production+88/-105/net-17 and all fourteen conserved bodies remain unchanged.
+The actual listener factory, configuration, certificates, public API and
+protocols do not change. Prove the corrected owned-socket law in both profiles,
+then restore the original IPv4 selector in an isolated source and show that
+the unchanged corrected law still rejects its namespace mismatch. Re-run the
+owning real remote witnesses before resuming the remaining runtime/diagnostic
+and full repository gates. This disputes an invalid test postcondition; it
+does not claim to solve every unleased-address or historical startup failure.
+
+#### Corrected listener test verification
+
+Pinned Rust 1.99 debug and optimized runs each pass all six shared listener
+tests and the four original overlap/refusal cases: 10 passed, none failed or
+ignored. The 722 frozen inputs and 694 included source files match, and the
+registered output, deriver, own root and content verification pass. Evidence:
+`runner-types-owned-listener-summary.json`.
+
+Restoring only the original IPv4 selector in isolated Nix source makes both
+library instances of the unchanged corrected test fail in both profiles.
+Each Cargo invocation exits 101 with exactly two failures: the actual IPv6 TLS
+address accepts a listener while its IPv4 reservation remains held. The Nix
+wrapper exits successfully only after checking those intended failures; these
+are negative executions, not positive test passes. Evidence and raw per-profile
+logs: `runner-types-owned-listener-inversion-summary.json`.
+
+Two author reviews accept this test correction. The source review confirms
+that it observes the held native socket and the configured first address
+independently, without promising availability after release. The oracle review
+confirms that exact address equality rejects unrelated occupancy and the
+restored original defect fails for the intended reason in both profiles. No
+independent reviewer is claimed. The earlier legal competing-owner probe
+remains the evidence disputing the unconditional post-release assertion.
+
+This batch changes one test file, +1/-5 lines, and no production contract,
+state, branch, module, public spelling or protocol. The runner candidate still
+has 20 paths, production +88/-105/net -17 and no new public types. The retained
+aggregate control sums, custody products and ownership laws are unchanged;
+the aggregate checkpoint passes for this test-only correction. Full runner
+diagnostics, runtime gates, repository checks, PR delivery and the complete
+DX01–DX28 programme remain open.
+
+### Full runner diagnostic review, before expected-output updates
+
+Both compiler catalogues have now run on the complete mechanical candidate.
+Current Rust 1.99 reports 1,000 passes, seven failed diagnostic parents and six
+existing controlled child registrations. Minimum Rust 1.96 reports 109 passes,
+five failed diagnostic parents and one controlled child registration. The
+minimum remote catalogue reports two passing parents and one failed parent;
+the additional minimum Node parent accepts its borrowed-value positive and
+finds three expected-output mismatches. These are failed gates, not passes.
+
+All 42 expected/actual pairs are extracted and checked against the actual
+build source. Current has 21 pairs, minimum has 14, minimum remote has four
+and minimum Node has three. Ordinary differences are exactly the planned
+method excerpts, native failure-vector excerpts or truthful opaque-capture
+lists. Five current pairs and one minimum pair additionally omit one repeated
+private diagnostic block; in each case the identical error still appears
+elsewhere and every remaining byte differs only by the planned excerpts.
+The useful topology diagnosis, role correction and original invalid programs
+remain. The discarded impl-level model's E0599 replacement is not accepted.
+
+The independent source audit confirms that all 14 operational constraint
+lists match the original after only the recorded composition equality and
+failure-vector substitution. All five owning impl constraint lists also match;
+none gains topology, retirement or interpreter requirements. All 14 execution
+bodies remain conserved. Public method type parameters total 55 before and
+16 after; production is +88/-105/net -17, with no new type, module or state.
+Evidence is in `runner-types-revised-bound-audit.json`, the four diagnostic
+summaries and their complete pairs, and `runner-types-revised-measurements.json`.
+
+Two author reviews accept the necessary expected-text updates: the source
+review preserves every operational constraint and owned result, and the
+oracle review checks complete error blocks, corrections and both compilers.
+No independent reviewer is claimed. Preserve all 25 existing minimum-specific
+expectations and every invalid fixture; replace only the reviewed actual text.
+Regenerate only affected minimum patch sections and verify their complete
+applied bytes before rerunning the owning and full repository gates.
+
+The complete candidate will touch 41 paths, one above the initial estimate of
+40, because all 21 affected diagnostic files retain their original tests. The
+user's standing instruction, “auto approve everything from now on, no need to
+ask me,” authorizes this necessary scope adjustment. It adds no production or
+public surface beyond the recorded runner change. Original inputs and all 25
+minimum expectations are preserved before editing in the existing handoff.
+Full runner retention, PR delivery, publication and DX01–DX28 remain open.
+
+The reviewed text is now applied. Ten minimum patch sections were regenerated;
+the other 15 remain byte-exact. A pinned Nix shell applied all 25 sections to
+an isolated copy with zero fuzz, and every resulting file matches its complete
+expected bytes and manifest hash. All 21 reviewed minimum-compiler outputs
+also match their final shared or compiler-specific text. The 138-case
+inventory, target choices, compiler identities and every invalid Rust input
+remain unchanged. Evidence: `runner-types-revised-minimum-patch-summary.json`.
+Fresh owning and full repository gates are still required.
+
+### Retained runner interface and local verification
+
+The complete thirteen-method change is now locally distilled. Ordinary,
+family, Node and HTTP runners derive Actor and StagingFailure from the existing
+ComposeApplication equations. Native child failures use the existing
+RetirementSchema vector equation. Work, WorkFuture and Router remain genuine
+caller substitutions; no-work methods need no method type arguments. All
+topology, child, interpreter, Send and lifetime obligations remain method-local.
+The rejected impl-level topology gating is not retained.
+
+The corrected normal owning checks pass on Rust 1.99 and 1.96. Current reports
+1,007 passes, zero failures and six existing controlled child registrations,
+with 153 unique compiler fixtures. Minimum reports 114/0/1 and 138 fixtures;
+minimum remote reports 3/0/0 and eleven fixtures. The additional minimum Node
+parent passes its borrowed-value positive and three denials. Its four fixtures
+are part of the current catalogue's 153, not four additional unique cases.
+Trybuild children use their owning development profile. Earlier focused
+debug/optimized custody and policy receipts retain their exact source epochs.
+
+All 28 normal aarch64-darwin checks now build successfully. The authoritative
+`nix flake check` recognizes those same 28 cached outputs and succeeds. Every
+registered output, deriver, own root and actual content hash verifies, as do
+all 694 included source files and 722 frozen working files. Both remote
+profiles pass 536/0/0, including six socket laws and all four original
+overlap/refusal witnesses. Debug remote Clippy and documentation pass. Driver
+law evidence has sixteen named healthy runs and eight intended runtime kills;
+execution law evidence has nine healthy runs, ten kills and two ownership
+denials. Each completed control is checked from its result, not its pre-run
+label. All four owner coverage floors pass. Rendered public documentation
+confirms thirteen method headers with sixteen genuine type parameters and
+does not expose the private invocation.
+
+The aggregate checkpoint is `pass`: WorkOutcome remains six alternatives,
+ApplicationWorkCustody five, and ApplicationWorkPresence supplied/absent.
+Their existing original-input, callable, prepared-input, startup-cause, output
+and independent cleanup custody is unchanged. Retirement remains five outer,
+twenty retained and twenty-four logical alternatives with fourteen custody
+fields. The exact owned values and future decisions remain those of the
+focused retention record; no subordinate alternative or historical state is
+added. All fourteen runtime bodies match delivered eb08c152 after only two
+redundant internal generic lists are removed. Existing native failure vectors
+retain their original cardinality. There is no arrival history, repeated cause,
+nested transition authority, semantic boolean, erased type or structural caller
+path.
+
+Production is +88/-105/net -17 across three files, 3,432 to 3,415 lines.
+The 108 production Rust files and 124 match-arm tokens are unchanged in count;
+no module or public type is added or removed. Thirteen public method names
+remain, with method parameters 55 to 16; private invocation parameters go from
+nine to six. The full test-text delta is +301/-1,351 across 35 paths, including
+six Rust files at +8/-12 and 29 diagnostic/inventory/patch paths. No test case
+is deleted. The earlier +39/-119 descriptive metadata predates the reviewed
+expectation updates; its frozen file hashes remain authoritative. Source and
+oracle reviews cross-check ComposeApplication, both native retirement owners,
+RetirementSchema, module ownership, Driver laws and public capabilities. The
+two recorded author reviews stand; independent review is not claimed.
+
+Evidence is retained in `runner-types-revised-full-summary.json`, its 28 exact
+per-owner logs, the owning/compiler summaries and the bound/body audits in the
+existing handoff. The verified source is axj7yp6i62ka0jhl39ns1fhbbwz8n2l7.
+This result section and the two backlog status lines are the only updates after
+that freeze; production and test bytes remain identical. The delivery commit
+has a separate documentation epoch and still requires its hosted gates.
+Other platforms and actual Miri execution are not credited by this Darwin
+gate. PR delivery, runtime registry publication, remaining acceptance/costs
+and the full DX01–DX28 programme remain open.
+
+### Main integration, before verification
+
+While PR421's original `dcde8e80` CI is running, main advances from `eb08c152`
+to `6ee3e676` through PR420. Its merged tree equals the tested `6df33c41`
+tree. The nine upstream paths add public Client schedule tests, persisted
+cases, actual Node refusal diagnostics, the corresponding hosted campaign,
+and separate SDK shutdown logs in the remote Nix check. No upstream production,
+dependency, public interface or compiler expectation changes. Preserve that
+complete contribution; its old-head CI does not certify this combined tree.
+
+The integration law is source conservation, a delivery policy rather than a
+new actor law. Merge main normally into the existing feature branch, retaining
+both runner commits. A pre-edit merge-tree probe reports no conflict and tree
+`3e76e01cd21d2b78c21ce5d6e12524ff2d6a93be` before this record. All three
+runner production files must remain byte-exact to `dcde8e80`; all eight
+upstream-only paths must remain byte-exact to main. The shared backlog status
+must preserve both contributions. No caller, assertion, diagnostic, effect,
+operational bound, policy or test selection may change to resolve integration.
+
+Scope remains 41 owned paths against current main, plus nine imported paths
+against the previous base, overlapping only backlog status: 49 combined paths.
+The standing automatic approval covers this integration. Owned production
+remains +88/-105/net -17, with zero public types added or removed. The existing
+control sums remain 6/5/2, retirement 5/20/24 and fourteen custody fields;
+production modules, branches and public spellings remain unchanged. Every
+surviving alternative keeps the same original input, cause, callable, output
+or cleanup needed by the caller. Source conservation must confirm no arrival
+history, duplicate cause, false cardinality or nested transition authority.
+
+The already completed Darwin, compiler, package and hosted profile receipts
+retain their original source epochs. Verify the combined source through the
+normal pinned Nix gate, including the imported remote campaigns and their
+actual execution evidence, before updating PR421 and requiring fresh hosted
+CI. Do not infer a combined-tree pass, merge, publication or full DX01–DX28
+acceptance from either parent alone.
+
+### Main integration results
+
+Clean `6ce3964f` passes all 28 aarch64-darwin checks and the authoritative
+`nix flake check`. Registered outputs, derivers, 28 own roots, actual contents,
+695 included source files and 723 tracked inputs verify. The original process
+handles expired during the pause; complete build records and roots survive,
+and fresh authoritative flake and content verification both exit zero. Complete
+per-owner logs are retained. Rust1.99 reports 1,010 passes and six controlled
+child registrations, with 153 unique compiler fixtures; Rust1.96 reports
+114/0/1 with 138 fixtures, and minimum remote 3/0/0 with eleven fixtures.
+The two fixtures interrupted by slow-parent notices have their subsequent
+actual `ok` results; a notice alone is not credited as completion.
+
+Both remote profiles pass 539/0/0. The imported Client witness completes all
+32 finite words and 258 generated/saved invocations in the debug transcript.
+Driver evidence checks sixteen actual healthy results and eight intended
+kills; execution evidence checks nine healthy results, ten kills and two
+moved-value denials. All four coverage JSON floors pass. Observe's 28 models,
+Entity's six, the panic policy controls, protected child controls and executing
+remote-example parents retain their qualified results. Rendered documentation
+still shows thirteen public methods with sixteen real type parameters and no
+private invocation. Other platforms and actual Miri execution remain unclaimed.
+
+Actual integrated-source Engine0.3.0/macros0.2.0/runtime0.2.0 archives verify on
+Rust1.99 and1.96 and are byte-identical across compilers: 28/7/540 files,
+575 total, VCS `6ce3964f`. All 113 shipped src files, including source-local
+tests, match Git. Only the imported test/seed files, revision metadata and two
+staged Native checksum values differ from the previous archives; production,
+normalized manifests, other lock bytes and the packaged guide stay exact.
+The current package wrapper's exit status expired, but all three verification
+completions and subsequent archive copies survive; the minimum wrapper has an
+observed zero exit status. No package or source failure is inferred from that
+lost process handle.
+
+Both exact extracted-package consumers exit zero. Each compiler/profile passes
+80 owning Native cases with one controlled child registration and its actual
+executing parent, sixteen compiler fixtures and the separate inferred counter.
+Both compilers also check eight examples/all-targets, pass three renamed cases,
+run six real local examples and pass ten packaged doctests with no ignores.
+All 575 canonical archive files, 538 current or 535 minimum native-copy files,
+28 caller Rust files, two caller documents and prepared locks remain exact.
+Only the established manifest adapters and three shipped minimum-compiler
+diagnostics differ by design. HTTP/remote examples compile; real Node, family
+and HTTP lifecycle execution belongs to the owning Native targets. The minimum
+example check retains its existing unfulfilled dead-code expectation warning;
+no source suppression or minimum warning-free claim is made.
+
+Source and oracle reviews accept the unchanged production/ownership model and
+the exact result, source, fixture and failure controls. Independence is not
+claimed. The aggregate checkpoint remains `pass`: control sums 6/5/2,
+retirement 5/20/24, fourteen custody fields, all branches, production modules,
+public spellings and their required current values are unchanged. No arrival
+history, repeated cause, false cardinality or nested authority is introduced.
+Final scope remains 41 owned paths, production +88/-105/net -17, public types
++0/-0; the nine imported paths are separately preserved. Receipts are
+`runner-types-main-full-summary.json`, `runner-types-main-package-results.json`
+and both `runner-types-main-consumer-*-summary.json` in the existing handoff.
+
+Original PR421 CI also passes all eight checks on its earlier `dcde8e80`
+epoch, with actual Driver2048 and four Observe1024 campaigns and 505 artifact
+file hashes checked. That is not combined-tree CI. Only this result section
+and the two backlog lines change after the integrated verification freeze;
+all production, tests and configuration remain identical. The final evidence
+commit requires fresh exact-head hosted CI before normal PR merge. Runtime
+registry publication, remaining acceptance/costs and full DX01–DX28 stay open.
 
 ## Verification and remaining work
 

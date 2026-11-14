@@ -26,7 +26,7 @@ fn inferred_counter_returns_reply_and_complete_retirement() {
                 Counter::new().stop_on_shutdown(),
                 counter_application::Topology::new(),
             )
-            .run_with(|application| async move {
+            .run_with::<_, _>(|application| async move {
                 let mut caller = application
                     .client::<CounterValue>()
                     .expect("the counter customer is established");
