@@ -7,6 +7,27 @@ full R18, AUTH1/NET1, public Node withdrawal and example distillation remain ope
 No shipping Rust, public type, dependency or example changes. Required broad
 checks, final CI/review and reviewed delivery remain pending.
 
+**Current-main integration:** all28 native Nix checks passed at `c9dcf669`,
+including optimized workspace1011/0/6 and remote540/0/0 in both profiles.
+Those raw gate results remain bound to that source. Main then advanced through
+PR421/`2e328cd4` after all eight CI checks passed. Merge `d0fdc3a7` preserves
+both histories. Locks, selected Behavior instructions, Export/request/provider,
+Counter/Creator fixtures and this test's retainedbf85 source remain unchanged.
+
+Fresh source review verifies that the runner refactor derives Actor and staging
+types from existing composition and child failures from the existing vector of
+schema failures. It changes no Some(binding)/Work/cleanup kernel behavior or
+native custody product. This test already uses fully inferred ordinary syntax;
+no caller, production or test edit is selected. Prior control kills retain their
+original epochs; fresh merged-tree focused debug/optimized and normal gates
+remain required. Integration evidence is retained separately under common Git
+`session-archives/2026-11-14/export-retirement/integration/`.
+
+The merged-tree two-test debug cohort passes2/0/0 (440 filtered),0.02s after
+39.76s compilation with unchanged test source. Optimized and full integrated
+verification remain pending; old c9 results are not relabeled as merged-tree
+results.
+
 At main `6ee3e676`, actor retirement deliberately leaves its export/cache available
 until Application cleanup. Node has no public operation for removing one live
 export. Actor retirement, declaration withdrawal and shared Session close remain
