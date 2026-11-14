@@ -1,5 +1,81 @@
 # Static remote actors and typed admission
 
+## Export withdrawal isolation — prerequisites and change record (2026-11-14)
+
+R18 remains open. At main `6ee3e676` (local delivery reconciliation
+`a6cd0c57`), stopping a target actor deliberately leaves its declaration/cache
+available until Application cleanup. Node has no public operation for withdrawing
+one live export. Actor retirement, export withdrawal and shared Session close
+are different operations; the existing cached-reply regression remains binding.
+
+Fresh source/API/test/document review selects registry Behavior/Actors0.30.0
+at `628649da`, Macros0.16.0 at `55dbac2d`, Address0.3.0 at `9f058dc0`,
+Communication0.1.6 at `963067e0`, Timers0.2.0 at `9369d1f6`, workspace
+Engine0.3.0 and local Observe. Native owners remain bombay-zenoh1.10.10 and
+config1.10.2. No patches or dependency changes are selected. Cargo.lock is
+`9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394`;
+flake.lock is
+`13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`.
+The fresh owner/coverage/model reports and lock copies are retained under common
+Git `session-archives/2026-11-14/export-retirement/prerequisites/`.
+
+Behavior owns pure Actions; Actors owns shutdown policy; Address and
+Communication own exact target leases and mailbox custody; Observe owns
+completion publication; Timers and Engine need no change. Bombay Export owns
+its declaration, bounded ingress, producers and original request facts. Node
+alone owns shared Session close. A target report is not export withdrawal.
+The locked SDK undeclaration future calls its synchronous withdrawal and returns
+Ready; do not invent a native Pending boundary or claim callback quiescence
+from its returned Ok alone.
+
+The first accepted experiment is a real **private owner** isolation test, using
+existing concrete Exports, the actual Application startup/cleanup publication
+and shared Session. It cancels one serving operation at an observed provider
+wait, then awaits that export's existing withdrawal while another export keeps
+serving. Use two distinct Counter children from the existing Creator, with the
+first IncrementAndReply admitted and its real protection producer held Pending.
+Preserve canceled request originals, acquired reply/encoding, producer disposal
+and native query closure. Independent local Reads must observe first Counter1
+and sibling Counter1 after the sibling's real remote increment. Obtain that
+actor trace and the sibling remote reply after first withdrawal and before
+final Application cleanup. Acquire final original roots/children and retain
+their actual Stopped/OwnerCancelled classifications; do not stop additional
+actors to manufacture a graceful result.
+
+Cancellation here surrenders that serving future; it is not a completed provider,
+actor retirement or graceful business completion. Do not publish a fixture
+signal as Application cleanup. Reuse the existing pure Creator/Counter/Ledger
+fixtures if needed; keep all orchestration inside the owning crate's tests.
+No example application, production API, task, observation cell or runtime is
+added. Existing test visibility permits observing producer disposal, ended loans
+through Request extraction, native query closure and actual withdrawal. It does
+not expose the private request completion tag or native callback/counting state;
+do not widen production access or claim a permit baseline. This does not itself
+prove a public Node withdrawal capability, retirement of the target's local
+endpoint, every-boundary resource recovery or reconnect.
+
+Before execution, review both the invariant/independent outcome and the
+counterexamples/nonvacuity. Run the healthy witness in debug and optimized
+builds. A real shared-Session close injected in the test-owned first-withdrawal
+orchestration must fail the sibling reply/effect oracle after cleanup. Retain an
+actual native Get Err rather than panicking during submission; finish Application
+cleanup even on that adverse path. This is an injected ownership fault, not a
+production-source inversion: the current Export holds no Session close authority.
+Restore the exact test source and repeat both healthy profiles. Missing setup,
+compilation failure or watchdog expiry does not count. A passing original design establishes
+the existing isolation law, not a defect repair or justification for new APIs.
+
+Expected test paths: application/node/tests/retirement.rs and, if its ownership
+is clearer, a child retirement module. Expected tests +250..450/-0; production
++0/-0/net0; public types +0/-0. Existing PRD/status/acceptance records carry
+prerequisites and results. The pre-test checkpoint has no source change:
+production +0/-0/net0; tests +0/-0/net0; public types +0/-0. The existing local
+PR420 delivery record is four Markdown paths +110/-13/net97, separately scoped.
+No semantic runtime state, subordinate result, transition branch, module or
+public spelling changes at this design checkpoint. No macro or generic public
+interface is selected; ordinary owned values and lexical borrows are attempted
+first. Full R18, R24, AUTH1/NET1 and final example distillation remain open.
+
 ## Incoming campaign qualification — 2026-11-12
 
 The [owning delivery record](network-schedule.md#delivery-of-the-bounded-campaign--2026-11-12)

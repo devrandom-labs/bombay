@@ -1,5 +1,11 @@
 # Backlog status and dependencies
 
+R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
+has fresh owner prerequisites and a test-only change record. Independent native
+withdrawal is distinct from actor retirement and retained cached replies. The
+private owner regression/inversion comes before any public API selection;
+no runtime change or new R18 acceptance is claimed by this preparation.
+
 Published Behavior/Actors0.30 qualification merged through PR413/814c96d1
 after all six checks and independent reviews passed. The
 [owning record](../prds/static-remote-actors.md#delivery-of-behavior-qualification--2026-11-11)
