@@ -28,6 +28,53 @@ Zenoh stays internal: configuration conversion, sessions and queries are private
 public foreign causes use the standard error contract. Final interface acceptance
 still requires the selected source, consumer and delivery gates.
 
+## Current release gate: incoming schedule watchdog
+
+Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
+owner:443 library cases pass and
+`remote::export::query::schedule::generated_delivery_orders_preserve_native_admission`
+hits its unchanged10-second watchdog at schedule.rs:403. The failure is not
+classified as resource exhaustion, a timeout setting defect or a flaky-test
+exemption. The later Driver/Observe fuzz steps are skipped. Existing protected
+allocation guard failures in the raw log are intentional separate controls.
+Full raw log SHA256 is
+`9bb28ee0eb1e3f10d64d9b6e0837231fc50368a216b00bb5eb23804165a45d84`.
+
+Proptest persists seed
+`8783b4ac29d10abeccd1b945242a3a19af43fde799162d77bdcdb0a8982e56dd`
+and reports `[Expiring, Initial, Repeat, Repeat, Fresh, Revoked, Repeat,
+ConstructorExpired]`. Existing trace lines print only after successful cleanup;
+the last such line does not identify the original stalled input or stage.
+The reported minimized word and seed are retained as failure evidence, not
+claimed as a deterministic reproducer. The original run reports246 invocations
+and245 completions. Dedicated bounded incoming/Client/TLS profiles passed at
+190b; that does not explain or override this failed full-suite gate.
+
+The current law is the existing derived interpreter/fixture contract: this
+finite closed Application must retain original request/reply/refusal ownership
+and complete its actual joined native cleanup. A watchdog supplies no success
+or custody proof. No broader actor fairness guarantee or new behavior algebra
+is selected. Existing Export request custody, Application work/native reports,
+Driver and observer owners remain the investigation targets; the cause is
+unproven. Preserve the watchdog, every assertion, standard failure persistence
+and every original failed log. A later passing retry alone will not close it.
+
+Before any production edit, add this actual seed to the existing owned corpus.
+This batch touches the corpus and this PRD; seven existing paths differ from
+main across the release task. Production lines/public types:+0/-0. No fixture
+oracle, supported feature selection or timeout changes. Review1 checks that the
+saved input uses the existing bounded delivery protocol; review2 checks that
+seed replay cannot be mistaken for deterministic schedule coverage or a fix.
+Both reviews retain the original domain oracle unchanged. Focused source-local
+reproduction and progress evidence must establish the stalled phase before a
+production candidate is selected.
+
+Normal release branch updates preserve Joel's existing auto-merge request and
+require fresh exact-head checks. Earlier679e archive/consumer and190b profile
+receipts retain their source limits. Current publication remains unverified;
+no release notice or full DX completion is claimed. This gate must be resolved
+before treating the current release as verified.
+
 ## Current delivery
 
 Runner-type inference and the listener ownership correction merged through
