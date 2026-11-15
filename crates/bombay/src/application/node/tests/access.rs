@@ -4,7 +4,7 @@ use super::custody::completed_actor;
 use super::permissions::{LocalAuthorityRefusal, local_current};
 use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadRequest, ReadRequestRef,
-    VerificationError, configuration, limits, listener_address, metadata, recorded,
+    VerificationError, configuration, limits, metadata, recorded,
 };
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
@@ -17,11 +17,15 @@ use crate::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment}
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::cell::{Cell, RefCell};
+use std::io::ErrorKind;
+use std::net::TcpListener;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
+use tokio::net::lookup_host;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
+use zenoh::Session;
 use zenoh::query::ConsolidationMode;
 use zenoh_config::{Permission, WhatAmI};
 
@@ -63,6 +67,84 @@ async fn native_deny_precedes_the_absent_application_grant() {
     crossing(Permission::Deny, None).await;
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn router_owns_its_listener() {
+    let (router, address) = open_router(Permission::Allow).await;
+    let [configured]: [String; 1] = router
+        .config()
+        .get_typed("listen/endpoints")
+        .expect("the controlled Router requests exactly one TLS listener");
+    let endpoint = address
+        .strip_prefix("tls/")
+        .expect("the controlled Router listens through TLS");
+    let selected = lookup_host(endpoint)
+        .await
+        .expect("the configured localhost resolves")
+        .next()
+        .expect("the native TLS owner selects the first resolved address");
+    let competing = TcpListener::bind(selected);
+    let refusal = competing.expect_err("the same live Router still owns its selected socket");
+    let closed = router.close().await;
+    closed.expect("the controlled Router closes its listener");
+
+    assert_eq!(configured, "tls/localhost:0");
+    assert_ne!(selected.port(), 0);
+    assert_eq!(refusal.kind(), ErrorKind::AddrInUse);
+}
+
+async fn open_router(permission: Permission) -> (Session, String) {
+    let mut router_network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+    let NetworkLayout::Peer {
+        listen: Some(endpoint),
+        ..
+    } = &mut router_network.layout
+    else {
+        panic!("the controlled infrastructure has one listening direction");
+    };
+    endpoint.certificate = CredentialSource::File(certificates.join("router-certificate.pem"));
+    endpoint.private_key = CredentialSource::File(certificates.join("router-private-key.pem"));
+    let mut router_config = router_network.to_configuration().unwrap();
+    router_config.set_mode(Some(WhatAmI::Router)).unwrap();
+    router_config
+        .insert_json5(
+            "access_control",
+            &json!({
+                "enabled": true,
+                "default_permission": "allow",
+                "rules": [{
+                    "id": "protected-query",
+                    "key_exprs": [PROTECTED],
+                    "messages": ["query"],
+                    "flows": ["ingress"],
+                    "permission": permission,
+                }],
+                "subjects": [{
+                    "id": "authenticated-caller",
+                    "cert_common_names": ["BombayCandidate-caller"],
+                    "link_protocols": ["tls"],
+                }],
+                "policies": [{
+                    "rules": ["protected-query"],
+                    "subjects": ["authenticated-caller"],
+                }],
+            })
+            .to_string(),
+        )
+        .unwrap();
+    let router = zenoh::open(router_config)
+        .await
+        .expect("the real TLS Router opens");
+    let [locator]: [_; 1] = router
+        .info()
+        .locators()
+        .await
+        .try_into()
+        .expect("the live Router owns exactly one TLS listener");
+    (router, locator.to_string())
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "one finite secure crossing acquires complete connection, query, actor and retirement facts before independent policy oracles"
@@ -71,52 +153,7 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
     timeout(
         Duration::from_secs(15),
         Box::pin(async {
-            let address = listener_address();
-            let mut router_network = configuration(&address, &EndpointRole::Receiver);
-            let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-            let NetworkLayout::Peer {
-                listen: Some(endpoint),
-                ..
-            } = &mut router_network.layout
-            else {
-                panic!("the controlled infrastructure has one listening direction");
-            };
-            endpoint.certificate =
-                CredentialSource::File(certificates.join("router-certificate.pem"));
-            endpoint.private_key =
-                CredentialSource::File(certificates.join("router-private-key.pem"));
-            let mut router_config = router_network.to_configuration().unwrap();
-            router_config.set_mode(Some(WhatAmI::Router)).unwrap();
-            router_config
-                .insert_json5(
-                    "access_control",
-                    &json!({
-                        "enabled": true,
-                        "default_permission": "allow",
-                        "rules": [{
-                            "id": "protected-query",
-                            "key_exprs": [PROTECTED],
-                            "messages": ["query"],
-                            "flows": ["ingress"],
-                            "permission": permission,
-                        }],
-                        "subjects": [{
-                            "id": "authenticated-caller",
-                            "cert_common_names": ["BombayCandidate-caller"],
-                            "link_protocols": ["tls"],
-                        }],
-                        "policies": [{
-                            "rules": ["protected-query"],
-                            "subjects": ["authenticated-caller"],
-                        }],
-                    })
-                    .to_string(),
-                )
-                .unwrap();
-            let router = zenoh::open(router_config)
-                .await
-                .expect("the real TLS Router opens");
+            let (router, address) = open_router(permission).await;
             let mut receiving = configuration(&address, &EndpointRole::Receiver);
             let NetworkLayout::Peer {
                 listen: Some(connect),
