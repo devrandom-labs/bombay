@@ -389,6 +389,65 @@ The closed disposable target was removed after source/result audit and empty
 lsof; logs, source inputs and executable hashes remain. Final committed-source
 CI, local Nix and release-package evidence must still be refreshed before merge.
 
+#### Native Router listener custody
+
+Finalfa1738e9 hosted43743557660/job132901790023 fails coverage before the
+application-policy assertions:449 library cases pass and the real TLS Router
+bind returns EADDRINUSE/os98 on [::1]:40679 in the allow/grant case. Raw log SHA
+41bfe99e979f3c509e886d8faae74ec56f7fb110f4086997167cf6488e674f2f.
+This is distinct from99's unknown receiver startup cause and earlier watchdogs.
+Driver/Observe fuzz was skipped; successful fa callers do not override coverage.
+
+Fixture law (deliberate test policy): the native TLS listener must select and
+retain its own port. A released TCP probe supplies no exclusive custody.
+The owning access fixture now requests tls/localhost:0 and reads the one actual
+SessionInfo locator from that live Router for both original connections. Pinned
+TLS1.10.4 supports this allocation; SessionInfo1.10.10 reports the chosen port.
+All four original permission/grant crossings, their complete bodies after setup
+extraction, policy oracles,15-second watchdog and retirement are conserved.
+No retry, custom allocator, serial execution or public SDK access is introduced.
+
+Pre-edit source and law reviews compared the supported SDK capabilities and
+existing normal/dev dependency pattern. The dev-dependency candidate grows the
+isolated default consumer129→335 packages and is rejected. Enable unstable on
+the existing OPTIONAL private TLS dependency instead: default remains129;
+remote355→358 adds toml0.9.12+spec-1.1.0,toml_datetime0.7.5+spec-1.1.0 and
+winnow0.7.15, with compatible MSRVs and MIT/Apache2 licenses. Existing versions
+remain pinned. This feature also enables SDK protocol/configuration alternatives,
+including BlockFirst; it is not solely a getter switch. Fresh complete remote
+and package qualification is required for this explicit opt-in dependency cost.
+
+The original allocation, under the same enabled feature graph, fails the new
+router_owns_its_listener regression for the intended assertion: accepted request
+is tls/localhost:62882 rather than0; all original four crossings pass. Raw log
+SHA6a949af4edccde8a56faf9fce423b96b9fc69a13024bc7c7554263a4b998db9d.
+This actual pre-edit run is the old-probe falsifier. Earlier compile errors
+(config availability and get_json versus supported get_typed) receive no semantic
+credit. The corrected current1.99 build passes all five cases in both profiles,
+strict lib/tests Clippy and the default library check. Its43 default compiler
+artifacts contain no transport. All727 inputs stay exact during verification;
+only access.rs differs between the actual failing and passing input snapshots.
+Use existing Nix-style builds without debugger symbols; assertions remain enabled.
+
+Two author reviews check the law and counterexamples: competing bind alone would
+pass the old design, so observe accepted port0 configuration as well as the live
+nonzero locator, refused bind and awaited close. The aggregate checkpoint passes:
+no production state, subordinate sum/result, transition authority, module or public
+spelling changes; retained Session owns the listener and its locator supplies
+both connections. No arrival-history state, duplicated cause, inferred cardinality,
+semantic boolean or structural application path is added. Locked Behavior628649da,
+Native ownership instructions, existing crossings and SDK listener sources were
+cross-checked. Production Rust/public types +0/-0; test source +84/-47. Local
+configuration is one manifest line plus three lock entries; cumulative release
+scope18 paths under standing user auto-approval. Detailed source, feature-cost,
+review, failure and result receipts use router-listener-* in the existing handoff.
+
+The25GiB symbol cache was removed after terminal audit and empty lsof, preserving
+all exact inputs, raw logs and executable hashes. Clean the smaller completed
+cache on the same terms. Committed final Nix/CI, minimum compiler, packages and
+callers must still qualify before PR381 merge/publication. FullDX01–DX28 remains
+active; this focused correction does not establish final release acceptance.
+
 ## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
