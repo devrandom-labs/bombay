@@ -2,16 +2,14 @@
 
 ## Public export withdrawal — prerequisites (2026-11-14)
 
-**State: distilled (public withdrawal slice).** PR422's private isolation witness and PR423's delivery
-reconciliation are merged. The initial baseline is `011e7ad0`; PR423 passed all
-eight checks and its reviewed, actual CI and merged trees match. Its clean
-merged worktree is removed. The model and pre-edit record below select the
-public callable. Scoped public native, ownership execution and restored fault
-controls pass in both profiles below. Current main5070f561 is now integrated at
-f0fbb717. Integrated native gates, workspace Nextest and three scoped code
-audits pass. The applied guides also pass review; this public withdrawal slice
-is locally distilled. Hosted delivery and both Linux watchdog causes remain
-open; PR381's release owner retains its automatic-merge hold.
+**State: merged (public withdrawal slice).** [PR425](https://github.com/devrandom-labs/bombay/pull/425)
+merged as `d41c3739` after all eight CI checks, three scoped code audits and
+the final evidence reviews passed. Reviewed, actual CI and delivered trees
+match. The clean merged worktree and branch are removed. Earlier private
+isolation and prerequisite records retain their exact source epochs below.
+Complete R18, AUTH1/NET1 and final example distillation remain open. Both
+historical Linux watchdog causes remain unknown; PR381's independent release
+hold is preserved.
 
 Fresh archive checksums and packaged VCS metadata verify Behavior/Actors0.30.0
 at `628649da`, Macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0 and
@@ -66,6 +64,47 @@ in-memory-to-retained corpus equality is not claimed or attributed a cause.
 Prerequisite checkpoint against main011e7ad0: two existing Markdown files;
 production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
 Records +72/-1/net71; no untracked files. `git diff --check` passes.
+
+### Public export withdrawal delivery — 2026-11-15
+
+PR425 merged normally at11:48:29 UTC as
+`d41c37397edad75f292551ee9471b2d16f7e86dd`. Submitted head `b7dee1b0`, actual
+CI checkout `adc47f51` and delivered merge share tree
+`e036912a4cc7c749f187276ec6b80955f21c6f2c`. Fresh main and merge-parent checks
+confirm that boundary. No admin bypass or dependency update was used.
+
+Linux CI43696445411 passes the full Nix check, including all28 Bombay owners
+within its636-check graph. Both remote profiles pass549 cases, including450
+library cases and the actual public Node withdrawal/cached-target/startup laws.
+Optimized workspace tests pass1020 across123 summaries, with six unchanged
+parent-executed child registrations. Rust1.96 retains its selected114-case
+compiler scope and separate four-case/twelve-fixture public remote consumer;
+native withdrawal execution on1.96 is not claimed. Earlier local qualification
+and intended inversions keep their own exact source epochs.
+
+Each profile completes incoming180 finite orders plus257/257 generated/saved
+invocations, and Client32 finite words plus258/258 invocations. TLS matrices
+pass80 role children plus their parent, with separate2/2/1 ancillary cases.
+Driver2048 and four Observe1024 AddressSanitizer campaigns complete on the
+recorded nightly toolchain; optional Miri is skipped. Eight downloaded artifact
+digests match GitHub and ZIP integrity passes. Current Observe ops retention is
+77 files/1201 bytes against final78/1218; its cause is unknown. Other compared
+corpus counts match, but no manifest proves full corpus content identity.
+Bounded execution is distinct from complete retention and source reproduction;
+the fuzz artifacts have environment records, without a resolved-lock manifest.
+This ops discrepancy is separate from PR423's older promotion-operations case.
+
+Raw logs, source/checkout manifests, all eight ZIPs, reviews and matching-tree
+receipts are retained under common Git
+`session-archives/2026-11-14/public-withdrawal/hosted/pr425/`. The clean owned
+worktree, local/remote branch and exact recovery stash are removed; user and
+DevX worktrees remain in place. Communication0.1.7 is separately published;
+this delivered tree still selects0.1.6 and makes no watchdog-fix, new Bombay
+publication, callback-quiescence, resource-baseline or complete R18 claim.
+
+Delivery-record reconciliation touches three existing Markdown files:
+production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
+Records +62/-25/net37; no untracked project source files.
 
 ### Public withdrawal — model and pre-edit record (2026-11-15)
 
