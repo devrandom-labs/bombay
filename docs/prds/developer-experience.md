@@ -448,6 +448,18 @@ cache on the same terms. Committed final Nix/CI, minimum compiler, packages and
 callers must still qualify before PR381 merge/publication. FullDX01–DX28 remains
 active; this focused correction does not establish final release acceptance.
 
+Final26a98bf9 Nix qualification stops in the protected-counter owner before test
+execution: its independent vendor lock lacks the newly enabled toml dependency.
+Preserve that actual failed gate and refresh the existing transport-custody lock
+through pinned Cargo, retaining every existing version and both feature profiles.
+The Engine fuzz lock has no transport/runtime dependency and is unaffected.
+No Rust source, oracle, public type or scope expansion is needed; that fixture
+lock was already one of the18 release paths. Require fresh committed gates.
+Both default and protected-transport locked metadata checks pass. That smaller
+lock adds five entries, all equal to root-selected versions/checksums, including
+serde_spanned1.1.1 and toml_writer1.1.2+spec-1.1.0 already present at root.
+Every prior fixture version/checksum remains unchanged; full owner still pending.
+
 ## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
