@@ -251,6 +251,7 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
     }
 
     /// Retire the captured incarnation through its existing processing fence.
+    /// Completion is published after the captured incarnation's routing entry is removed.
     /// Independent observers share completion; cancelling a wait does not cancel retirement.
     /// The mode reports graceful fencing or its original forced reason, not error-free cleanup.
     /// Complete native and callback failures remain in the application family result.
