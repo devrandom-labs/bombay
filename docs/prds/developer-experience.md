@@ -137,6 +137,129 @@ environment. This expands Native scope12→13 existing paths, with no fixture
 code/assertion/manifest, native production or API change. Re-run this failed
 Nix owner before resuming the full gate; retain all earlier failed evidence.
 
+## Pressure test investigation
+
+Frozen e2729d6a passes actual joint locked/all-feature package verification on
+pinned Rust1.99 and1.96. Its three archives are byte-identical across compilers:
+576 files,114 production Rust source files, exact original manifests and clean
+e272 VCS. Both separate585-input archive caller cohorts also pass:87 native
+cases and16 compiler fixtures per profile, Entity26 per profile, renamed3,
+doctests10, eight example packages built and six local examples executed.
+The controlled child registration earns no extra positive credit. All original
+caller sources, three certificate inputs and the three already-shipped minimum
+diagnostic variants remain exact. Compiler selections have identical package,
+feature and dependency edges after directory normalization. These results do
+not exercise the remote example's process tests or certify full release gates.
+
+The first current archive caller trial was intentionally interrupted130 before
+ENOSPC as its ordinary debug-symbol cache grew. Preserve that trial's logs.
+After terminal status and empty lsof, removing only its disposable compiled
+profiles returns19,985,582,724 logical bytes;585 inputs,576 canonical archive
+files and every original log remain. Both successful trials use the existing
+flake commonArgs DEV_DEBUG=0,TEST_DEBUG=0,INCREMENTAL=0 settings. Assertions,
+timeouts and compiler-specific expected diagnostics are unchanged. An initial
+receipt parser stopped because four standard trybuild compile-fail rows omit
+optional labels; inspecting the actual rows and unchanged compile_fail calls
+corrects the parser without changing tests or accepting an unmatched verdict.
+Receipts are native-communication017-package-results.json and
+native-communication017-consumer-{current,minimum}-result.json in the existing
+restart handoff. All724 repository inputs remain exact through those epochs.
+
+The resumed full local Nix gate at that same e272 tree exits1. Sixteen of28
+evaluated outputs are registered, including both complete remote owners
+(444 library/59 Client cases each), actual1.96 compiler/UI (138 registrations),
+Driver law inversions and the corrected protected-counter owner. The actual
+failure is examples/remote-counter's
+`pressure::queued_requests_resume_after_held_reply_and_borrowed_wait`: its
+original40-second complete-trace deadline expires at pressure.rs972. Seven
+siblings pass; four child registrations are exercised by exact-named parents.
+The failed source is byte-identical to main5070, SHA256
+`c412ba189b67d147f544e3e3de8763e9af11522b74b5919133093b64de84f272`.
+Failed-owner raw15253bytes/SHA256
+`0adfdd6ae6ece2150ecd0f7eca7e85084e9357e46774e36a12a19f00b96483e5`
+and full gate log/exit are retained in native-communication017-remote-counter-
+failure.json. The awaited stage is unlogged; existing private-directory cleanup
+removes both child streams before the outer panic. Cause is unproved. Hosted
+CI remains separate; release381 stays held.
+
+Before test edits, select only an observation batch in the existing parent.
+The derived test law is that a failed finite process trace must identify the
+actual awaited operation and preserve bounded child diagnostics before their
+existing removal. This changes neither actor semantics nor its success oracle.
+Reuse the existing Program kill-and-reap guards, bounded_output reader, control
+stream, typed Control alternatives and original source/retirement owners.
+Add parent checkpoints around its actual binding/control/exit awaits and read
+the two bounded child streams only after an unsuccessful trace returns and
+before the existing directory.close. No child startup syntax or source changes
+are selected. Preserve every original control operation, assertion, cleanup and
+deadline, including the10-second actor deadline required by the existing
+native-admission inverse (static-remote-actors PRD, public pressure checkpoint).
+
+Expected cumulative scope13→14 existing paths; only pressure.rs is added to
+the current scope. Production +0/-0/net0; public types +0/-0; test growth is
+limited to direct observations and bounded failure diagnostics, with no new
+function, type, bound, policy, module or actor transition. Review1 maps each
+checkpoint to its actual await and places diagnostic reads after child guard
+cleanup and before path removal. Review2 checks that returned is not mistaken
+for success, no later operation is skipped on rejection, printed child output
+earns no additional successful-case credit, and timing perturbation or a green
+replay cannot establish historical causation. Both reviews reject changes to
+the original deadlines, exact reply vector or child-exit oracles.
+
+Aggregate checkpoint before the batch: Control retains its six alternatives;
+Burst, deadline wrapper, Client, Export, Node and parent control sequence retain
+their current states and sole transition owners. The observation branch owns
+no semantic value for a future decision. Production states, subordinate sums,
+transition branches, lines, modules and public spellings have zero delta.
+No arrival history, duplicated cause, inferred provenance, semantic boolean,
+structural caller path or nested transition authority is introduced. Cross-check
+against the existing public-pressure law/inverse and selected030 instructions.
+The formatted candidate measures test +43/-0/net43 and preserves all1011
+original source lines byte-exact and in order (1011→1054). Control6→6,
+Refusal6→6, Burst fields2→2; nominal types3→3, functions10→10, child modules1→1
+and public source spellings0→0. Production/model deltas remain zero. Two new
+diagnostic matches have four observation arms and select no aggregate state or
+protocol action. Exactly two paths change since e272; cumulative main scope is
+14. Receipt native-pressure-observations-conservation.json records the actual
+diff and original/candidate hashes. Both focused profiles pass the exact parent
+with11 filtered cases, actual acquired zero child exits and all original
+oracles. Strict current Clippy and format pass; all724 candidate inputs stay
+exact. Review1/2 and the post-batch residue scan retain no new protocol state,
+authority or cause. Disposition: pass for this observation-only batch. These
+healthy replays do not exercise its failure-only diagnostics or prove a cause.
+Receipt native-pressure-observations-focused-result.json retains that limit.
+Re-run the failed complete owner with these observations; do not resume the
+full gate or publish while the actual pressure failure remains unresolved.
+
+The complete original remote-example Nix owner now also exits0 on the
+observation candidate: both profiles pass eight process parents (four controlled
+child registrations ignored) and three protocol cases. All724 inputs remain
+exact; its registered output and log hash are in
+native-pressure-observations-owner-result.json. This is a healthy complete-owner
+replay, not an explanation of the original timeout. The observations remain
+temporary investigation support; no new readiness policy or semantic repair is
+selected from a green replay.
+
+Separately, submitted e272 CI43701323055 completes successfully with all eight
+statuses. Actual Linux flake logs contain all28 evaluated owner identities at
+the matching c531/e272 tree. Driver2048 and Observe ops/future_ops/promotion_ops/
+waker_ops1024 executions each finish under the pinned1.98-nightly ASan setup;
+all original seed bytes and455 uploaded files are retained. Miri is skipped for
+this PR event. Native-communication017-hosted-completion.json binds the actual
+job, source tree, commands, completion rows and hashes. This certifies e272's
+Linux graph, not the dirty observation candidate or a local causal cure.
+
+Bombay PR425 independently merges as d41c3739 at2026-11-15T11:48:29Z after all
+eight checks. Reviewed b7dee1b0 and delivered d41 share treee036912a. Before
+refreshing this release branch, inspect its actual Export constructor,
+declaration/serving/withdrawal path, consuming extraction and tests. The
+constructor syntax is unchanged; take_withdrawal adds one affine cold operation
+whose first poll requests withdrawal, and live/final consumers share the same
+original ExportError::Withdrawal through Arc. Ordinary source callers need no
+placeholder or new policy. Its16 delivered paths belong to that already merged
+requirement. Preserve this branch's14-path change and the original pressure
+failure during a normal merge; fresh integrated gates/packages are required.
+
 ## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
