@@ -285,6 +285,62 @@ repaired for integration. Native-withdrawal-integration-focused-result.json
 retains exact counts, sources and log hashes. Next run the complete original
 remote-example owner on this merged source before the broader final gates.
 
+#### Final release evidence and compiler metadata correction
+
+Current092fcd74 completes all eight hosted statuses. Its actual Linux merge
+checkout5cfaef78 has the same source tree; the successful flake step evaluates
+all28 expected checks. Retained Driver2048 and four Observe1024 campaigns finish
+with the original seed bytes verified. The457 uploaded artifact files and raw
+log are retained in native-withdrawal-integration-hosted-completion.json. Miri
+is skipped for this PR event; no Windows or exhaustive-schedule claim follows.
+Both current/minimum joint packages and extracted consumers pass at092 with
+identical579-file archives;115 Rust files under src include cfg-test modules.
+Current workspace Nextest and the optimized all-target Nix owner each pass1020
+cases; the latter also passes154 compiler fixtures. Its123 harnesses preserve
+exactly the Linux test/ignore sets and fixture cohort. Local minimum1.96 passes114 outer
+cases/138 fixtures across28 targets and32 compile suites, plus the separate
+four-case/twelve-fixture remote target. These results retain their092 source
+limits and do not establish publication or explain the historical watchdogs.
+
+All28 local checks at092 are now built and registered to their expected
+derivations; authoritative nix flake check exits0 using those exact outputs.
+All727 checkout inputs remain unchanged. Protected-counter completes all12
+original commands/132 outer executions, formatting and both strict Clippy
+checks. Intended child failures, empty-filter controls and grep reprints are
+counted separately. Native-withdrawal-integration-local-completion.json binds
+this result; it certifies092 before the following metadata/documentation edits.
+
+Before editing, the diagnostic manifest invariant fails: patch_sha256 records
+0a9e722a while the existing minimum.patch hashes09acf9c0; the withdrawal-reuse
+snapshot added by upstream b7dee1b0 is absent from the manifest. All25 existing
+canonical/minimum/fixture hash triples match. Applying the actual26-section
+patch to isolated copied expectations succeeds without offsets, fuzz or
+rejection. The new snapshot's three hashes match those exact files. Evidence
+and candidate are native-withdrawal-integration-diagnostic-manifest-review.json
+and native-withdrawal-integration-compilers-candidate.json in the handoff.
+
+This correction updates only that checksum and the missing snapshot row.
+Compiler versions, selected targets/cases/suites, ignored-child selections,
+fixture sources, expected diagnostics and the patch itself stay unchanged.
+Review1 checks exact-byte provenance against the original failing invariant;
+review2 compares the complete parsed manifest and preserves every prior row
+and selection. Both reviews are by the author; no independent review is claimed.
+Correction paths are compilers.json and this existing PRD; production
+Rust and public API +0/-0, all runtime states and ownership equations unchanged.
+The release delta becomes15 paths against main after integrating PR426's three
+reviewed documentation changes. Existing user standing approval applies.
+The focused post-edit check verifies all26 canonical/minimum/fixture hash
+triples and the actual patch checksum; both original metadata defects reproduce
+against the prior manifest. Only the three merged documents, this record and
+the diagnostic manifest differ from092. No fixture or production Rust changes.
+
+Final verification must bind the combined documentation/metadata source.
+Earlier092 gates keep their source limits; the final exact-source results and
+delivery state belong in the release PR and retained command receipts. The
+original10/15/40-second failures remain unexplained. Full DX01–DX28 and broader
+R18 remain active; normal release workflow, registry/archive/tag verification
+and actual Bombay acknowledgment are still required before claiming delivery.
+
 ## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
