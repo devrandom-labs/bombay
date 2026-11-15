@@ -228,8 +228,10 @@ exact. Review1/2 and the post-batch residue scan retain no new protocol state,
 authority or cause. Disposition: pass for this observation-only batch. These
 healthy replays do not exercise its failure-only diagnostics or prove a cause.
 Receipt native-pressure-observations-focused-result.json retains that limit.
-Re-run the failed complete owner with these observations; do not resume the
-full gate or publish while the actual pressure failure remains unresolved.
+Re-run the failed complete owner with these observations before resuming full
+qualification. Preserve the original failure and unproved cause in its record.
+Release auto-merge stays held until current owner, full local/hosted and archive
+consumer gates pass; a healthy replay supplies no historical diagnosis.
 
 The complete original remote-example Nix owner now also exits0 on the
 observation candidate: both profiles pass eight process parents (four controlled
@@ -272,6 +274,16 @@ new policy, generic plumbing or compatibility syntax from compiler fallout.
 Current archives, caller checks and hosted CI above retain their e272 limits;
 they do not certify this new public withdrawal/error contract or its costs.
 The runtime changelog now records that already-delivered API and shared cause.
+
+Clean846961ac passes the fresh pinned1.99 integration checkpoint on727 exact
+inputs: seven withdrawal authority/lifecycle cases in each profile, the original
+pressure parent in each profile, four public remote-surface outer tests with12
+compiler fixture registrations, strict all-target remote/runtime/example Clippy
+and format. The reuse denial for the affine withdrawal authority executes.
+No caller syntax, generic bound, expected diagnostic or production code was
+repaired for integration. Native-withdrawal-integration-focused-result.json
+retains exact counts, sources and log hashes. Next run the complete original
+remote-example owner on this merged source before the broader final gates.
 
 ## Incoming schedule watchdog evidence
 
