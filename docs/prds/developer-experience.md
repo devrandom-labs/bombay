@@ -69,8 +69,29 @@ Both reviews retain the original domain oracle unchanged. Focused source-local
 reproduction and progress evidence must establish the stalled phase before a
 production candidate is selected.
 
-Normal release branch updates preserve Joel's existing auto-merge request and
-require fresh exact-head checks. Earlier679e archive/consumer and190b profile
+The unchanged native1.99 optimized isolated campaign passes258/258 observations
+(two persisted seeds plus256 generated cases); the unchanged complete444-case
+optimized native library also passes once. These controls do not reproduce or
+explain the Linux failure, and do not establish a fix. The original CI failure
+remains the red evidence. Next add input/await progress messages to the existing
+cfg(test) incoming schedule witness only: before interpretation, Read admission,
+Read reply, reply-stream end, work return and actual Application join. Existing
+traces appear only after success. The messages must identify the actual current
+input without changing control flow, oracle, timeout, protocol or custody.
+Expected cumulative scope:eight existing release-task paths; production/public
+type delta0. No new state/product/trait or callback is selected. Review1 places
+each message before a real await or after an actual return; review2 retains the
+warning that diagnostic timing can mask a race and green runs cannot close it.
+These are temporary diagnostic observations, not a retained semantic candidate.
+
+Actual failed main CI is now a temporary automatic-merge hold. The original
+MERGE request and all metadata are preserved in the handoff; restore that
+preauthorized method after the failure is resolved and final-head gates pass.
+This prevents a green release-only replay from merging while the known earlier
+failed gate remains unexplained. No extra user approval or manual publication
+shortcut is introduced.
+
+Fresh exact-head checks remain required. Earlier679e archive/consumer and190b profile
 receipts retain their source limits. Current publication remains unverified;
 no release notice or full DX completion is claimed. This gate must be resolved
 before treating the current release as verified.

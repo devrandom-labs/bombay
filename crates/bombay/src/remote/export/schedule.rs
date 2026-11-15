@@ -449,6 +449,7 @@ async fn minimized_duplicate_and_expiry_order_preserves_native_admission() {
     reason = "one incoming schedule retains every original provider, native request and independent Counter result through cleanup"
 )]
 async fn incoming_requests(deliveries: &[Delivery], expected: &[Event]) {
+    println!("incoming Application starting; deliveries: {deliveries:?}");
     let maximum = NonZeroUsize::new(8).unwrap();
     let distinct = [
         Delivery::Initial,
@@ -781,6 +782,9 @@ async fn incoming_requests(deliveries: &[Delivery], expected: &[Event]) {
                     publications.push((request, publication));
                     trace.borrow_mut().push(Event::Released(request));
                 }
+                println!(
+                    "incoming request awaiting completion: {delivery:?}; deliveries: {deliveries:?}"
+                );
                 poll_fn(|context| {
                     poll_verification(
                         operation.as_mut(),
@@ -791,11 +795,15 @@ async fn incoming_requests(deliveries: &[Delivery], expected: &[Event]) {
                 .await;
             }
             let mut reader = application.client::<CounterValue>().unwrap();
+            println!("incoming Counter Read awaiting admission; deliveries: {deliveries:?}");
             let admitted = reader.send(CounterMessage::Read(reader.recipient())).await;
+            println!("incoming Counter Read awaiting reply; deliveries: {deliveries:?}");
             let value = reader.receive().await;
             reader.close_admission();
+            println!("incoming Counter replies awaiting end; deliveries: {deliveries:?}");
             let tail = reader.receive().await;
             let shutdown = application.shutdown();
+            println!("incoming work returned; deliveries: {deliveries:?}");
             (
                 export,
                 originals,
@@ -810,6 +818,7 @@ async fn incoming_requests(deliveries: &[Delivery], expected: &[Event]) {
         })
         .await
         .unwrap_or_else(|_| panic!("the ordinary Application host is entered"));
+    println!("incoming Application joined; deliveries: {deliveries:?}");
     let (work, report, native, notifications, ()) = outcome.into_parts();
     let (
         (export, originals, revocations, publications, addresses, admitted, value, tail, shutdown),
