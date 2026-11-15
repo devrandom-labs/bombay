@@ -10,9 +10,9 @@ R18 stage started from main
 PR426's delivery record merged with all eight checks passing. The accepted
 requirement remains the complete R18 startup/drop/retirement/resource/reconnect
 matrix; this stage supplies two concrete resource observations without replacing
-the remaining matrix. No upstream upgrade or production change is selected.
+the remaining matrix. That slice selected no upstream upgrade or production change.
 
-Fresh selected-contract inspection confirms Cargo.lock SHA256
+At that source epoch, selected-contract inspection confirmed Cargo.lock SHA256
 `9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394`
 and flake.lock
 `13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`,
@@ -33,8 +33,8 @@ affine withdrawal request and retained result. Timers and Engine acquire no new
 role. Export owns the original native callback, query permits, provider futures
 and Request custody; Application owns real actor execution/retirement; Session
 owns native close. No dependency contract blocks this finite owner-level test.
-PR381's release hold and both unresolved historical watchdog causes remain
-separate. Published Communication 0.1.7 is not adopted or credited here.
+PR381's then-current release hold and both unresolved historical watchdog causes
+were separate. That slice did not adopt or credit published Communication 0.1.7.
 
 The missing conjunction is actual pending protection surrender, preserved
 completed actor work and exact original request values, followed by release of
@@ -270,11 +270,33 @@ removed. The merged source and tracked lock files remain in Git; controls and
 raw evidence remain in the task archive. Cleanup removed no release packages.
 Full R18 startup/drop/rollback, close failures, task/resource baselines,
 reconnect, AUTH1/NET1 and final example distillation remain open. Earlier
-unattributed failure causes remain unknown; PR381's release hold is separate.
+unattributed failure causes remain unknown; PR381's release state is independent.
 
 This delivery receipt changes only this PRD and the backlog status: production
 +0/-0/net0; tests +0/-0/net0; public types +0/-0. No untracked project files
 are retained. PR427's accepted five-path delta remains recorded above.
+
+### Receipt integration with release main
+
+While this two-document receipt was awaiting CI, [PR381](https://github.com/devrandom-labs/bombay/pull/381)
+merged to main as [`43687efb`](https://github.com/devrandom-labs/bombay/commit/43687efbd0a334e036db8930f4c1b650a04e2319)
+at 22:46:58 UTC on November 15. The receipt integrates that main before delivery.
+This verifies a merge, not registry publication. Main now selects
+Communication 0.1.7 and rustix 1.1.6; Behavior/Actors 0.30.0, Macros 0.16.0,
+Address 0.3.0, Timers 0.2.0 and the SDK versions remain unchanged. Cargo.lock
+SHA256 is `644c8853d0f45ce226e5171de3701e284d17b0ee938f0d3b7ad309a01befa192`;
+flake.lock is unchanged. The SDK's `unstable` feature is now enabled by main.
+
+The imported runtime-source changes are test-owned diagnostics and listener
+qualification; they introduce no new ordinary caller API. The receipt itself
+still changes only two documents, with production, tests and public types all
+unchanged against the integrated main. Earlier native and hosted results retain
+their recorded source and lock epochs; they do not qualify this new combination.
+Fresh hosted checks and renewed scoped receipt reviews are required before its
+merge. Communication adoption and successful controls do not establish either
+historical watchdog cause. Full R18, production admission, transport privacy and
+the final ordinary-caller/example audit remain open; the next feature stage
+requires fresh inspection of all selected owners.
 
 ## Public export withdrawal — prerequisites (2026-11-14)
 
