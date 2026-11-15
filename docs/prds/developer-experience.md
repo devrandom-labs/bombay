@@ -897,6 +897,194 @@ all production, tests and configuration remain identical. The final evidence
 commit requires fresh exact-head hosted CI before normal PR merge. Runtime
 registry publication, remaining acceptance/costs and full DX01–DX28 stay open.
 
+### Entity retirement completion: before the regression (2026-11-14)
+
+Final release PR381 head `48c32f1a` failed CI43623798724/job132535080252:
+`reactivated_entity_cannot_reuse_the_previous_retirement_fact` received the
+original `Deposit(2)` with `Unavailable` immediately after the first retirement
+returned. The other seven checks pass. The full failed log is preserved;
+publication remains blocked by this gate. Release48c is preserved while this
+bounded fix uses `codex/entity-retirement` at main `63c50988`. Its PR422 adds
+remote-withdrawal tests/documents to `2e328cd4`; all ten Entity files match the
+recorded source baseline, and manifests, lockfiles and Nix configuration match.
+
+The selected graph is registry Behavior/Actors0.30.0 (628649da), macros0.16.0,
+Address0.3.0, Communication0.1.6 and Timers0.2.0, with this main's Engine/Observe.
+The selected Behavior instructions and owning Entity/Observe/runtime contracts
+are inspected. Native retirement explicitly releases its resident permit before
+returning. Slot removal is queued, but `retire_owned` can fail to acquire an
+already-owned dispatcher and then publish retirement immediately.
+
+The law under test is deliberate Bombay policy: the captured retirement observation
+becomes available only after its preceding exact-slot removal has been interpreted.
+An immediate next command through the same stable Entity reference must not see
+the retired mapped slot. The complete original command, native result, callback
+failure and retirement mode retain their existing owners. This is stronger local
+ordering, not an Agha scheduling guarantee. Agha et al.'s primary operational
+rules distinguish fresh allocation and communications; they do not specify this
+runtime completion ([section3.2, pp19–20](https://osl.cs.illinois.edu/media/papers/agha-1997-jfp-a_foundation_for_actor_computation.pdf)).
+
+First add a deterministic owning Slot regression, before production: hold the
+existing dispatcher, install actual termination, try the normal interpretation,
+then request publication. The observation must remain absent while removal is
+queued and during its interpretation; releasing the dispatcher must deliver the
+complete removal request followed by the exact graceful/forced mode. Original
+command and lease allocations and the complete preceding effect trace are checked.
+The existing native accounts assertion remains unchanged. No sleeps, retries,
+new test port, inferred generation, new public type or caller migration is selected.
+
+Candidate, only after that regression fails: put the existing affine publisher
+and exact mode into the existing FIFO alongside pending effects, then pump once.
+A private closed `SlotRequest` distinguishes the original typed effect from the
+owned retirement publication; it is queued protocol data, not another lifecycle
+engine. Remove the competing immediate-publication path. Expected scope is
+`entity/directory.rs`, `entity/runtime.rs` and this PRD; production growth is
+expected below40 lines, public types +0/-0. Reuse the current five lifecycle
+states, six public effect variants, Observe pair, dispatcher and retirement port.
+The backlog's DX1 row also changes to keep the current blocker and delivered
+PR421 state consistent. The public `retire_entity` rustdoc will state the same
+ordering guarantee: five expected paths, with no broader executable scope.
+
+Pre-experiment checkpoint: lifecycle Inactive/Activating/Active/Draining/Retiring
+remains5; storage Ready/Poisoned and dispatcher Idle/Dispatching remain2/2.
+Ready owns the current lifecycle; Poisoned owns the absence of a lawful state;
+Dispatching owns the sole effect consumer. The optional retirement pair owns
+one currently held publication authority and its observation. Pending effects
+own original commands/endpoints/leases; proposed queued publication owns the
+original publisher and completed native mode until preceding effects finish.
+Normalized queued operations would increase6→7 (private sum2 alternatives),
+replacing direct publication. No arrival history, repeated policy label, semantic
+boolean, false cardinality, nested transition authority or structural user syntax
+is proposed. Before measurements:10 Entity modules,4,837 physical production
+lines,190 production match-arm tokens and92 unrestricted public declarations;
+exact definitions/hashes are in `entity-retirement-before.json` in the existing
+restart handoff. After measurements and complete normalized-document cross-check
+are required before retention; this records the **pre-edit hypothesis**.
+
+Pre-production reviews by the author: the first maps the regression to the
+complete activation/delivery/fence/retirement prefix, original allocation
+identities, exact removal and captured mode. The second checks that dispatcher
+ownership forces the competing interpretation attempt to return, that observation
+is still absent inside removal, and that a repeated termination/completion adds
+no effects. Neither review claims independent authorship. The debug regression
+fails twice on the prior representation: both modes are already observable while
+removal is queued. Optimized execution reproduces the same two assertion failures.
+
+Cross-check: Behavior's normalized architecture places observation/retirement in
+Bombay and publication in Observe; its verification page requires the pre-edit
+regression, inversion, optimized replay and exact custody. The features page's
+effect/interpreter requirements and runtime-settlement's ordered interpretation
+and terminal-custody sections prohibit dropped lanes and invented completion.
+The normalized DevX page distinguishes runtime receipts from later outcomes.
+This private runtime ordering repair leaves their atomic-template algebra,
+wrappers, public syntax and transitions unchanged. Native removal uses the exact
+slot pointer, and retains its removed row when original retirement failure still
+needs that custody. Native task failure before completion must continue to leave
+the existing retirement observation pending.
+
+Retained representation checkpoint: **pass**, with feature delivery still open.
+The complete lifecycle sum remains Inactive/Activating/Active/Draining/Retiring
+(5→5), storage Ready/Poisoned remains2→2 and dispatcher Idle/Dispatching remains2→2.
+Their owned values are unchanged. The new private request sum has two
+alternatives: Effect owns the exact existing command/endpoint/lease operation;
+Retirement owns the sole original publisher and mode awaiting earlier effects.
+These are queued operations, with no subordinate transition authority or new
+result state. Public effect alternatives remain6→6; normalized queued operations
+are6→7. Direct publication is deleted. The old optional pair still owns its
+publication authority and exact observation until that transfer.
+
+Entity modules remain10→10; physical production lines4,837→4,849 and match-arm
+tokens190→192. Unrestricted public declarations remain92→92, with no new/removed
+public spelling or bound. Executable owner delta is production+28/-16/net+12;
+the public method also gains one rustdoc line, for total production+29/-16/net+13.
+tests+124/-1/net+123 (the removed line is the replaced test import). The two
+test entry points share one complete semantic trace. For the measured
+Box<u64>/u64/Box<u64> substitution, the old effect and new queue entry are both
+40 bytes and slot execution remains96 bytes. This is a layout measurement for
+that substitution, not a universal allocation or native-payload claim. The
+existing deque owns one additional publication operation per captured pair;
+there is no cloned payload or second observation allocation.
+
+Post-change author reviews repeat the law and counterexample audits: FIFO
+publication runs outside the slot mutex, after exact removal and its original
+failure-row custody, even when the current interpreter belongs to another call.
+The runtime queues completion before its single pump, so an idle consumer cannot
+leave publication stranded. Lifecycle/source replay has no second removal or
+publication. Residue scan finds no arrival-history state, duplicated cause,
+false cardinality, nested actor engine, semantic boolean or caller structural
+syntax. The aggregate law and all four normalized atomic-actor documents plus
+runtime-settlement cross-check above retain their owners and public protocols.
+
+Both focused cases pass debug and optimized. Restoring direct publication makes
+both fail at the intended absence-vs-completed assertion; exact source bytes are
+restored afterward. Both profiles pass26 Entity unit cases and45 integration
+cases across accounts, directory, runtime, family and application. This includes
+the unchanged failed accounts witness and original task-panic/cancellation,
+callback and missing-completion custody. The handoff retains red/green logs,
+inversion/restoration hashes and before/after measurements. The restored debug
+control passes all26 Entity cases. The original accounts witness also passes32
+consecutive executions in each profile, with no retry after failure. These
+bounded results do not prove every schedule. Workspace gates, full Nix, hosted
+CI, PR merge and runtime publication were pending at this focused checkpoint;
+the final local results follow. No release retry or publication is claimed.
+
+The first workspace Nextest epoch passes1,013 cases with6 skipped registrations.
+Its sole Clippy failure is similar test-local names; only the held consumer
+binding is renamed to `slot_consumer`, matching the one-consumer law above.
+No assertion, production symbol or lint is changed.
+
+#### Final retirement verification
+
+Candidate `9f1ffd277b59eff9e15c850f0500c943051751f6` freezes724 tracked inputs;
+the696 filtered source files match Nix source
+`fhd3c4rnbyzh47kcmdarqccc6zvx2p24-source`. Committing changes no input hash or
+any of the28 derivation/output identities. Formatting, strict workspace Clippy
+and final-source Nextest pass:1,013 cases, six skipped registrations. The exact
+optimized full-workspace Nix owner also passes1,013 registrations, zero failures,
+six controlled ignored child registrations and153 unique caller fixtures.
+Each child has a passing exact parent which requires its name, successful exit
+and one-test summary; ignored registrations receive no independent extra credit.
+All153 fixture sources match the frozen inputs and retained caller cohort. One
+row split by Cargo's progress notice is retained verbatim. Both new retirement
+regressions and the original accounts reactivation witness pass exactly once.
+
+All28 aarch64-darwin owners are reviewed, registered and rooted. Debug and
+optimized remote each pass542 cases and31 caller fixtures; six guard reprints
+per profile are excluded from execution counts. Debug remote's additional
+Clippy and Rustdoc stages pass with warnings denied, as do the separate optimized
+workspace lint/documentation owners. Generated public `retire_entity` rustdoc
+contains the ordering guarantee. The minimum1.96 owners pass their selected
+114 cases/138 fixtures and three remote cases/11 fixtures; this is not the full
+minimum-compiler runtime catalogue. Driver evidence retains16 healthy references
+and eight intended viable kills; execution evidence retains nine healthy cases,
+ten intended kills and two exact E0382 denials. Observe28/Entity6 Loom cases
+retain their configured exploration bounds. All four coverage floors pass:
+Driver737/818, execution1,006/1,048, outcome95/97 and Observe504/526. Example
+execution and compile-only scopes remain qualified in their owner receipts;
+in particular, the Axum example earns no HTTP runtime credit.
+
+The original all28 request ends1 with exactly two ENOSPC failures, in child
+default-features-disabled and remote debug. Both source-identical serial retries
+pass; their original failed logs remain preserved. A subsequent cached request
+returns all28 exact successful output records, ordinary `nix flake check` passes,
+and store-content verification passes for all28 outputs plus the frozen source.
+No check or assertion was removed or weakened. `entity-retirement-full-summary.json`,
+the final verification commands/results, and per-owner raw logs/receipts in the
+existing restart handoff bind these results to the tested source. Shared-machine
+elapsed times do not establish controlled compiler costs. Miri, Windows and new
+package/archive consumers are unclaimed; earlier receipts retain their epochs.
+
+After verification, main `011e7ad0` is normally integrated: its three later
+commits change only the peer's remote Markdown records. Final evidence also
+corrects the existing backlog README's stale PR421 disposition, making six
+owned paths. Production, tests, manifests, locks and Nix configuration remain
+identical to the frozen candidate; the integration and final evidence change
+only Markdown. The scoped ownership/minimization checkpoint remains `pass`.
+Fresh final-head hosted CI, review requirements and normal PR merge remain
+pending, followed by release381 refresh, exact package/consumer verification,
+publication and the acknowledged Bombay release notice. Full DX01–DX28 and its
+remaining consumer, cost and documentation acceptance stay open.
+
 ## Verification and remaining work
 
 ### Owned retirement recovery, before implementation (2026-11-11)
