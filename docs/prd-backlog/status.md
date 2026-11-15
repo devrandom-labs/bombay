@@ -1,5 +1,15 @@
 # Backlog status and dependencies
 
+R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement--prerequisites-and-change-record-2026-11-15)
+is active from main 43104330 with fresh locked-owner verification. The test-only
+stage couples pending-provider surrender and exact retained custody with release
+of the original query-count allocation, plus a completed-provider control.
+Production/API/dependencies are unchanged. Both focused profiles pass 20 cases;
+both intended leak controls fail at the new allocation assertions, and the
+byte-exact restored pair passes 20 cases each. Full checks, final audit and
+delivery remain pending.
+The full boundary/drop/task-baseline/reconnect matrix remains open.
+
 R18's [public withdrawal slice](../prds/static-remote-actors.md#public-export-withdrawal-delivery--2026-11-15)
 merged through PR425/d41c3739 after all eight checks and final independent
 reviews passed. Reviewed, actual CI and merged trees match; the clean worktree
