@@ -6,3 +6,4 @@
 # everyone who runs the test benefits from these saved cases.
 cc 7c357c1ba6facec189d406b385576c6b6cdb5ca7740493aa03b0c49d6f4329e2 # shrinks to [Fresh(24), Repeat]
 cc da749e3d136efded45bb677deb3bb203ff78100d471a69d8641ce266636c062e
+cc 1609ece3c49631a68a74ab964ba3ff462ed3059d066c7693316623d4ae000241 # shrinks to [Repeat, Fresh(26), Fresh(25), Fresh(24)]

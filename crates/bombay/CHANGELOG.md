@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Use Communication 0.1.7 notifications for mailbox publication and released capacity.
 - Publish Entity retirement completion only after queued routing removal, so
   reactivation cannot consume the preceding incarnation's retirement.
 

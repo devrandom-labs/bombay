@@ -28,7 +28,105 @@ Zenoh stays internal: configuration conversion, sessions and queries are private
 public foreign causes use the standard error contract. Final interface acceptance
 still requires the selected source, consumer and delivery gates.
 
-## Current release gate: incoming schedule watchdog
+## Communication adoption and current release gates
+
+Communication0.1.7 is independently published and verified. Source
+[PR15](https://github.com/devrandom-labs/bombay-communication/pull/15) merged
+as46553ff4 after all five checks; normal release
+[PR16](https://github.com/devrandom-labs/bombay-communication/pull/16) merged
+as e15b5869 after all five release-head checks. Both reviewed/tested/delivered
+trees match. Official registry checksum
+`e876b25eaaf115a651212666690e6a284da635d3169d09c414a4fa70d84bdc7d`
+matches the downloaded21-file archive byte-for-byte with the pinned1.95
+verified release package. Tag `bombay-communication-v0.1.7` and package VCS
+both identify2d71c2f6. Bombay's existing Codex task explicitly acknowledged
+publication in completed turn01a1de7f-7327-7eb2-a346-eab35b9ca49c.
+
+The owning derived law is mailbox progress: publication or released capacity
+must be observed by registration/recheck or notify a waiter. The library
+removes its redundant parked/waiting checks and uses existing Tokio Notify
+permits directly. The original stronger Loom checks hid synchronization absent
+from native checks; matching-native models deadlock, announcement-only supported
+SC-fence controls deadlock, paired-fence controls pass. Temporary fences are
+absent from the published source. All13 bounded models, native101, pinned-Nix
+and Linux/advisory gates pass; all37 application/runtime declarations remain
+unchanged. Matched patched-graph benchmarks measure owner rounds11.6–13.1%
+and raw-anchor rounds13.1–13.8% slower, accepted for correctness. These are
+aggregate same-host costs, not an Application SLO. Loom's limits remain explicit.
+Neither original Bombay watchdog cause is established by these results.
+
+A second actual cf397 Linux failure is now retained: run43689245510/
+job132736226999 passes incoming delivery orders, then public Client generated
+overlap fails its unchanged15-second watchdog at overlap.rs:290. Five other
+cases pass;184 invocations/183 completions. Actual persisted seed
+`1609ece3c49631a68a74ab964ba3ff462ed3059d066c7693316623d4ae000241`
+reports `[Repeat, Fresh(26), Fresh(25), Fresh(24)]`; this is not a deterministic
+reproducer or proof of the original failed input/stage. Raw log SHA256
+`fbaedf4f624e7b2a04fe1d278c4ca3752f038c97b50a12df980b6e5596c54058`
+and complete actual artifacts are preserved. Synthetic0acbcaec and cf397 have
+the same3d7ed556 tree. Release381 remains held; R18/PR425 retains its own gates.
+
+Before Native edits, select a compatibility/investigation batch: raise the
+workspace Communication minimum to0.1.7 and lock that exact verified checksum;
+update only locked rustix1.1.4 to1.1.6 for the actual fresh
+`cargo audit --deny unsound` RUSTSEC-2026-0486 failure. The existing paste
+unmaintained warning keeps its current allowed policy. The first audit attempt
+failed because the dev shell lacks cargo-audit; the actual audit uses the
+existing pinned nixpkgs cargo-audit through `nix shell --inputs-from .`, inside
+the pinned development environment. No installed tool, workflow or policy change.
+
+Retain the new Client seed in its existing corpus and add temporary input/await
+observations to the owning Client test. Preserve every original source line,
+assertion, watchdog, protocol and cleanup operation; no new test/state/type is
+selected. Review1 maps each message to its actual input and await. Review2
+challenges post-success trace inference, timing perturbation and false cleanup
+credit; a message reports only its source checkpoint. A green replay does not
+establish historical causation. Existing incoming diagnostics remain unchanged.
+
+Selected versions before edits: Behavior/Actors0.30, Address0.3, Communication
+0.1.6, Timers0.2; Observe/Entity are native owners at cf397. Locked Tokio already
+uses1.53.3. The complete selected Behavior instructions at628649da were freshly
+read (775lines/SHA256 aa5c4e70e38e52a1fbae8948ba30ee1c16fe88eddc3ec4fe8bfcf07f494a9207).
+LocalInbox recv/control, affine Admission closure, ExternalActor reply receive,
+Observe and Entity custody paths retain their current interfaces and authority.
+
+Expected Native scope:12 existing release-task paths versus main, comprising
+the previous eight plus Cargo.toml/Cargo.lock and Client source/corpus. Native
+production lines/public types/modules/control states:0 added/0 removed. The
+upstream change has its separate merged four-path/source and automated release
+records. The user explicitly preauthorizes ordinary scoped work: “auto approve
+everything from now on, no need to ask me.” No new native semantic repair,
+framework, trait, wrapper, generic bound or interpreter path is selected.
+First run both schedule campaigns in debug/optimized on the adopted graph;
+then qualify exact final-head owner/package/Linux gates. Keep original failed
+logs and the automatic-merge hold until Native's own failure/gates are resolved.
+
+Actual adoption changes only the Communication/rustix package versions and
+checksums. Cargo also resolves the existing errno/rustix/tempfile/winapi-util
+Windows references from already-locked windows-sys0.61.2 to already-locked
+0.52.0. All four manifests explicitly allow that version; no additional package
+version changes or hand-edited lock entries are introduced. Preserve Cargo's
+supported resolution and record that Windows execution is unverified.
+Client source review confirms all1247 original lines exact and in order, with
+only17 direct observation lines added. Its three-seed corpus is byte-identical
+to the downloaded actual CI corpus. Formatting passes in the pinned environment.
+
+Current Native1.99 compatibility controls pass on the frozen724-file source:
+incoming258/258 and Client259/259 in both debug and optimized profiles. All four
+tests retain their complete original oracles. Fresh audit now exits0 with only
+the existing allowed paste maintenance warning. Full owner, minimum-compiler,
+archive-consumer and final-head Linux gates remain required; historical causes
+are still unproved and automatic release merging stays held.
+
+Old cf397/Communication0.1.6 Nix job132736226990 also completes successfully
+at09:07:43Z, including its444-case remote library and incoming258/258 plus
+Driver2048/Observe4x1024 bounded campaigns. This is separate from that same
+run's actual optimized Client failure and is not evidence for the new graph.
+Raw25,107,987bytes/SHA256
+`90ecfefaebf457391715e5c3206cbde5259c5746befd1332f7afb5241667d64f`
+is retained. A passing older graph cannot establish the proposed causal cure.
+
+## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
 owner:443 library cases pass and
