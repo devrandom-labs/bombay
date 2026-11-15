@@ -1,7 +1,7 @@
 # Developer experience coordination
 
 Status: active. The
-[owning Behavior PRD](https://github.com/devrandom-labs/bombay-behavior/blob/codex/devx-delivery/docs/engineering/developer-experience-prd.md)
+[owning Behavior PRD](https://github.com/devrandom-labs/bombay-behavior/blob/main/docs/engineering/developer-experience-prd.md)
 contains the single DX01–DX28 checklist, current contracts, verification results
 and explicit deferrals. Its evidence appendix preserves the initial inventory.
 Current source and executable evidence outrank stale prose. Earlier experiments
@@ -28,51 +28,531 @@ Zenoh stays internal: configuration conversion, sessions and queries are private
 public foreign causes use the standard error contract. Final interface acceptance
 still requires the selected source, consumer and delivery gates.
 
+## Communication adoption and current release gates
+
+Communication0.1.7 is independently published and verified. Source
+[PR15](https://github.com/devrandom-labs/bombay-communication/pull/15) merged
+as46553ff4 after all five checks; normal release
+[PR16](https://github.com/devrandom-labs/bombay-communication/pull/16) merged
+as e15b5869 after all five release-head checks. Both reviewed/tested/delivered
+trees match. Official registry checksum
+`e876b25eaaf115a651212666690e6a284da635d3169d09c414a4fa70d84bdc7d`
+matches the downloaded21-file archive byte-for-byte with the pinned1.95
+verified release package. Tag `bombay-communication-v0.1.7` and package VCS
+both identify2d71c2f6. Bombay's existing Codex task explicitly acknowledged
+publication in completed turn01a1de7f-7327-7eb2-a346-eab35b9ca49c.
+
+The owning derived law is mailbox progress: publication or released capacity
+must be observed by registration/recheck or notify a waiter. The library
+removes its redundant parked/waiting checks and uses existing Tokio Notify
+permits directly. The original stronger Loom checks hid synchronization absent
+from native checks; matching-native models deadlock, announcement-only supported
+SC-fence controls deadlock, paired-fence controls pass. Temporary fences are
+absent from the published source. All13 bounded models, native101, pinned-Nix
+and Linux/advisory gates pass; all37 application/runtime declarations remain
+unchanged. Matched patched-graph benchmarks measure owner rounds11.6–13.1%
+and raw-anchor rounds13.1–13.8% slower, accepted for correctness. These are
+aggregate same-host costs, not an Application SLO. Loom's limits remain explicit.
+Neither original Bombay watchdog cause is established by these results.
+
+A second actual cf397 Linux failure is now retained: run43689245510/
+job132736226999 passes incoming delivery orders, then public Client generated
+overlap fails its unchanged15-second watchdog at overlap.rs:290. Five other
+cases pass;184 invocations/183 completions. Actual persisted seed
+`1609ece3c49631a68a74ab964ba3ff462ed3059d066c7693316623d4ae000241`
+reports `[Repeat, Fresh(26), Fresh(25), Fresh(24)]`; this is not a deterministic
+reproducer or proof of the original failed input/stage. Raw log SHA256
+`fbaedf4f624e7b2a04fe1d278c4ca3752f038c97b50a12df980b6e5596c54058`
+and complete actual artifacts are preserved. Synthetic0acbcaec and cf397 have
+the same3d7ed556 tree. Release381 remains held; R18/PR425 retains its own gates.
+
+Before Native edits, select a compatibility/investigation batch: raise the
+workspace Communication minimum to0.1.7 and lock that exact verified checksum;
+update only locked rustix1.1.4 to1.1.6 for the actual fresh
+`cargo audit --deny unsound` RUSTSEC-2026-0486 failure. The existing paste
+unmaintained warning keeps its current allowed policy. The first audit attempt
+failed because the dev shell lacks cargo-audit; the actual audit uses the
+existing pinned nixpkgs cargo-audit through `nix shell --inputs-from .`, inside
+the pinned development environment. No installed tool, workflow or policy change.
+
+Retain the new Client seed in its existing corpus and add temporary input/await
+observations to the owning Client test. Preserve every original source line,
+assertion, watchdog, protocol and cleanup operation; no new test/state/type is
+selected. Review1 maps each message to its actual input and await. Review2
+challenges post-success trace inference, timing perturbation and false cleanup
+credit; a message reports only its source checkpoint. A green replay does not
+establish historical causation. Existing incoming diagnostics remain unchanged.
+
+Selected versions before edits: Behavior/Actors0.30, Address0.3, Communication
+0.1.6, Timers0.2; Observe/Entity are native owners at cf397. Locked Tokio already
+uses1.53.3. The complete selected Behavior instructions at628649da were freshly
+read (775lines/SHA256 aa5c4e70e38e52a1fbae8948ba30ee1c16fe88eddc3ec4fe8bfcf07f494a9207).
+LocalInbox recv/control, affine Admission closure, ExternalActor reply receive,
+Observe and Entity custody paths retain their current interfaces and authority.
+
+Expected Native scope:12 existing release-task paths versus main, comprising
+the previous eight plus Cargo.toml/Cargo.lock and Client source/corpus. Native
+production lines/public types/modules/control states:0 added/0 removed. The
+upstream change has its separate merged four-path/source and automated release
+records. The user explicitly preauthorizes ordinary scoped work: “auto approve
+everything from now on, no need to ask me.” No new native semantic repair,
+framework, trait, wrapper, generic bound or interpreter path is selected.
+First run both schedule campaigns in debug/optimized on the adopted graph;
+then qualify exact final-head owner/package/Linux gates. Keep original failed
+logs and the automatic-merge hold until Native's own failure/gates are resolved.
+
+Actual adoption changes only the Communication/rustix package versions and
+checksums. Cargo also resolves the existing errno/rustix/tempfile/winapi-util
+Windows references from already-locked windows-sys0.61.2 to already-locked
+0.52.0. All four manifests explicitly allow that version; no additional package
+version changes or hand-edited lock entries are introduced. Preserve Cargo's
+supported resolution and record that Windows execution is unverified.
+Client source review confirms all1247 original lines exact and in order, with
+only17 direct observation lines added. Its three-seed corpus is byte-identical
+to the downloaded actual CI corpus. Formatting passes in the pinned environment.
+
+Current Native1.99 compatibility controls pass on the frozen724-file source:
+incoming258/258 and Client259/259 in both debug and optimized profiles. All four
+tests retain their complete original oracles. Fresh audit now exits0 with only
+the existing allowed paste maintenance warning. Full owner, minimum-compiler,
+archive-consumer and final-head Linux gates remain required; historical causes
+are still unproved and automatic release merging stays held.
+
+Old cf397/Communication0.1.6 Nix job132736226990 also completes successfully
+at09:07:43Z, including its444-case remote library and incoming258/258 plus
+Driver2048/Observe4x1024 bounded campaigns. This is separate from that same
+run's actual optimized Client failure and is not evidence for the new graph.
+Raw25,107,987bytes/SHA256
+`90ecfefaebf457391715e5c3206cbde5259c5746befd1332f7afb5241667d64f`
+is retained. A passing older graph cannot establish the proposed causal cure.
+
+At committed bd7958bf, the first wider local Nix check fails before executing
+the protected-counter fixture: its separate directory vendor contains locked
+Communication0.1.6 while the path runtime now requires0.1.7. The failure is a
+consumer-lock mismatch, not an oracle or compiler-model failure. Preserve the
+actual log/exit1. Repository inventory finds exactly one additional owning
+lock with Communication: `docs/prds/static-remote-actors/transport-custody/Cargo.lock`.
+Before editing it, select the same precise0.1.7 Cargo update through the pinned
+environment. This expands Native scope12→13 existing paths, with no fixture
+code/assertion/manifest, native production or API change. Re-run this failed
+Nix owner before resuming the full gate; retain all earlier failed evidence.
+
+## Pressure test investigation
+
+Frozen e2729d6a passes actual joint locked/all-feature package verification on
+pinned Rust1.99 and1.96. Its three archives are byte-identical across compilers:
+576 files,114 production Rust source files, exact original manifests and clean
+e272 VCS. Both separate585-input archive caller cohorts also pass:87 native
+cases and16 compiler fixtures per profile, Entity26 per profile, renamed3,
+doctests10, eight example packages built and six local examples executed.
+The controlled child registration earns no extra positive credit. All original
+caller sources, three certificate inputs and the three already-shipped minimum
+diagnostic variants remain exact. Compiler selections have identical package,
+feature and dependency edges after directory normalization. These results do
+not exercise the remote example's process tests or certify full release gates.
+
+The first current archive caller trial was intentionally interrupted130 before
+ENOSPC as its ordinary debug-symbol cache grew. Preserve that trial's logs.
+After terminal status and empty lsof, removing only its disposable compiled
+profiles returns19,985,582,724 logical bytes;585 inputs,576 canonical archive
+files and every original log remain. Both successful trials use the existing
+flake commonArgs DEV_DEBUG=0,TEST_DEBUG=0,INCREMENTAL=0 settings. Assertions,
+timeouts and compiler-specific expected diagnostics are unchanged. An initial
+receipt parser stopped because four standard trybuild compile-fail rows omit
+optional labels; inspecting the actual rows and unchanged compile_fail calls
+corrects the parser without changing tests or accepting an unmatched verdict.
+Receipts are native-communication017-package-results.json and
+native-communication017-consumer-{current,minimum}-result.json in the existing
+restart handoff. All724 repository inputs remain exact through those epochs.
+
+The resumed full local Nix gate at that same e272 tree exits1. Sixteen of28
+evaluated outputs are registered, including both complete remote owners
+(444 library/59 Client cases each), actual1.96 compiler/UI (138 registrations),
+Driver law inversions and the corrected protected-counter owner. The actual
+failure is examples/remote-counter's
+`pressure::queued_requests_resume_after_held_reply_and_borrowed_wait`: its
+original40-second complete-trace deadline expires at pressure.rs972. Seven
+siblings pass; four child registrations are exercised by exact-named parents.
+The failed source is byte-identical to main5070, SHA256
+`c412ba189b67d147f544e3e3de8763e9af11522b74b5919133093b64de84f272`.
+Failed-owner raw15253bytes/SHA256
+`0adfdd6ae6ece2150ecd0f7eca7e85084e9357e46774e36a12a19f00b96483e5`
+and full gate log/exit are retained in native-communication017-remote-counter-
+failure.json. The awaited stage is unlogged; existing private-directory cleanup
+removes both child streams before the outer panic. Cause is unproved. Hosted
+CI remains separate; release381 stays held.
+
+Before test edits, select only an observation batch in the existing parent.
+The derived test law is that a failed finite process trace must identify the
+actual awaited operation and preserve bounded child diagnostics before their
+existing removal. This changes neither actor semantics nor its success oracle.
+Reuse the existing Program kill-and-reap guards, bounded_output reader, control
+stream, typed Control alternatives and original source/retirement owners.
+Add parent checkpoints around its actual binding/control/exit awaits and read
+the two bounded child streams only after an unsuccessful trace returns and
+before the existing directory.close. No child startup syntax or source changes
+are selected. Preserve every original control operation, assertion, cleanup and
+deadline, including the10-second actor deadline required by the existing
+native-admission inverse (static-remote-actors PRD, public pressure checkpoint).
+
+Expected cumulative scope13→14 existing paths; only pressure.rs is added to
+the current scope. Production +0/-0/net0; public types +0/-0; test growth is
+limited to direct observations and bounded failure diagnostics, with no new
+function, type, bound, policy, module or actor transition. Review1 maps each
+checkpoint to its actual await and places diagnostic reads after child guard
+cleanup and before path removal. Review2 checks that returned is not mistaken
+for success, no later operation is skipped on rejection, printed child output
+earns no additional successful-case credit, and timing perturbation or a green
+replay cannot establish historical causation. Both reviews reject changes to
+the original deadlines, exact reply vector or child-exit oracles.
+
+Aggregate checkpoint before the batch: Control retains its six alternatives;
+Burst, deadline wrapper, Client, Export, Node and parent control sequence retain
+their current states and sole transition owners. The observation branch owns
+no semantic value for a future decision. Production states, subordinate sums,
+transition branches, lines, modules and public spellings have zero delta.
+No arrival history, duplicated cause, inferred provenance, semantic boolean,
+structural caller path or nested transition authority is introduced. Cross-check
+against the existing public-pressure law/inverse and selected030 instructions.
+The formatted candidate measures test +43/-0/net43 and preserves all1011
+original source lines byte-exact and in order (1011→1054). Control6→6,
+Refusal6→6, Burst fields2→2; nominal types3→3, functions10→10, child modules1→1
+and public source spellings0→0. Production/model deltas remain zero. Two new
+diagnostic matches have four observation arms and select no aggregate state or
+protocol action. Exactly two paths change since e272; cumulative main scope is
+14. Receipt native-pressure-observations-conservation.json records the actual
+diff and original/candidate hashes. Both focused profiles pass the exact parent
+with11 filtered cases, actual acquired zero child exits and all original
+oracles. Strict current Clippy and format pass; all724 candidate inputs stay
+exact. Review1/2 and the post-batch residue scan retain no new protocol state,
+authority or cause. Disposition: pass for this observation-only batch. These
+healthy replays do not exercise its failure-only diagnostics or prove a cause.
+Receipt native-pressure-observations-focused-result.json retains that limit.
+Re-run the failed complete owner with these observations before resuming full
+qualification. Preserve the original failure and unproved cause in its record.
+Release auto-merge stays held until current owner, full local/hosted and archive
+consumer gates pass; a healthy replay supplies no historical diagnosis.
+
+The complete original remote-example Nix owner now also exits0 on the
+observation candidate: both profiles pass eight process parents (four controlled
+child registrations ignored) and three protocol cases. All724 inputs remain
+exact; its registered output and log hash are in
+native-pressure-observations-owner-result.json. This is a healthy complete-owner
+replay, not an explanation of the original timeout. The observations remain
+temporary investigation support; no new readiness policy or semantic repair is
+selected from a green replay.
+
+Separately, submitted e272 CI43701323055 completes successfully with all eight
+statuses. Actual Linux flake logs contain all28 evaluated owner identities at
+the matching c531/e272 tree. Driver2048 and Observe ops/future_ops/promotion_ops/
+waker_ops1024 executions each finish under the pinned1.98-nightly ASan setup;
+all original seed bytes and455 uploaded files are retained. Miri is skipped for
+this PR event. Native-communication017-hosted-completion.json binds the actual
+job, source tree, commands, completion rows and hashes. This certifies e272's
+Linux graph, not the dirty observation candidate or a local causal cure.
+
+Bombay PR425 independently merges as d41c3739 at2026-11-15T11:48:29Z after all
+eight checks. Reviewed b7dee1b0 and delivered d41 share treee036912a. Before
+refreshing this release branch, inspect its actual Export constructor,
+declaration/serving/withdrawal path, consuming extraction and tests. The
+constructor syntax is unchanged; take_withdrawal adds one affine cold operation
+whose first poll requests withdrawal, and live/final consumers share the same
+original ExportError::Withdrawal through Arc. Ordinary source callers need no
+placeholder or new policy. Its16 delivered paths belong to that already merged
+requirement. Preserve this branch's14-path change and the original pressure
+failure during a normal merge; fresh integrated gates/packages are required.
+
+Normal merge07234b50 now integrates d41 without conflicts, preserving diagnostic
+parent c48fbdca and the delivered R18 tree. Relative to current main the release
+task still changes14 paths; no upstream production edit is rewritten. Locked
+Behavior/Actors0.30, macros0.16, Address0.3, Communication0.1.7, Timers0.2 and
+Tokio1.53.3 remain selected; Observe remains native. The existing public pressure
+control and both deadlines remain exact. Fresh integration starts with withdrawal
+ownership/lifecycle cases and the pressure parent in both profiles, plus the
+actual remote-surface compiler checks, strict Clippy and format. Do not invent
+new policy, generic plumbing or compatibility syntax from compiler fallout.
+Current archives, caller checks and hosted CI above retain their e272 limits;
+they do not certify this new public withdrawal/error contract or its costs.
+The runtime changelog now records that already-delivered API and shared cause.
+
+Clean846961ac passes the fresh pinned1.99 integration checkpoint on727 exact
+inputs: seven withdrawal authority/lifecycle cases in each profile, the original
+pressure parent in each profile, four public remote-surface outer tests with12
+compiler fixture registrations, strict all-target remote/runtime/example Clippy
+and format. The reuse denial for the affine withdrawal authority executes.
+No caller syntax, generic bound, expected diagnostic or production code was
+repaired for integration. Native-withdrawal-integration-focused-result.json
+retains exact counts, sources and log hashes. Next run the complete original
+remote-example owner on this merged source before the broader final gates.
+
+#### Final release evidence and compiler metadata correction
+
+Current092fcd74 completes all eight hosted statuses. Its actual Linux merge
+checkout5cfaef78 has the same source tree; the successful flake step evaluates
+all28 expected checks. Retained Driver2048 and four Observe1024 campaigns finish
+with the original seed bytes verified. The457 uploaded artifact files and raw
+log are retained in native-withdrawal-integration-hosted-completion.json. Miri
+is skipped for this PR event; no Windows or exhaustive-schedule claim follows.
+Both current/minimum joint packages and extracted consumers pass at092 with
+identical579-file archives;115 Rust files under src include cfg-test modules.
+Current workspace Nextest and the optimized all-target Nix owner each pass1020
+cases; the latter also passes154 compiler fixtures. Its123 harnesses preserve
+exactly the Linux test/ignore sets and fixture cohort. Local minimum1.96 passes114 outer
+cases/138 fixtures across28 targets and32 compile suites, plus the separate
+four-case/twelve-fixture remote target. These results retain their092 source
+limits and do not establish publication or explain the historical watchdogs.
+
+All28 local checks at092 are now built and registered to their expected
+derivations; authoritative nix flake check exits0 using those exact outputs.
+All727 checkout inputs remain unchanged. Protected-counter completes all12
+original commands/132 outer executions, formatting and both strict Clippy
+checks. Intended child failures, empty-filter controls and grep reprints are
+counted separately. Native-withdrawal-integration-local-completion.json binds
+this result; it certifies092 before the following metadata/documentation edits.
+
+Before editing, the diagnostic manifest invariant fails: patch_sha256 records
+0a9e722a while the existing minimum.patch hashes09acf9c0; the withdrawal-reuse
+snapshot added by upstream b7dee1b0 is absent from the manifest. All25 existing
+canonical/minimum/fixture hash triples match. Applying the actual26-section
+patch to isolated copied expectations succeeds without offsets, fuzz or
+rejection. The new snapshot's three hashes match those exact files. Evidence
+and candidate are native-withdrawal-integration-diagnostic-manifest-review.json
+and native-withdrawal-integration-compilers-candidate.json in the handoff.
+
+This correction updates only that checksum and the missing snapshot row.
+Compiler versions, selected targets/cases/suites, ignored-child selections,
+fixture sources, expected diagnostics and the patch itself stay unchanged.
+Review1 checks exact-byte provenance against the original failing invariant;
+review2 compares the complete parsed manifest and preserves every prior row
+and selection. Both reviews are by the author; no independent review is claimed.
+Correction paths are compilers.json and this existing PRD; production
+Rust and public API +0/-0, all runtime states and ownership equations unchanged.
+The release delta becomes15 paths against main after integrating PR426's three
+reviewed documentation changes. Existing user standing approval applies.
+The focused post-edit check verifies all26 canonical/minimum/fixture hash
+triples and the actual patch checksum; both original metadata defects reproduce
+against the prior manifest. Only the three merged documents, this record and
+the diagnostic manifest differ from092. No fixture or production Rust changes.
+
+Final verification must bind the combined documentation/metadata source.
+Earlier092 gates keep their source limits; the final exact-source results and
+delivery state belong in the release PR and retained command receipts. The
+original10/15/40-second failures remain unexplained. Full DX01–DX28 and broader
+R18 remain active; normal release workflow, registry/archive/tag verification
+and actual Bombay acknowledgment are still required before claiming delivery.
+
+#### Receiver startup diagnostic
+
+Final99d2001d hosted CI43737385295/job132882881038 fails the optimized remote
+owner. application_clients passes58 cases and fails
+outbound::disposal::verification_disposal_preserves_ready_receipt_without_delivering
+at disposal.rs143, before Export construction: receiving Counter open_node
+returns Err. The existing closure discards the error, so its actual cause is
+unknown. Driver/Observe fuzz steps are skipped. The failing source is identical
+to092; no port collision or runtime defect is established. Raw log SHA256 is
+befe5c9fd9ccf0b449a8d5c4277b6a8ccb7c37512affa81a4e8e334405544b9c.
+Both final99 package and16-command archive consumer suites pass on1.99/1.96;
+those scopes do not override this full-gate failure. Local full22500 was
+intentionally cancelled after this failure, before authoritative flake. Its
+completed owners retain99 scope; cancellation is not a passing gate.
+
+Pre-edit diagnostic policy: a refused fixture startup must report the returned
+NodeStartupRefusal and its supported Error::source. Application::open_node owns
+the original Application, Network and refusal; startup.rs preserves its native
+cause while ordinary Display/Debug deliberately redact it. Existing
+remote_node::startup_diagnostics_keep_native_cause_out_of_ordinary_output proves
+that distinction. This test-only observation changes no runtime or actor law.
+
+Expected edits are this PRD and outbound/disposal.rs: add one module-scope Error
+import and expose the refusal/source in the already failing receiver branch.
+Production Rust/API/state changes +0/-0; assertions, deadlines, fixture inputs,
+provider traces and successful paths remain exact. Cumulative release scope
+becomes16 paths; standing user auto-approval applies. Review1 maps the observed
+failure to the owning startup contract. Review2 rejects Debug-only printing,
+which would still omit the cause, and confirms no speculative retry or transport
+policy enters the patch. Both reviews are by the author. Detailed review and
+original failure receipts remain in the existing handoff. Verify original three
+disposal cases in debug/release and strict format/Clippy through pinned Nix;
+retain original failure limits and require fresh final gates before delivery.
+
+The scoped observation passes pinned1.99 format, both original3-case disposal
+profiles, the existing startup-source contract and strict application_clients
+Clippy. A separate original optimized application_clients invocation preserves
+all59 cases, nine compiler fixtures and original concurrency; all pass. Every
+one of727 frozen inputs remains exact. Receipts are
+native-startup-diagnostic-focused-result.json and
+native-startup-diagnostic-original-target-result.json. The original hosted
+refusal did not reproduce: this supplies observation/replay evidence, not a
+root cause, repair or final release certificate. Two interleaved libtest rows
+were verified from raw tokens alongside the exact59-name cohort and summary.
+The closed disposable target was removed after source/result audit and empty
+lsof; logs, source inputs and executable hashes remain. Final committed-source
+CI, local Nix and release-package evidence must still be refreshed before merge.
+
+#### Native Router listener custody
+
+Finalfa1738e9 hosted43743557660/job132901790023 fails coverage before the
+application-policy assertions:449 library cases pass and the real TLS Router
+bind returns EADDRINUSE/os98 on [::1]:40679 in the allow/grant case. Raw log SHA
+41bfe99e979f3c509e886d8faae74ec56f7fb110f4086997167cf6488e674f2f.
+This is distinct from99's unknown receiver startup cause and earlier watchdogs.
+Driver/Observe fuzz was skipped; successful fa callers do not override coverage.
+
+Fixture law (deliberate test policy): the native TLS listener must select and
+retain its own port. A released TCP probe supplies no exclusive custody.
+The owning access fixture now requests tls/localhost:0 and reads the one actual
+SessionInfo locator from that live Router for both original connections. Pinned
+TLS1.10.4 supports this allocation; SessionInfo1.10.10 reports the chosen port.
+All four original permission/grant crossings, their complete bodies after setup
+extraction, policy oracles,15-second watchdog and retirement are conserved.
+No retry, custom allocator, serial execution or public SDK access is introduced.
+
+Pre-edit source and law reviews compared the supported SDK capabilities and
+existing normal/dev dependency pattern. The dev-dependency candidate grows the
+isolated default consumer129→335 packages and is rejected. Enable unstable on
+the existing OPTIONAL private TLS dependency instead: default remains129;
+remote355→358 adds toml0.9.12+spec-1.1.0,toml_datetime0.7.5+spec-1.1.0 and
+winnow0.7.15, with compatible MSRVs and MIT/Apache2 licenses. Existing versions
+remain pinned. This feature also enables SDK protocol/configuration alternatives,
+including BlockFirst; it is not solely a getter switch. Fresh complete remote
+and package qualification is required for this explicit opt-in dependency cost.
+
+The original allocation, under the same enabled feature graph, fails the new
+router_owns_its_listener regression for the intended assertion: accepted request
+is tls/localhost:62882 rather than0; all original four crossings pass. Raw log
+SHA6a949af4edccde8a56faf9fce423b96b9fc69a13024bc7c7554263a4b998db9d.
+This actual pre-edit run is the old-probe falsifier. Earlier compile errors
+(config availability and get_json versus supported get_typed) receive no semantic
+credit. The corrected current1.99 build passes all five cases in both profiles,
+strict lib/tests Clippy and the default library check. Its43 default compiler
+artifacts contain no transport. All727 inputs stay exact during verification;
+only access.rs differs between the actual failing and passing input snapshots.
+Use existing Nix-style builds without debugger symbols; assertions remain enabled.
+
+Two author reviews check the law and counterexamples: competing bind alone would
+pass the old design, so observe accepted port0 configuration as well as the live
+nonzero locator, refused bind and awaited close. The aggregate checkpoint passes:
+no production state, subordinate sum/result, transition authority, module or public
+spelling changes; retained Session owns the listener and its locator supplies
+both connections. No arrival-history state, duplicated cause, inferred cardinality,
+semantic boolean or structural application path is added. Locked Behavior628649da,
+Native ownership instructions, existing crossings and SDK listener sources were
+cross-checked. Production Rust/public types +0/-0; test source +84/-47. Local
+configuration is one manifest line plus three lock entries; cumulative release
+scope18 paths under standing user auto-approval. Detailed source, feature-cost,
+review, failure and result receipts use router-listener-* in the existing handoff.
+
+The25GiB symbol cache was removed after terminal audit and empty lsof, preserving
+all exact inputs, raw logs and executable hashes. Clean the smaller completed
+cache on the same terms. Committed final Nix/CI, minimum compiler, packages and
+callers must still qualify before PR381 merge/publication. FullDX01–DX28 remains
+active; this focused correction does not establish final release acceptance.
+
+Final26a98bf9 Nix qualification stops in the protected-counter owner before test
+execution: its independent vendor lock lacks the newly enabled toml dependency.
+Preserve that actual failed gate and refresh the existing transport-custody lock
+through pinned Cargo, retaining every existing version and both feature profiles.
+The Engine fuzz lock has no transport/runtime dependency and is unaffected.
+No Rust source, oracle, public type or scope expansion is needed; that fixture
+lock was already one of the18 release paths. Require fresh committed gates.
+Both default and protected-transport locked metadata checks pass. That smaller
+lock adds five entries, all equal to root-selected versions/checksums, including
+serde_spanned1.1.1 and toml_writer1.1.2+spec-1.1.0 already present at root.
+Every prior fixture version/checksum remains unchanged; full owner still pending.
+
+## Incoming schedule watchdog evidence
+
+Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
+owner:443 library cases pass and
+`remote::export::query::schedule::generated_delivery_orders_preserve_native_admission`
+hits its unchanged10-second watchdog at schedule.rs:403. The failure is not
+classified as resource exhaustion, a timeout setting defect or a flaky-test
+exemption. The later Driver/Observe fuzz steps are skipped. Existing protected
+allocation guard failures in the raw log are intentional separate controls.
+Full raw log SHA256 is
+`9bb28ee0eb1e3f10d64d9b6e0837231fc50368a216b00bb5eb23804165a45d84`.
+
+Proptest persists seed
+`8783b4ac29d10abeccd1b945242a3a19af43fde799162d77bdcdb0a8982e56dd`
+and reports `[Expiring, Initial, Repeat, Repeat, Fresh, Revoked, Repeat,
+ConstructorExpired]`. Existing trace lines print only after successful cleanup;
+the last such line does not identify the original stalled input or stage.
+The reported minimized word and seed are retained as failure evidence, not
+claimed as a deterministic reproducer. The original run reports246 invocations
+and245 completions. Dedicated bounded incoming/Client/TLS profiles passed at
+190b; that does not explain or override this failed full-suite gate.
+
+The current law is the existing derived interpreter/fixture contract: this
+finite closed Application must retain original request/reply/refusal ownership
+and complete its actual joined native cleanup. A watchdog supplies no success
+or custody proof. No broader actor fairness guarantee or new behavior algebra
+is selected. Existing Export request custody, Application work/native reports,
+Driver and observer owners remain the investigation targets; the cause is
+unproven. Preserve the watchdog, every assertion, standard failure persistence
+and every original failed log. A later passing retry alone will not close it.
+
+Before any production edit, add this actual seed to the existing owned corpus.
+This batch touches the corpus and this PRD; seven existing paths differ from
+main across the release task. Production lines/public types:+0/-0. No fixture
+oracle, supported feature selection or timeout changes. Review1 checks that the
+saved input uses the existing bounded delivery protocol; review2 checks that
+seed replay cannot be mistaken for deterministic schedule coverage or a fix.
+Both reviews retain the original domain oracle unchanged. Focused source-local
+reproduction and progress evidence must establish the stalled phase before a
+production candidate is selected.
+
+The unchanged native1.99 optimized isolated campaign passes258/258 observations
+(two persisted seeds plus256 generated cases); the unchanged complete444-case
+optimized native library also passes once. These controls do not reproduce or
+explain the Linux failure, and do not establish a fix. The original CI failure
+remains the red evidence. Next add input/await progress messages to the existing
+cfg(test) incoming schedule witness only: before interpretation, Read admission,
+Read reply, reply-stream end, work return and actual Application join. Existing
+traces appear only after success. The messages must identify the actual current
+input without changing control flow, oracle, timeout, protocol or custody.
+Expected cumulative scope:eight existing release-task paths; production/public
+type delta0. No new state/product/trait or callback is selected. Review1 places
+each message before a real await or after an actual return; review2 retains the
+warning that diagnostic timing can mask a race and green runs cannot close it.
+These are temporary diagnostic observations, not a retained semantic candidate.
+
+Actual failed main CI is now a temporary automatic-merge hold. The original
+MERGE request and all metadata are preserved in the handoff; restore that
+preauthorized method after the failure is resolved and final-head gates pass.
+This prevents a green release-only replay from merging while the known earlier
+failed gate remains unexplained. No extra user approval or manual publication
+shortcut is introduced.
+
+Fresh exact-head checks remain required. Earlier679e archive/consumer and190b profile
+receipts retain their source limits. Current publication remains unverified;
+no release notice or full DX completion is claimed. This gate must be resolved
+before treating the current release as verified.
+
 ## Current delivery
 
-The scoped retirement stage merged through [PR415](https://github.com/devrandom-labs/bombay/pull/415)
-as `d575c614418b19476bd0f5dc481ed76ccb4671c6` after all eight submitted-head
-checks passed. Reviewed/tested head `0c9ef555` and delivered main have identical
-tree `a1fc212d`; all 718 frozen inputs remain exact. This includes main PR414's
-schedule corpus and PR413's registry Behavior/Actors0.30.0 adoption. All 28
-aarch64-darwin checks and authoritative flake check pass; Linux CI also passes
-the flake gate, Driver 2,048-run campaign and four Observe 1,024-run campaigns.
-Miri is scheduled/manual only and was skipped in this PR run. Two author
-source/oracle reviews pass; no independent review is claimed. Active rules
-required zero approving reviews, and there were no unresolved review threads.
+Runner-type inference and the listener ownership correction merged through
+[PR421](https://github.com/devrandom-labs/bombay/pull/421) as
+`2e328cd422dc1fbb1221fb60c6b1becd47cc959a`. All eight exact-head checks pass,
+and the delivered tree equals the tested tree. The [runner delivery](#runner-delivery)
+record below retains the actual source, package, compiler and campaign limits.
 
-The owning evidence merged through [Behavior PR121](https://github.com/devrandom-labs/bombay-behavior/pull/121)
-as `0e104494` after all 14 checks passed, including the strict mutation aggregate.
-Its delivered tree equals tested `f1e34025`; all 11 local owner checks, 1,051 optimized
-Nextest cases and 125 doctests pass. Runtime production net 53/tests net 1,581,
-one added public type and two added public methods retain the recorded 121-path
-scope. Complete traces, source conservation, archives, costs and loss inversions
-remain qualified below. `retirement-delivery-summary.json` in the restart
-handoff links exact merge trees, CI and final logs; earlier receipts keep their
-original revisions. Feature branches and pre-adoption backups remain preserved.
+Earlier scoped deliveries remain source-bound: retirement
+[PR415](https://github.com/devrandom-labs/bombay/pull/415), permanent transported-root
+fixtures [PR417](https://github.com/devrandom-labs/bombay/pull/417), startup
+refusal diagnostics [PR418](https://github.com/devrandom-labs/bombay/pull/418),
+listener selection [PR419](https://github.com/devrandom-labs/bombay/pull/419) and
+Client campaigns [PR420](https://github.com/devrandom-labs/bombay/pull/420).
+Behavior [PR121](https://github.com/devrandom-labs/bombay-behavior/pull/121) and
+[PR122](https://github.com/devrandom-labs/bombay-behavior/pull/122) retain the
+corresponding owner evidence. Their successful retries do not explain the
+historical startup or optimized original-work-retry failures.
 
-Permanent root-transport coverage merged through [PR417](https://github.com/devrandom-labs/bombay/pull/417)
-as `402ff67f95af3f1163caf492ee6b4101148771b0` after all eight checks passed.
-Its delivered tree `46e31eba` equals the reviewed and tested tree; all 721
-frozen inputs remain exact. All 28 local Nix checks and authoritative flake
-check pass, as do Linux flake, Driver 2,048 runs and four Observe campaigns of
-1,024 runs each. Miri was skipped for the PR event. Two author reviews pass;
-independent review is unclaimed. The separate main-push run remains pending.
-The six verified package archives retain their actual `46b34034` provenance;
-`d1414998` changes only the debug log guard and this coordination record.
-
-DX01–DX28 remains active. Selected consumer and policy acceptance, broader
-costs and runtime registry delivery remain open.
-Engine 0.3.0/macros 0.2.0/runtime 0.2.0 candidates are unpublished; a merged PR is
-not publication. Main-push CI is separate from the completed PR gates. Other
-active worktrees remain untouched. Behavior 0.30.0 and unchanged macros 0.16.0
-are published; the owner release notice was acknowledged. The earlier
-PR113/114 and reviewed release PR115 merged and normal publication delivered
-Behavior/Actors0.29.0 and macros 0.16.0 from `55dbac2`. Registry checksums, clean
-archive provenance, tags and releases agree; all228 shipped Rust files match
-the tested candidate. The release passed14 GitHub checks,11 native Nix gates,
-1,035 owner tests,123 doctests and four-workspace package preflight. These owner
-results do not substitute for the remaining Bombay gates.
+DX01–DX28 remains active for selected consumer and policy acceptance, costs,
+interface/documentation reconciliation and runtime registry delivery. Engine
+0.3.0, macros 0.2.0 and runtime 0.2.0 are unpublished candidates. Published
+Behavior/Actors 0.30.0 and macros 0.16.0 retain their verified registry/tag and
+Bombay acknowledgment evidence in the owning PRD. Main-push CI is separate
+from the completed PR gates. Other active worktrees remain preserved.
 
 ### Transported roots
 
@@ -889,13 +1369,181 @@ Final scope remains 41 owned paths, production +88/-105/net -17, public types
 `runner-types-main-full-summary.json`, `runner-types-main-package-results.json`
 and both `runner-types-main-consumer-*-summary.json` in the existing handoff.
 
-Original PR421 CI also passes all eight checks on its earlier `dcde8e80`
-epoch, with actual Driver2048 and four Observe1024 campaigns and 505 artifact
-file hashes checked. That is not combined-tree CI. Only this result section
-and the two backlog lines change after the integrated verification freeze;
-all production, tests and configuration remain identical. The final evidence
-commit requires fresh exact-head hosted CI before normal PR merge. Runtime
-registry publication, remaining acceptance/costs and full DX01–DX28 stay open.
+The earlier `dcde8e80` CI keeps its separate source epoch. Final head `2edc7c77`
+changes only this result section and the two backlog lines after `6ce3964f`;
+all production, tests and configuration remain exact.
+
+### Runner delivery
+
+[PR421](https://github.com/devrandom-labs/bombay/pull/421) merged normally as
+`2e328cd422dc1fbb1221fb60c6b1becd47cc959a` on 2026-11-14 after all eight
+submitted-head checks passed. Reviewed head `2edc7c77`, actual CI merge
+`057f0d1a` and delivered main share tree `a4fd2963`; all 723 frozen inputs
+match. Active rules required the Nix check and zero approving reviews; there
+were no unresolved review threads. Two author source/oracle reviews pass;
+independence is unclaimed. Production remains +88/-105/net -17, public types
++0/-0, across 41 owned paths against main `6ee3e676`. The aggregate checkpoint
+and every existing runtime/control-state distinction remain unchanged.
+
+Exact-head [CI 43594958711](https://github.com/devrandom-labs/bombay/actions/runs/43594958711)
+passes all 28 Linux Nix owners. Current tests report 1,010 passes and six
+controlled child registrations with 153 UI fixtures; minimum reports 114/0/1
+with 138 fixtures, and minimum remote 3/0/0 with eleven. Both remote profiles
+pass 539/0/0; debug completes all 32 finite Client words, 258/258 generated
+Client invocations and 257/257 incoming invocations. Actual Driver controls
+show sixteen healthy references and eight intended kills. Observe and Entity
+models pass 28 and six cases. The protected and remote-example child controls
+retain the qualifications above. Miri is skipped for this PR event.
+
+The final raw job log and eight artifact sets (513 files) are downloaded and
+hashed. Driver completes 2,048 runs with seed 20260928; all four Observe targets
+complete 1,024 each with seed 20261001. Their actual compiler is pinned
+1.98.0-nightly, separate from the supported application compilers. Source,
+certificate, revision, Cargo-profile and completed-trace checks retain their
+recorded bounds. Linux coverage floors pass, including Observe 506/526 lines;
+Darwin's 504/526 remains its own result. Earlier partial logs were stale
+prefixes, not failure evidence. Passing this run does not explain historical
+unknown failures or complete remaining DX01–DX28 acceptance.
+
+`runner-types-delivery-summary.json` and `runner-types-pr421-final-ci-summary.json`
+in the existing restart handoff retain the full identities and logs. The
+`6ce3964f` archive proofs above remain source-bound. Delivered-main
+[CI 43609315848](https://github.com/devrandom-labs/bombay/actions/runs/43609315848)
+now passes all five jobs, including all 28 Linux owners and both bounded fuzz
+campaigns. Its 723 frozen files, 513 artifact hashes and Client/incoming source
+hashes are verified against `2e328cd4`; Miri is skipped. Actual runtime
+publication remains a separate obligation. The existing restart handoff keeps
+the final log and `runner-types-main421-ci-summary.json`.
+
+### Release publication, before metadata updates
+
+Before this refresh, release PR381 proposed Engine 0.2.4 and macros 0.1.4 on a stale
+Behavior 0.26 branch. The already approved release-boundary law requires
+Engine 0.3.0, macros 0.2.0 and runtime 0.2.0 with the same registry
+Behavior/Actors 0.30 contract. The historical unchanged Engine and topology
+consumers below independently reject falsely compatible release classes;
+no new actor law, runtime API or compatibility shim is selected here.
+
+A normal merge preserves the old release head `5d486b8d` and verified main
+`2e328cd4`. All eight metadata conflicts resolve to the exact current-main
+manifests, lock and candidate notes: before note updates, the index tree and
+all 723 tracked files equal tested/delivered main. All code, test selections,
+compiler expectations and nested locks remain unchanged.
+
+The expected final delta is six existing files: three crate changelogs and
+this PRD plus its two backlog status records. Correct the release date,
+Behavior 0.30 and actual caller migration; retain minimum Rust 1.96 and useful
+old release notes. Production/test lines and public types change by zero.
+Record source/manifest conservation, pinned-Nix evaluation and joint actual
+package verification on both supported compilers before pushing. Existing
+archive consumer proofs keep their exact byte/source limits. Required hosted
+checks and ordinary release-PR merge precede publication. Preserve Joel's
+existing MERGE auto-merge setting; do not dispatch publication manually.
+
+Only successful publishing steps, actual registry versions/checksums and tags
+establish release delivery. Then notify the active existing Bombay Codex task,
+preserve its goal and confirm acknowledgment. Saving or queuing a notice is
+not acknowledgment. Full programme acceptance and the sole owner checklist
+remain open throughout this release preparation.
+
+### Release candidate verification (2026-11-14)
+
+Clean candidate `45bd862d` preserves both merge parents and changes six existing
+Markdown files against verified main `2e328cd4`. All 717 other tracked files,
+including production, tests, manifests, locks and the packaged guide, are exact.
+Production/test lines and public types change by zero; runtime control states
+and ownership contracts remain unchanged.
+
+All 28 Darwin builds and the subsequent normal `nix flake check` pass. All 28
+build records, roots, expected derivers and saved logs agree. All 723 frozen
+files and 695 filtered source files match; Nix content verification passes for
+all 28 outputs plus their source. Current tests report 1,010/0/6 with 153 UI
+fixtures; minimum 114/0/1 with 138; minimum remote 3/0/0 with eleven. Ignored
+registrations remain controlled child cases. Both remote profiles pass 539/0/0;
+Driver controls retain sixteen healthy references/eight intended kills, and
+the execution controls retain nine healthy cases, ten intended failures and
+two ownership denials with their actual causes. Observe/Entity models pass
+28/six. All four coverage floors pass; this Darwin run's Observe result is
+506/526, separate from the earlier 504/526 result.
+
+Clean joint all-feature packaging verifies all three crates on actual Rust
+1.99 and 1.96. Their archives are byte-identical across compilers: all 575
+extracted files, 113 shipped source files, original manifests and `45bd862d`
+VCS records are checked. The earlier archive consumers retain their exact
+executable-byte limits; they are not relabelled as new executions. Package
+logs, archive checksums and the complete owner/content proof are retained in
+`release381-package-results.json` and `release381-full-summary.json` in the
+existing restart handoff. Completed package target caches were removed only
+after rehashing all retained archives/files and checking for open files.
+
+Delivery-evidence updates preserve every executable and shipped source byte.
+Final submitted-head hosted checks, normal release-PR merge, actual registry,
+tag and consumer verification, and Bombay acknowledgment still precede release
+delivery. No workflow dispatch or publication is inferred; the whole
+DX01–DX28 programme remains active.
+
+### Release refresh after delivered retirement ordering (2026-11-15)
+
+The automatic release-pr workflow43683207817 succeeds but reports no update;
+PR381 remains at48c32f1a with the old failed accounts witness and conflicts.
+A normal merge of delivered main5070 preserves both parents, peer PR422/423
+work and PR424. Two backlog prose conflicts retain incoming current records
+plus the actual PR424 delivery above. Only the three existing changelogs and
+three existing DX records differ from main; production, tests, manifests,
+locks and Nix remain exact. Update the date and retirement completion note.
+Production/test/public-type deltas are zero. Fresh actual joint archives on
+Rust1.99/1.96, archive consumer checks and current release-head CI are required
+before publication. Older package receipts certify their older sources only.
+Joel's existing auto-merge setting remains enabled.
+
+### Refreshed release archive verification
+
+Clean release candidate `679e33819053fbedc2111b27f928b6a301dcb741` passes actual
+joint `cargo package --locked -p bombay-engine -p bombay-macros -p bombay-rs
+--all-features` verification through pinned Nix on Rust1.99.0/b940084d7 and
+Rust1.96.0/ac68faa20. All three archives are byte-identical across compilers:
+576 extracted files,114 shipped source files, exact original manifests and
+679e VCS provenance. Every shipped source byte matches the clean candidate.
+The extra source file versus the old575-file epoch belongs to peer PR422;
+old archives and consumers remain qualified to their earlier source.
+
+Fresh isolated consumers retain all80 prior selected native caller cases and
+add the seven unchanged accounts cases. Each compiler/profile passes87 cases,
+zero failures, one controlled ignored child registration and the same16 caller
+fixtures. Its independently limited parent executes and checks that child;
+ignored registration receives no extra positive credit. Entity26/profile,
+renamed callers3/compiler and all-feature doctests10/compiler pass. Eight
+example packages compile and six local examples execute with complete cleanup;
+remote and HTTP examples receive compile-only example credit. Actual selected
+Node/HTTP lifecycle cases execute in the native cohort. All30 tracked example/
+renamed caller files remain exact, apart from the nine recorded manifest path
+adapters. Registry dependency/version/source sets match the established
+consumer selection; only the three candidates use actual extracted archives.
+
+The first minimum trial omitted the existing compiler-specific diagnostic
+selection and failed suggestion text. Its corrected isolated copy applies
+exactly the same three shipped minimum.patch sections as the prior accepted
+consumer (selected SHA256 `1a35b9a36bffca7a3d62045b8f6fb313971d69d7a3caa8df1956fd40f053452c`).
+Both new corpora also initially omitted three repository certificate fixtures;
+their real-Node opening failures are preserved. Copying the exact existing
+fixtures after those runs terminated restores the unchanged Node witnesses.
+These setup failures explain only these new isolated trials, not historical
+opening failures. No production, fixture source, assertion or canonical
+archive was edited. Native copies adapt only Cargo manifest/lock, plus the
+three stock minimum diagnostic expectations in the minimum copy.
+
+All576 extracted archive files,114 shipped source files,724 repository inputs
+and caller source hashes remain unchanged throughout successful execution.
+The restart handoff retains `retirement-release-package-results.json`,
+`retirement-release-consumer-final-summary.json`, exact hashes/raw logs and
+original failed setup trials. Completed current compiler cache cleanup removes
+only non-executable compiled files, preserving463 executable hashes, all
+sources, archives, receipts and roots; active minimum caches remain separate.
+This evidence certifies679e. Final PRD evidence changes only Markdown; source
+conservation and no-build Nix evaluation must bind the submitted head. Fresh
+release-head hosted CI, ordinary merge, actual registry/tag/source verification
+and acknowledged Bombay notice remain required. Full DX01–DX28, broader costs
+and other selected consumer acceptance remain active.
 
 ### Entity retirement completion: before the regression (2026-11-14)
 
@@ -1080,9 +1728,24 @@ corrects the existing backlog README's stale PR421 disposition, making six
 owned paths. Production, tests, manifests, locks and Nix configuration remain
 identical to the frozen candidate; the integration and final evidence change
 only Markdown. The scoped ownership/minimization checkpoint remains `pass`.
-Fresh final-head hosted CI, review requirements and normal PR merge remain
-pending, followed by release381 refresh, exact package/consumer verification,
-publication and the acknowledged Bombay release notice. Full DX01–DX28 and its
+PR [424](https://github.com/devrandom-labs/bombay/pull/424) normally merged as
+`5070f5615f15c1c201e391e9abe455b7f0a05f54` after all eight submitted checks
+passed. Reviewed head c104, CI merge8fea and delivered main5070 share tree
+`055aa1146ebc74194b0ee8696d85cc1d8b920185`. Final
+[CI43674227563](https://github.com/devrandom-labs/bombay/actions/runs/43674227563)
+completes all28 Linux Nix builds. Exact owner log prefixes exclude dependency
+output; seven complete caller fixture sets match, including retained exact
+slow-notice and independently passing-test interleavings. Driver2048 and four
+Observe1024 bounded fuzz campaigns finish without reported crashes. All six
+delivery profile sets verify64 artifact files and96 source/certificate rows.
+Linux actor-execution inverse files are not independently downloaded; local
+per-case receipts retain their source limits. Miri is skipped; Windows and
+controlled performance are unclaimed. Final receipts in the restart handoff
+are `entity-retirement-pr424-ci-summary.json` and
+`entity-retirement-pr424-linux-final-owner-audit.json`. Fresh main CI43683207786
+is separate and still active. Release381 refresh, exact package/consumer
+verification, publication and the acknowledged Bombay release notice remain
+pending. Full DX01–DX28 and its
 remaining consumer, cost and documentation acceptance stay open.
 
 ## Verification and remaining work
@@ -2689,8 +3352,7 @@ state in both profiles without an extra wait. Domain policies, assignments,
 replacement and phased shutdown stay unchanged. The example source delta is
 +20/-9 lines, with no new runtime or public surface. The frozenf0fdae3 full run is interrupted at593.909s to include this
 approved example migration in one final source freeze; it is not a full pass.
-Final native and Linux gates remain required. No merging or publication is
-authorized for this batch.
+Final native and Linux gates remain required. These preparation results did not establish merge or publication.
 
 The owning PRD records exact commands, source identities, failures and limits.
 The initial actual-registry immutable128-case runs pass both compilers with all
@@ -2739,7 +3401,7 @@ native cases per profile pass both supported compilers; all501 archive files and
 obligations. Eight successful Nix outputs were unavailable during initial hash
 inspection; exact re-realization passes in584.829s, and all25 outputs now have
 their expected derivers/content hashes verified and local GC roots retained.
-The preview and source-scope authorization do not authorize merging or publication.
+These preview results preceded required CI and release review; they do not establish publication.
 
 The guide links its three former partial ignored topology copies to complete
 compiled examples/tests. Both supported compiler previews retain all six passing

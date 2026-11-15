@@ -9,6 +9,7 @@ use bombay::{ActorFailureAssessment, ApplicationScope, MailAddr, RetirementAsses
 use futures_util::future::Either;
 use std::cell::Cell;
 use std::cell::RefCell;
+use std::error::Error;
 use std::future::{Future, ready};
 use std::num::NonZeroUsize;
 use std::panic::panic_any;
@@ -140,7 +141,12 @@ async fn read(fault: ProviderFault) {
             &protocol::EndpointRole::Receiver,
         ))
         .await
-        .unwrap_or_else(|_| panic!("the actual receiving Counter Node opens"));
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!(
+                "the actual receiving Counter Node opens: {cause}; source: {:?}",
+                cause.source()
+            )
+        });
     let receiver_id = receiver.runtime_id();
     let export = Export::new(
         "bombay/outbound/read",

@@ -319,6 +319,7 @@ fn generated_delivery_orders_preserve_processed_increments() {
     reason = "the owning command selector requires the complete original ReadRequest on rejection"
 )]
 async fn increments(deliveries: &[Delivery]) {
+    println!("Client input: {deliveries:?}");
     let fresh = deliveries
         .iter()
         .filter_map(|delivery| match delivery {
@@ -392,6 +393,7 @@ async fn increments(deliveries: &[Delivery]) {
     };
     let mut receiver_network = configuration(&address, &EndpointRole::Receiver);
     receiver_network.max_retained_queries = maximum;
+    println!("Client await receiver Node opening: {deliveries:?}");
     let receiver = Application::new(Counter::new().stop_on_shutdown())
         .open_node(receiver_network)
         .await
@@ -400,6 +402,7 @@ async fn increments(deliveries: &[Delivery]) {
     let scope = ApplicationScope::new();
     let requests = scope.external::<CounterRequests>().unwrap();
     let source_address = requests.address();
+    println!("Client await caller Node opening: {deliveries:?}");
     let caller = scope
         .with_root(MessageAdapter::new(requests.recipient(), consume).stop_on_shutdown())
         .open_node({
@@ -724,11 +727,14 @@ async fn increments(deliveries: &[Delivery]) {
         Ok::<_, VerificationError>(target)
     });
     let outgoing = caller.run_with(|application| async move {
+        println!("Client await receiver binding: {deliveries:?}");
         let (mut reader, receiver_lifecycle) = receiver_ready
             .await
             .expect("receiver binding supplies actual custody");
         let sender = application.sender().unwrap();
+        println!("Client await initial admission: {deliveries:?}");
         let first = sender.send(Either::Left(23)).await;
+        println!("Client await provider pause: {deliveries:?}");
         let held = entering.await;
         let mut submissions = Vec::new();
         let mut acknowledgements_received = Vec::new();
@@ -737,8 +743,10 @@ async fn increments(deliveries: &[Delivery]) {
         for delivery in deliveries {
             match *delivery {
                 Delivery::Fresh(sequence) => {
+                    println!("Client await fresh admission {sequence}: {deliveries:?}");
                     submissions.push(sender.send(Either::Left(sequence)).await);
                     let arrived = loop {
+                        println!("Client await fresh acknowledgement {sequence}: {deliveries:?}");
                         match acknowledgements.recv().await {
                             Some(correlation) => {
                                 // An omitted canonical lookup may already have
@@ -757,7 +765,9 @@ async fn increments(deliveries: &[Delivery]) {
                 Delivery::Repeat => {
                     let (observed, replay_observed) = oneshot::channel();
                     *reply_policy.borrow_mut() = Some(observed);
+                    println!("Client await repeat admission: {deliveries:?}");
                     submissions.push(sender.send(Either::Left(23)).await);
+                    println!("Client await repeat permission: {deliveries:?}");
                     policy_observation = Some(replay_observed.await);
                 }
             }
@@ -766,16 +776,21 @@ async fn increments(deliveries: &[Delivery]) {
         // Even an observation failure releases the sole first-A provider.
         let released = release.send(());
         while acknowledgements_received.len() < query_count {
+            println!("Client await remaining acknowledgement: {deliveries:?}");
             match acknowledgements.recv().await {
                 Some(correlation) => acknowledgements_received.push(correlation),
                 None => break,
             }
         }
+        println!("Client await Read admission: {deliveries:?}");
         let read_admission = reader.send(CounterMessage::Read(reader.recipient())).await;
+        println!("Client await Read reply: {deliveries:?}");
         let value = reader.receive().await;
         reader.close_admission();
+        println!("Client await Read terminal: {deliveries:?}");
         let read_tail = reader.receive().await;
         let receiver_shutdown = receiver_lifecycle.shutdown();
+        println!("Client await receiver retirement: {deliveries:?}");
         let receiver_report = receiver_lifecycle.retirement().await;
         let finished = finished.send(());
         let caller_shutdown = application.shutdown();
@@ -799,7 +814,9 @@ async fn increments(deliveries: &[Delivery]) {
         )
     });
     let incoming = receiver.run_with(|_| receiver_finished);
+    println!("Client await Node runs: {deliveries:?}");
     let (incoming, outgoing) = tokio::join!(incoming, outgoing);
+    println!("Client Node runs returned: {deliveries:?}");
     let incoming = incoming.unwrap_or_else(|_| panic!("actual receiving Node host entry"));
     let outgoing = outgoing.unwrap_or_else(|_| panic!("actual caller Node host entry"));
     let (export, receiver_bound, receiver_closed, receiver_poll, receiver_drop) = receiver

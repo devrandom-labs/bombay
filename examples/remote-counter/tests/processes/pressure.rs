@@ -1,4 +1,5 @@
 //! Actual held-reply pressure across two independent public Nodes and OS processes.
+use super::bounded_output;
 use super::{Program, ReplyProof, counter, deployment, network, protocol, provision};
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Step, Stopped, User};
@@ -906,7 +907,12 @@ async fn queued_requests_resume_after_held_reply_and_borrowed_wait() {
                 output,
                 diagnostics,
             };
+            println!(
+                "pressure parent: waiting for {name} binding (child {})",
+                program.child.id()
+            );
             let actual = binding(&listener).await?;
+            println!("pressure parent: {name} binding returned");
             children.push((program, actual));
         }
         let [
@@ -922,19 +928,37 @@ async fn queued_requests_resume_after_held_reply_and_borrowed_wait() {
         receiver_input.flush().await?;
         caller_input.write_all(&configuration).await?;
         caller_input.flush().await?;
+        println!("pressure parent: configuration writes complete; waiting for held receiver notice");
         let held = read_control(&mut receiver_control).await;
+        println!("pressure parent: held receiver notice returned: {held:?}");
         let forwarded = match &held {
             Ok(held) => write_control(&mut caller_input, held).await,
             Err(_) => write_control(&mut caller_input, &Control::Unavailable).await,
         };
+        println!("pressure parent: caller notice write returned: {forwarded:?}");
+        println!("pressure parent: waiting for caller borrowed-wait notice");
         let borrowed = read_control(&mut caller_control).await;
+        println!("pressure parent: caller borrowed-wait notice returned: {borrowed:?}");
         // Parent release never depends on a law assertion or predicted delay.
         let released = write_control(&mut receiver_input, &Control::Release).await;
+        println!("pressure parent: receiver release write returned: {released:?}");
         let caller_control_closed = caller_input.shutdown().await;
+        println!(
+            "pressure parent: caller control close returned: {caller_control_closed:?}; waiting for exit"
+        );
         let caller_output = caller.finish().await?;
+        println!("pressure parent: caller exit acquired: {:?}", caller_output.status);
         let shutdown = write_control(&mut receiver_input, &Control::Shutdown).await;
+        println!("pressure parent: receiver shutdown write returned: {shutdown:?}");
         let receiver_control_closed = receiver_input.shutdown().await;
+        println!(
+            "pressure parent: receiver control close returned: {receiver_control_closed:?}; waiting for exit"
+        );
         let receiver_output = receiver.finish().await?;
+        println!(
+            "pressure parent: receiver exit acquired: {:?}",
+            receiver_output.status
+        );
         Ok::<_, io::Error>((
             receiver_pid,
             caller_pid,
@@ -953,6 +977,25 @@ async fn queued_requests_resume_after_held_reply_and_borrowed_wait() {
     })
     .await;
     // Timeout/error cancellation also invokes the existing kill-AND-reap guards.
+    match &trace {
+        Ok(Ok(_)) => {}
+        Ok(Err(_)) | Err(_) => {
+            for program in ["pressure-receiver", "pressure-caller"] {
+                for stream in ["stdout", "stderr"] {
+                    let path = directory.path().join(format!("{program}.{stream}"));
+                    match bounded_output(&path) {
+                        Ok(bytes) => println!(
+                            "pressure parent: {program} {stream}: {}",
+                            String::from_utf8_lossy(&bytes)
+                        ),
+                        Err(reason) => {
+                            println!("pressure parent: {program} {stream} read refused: {reason}");
+                        }
+                    }
+                }
+            }
+        }
+    }
     let removed = directory.close();
     let (
         receiver_pid,

@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 3913c1c6fe900450a6febc6bb78cca551f1542fa04e6e588558ba0f6197537fe # shrinks to [Initial, Repeat, Expiring, ConstructorExpired, Revoked, Fresh]
+cc 8783b4ac29d10abeccd1b945242a3a19af43fde799162d77bdcdb0a8982e56dd # CI43683207786 reports [Expiring, Initial, Repeat, Repeat, Fresh, Revoked, Repeat, ConstructorExpired]; watchdog cause unproven
