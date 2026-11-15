@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-macros-v0.1.3...bombay-macros-v0.2.0) - 2026-11-14
+## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-macros-v0.1.3...bombay-macros-v0.2.0) - 2026-11-15
 
 ### Changed
 

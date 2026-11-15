@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.3...bombay-rs-v0.2.0) - 2026-11-14
+## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.3...bombay-rs-v0.2.0) - 2026-11-15
 
 ### Changed
 
@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while retaining isolated actor requests and verified provider results.
 
 ### Fixed
+
+- Publish Entity retirement completion only after queued routing removal, so
+  reactivation cannot consume the preceding incarnation's retirement.
 
 - Reject unsupported native mailbox capacities before allocation.
 - Preserve complete reply, refusal, effect and retirement custody through the

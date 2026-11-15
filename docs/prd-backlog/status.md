@@ -1,5 +1,17 @@
 # Backlog status and dependencies
 
+R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
+has fresh prerequisites and local debug/optimized healthy, shared-close and
+undeclaration-omission evidence with exact restoration. Branch4489f1af,
+integrated with main2e328cd4, passes all28 native Nix checks and1011 workspace
+Nextest cases; source epochs and minimum-compiler scope remain explicit in the
+owning record. Independent withdrawal remains distinct from actor retirement/
+cache lifetime. No production/API change; public Node authority, resource
+baselines and complete R18 remain open. PR422 merged as `63c50988` after all
+eight hosted checks and final independent reviews passed. Qualified and delivered
+trees match; the clean merged worktree is removed. The owning record preserves
+actual Linux execution, minimum-compiler limits and skipped Miri separately.
+
 Published Behavior/Actors0.30 qualification merged through PR413/814c96d1
 after all six checks and independent reviews passed. The
 [owning record](../prds/static-remote-actors.md#delivery-of-behavior-qualification--2026-11-11)
@@ -10,7 +22,7 @@ and normal worktree removal. R24's
 is now PR414/f09303c8 after passing routine/manual CI, independent reviews,
 matching delivery trees and normal worktree removal. Finite/generated orders,
 persisted and literal replay, independent falsifiers, Nix seed inclusion and
-the empty-filter guard retain their scoped evidence. Generated Query/Client schedules,
+the empty-filter guard retain their scoped evidence. Broader Query/Client fault schedules,
 arbitrary overlap, crash/restart and complete R24 retain their own open gates.
 The [fixed public Client overlap delivery](../prds/network-schedule.md#delivery-of-the-fixed-public-client-overlap--2026-11-13)
 is PR416/b3833e50 after all eight checks and independent reviews pass. Both
@@ -18,13 +30,14 @@ overlap tests execute in four current Linux cohorts; delivered and qualified
 trees match. Complete evidence is sealed and the clean worktree is removed.
 Earlier omission/restoration controls retain their exact source limits.
 This fixed witness does not close complete R24/R07, AUTH1 or NET1.
-The next [public Client schedules](../prds/network-schedule.md#public-client-schedules-prerequisites-and-change-record--2026-11-13)
-stage records fresh owner verification and the proposed32-word campaign.
-Its reviewed finite32-word suite passes debug and optimized controls, with
-intended missing-word/replay-omission failures and exact restorations.
-Generated/shrunk words and actual saved-case replay now pass local controls;
-longer measurement and local Nix packaging/workflow controls also pass.
-Broader checks, hosted qualification and broader fault schedules remain open.
+The [bounded public Client campaign](../prds/network-schedule.md#delivery-of-the-public-client-campaign--2026-11-13)
+is now PR420/6ee3e676 after all eight checks and final reviews pass. Its32-word
+suite, generated/shrunk words, standard saved cases, falsifiers and restorations
+retain their source scopes. Current routine and long-manual evidence is sealed;
+qualified/delivered trees match and the merged worktree is removed. One Nix
+diagnostic is Cargo-split with original fragments retained; the earlier native
+close failure remains unexplained. Broader fault/restart, resource/security,
+example simplification and complete R24/R07/AUTH1/NET1 remain open.
 
 The [native access/grant crossing](../prds/remote-access.md#delivery-of-the-access-crossing--2026-11-11)
 merged through PR412 after all six checks and independent reviews passed.
@@ -49,7 +62,7 @@ merged through PR411 after all six checks and independent reviews passed.
 Independent network campaigns, replay beyond the bounded incoming campaign,
 restart and full R24 remain open.
 
-Updated: 2026-11-13 UTC. This delivery snapshot uses main `b3833e50`. The
+Updated: 2026-11-14 UTC. This delivery snapshot uses main `63c50988`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the
@@ -698,7 +711,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): the owning Behavior PRD remains the sole DX01–DX28 checklist. Latest scoped runner delivery PR421/2e328cd4 merged after eight passing checks with matching tested/delivered trees. Exact local, Linux and archive evidence stays in the PRD. Selected acceptance, broader costs and runtime registry delivery remain open; main-push CI is separate. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): owning PRD tracks DX01–DX28. Retirement PR415/d575c614 and permanent root-transport fixtures PR417/402ff67f merged after eight checks each; delivered/tested trees match. PR417 passes all28 local checks/flake, Linux flake and bounded Driver/Observe campaigns. Paired owner evidence merged through Behavior PR121 after14 checks. Archive receipts retain their exact706810b8/46b34034 source limits. Recovery-startup diagnostic PR418/899af54f and listener correction PR419/eb08c152 merged after eight checks and28 local gates each; historical Linux opening causes remain unknown. PR419 also passed both Linux remote profiles and bounded Driver/Observe campaigns. Runner-type inference merged through PR421/2e328cd4 after eight PR checks and separate main CI passed; local28 checks and exact575-file archive consumers retain their recorded source limits. Release381 remains unpublished after its accounts reactivation failure. The private retirement FIFO fix now passes all28 local owners, ordinary flake check,29-path content verification and full-workspace1,013 cases/153 caller fixtures, including the unchanged failed witness. PR424 merged as5070f561 after all eight submitted checks, all28 Linux Nix builds and bounded fuzz campaigns; the delivered tree equals reviewed c104. Exact local source, original ENOSPC attempts and retries remain qualified in the owning PRD. Fresh main CI and release381 archive/publication verification remain pending. Remaining selected acceptance, broader costs and runtime registry delivery stay open. Main-push CI is separate from passing PR gates. |
 | NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |

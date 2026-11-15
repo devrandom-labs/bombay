@@ -1,5 +1,191 @@
 # Static remote actors and typed admission
 
+## Export withdrawal isolation — prerequisites and change record (2026-11-14)
+
+**Current scope:** the private owner isolation witness is qualified, minimized
+and delivered through PR422; full R18, AUTH1/NET1, public Node withdrawal and example distillation
+remain open.
+No shipping Rust, public type, dependency or example changes. Integrated Nix
+checks, all eight hosted checks and final independent reviews pass.
+
+### Delivery — 2026-11-14
+
+[PR422](https://github.com/devrandom-labs/bombay/pull/422) merged normally at
+20:26:31 UTC as `63c5098874b3989b556b07f19b25d036b97a8f58`, after all eight
+checks and independent source, outcome and readiness reviews passed. Submitted
+head `d4fd2b8be616b085faf02300deb694500b204410`, actual CI preview `da7c6925`
+and delivered merge share tree `14188f4effc770a86455cd5de5e69d65516577e0`.
+The clean merged worktree and local branch are removed; the remote branch is
+also absent. The protected user and DevX worktrees remain in place.
+
+Hosted Linux CI run `43624251398` passes all28 Nix checks. Both retirement
+tests execute in remote debug/optimized (540 passed each), instrumented workspace
+and optimized workspace (1011 passed each, six parent-owned child registrations
+ignored). Minimum1.96 checks retain their compile/consumer scope; they do not
+execute these native retirement tests. Native TLS jobs and bounded incoming/
+Client campaigns pass their separate scopes. Driver2048 and four Observe1024
+ASan fuzz runs pass; their artifacts lack a standalone resolved-lock/source
+manifest, and optional Miri is skipped. No stronger reproducibility or new Miri
+claim follows from successful CI.
+
+Exact merge/check receipts, logs, artifact digests and independent reviews live
+under common Git `session-archives/2026-11-14/delivery/export-withdrawal/pr422/`.
+Local source epochs, fault controls and restorations below retain their original
+scope. Delivery adds no public withdrawal operation, resource baseline, SDK-close
+repair, full R18 acceptance or AUTH1/NET1 completion.
+
+Delivery-record reconciliation against main63c50988 touches three existing
+Markdown files: production +0/-0/net0; tests +0/-0/net0; public types +0/-0;
+records +44/-9/net35. No untracked files; `git diff --check` passes.
+
+**Current-main integration:** all28 native Nix checks passed at `c9dcf669`,
+including optimized workspace1011/0/6 and remote540/0/0 in both profiles.
+Those raw gate results remain bound to that source. Main then advanced through
+PR421/`2e328cd4` after all eight CI checks passed. Merge `d0fdc3a7` preserves
+both histories. Locks, selected Behavior instructions, Export/request/provider,
+Counter/Creator fixtures and this test's retainedbf85 source remain unchanged.
+
+Fresh source review verifies that the runner refactor derives Actor and staging
+types from existing composition and child failures from the existing vector of
+schema failures. It changes no Some(binding)/Work/cleanup kernel behavior or
+native custody product. This test already uses fully inferred ordinary syntax;
+no caller, production or test edit is selected. Prior control kills retain their
+original epochs; fresh merged-tree focused debug/optimized and normal gates
+now pass below. Integration evidence is retained separately under common Git
+`session-archives/2026-11-14/export-retirement/integration/`.
+
+The merged-tree two-test cohort passes2/0/0 (440 filtered),0.02s in each of
+debug and optimized builds, after39.76s and3m51s compilation respectively.
+The integrated workspace Nextest run exits0:1011 passed, six parent-owned
+child registrations skipped,107.646s. Its retained withdrawal and cached-target
+tests both pass. Integrated remote debug and optimized gates each pass540/0/0
+across twelve targets including both retirement tests; debug strict Clippy and
+documentation also pass. Independent execution reviews confirm those scopes.
+Full integrated `nix flake check --keep-going --max-jobs 2 --cores 2` exits0
+on code source `4489f1af`; all28 mapped native outputs are valid. Optimized
+workspace execution passes1011/0 with six unchanged parent-owned child
+registrations across123 target summaries, including both retirement tests.
+Minimum1.96 checks retain their selected compile/consumer scopes; they do not
+execute the new native retirement case. Later commits change records only;
+old c9 results retain their source. Hosted CI and delivery are recorded above.
+
+At main `6ee3e676`, actor retirement deliberately leaves its export/cache available
+until Application cleanup. Node has no public operation for removing one live
+export. Actor retirement, declaration withdrawal and shared Session close remain
+distinct; the existing cached-reply regression is preserved.
+
+### Fresh prerequisites and pre-edit choice
+
+Registry Behavior/Actors0.30.0 at `628649da`, Macros0.16.0 at `55dbac2d`,
+Address0.3.0 at `9f058dc0`, Communication0.1.6 at `963067e0`, Timers0.2.0 at
+`9369d1f6`, workspace Engine0.3.0 and local Observe remain selected without patches.
+Native owners remain bombay-zenoh1.10.10 and config1.10.2. Cargo.lock SHA256 is
+`9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394`;
+flake.lock is
+`13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`.
+Fresh source/API/test/document reviews, locks and selected-owner instructions
+are retained under common Git
+`session-archives/2026-11-14/export-retirement/prerequisites/`.
+
+Behavior owns pure Actions; Actors owns shutdown policy; Address/Communication
+own leases and mailbox custody; Observe owns completion publication. Timers and
+Engine need no change. Export owns declarations, bounded ingress, producers and
+original requests; Node owns shared Session close. The selected SDK undeclaration
+returns Ready after synchronous withdrawal: no invented native Pending boundary
+or callback-quiescence credit follows from its Ok.
+
+Pre-edit commit `3bde39ca` selects existing concrete Exports and lexical borrows
+before any new public abstraction. Expected test growth was250–450 lines over
+retirement.rs and a child module, production0/public types0. The exact blocker is
+missing executed evidence for cancelling one serving operation and withdrawing
+its declaration while another serves. Public detached authority remains a
+separate missing capability; this experiment cannot stand in for that API.
+
+### Executed trace and independent oracles
+
+The test reuses the pure Creator and two distinct Counter children in one real
+Application/Session. Its private startup uses the same Some(binding) invocation
+spine as Node and receives the actual Application cleanup publication. No
+fixture signal claims Application cleanup. Native queries use SessionLocal;
+this is no separate-process/TLS-link journey.
+
+First IncrementAndReply is admitted, processed and encoded, then its real
+protection producer returns Pending. Work cancels only that serving borrow and
+awaits its existing withdrawal twice, replaying teardown against the same owner.
+The first query closes without a publication; native matching becomes first
+absent/sibling present. A subsequent sibling native increment returns its actual
+correlated reply. Independent local FIFO Reads observe both Counters1 before
+Application cleanup. The shared Session is still open and its real cleanup
+publication is still pending at that point.
+
+Passing runs preserve original protected/proof bytes, receipts, admission and
+reply lanes, first encoding with absent protection/publication, sibling exact
+payload/proof, drained reply endpoints, producer disposal and ended extraction
+loans. Final native custody retains the actual two Counter/one Ledger origins:
+root Stopped and children OwnerCancelled. No extra actor stop manufactures a
+graceful classification. Cancellation surrenders a serving operation; it does
+not undo completed actor work or certify business completion.
+
+### Controls, restoration and review
+
+All commands use pinned Nix, Cargo --locked and the selected graph on Rust1.99.
+The two-test cohort is `cargo test --locked -p bombay-rs --features remote --lib
+application::node::tests::retirement::`; optimized adds `--release`. Each adverse
+command instead selects
+`application::node::tests::retirement::withdrawal::surrendered_export_withdraws_without_stopping_its_sibling`
+with `--exact`. Full commands/output and original sources live in the experiment
+archive; no new minimum-compiler execution is credited here.
+
+| Control | Debug | Optimized | Independent observed outcome |
+| --- | --- | --- | --- |
+| Existing cached-target baseline | 1 passed /0.03s | 1 passed /0.01s | Cached reply still retrievable after target retirement. |
+| Diagnostic healthy cohort | 2 passed /0.02s | 2 passed /0.02s | Both cache and withdrawal laws pass;440 filtered. |
+| Test-owned shared-Session close | exit101 /0.05s | exit101 /0.02s | Actual close Ok, sibling Get SessionClosedError, sibling Read0 rather than1 after actual owner joins return. |
+| Owning withdrawal omitted | exit101 /0.06s | exit101 /0.02s | Actual matching `(true, true)` instead of `(false, true)`, after both Counter1 checks, one sibling reply record and successful cleanup/close assertions. |
+| Exact restored cohort | 2 passed /0.05s | 2 passed /0.02s | Original source restored; both full healthy traces pass;440 filtered. |
+
+The shared-close injection lives only in test-owned orchestration; Export has
+no Session-close authority. The production omission replaces only its existing
+Queryable undeclare with mem::forget, bypassing automatic undeclaration on Drop
+and leaving withdrawal absent rather than forging Ok. Both fail their intended
+post-cleanup oracle, not setup or a watchdog. Later assertions after either
+failure are unexecuted and receive no credit. The omission's deliberately leaked
+allocation is no memory-baseline proof. Source comparisons restore querydfaae0a0,
+test26fe464c and mount3658701d byte-for-byte; neither cut remains.
+
+Author/coordinator, independent owner and cold reviews each check invariant/
+outcome and counterexample/nonvacuity. Reports record exact source hashes and
+resolve metadata scope, finite native Get Err cleanup, original child association
+and both matching values. Initial wrong-owner import and Clippy failures earn
+no semantic counterexample credit. The final lint correction changes only
+recipient inequality from assert! to assert_ne!, preserving the predicate;
+retained test SHA256 is
+`bf85f39754fd45cd4f136b16f0987fbb4bec85e90828b49ef8d78c238e999dea`.
+Strict remote library/test Clippy passes in15.70s and formatting check passes.
+Integrated execution and closing independent reviews pass on this source.
+The integration archive retains `final-review.txt` and `final-readiness.txt`;
+local qualification and minimization of the private witness are accepted.
+
+### Containment and remaining scope
+
+The retained code reuses existing owners/interpreters/products and adds only
+one test Future owning an observed Pending poll and its disposal count. No
+production state, transition branch, module, public spelling, wrapper, registry,
+task or observation cell changes. Test fixture reuse needs a documented dead-code
+expectation for its unused Entity-family portion, without installing that family.
+
+Final branch census against main2e328cd4: six paths, two Rust test paths and
+four existing Markdown records including the earlier PR420 delivery reconciliation.
+Production +0/-0/net0; tests +434/-0/net434; public types +0/-0. Records
++284/-13/net271 before PR submission; no untracked source remains.
+
+Private completion tags and callback/permit counts are inaccessible here; no
+visibility is widened and no baseline is claimed. Public Node withdrawal, exact
+target endpoint retirement, every-boundary failures/drops, reconnect initialization
+and complete R18 remain open. These broader requirements retain full feature
+acceptance and minimization. The private witness passes local minimization and
+final review; hosted CI and merged delivery are recorded above.
+
 ## Incoming campaign qualification — 2026-11-12
 
 The [owning delivery record](network-schedule.md#delivery-of-the-bounded-campaign--2026-11-12)
@@ -7,7 +193,7 @@ records PR414/f09303c8: finite/generated incoming orders, falsifiers, retained
 replay and Nix seed inclusion now have passing routine/manual CI, independent
 source/evidence reviews, matching merge trees and normal worktree removal.
 No shipping Rust, public type or example changed. This advances scoped R24
-evidence; generated Query/Client schedules, crash/restart, production identity,
+evidence; broader Query/Client fault schedules, crash/restart, production identity,
 remote-example simplification and the complete remote goal remain open.
 PR413's delivered dependency qualification below is unchanged.
 The [fixed public Client overlap delivery](network-schedule.md#delivery-of-the-fixed-public-client-overlap--2026-11-13)
@@ -15,6 +201,13 @@ is PR416/b3833e50 after all eight checks and independent reviews pass. Both
 tests execute in four current Linux cohorts; delivered and qualified trees
 match, complete evidence is sealed and the clean worktree is removed.
 No additional complete row closes; the owning record retains all remaining scope.
+The [bounded public Client campaign](network-schedule.md#delivery-of-the-public-client-campaign--2026-11-13)
+is delivered by PR420/6ee3e676 after all eight checks and final reviews pass.
+Qualified/submitted/merged trees match; current and long-manual evidence is
+separately sealed and the merged worktree is removed. The record preserves one
+Cargo-split diagnostic and the unexplained earlier native-close failure without
+claiming a repair. Broader fault/restart, resource/security, example simplification
+and full R01–R25/AUTH1/NET1 acceptance remain open.
 
 ## Published Behavior qualification — 2026-11-11
 

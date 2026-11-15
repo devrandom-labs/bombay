@@ -9,6 +9,17 @@ Other rows retain their independent states. Semantic acceptance, exact-head
 CI, record delivery and full feature completion remain separate; historical
 failures and passing runs keep their original source scope.
 
+R18's [private withdrawal witness](../static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
+qualifies existing declaration isolation with actual sibling effects, healthy
+debug/optimized runs, two intended fault controls and exact source restoration.
+It supplies no public Node withdrawal capability, callback/permit baseline or
+full R18 completion. Branch4489f1af, integrated with main2e328cd4, passes all28
+native Nix checks and1011 workspace Nextest cases with unchanged source limits.
+Final source/minimization review and all eight hosted checks pass. PR422 merged
+as `63c50988` with matching qualified/delivered trees and the clean merged
+worktree removed. Actual Linux execution and minimum-compiler limits are recorded
+in the owning PRD; this scoped delivery leaves full R18 open.
+
 R01's literal witness is satisfied and delivered through PR410/f2832eea.
 Its [owning evidence map and delivery](../remote-protocols.md#delivery--2026-11-11)
 bind the actual separate public programs, complete sender/receiver Actions,
@@ -25,13 +36,19 @@ remote acceptance row closes from this prerequisite.
 The [bounded incoming campaign delivery](../network-schedule.md#delivery-of-the-bounded-campaign--2026-11-12)
 records PR414/f09303c8 after routine/manual CI, independent reviews, matching
 merge trees and worktree cleanup. Its finite/generated/falsifier/replay and
-Nix seed claims retain their exact scopes. Generated Query/Client schedules, arbitrary
+Nix seed claims retain their exact scopes. Broader Query/Client fault schedules, arbitrary
 overlap, crash/restart and full R24 remain open.
 The [fixed public Client overlap delivery](../network-schedule.md#delivery-of-the-fixed-public-client-overlap--2026-11-13)
 is PR416/b3833e50 after all eight checks and independent reviews pass. Both
 tests execute in four current Linux cohorts; delivered/qualified trees match,
 complete evidence is sealed and the clean worktree is removed. No complete
-acceptance row is added; generated native schedules and the full goal remain open.
+acceptance row is added; broader native fault schedules and the full goal remain open.
+The [bounded public Client campaign delivery](../network-schedule.md#delivery-of-the-public-client-campaign--2026-11-13)
+records PR420/6ee3e676 with all eight checks and final reviews passing, matching
+trees, sealed routine/manual evidence and normal worktree removal. Its32-word,
+generated and saved-case witnesses remain bounded. The record preserves the
+Cargo-split diagnostic and earlier native-close failure; no SDK repair or full
+R24/remote acceptance is inferred.
 
 On 2026-11-11, reviewed PR405/406 delivered the finite current cold-overlap and
 byte-preservation witnesses after all six checks passed. PR404's R09 recovery

@@ -166,9 +166,17 @@ pub(super) struct Slot<C, E, L> {
 
 struct SlotExecution<C, E, L> {
     state: SlotState<C, E, L>,
-    pending: VecDeque<SlotEffect<C, E, L>>,
+    pending: VecDeque<SlotRequest<C, E, L>>,
     dispatch: SlotDispatchPhase,
     retirement: Option<(Publisher<RetirementMode>, Observation<RetirementMode>)>,
+}
+
+enum SlotRequest<C, E, L> {
+    Effect(SlotEffect<C, E, L>),
+    Retirement {
+        publication: Publisher<RetirementMode>,
+        mode: RetirementMode,
+    },
 }
 
 enum SlotState<C, E, L> {
@@ -206,7 +214,7 @@ impl<C, E: Clone, L> SlotExecution<C, E, L> {
         self.state = SlotState::Ready(decision.state);
         decision
             .effects
-            .for_each(|effect| self.pending.push_back(effect));
+            .for_each(|effect| self.pending.push_back(SlotRequest::Effect(effect)));
         installed
     }
 }
@@ -265,15 +273,16 @@ impl<C, E: Clone, L> Slot<C, E, L> {
     }
 
     pub(super) fn complete_retirement(&self, mode: RetirementMode) {
-        let publication = self
+        let mut execution = self
             .execution
             .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .retirement
-            .take()
-            .map(|(publication, _)| publication);
-        if let Some(publication) = publication {
-            publication.complete(mode);
+            .unwrap_or_else(PoisonError::into_inner);
+        if let Some((publication, _)) = execution.retirement.take() {
+            // Completion follows all earlier effects, including exact-slot removal,
+            // even when another interpreter currently owns this queue.
+            execution
+                .pending
+                .push_back(SlotRequest::Retirement { publication, mode });
         }
     }
 
@@ -292,8 +301,11 @@ impl<C, E: Clone, L> Slot<C, E, L> {
         let Some(mut dispatch) = SlotDispatch::acquire(&self.execution) else {
             return;
         };
-        while let Some(effects) = dispatch.next() {
-            interpret(effects);
+        while let Some(request) = dispatch.next() {
+            match request {
+                SlotRequest::Effect(effect) => interpret(effect),
+                SlotRequest::Retirement { publication, mode } => publication.complete(mode),
+            }
         }
     }
 }
@@ -337,7 +349,7 @@ impl<C, E: Clone, L> Slot<C, E, L> {
         };
         let (state, effects, retirement) = state.close_family();
         execution.state = SlotState::Ready(state);
-        effects.for_each(|effect| execution.pending.push_back(effect));
+        effects.for_each(|effect| execution.pending.push_back(SlotRequest::Effect(effect)));
         retirement
     }
 }
@@ -356,11 +368,11 @@ impl<'a, C, E, L> SlotDispatch<'a, C, E, L> {
         }
     }
 
-    fn next(&mut self) -> Option<SlotEffect<C, E, L>> {
+    fn next(&mut self) -> Option<SlotRequest<C, E, L>> {
         let execution = self.execution?;
         let mut slot = execution.lock().unwrap_or_else(PoisonError::into_inner);
-        if let Some(effects) = slot.pending.pop_front() {
-            Some(effects)
+        if let Some(request) = slot.pending.pop_front() {
+            Some(request)
         } else {
             slot.dispatch = SlotDispatchPhase::Idle;
             self.execution = None;
@@ -884,9 +896,132 @@ fn installed_slot_decision<I, C, E, L>(
 #[cfg(test)]
 mod tests {
     use core::num::{NonZeroU64, NonZeroUsize};
+    use core::{mem, ptr};
     use std::panic::{AssertUnwindSafe, catch_unwind};
+    use std::sync::Mutex;
 
-    use super::{ActivationId, DispatchId, Slot, SlotEvent};
+    use super::{
+        ActivationId, DispatchId, DrainFailure, RetirementMode, Slot, SlotDispatch, SlotEffect,
+        SlotEvent,
+    };
+    use crate::entity::DrainStage;
+
+    fn retirement_waits_for_queued_removal(mode: RetirementMode) {
+        let activation_id = ActivationId::new(NonZeroU64::MIN);
+        let dispatch_id = DispatchId::new(NonZeroU64::MIN);
+        let command = Box::new(11_u64);
+        let command_allocation = ptr::from_ref(command.as_ref());
+        let lease = Box::new(13_u64);
+        let lease_allocation = ptr::from_ref(lease.as_ref());
+        let slot = Slot::<Box<u64>, u64, Box<u64>>::new();
+        let effects = Mutex::new(Vec::new());
+        let record = |effect| effects.lock().unwrap().push(effect);
+
+        slot.submit_owned(SlotEvent::ClaimActivation {
+            activation_id,
+            dispatch_id,
+            command,
+            waiter_limit: NonZeroUsize::MIN,
+        });
+        slot.dispatch_pending(&record);
+        slot.submit_owned(SlotEvent::ActivationSucceeded {
+            activation_id,
+            endpoint: 7,
+            lease,
+        });
+        slot.dispatch_pending(&record);
+        slot.submit_owned(SlotEvent::DeliveryResolved {
+            activation_id,
+            failure: None,
+        });
+        let (_, observation) = slot.begin_retirement().unwrap();
+        slot.dispatch_pending(&record);
+        let completed_fence = match mode {
+            RetirementMode::Graceful => SlotEvent::FenceAcknowledged { activation_id },
+            RetirementMode::Forced(failure) => SlotEvent::ForceDrain {
+                activation_id,
+                failure,
+            },
+        };
+        slot.submit_owned(completed_fence);
+        slot.dispatch_pending(&record);
+        let interpreted = mem::take(&mut *effects.lock().unwrap());
+        let [
+            SlotEffect::StartActivation {
+                activation_id: started,
+            },
+            SlotEffect::Deliver {
+                activation_id: delivered,
+                dispatch_id: dispatched,
+                endpoint,
+                command,
+            },
+            SlotEffect::EnqueueFence {
+                activation_id: fenced,
+                endpoint: fence_endpoint,
+            },
+            SlotEffect::Retire {
+                activation_id: retired,
+                lease,
+                retirement,
+            },
+        ] = interpreted.as_slice()
+        else {
+            panic!("the complete activation, delivery, fence and retirement prefix is retained");
+        };
+        assert_eq!(
+            (*started, *delivered, *fenced, *retired),
+            (activation_id, activation_id, activation_id, activation_id)
+        );
+        assert_eq!(*dispatched, dispatch_id);
+        assert_eq!((*endpoint, *fence_endpoint), (7, 7));
+        assert_eq!(ptr::from_ref(command.as_ref()), command_allocation);
+        assert_eq!(ptr::from_ref(lease.as_ref()), lease_allocation);
+        assert_eq!((**command, **lease, *retirement), (11, 13, mode));
+        drop(interpreted);
+
+        let slot_consumer = SlotDispatch::acquire(&slot.execution).unwrap();
+        slot.submit_owned(SlotEvent::Terminated { activation_id });
+        slot.dispatch_pending(&record);
+        assert!(effects.lock().unwrap().is_empty());
+        slot.complete_retirement(mode);
+        assert_eq!(
+            observation.try_get(),
+            None,
+            "queued removal still owns completion"
+        );
+        drop(slot_consumer);
+
+        slot.dispatch_pending(&|effect| {
+            assert_eq!(observation.try_get(), None, "removal precedes publication");
+            record(effect);
+        });
+        let removed = mem::take(&mut *effects.lock().unwrap());
+        assert!(
+            matches!(removed.as_slice(), [SlotEffect::Remove { activation_id: removed }] if *removed == activation_id)
+        );
+        assert_eq!(observation.try_get(), Some(mode));
+
+        slot.submit_owned(SlotEvent::Terminated { activation_id });
+        slot.complete_retirement(mode);
+        slot.dispatch_pending(&record);
+        let replayed = mem::take(&mut *effects.lock().unwrap());
+        assert!(replayed.is_empty(), "termination replay has no effects");
+        assert_eq!(observation.try_get(), Some(mode));
+    }
+
+    #[test]
+    fn graceful_retirement_waits_for_queued_removal() {
+        retirement_waits_for_queued_removal(RetirementMode::Graceful);
+    }
+
+    #[test]
+    fn forced_retirement_waits_for_queued_removal() {
+        retirement_waits_for_queued_removal(RetirementMode::Forced(DrainFailure {
+            stage: DrainStage::FenceAcknowledgement,
+            outstanding_reservations: 0,
+        }));
+    }
 
     struct PanickingEndpoint;
 

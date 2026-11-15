@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.3...bombay-engine-v0.3.0) - 2026-11-14
+## [0.3.0](https://github.com/devrandom-labs/bombay/compare/bombay-engine-v0.2.3...bombay-engine-v0.3.0) - 2026-11-15
 
 ### Changed
 
