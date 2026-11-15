@@ -7,9 +7,10 @@ use bombay::behavior::EstablishedRecipient;
 use bombay::prelude::{Application, Completion};
 use bombay::remote::{Export, ExportError, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, MailAddr, RetirementAssessment, WorkOutcome};
-use protocol::{EndpointRole, ProtectedMessage, configuration, limits, listener_address, recorded};
+use protocol::{EndpointRole, ProtectedMessage, configuration, limits, recorded};
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
+use std::error::Error;
 use std::num::NonZeroUsize;
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
@@ -40,7 +41,7 @@ async fn foreign_actor_target_refuses_before_numeric_duplicate_comparison() {
     reason = "both actual Applications join before checking target refusal and original Work custody"
 )]
 async fn refused(selection: Selection) {
-    let address = listener_address();
+    let address = "tls/localhost:0";
     let configuration_scope = String::from("borrowed target refusal scope");
     let payload: Box<[u8]> = [107, 109].into();
     let allocation = payload.as_ptr();
@@ -64,9 +65,14 @@ async fn refused(selection: Selection) {
         wire::protect(bytes, recorded::projection(receipt), &records, maximum)
     };
     let node = Application::new(Counter::new().stop_on_shutdown())
-        .open_node(configuration(&address, &EndpointRole::Receiver))
+        .open_node(configuration(address, &EndpointRole::Receiver))
         .await
-        .unwrap_or_else(|_| panic!("actual owned Node opens"));
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!(
+                "actual owned Node opens at {address}: {cause}; source: {:?}",
+                cause.source()
+            )
+        });
     let caller = node.runtime_id();
     let deadline = Instant::now() + Duration::from_secs(30);
     let current = |receipt: &recorded::Receipt<CounterInput>, runtime: &str, target: MailAddr| {

@@ -196,6 +196,9 @@ queued_queries: maximum,
                 )
                 .await
                 .expect("actual native declaration");
+                // Observe the original production allocation without retaining a counted owner.
+                let allocation = export.active.as_ref().unwrap().1.clone();
+                let declared_owners = allocation.strong_count();
                 let mut replies = Vec::new();
                 for (index, original) in [&records[0], &records[0], &records[1]]
                     .into_iter()
@@ -257,19 +260,29 @@ queued_queries: maximum,
                     &mut export,
                 )
                 .await;
-                (export, first, snapshot, observed)
+                (export, (allocation, declared_owners), first, snapshot, observed)
             }
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Application host is entered"));
     let (work, root_report, native, notifications, ()) = outcome.into_parts();
-    let ((export, first, snapshot, (released, (replies, admission, value, shutdown))), cleanup) =
-        work.try_into_completed()
-            .unwrap_or_else(|_| panic!("actual Work and native cleanup complete"));
+    let (
+        (
+            export,
+            (allocation, declared_owners),
+            first,
+            snapshot,
+            (released, (replies, admission, value, shutdown)),
+        ),
+        cleanup,
+    ) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("actual Work and native cleanup complete"));
     let closed = session.close().await;
     drop(cancellation);
     cleanup.expect("the actual Application cleanup joins");
     closed.expect("the independent native Session closes");
+    let retained_allocation = allocation.upgrade().map(|owner| owner.available_permits());
     let (origin, root) = native.expect("original native root remains acquired");
     let root_report = root_report.expect("the runtime retains its actual root report");
     assert_eq!(root_report.retirement(), RetirementAssessment::Established);
@@ -313,5 +326,10 @@ queued_queries: maximum,
     assert_eq!(
         snapshot.1,
         [(23, 23, Protection::Pending), (23, 23, Protection::Pending)]
+    );
+    assert!(declared_owners > 0);
+    assert!(
+        retained_allocation.is_none(),
+        "the original query-count allocation is released"
     );
 }

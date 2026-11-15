@@ -1,5 +1,235 @@
 # Static remote actors and typed admission
 
+## Export resource retirement — prerequisites and change record (2026-11-15)
+
+**State: distilled (resource test slice); PR delivery pending.** This test-only R18 stage starts from main
+`43104330146d960c461e80488ed71a8dcedfd8ed`, after PR425's public capability and
+PR426's delivery record merged with all eight checks passing. The accepted
+requirement remains the complete R18 startup/drop/retirement/resource/reconnect
+matrix; this stage supplies two concrete resource observations without replacing
+the remaining matrix. No upstream upgrade or production change is selected.
+
+Fresh selected-contract inspection confirms Cargo.lock SHA256
+`9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394`
+and flake.lock
+`13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`,
+without patches. Behavior/Actors 0.30.0 retain revision 628649da;
+Macros 0.16.0, Address 0.3.0, Communication 0.1.6, Timers 0.2.0,
+workspace Observe/Engine 0.3 and bombay-zenoh 1.10.10 remain selected.
+The complete selected Behavior instructions retain SHA256
+`aa5c4e70e38e52a1fbae8948ba30ee1c16fe88eddc3ec4fe8bfcf07f494a9207`.
+Current owner APIs, relevant tests and documentation were inspected, including
+Behavior initialization/transition, Actors shutdown, Address lease release,
+Communication admission/retirement, Observe publication/cancellation, Timers
+generation ownership, Engine affine retirement, and native query declaration,
+callback and undeclaration ownership.
+
+Behavior still owns pure Actions; Actors owns shutdown policy; Address and
+Communication own exact actor identity/admission. Observe supplies the existing
+affine withdrawal request and retained result. Timers and Engine acquire no new
+role. Export owns the original native callback, query permits, provider futures
+and Request custody; Application owns real actor execution/retirement; Session
+owns native close. No dependency contract blocks this finite owner-level test.
+PR381's release hold and both unresolved historical watchdog causes remain
+separate. Published Communication 0.1.7 is not adopted or credited here.
+
+The missing conjunction is actual pending protection surrender, preserved
+completed actor work and exact original request values, followed by release of
+the original production query-count allocation. Native undeclaration success
+alone is insufficient: its result publishes before retained-row drain, and
+the selected SDK defaults to not waiting for callbacks. Matching disappearance
+does not count tasks or prove callback quiescence.
+
+Two witnesses are selected:
+- Extend the existing canonical-receipt comparison with a Weak cloned from the
+  real ingress immediately after declaration, without replacing the receiver or
+  retaining a test Arc. Keep every existing comparison, native reply and actor
+  assertion; check expiration after its existing real cleanup. This covers a
+  completed provider, not pending surrender.
+- Add one Export-owner pending-protection withdrawal trace using the existing
+  Counter, protocol and provider policies. Obtain a real actor reply and pending
+  protection; first-poll public withdrawal; finish actual serving and draining;
+  retain native matching/EOF, original Request/User/sender/proof/receipt/encoding
+  and absent unfinished protection. Prove the original Weak expires before
+  consuming extraction can hide a missing drain. Read the live Counter as 1,
+  perform further real work and read 2, then preserve actual Application/Session
+  cleanup and terminal originals. Repeat private withdrawal to prove that later
+  teardown cannot replace the acquired result.
+
+The independent adverse control deliberately retains the actual query permit
+at its owning `discard_query` release (`drop(permit)` to
+`mem::forget(permit)`), while leaving native Query disposal and all expected
+custody/effect outcomes intact. Both new allocation observations must reject
+that defect in debug and optimized builds. Restore production bytes exactly
+before retaining positive runs. This is a proposed falsifier, not executed
+evidence or a claim that the baseline leaks.
+
+Expected files: existing export comparison.rs and withdrawal.rs, this PRD,
+and the backlog status (four paths). Expected production +0/-0/net0; public
+types +0/-0; no dependency changes. Test growth is expected and will be measured
+after implementation, including untracked files. Reuse existing native Exports,
+Counter, Observe and standard futures; no new fixture framework, actor model,
+resource accessor or public wrapper.
+
+Aggregate checkpoint: production control states, subordinate alternatives,
+branches, modules and public spellings remain unchanged. Only observations of
+existing owners are added. The Weak identifies one actual allocation and
+does not become a second lifecycle authority. The trace uses an explicit
+pending provider and real withdrawal intent, with no semantic boolean,
+invented callback completion or inferred actor termination. Test reviews must
+check nonvacuity and that cleanup does not conceal the intended defect.
+Two test reviews, three scoped code audits, paired-profile controls/inversions,
+the owning Nix gates and actual PR delivery remain required.
+
+Full task/resource baseline, pending public Node binding/whole-owner surrender,
+partial tuple rollback, real close failures with coexisting causes, reconnect
+without reinitialization and all remaining R18/AUTH1/NET1 obligations remain
+open.
+
+### Export resource retirement — focused execution
+
+The implemented scope remains two existing test files and two requirement
+records. Production +0/-0/net0; tests +262/-8/net254; public types +0/-0.
+No untracked project files or dependency changes are retained. The completed
+comparison keeps all prior assertions; the new pending-provider trace also
+checks the original raw/proof/receipt pointer table and encoded allocation,
+actual reply User/sender, cancelled borrowed withdrawal wait, absent protection
+result, real native matching, and Counter values 1 then 2 before cleanup.
+
+Pinned Rust 1.99 debug and optimized Export-owner cohorts each pass 20 tests,
+zero ignored. The command is
+`nix develop -c cargo test --locked -p bombay-rs --features remote --lib remote::export::tests:: -- --nocapture`,
+with `--release` for optimized execution. Both use
+`CARGO_TARGET_DIR=/tmp/bombay-export-retirement-target`,
+`CARGO_PROFILE_DEV_DEBUG=0`, `CARGO_PROFILE_TEST_DEBUG=0`, and
+`CARGO_INCREMENTAL=0`, retaining assertions with the flake's debugger settings.
+
+The intended `mem::forget(permit)` control compiles and fails in both profiles
+at the final allocation assertions of
+`pending_protection_keeps_canonical_receipt_readable` and
+`requested_withdrawal_releases_the_pending_query_allocation`, after their
+independent native/actor/custody assertions and cleanup. The actual cohort is
+15 passed/5 failed: three existing fragmented-request permit-recovery assertions
+also reject the leak; those are separate existing laws, not three new resource
+witnesses. Neither control uses a timeout or compiler refusal as its resource
+failure. The production source is restored byte-for-byte to SHA256
+`5ef6ce3dc78950a7d7d4213348c9e3e6da27074a74ae6f4c7fc5620e39ee875c`.
+Restored positive reruns pass all 20 owner cases in each profile, with zero
+ignored. Production and test hashes match the healthy source; broader
+acceptance remains pending.
+
+The source/test reviews map the observations to their independent outcomes
+and check empty Weak, held Arc, fake pending producer, cleanup masking and
+rollback counterexamples. All three scoped audits pass. Exact test
+hashes, source patch, control patch, original source and executed logs are in
+common Git `session-archives/2026-11-15/export-resource-retirement/`.
+The Weak proves expiration of this one allocation; it does not prove every
+numeric permit is returned, all tasks end, or arbitrary callbacks are quiescent.
+Native EOF can also follow its deadline and is not given stronger causal credit.
+
+### Export resource retirement — native gate failure and diagnostic scope
+
+The original full Nix run at `d66c9412` terminates with exit 1: 27 of 28 native
+checks pass, but optimized workspace `application_clients` fails
+`node_exports::consumer::targets::duplicate_actor_targets_refuse_before_any_declaration_or_work`.
+Its 58 sibling cases pass. The failure is at `targets.rs:69`, opening the actual
+Node, before target certification; the original closure discards the opening
+error. Neither a timeout nor either new resource assertion failed. The complete
+failed log and original flake log are retained under the stage's common Git
+archive. The independent workspace Nextest run passed 1021 cases, with six
+parent-owned child registrations; that earlier pass does not resolve this gate.
+Three scoped source audits passed, but delivery remains held for this failure.
+
+Before further edits, the diagnostic scope adds only the actual startup refusal,
+its existing `Error::source()` and the selected test address to the failing
+test's panic. Expected cumulative paths: five (the existing four plus
+`tests/application_clients/node_exports/targets.rs`); production +0/-0/net0,
+public types +0/-0, no dependency or timeout/assertion changes. Existing
+`NodeStartupRefusal` and standard Error own all required information.
+The fixture releases a temporary listener before native binding; port reuse is
+a hypothesis, not the established historical cause. Inspect and exercise that
+boundary before selecting any repair. A successful replay alone is not a fix.
+
+The diagnostic-only focused pair passes both target cases in debug and optimized
+builds; no historical cause is recovered. Independent source reviews confirm
+the selected TCP address is used only by Node opening, while the other actual
+Application stays local. Before any setup repair, a temporary control will bind
+and retain an actual listener at the released reservation's endpoint through
+native opening. Credit requires the real opening cause to identify refusal of
+that occupied endpoint, not an assumed DNS/address-family match or a timeout.
+Then compare native `tls/localhost:0` while the same occupied endpoint stays
+held: existing target, callable, identity and joined-cleanup assertions must
+still execute. This reuses the established zero-port fixture spelling, removes
+the unnecessary reservation from this test only, and adds no production code,
+policy or API. Restore control instrumentation before final paired runs.
+
+The occupied-endpoint controls fail both target cases in each profile, at the
+actual native Open cause: OS48 `Address already in use` names the exact held
+IPv6 loopback sockets. The unchanged watchdog does not fail. With native port
+zero selected while those competing sockets stay held through opening, both
+cases pass in each profile and execute all original target, callable, payload,
+actor and joined-cleanup assertions. This establishes an independent setup
+defect and repair, not the cause of the earlier discarded refusal. The retained
+change removes this test's temporary port reservation and keeps its source
+diagnostic. All socket occupation instrumentation is removed; no production,
+dependency, public type, assertion or timeout change remains. The original
+resource test sources are unchanged. Formatting passes; the full owning cohort
+passes 59 cases with zero failures or ignored cases in each profile. Final
+`targets.rs` SHA256 is
+`fde666d885b65bc647d17bb3b4ceec70ba657be655053761dc38f66d865095f5`.
+The two independent source/control reviews and coordinator review preserve
+the historical-cause limit. Renewed repository gates and delivery remain pending.
+
+Cumulative checkpoint against main `43104330`: five paths, no untracked files;
+production +0/-0/net0; tests +272/-12/net260; public types +0/-0. The other two
+paths are this requirement record and its backlog status. The original complete
+Nix failure, all 27 passing check logs, paired leak controls/restoration,
+occupied-port controls/native-port comparisons and final owning runs remain
+separate archived source epochs. The original Nix workspace library run also
+passed both new resource tests before its later target-startup failure. No old
+passing check is transferred to the renewed source.
+
+### Export resource retirement — acceptance and minimization
+
+The renewed pinned native command
+`nix flake check --keep-going --max-jobs 2 --cores 2 --no-update-lock-file`
+finishes with exit 0 at `07667d16`; all 28 mapped aarch64-darwin outputs are
+registered and their actual logs reviewed. The optimized workspace gate runs
+1021 passing cases across 123 summaries, with six child entry points exercised
+through passing parent tests. Both new resource observations and both corrected
+target-refusal cases explicitly pass. The Driver benchmark smoke also succeeds.
+The separate workspace Nextest run passes 1021 cases with the same six child
+registrations. Remote debug and optimized gates each pass 550 cases, zero ignored.
+All four owner coverage floors pass. These are native results; hosted Linux CI
+and merge are still required.
+
+Rust 1.96 runs 114 cases across 28 selected integration targets, with one
+parent-owned child registration, and four remote-surface cases with zero ignored.
+The latter checks typed authoring, privacy and error display. These selected
+minimum-compiler gates do not execute the new remote resource tests. Current
+source, logs, receipts and controls are retained in the stage archive, separate
+from the original failed epoch. The Nix Cargo source snapshot matches Cargo.lock
+and all three changed Rust files; flake.lock is checked separately because the
+Cargo source filter excludes it. The earlier discarded startup refusal remains
+unattributed.
+
+Final minimization retains two independent allocation observations in their
+existing Export-owner tests, plus the target test's native port selection and
+actual-cause diagnostic. The completed-provider comparison and pending-provider
+withdrawal exercise distinct ownership paths; both reject the actual permit leak.
+No production accessor, wrapper, public product, dependency or second lifecycle
+authority is needed. Existing exact-custody assertions, watchdogs and real actor
+cleanup remain. Three scoped source audits and the paired control reviews pass.
+This proves expiration of one original allocation, not a global task/resource
+baseline, callback quiescence, complete R18 or AUTH1/NET1.
+
+Final checkpoint: five changed paths, no untracked project files; production
++0/-0/net0; tests +272/-12/net260; public types +0/-0. Source and lock hashes
+remain those recorded above. The completed local test batch's unused build cache
+was checked for open files and active users, then removed: 7.8 GiB occupied,
+7.4 GiB measured net free-space gain during concurrent builds. Exact inputs and
+evidence remain; the unfinished delivery worktree is retained.
+
 ## Public export withdrawal — prerequisites (2026-11-14)
 
 **State: merged (public withdrawal slice).** [PR425](https://github.com/devrandom-labs/bombay/pull/425)
