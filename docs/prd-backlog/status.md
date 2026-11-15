@@ -7,7 +7,10 @@ integrated with main2e328cd4, passes all28 native Nix checks and1011 workspace
 Nextest cases; source epochs and minimum-compiler scope remain explicit in the
 owning record. Independent withdrawal remains distinct from actor retirement/
 cache lifetime. No production/API change; public Node authority, resource
-baselines, complete R18 and reviewed CI delivery remain open.
+baselines and complete R18 remain open. PR422 merged as `63c50988` after all
+eight hosted checks and final independent reviews passed. Qualified and delivered
+trees match; the clean merged worktree is removed. The owning record preserves
+actual Linux execution, minimum-compiler limits and skipped Miri separately.
 
 Published Behavior/Actors0.30 qualification merged through PR413/814c96d1
 after all six checks and independent reviews passed. The
@@ -59,7 +62,7 @@ merged through PR411 after all six checks and independent reviews passed.
 Independent network campaigns, replay beyond the bounded incoming campaign,
 restart and full R24 remain open.
 
-Updated: 2026-11-13 UTC. This delivery snapshot uses main `6ee3e676`. The
+Updated: 2026-11-14 UTC. This delivery snapshot uses main `63c50988`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the
