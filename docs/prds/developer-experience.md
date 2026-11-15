@@ -126,6 +126,17 @@ Raw25,107,987bytes/SHA256
 `90ecfefaebf457391715e5c3206cbde5259c5746befd1332f7afb5241667d64f`
 is retained. A passing older graph cannot establish the proposed causal cure.
 
+At committed bd7958bf, the first wider local Nix check fails before executing
+the protected-counter fixture: its separate directory vendor contains locked
+Communication0.1.6 while the path runtime now requires0.1.7. The failure is a
+consumer-lock mismatch, not an oracle or compiler-model failure. Preserve the
+actual log/exit1. Repository inventory finds exactly one additional owning
+lock with Communication: `docs/prds/static-remote-actors/transport-custody/Cargo.lock`.
+Before editing it, select the same precise0.1.7 Cargo update through the pinned
+environment. This expands Native scope12→13 existing paths, with no fixture
+code/assertion/manifest, native production or API change. Re-run this failed
+Nix owner before resuming the full gate; retain all earlier failed evidence.
+
 ## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
