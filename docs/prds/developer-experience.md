@@ -260,6 +260,19 @@ placeholder or new policy. Its16 delivered paths belong to that already merged
 requirement. Preserve this branch's14-path change and the original pressure
 failure during a normal merge; fresh integrated gates/packages are required.
 
+Normal merge07234b50 now integrates d41 without conflicts, preserving diagnostic
+parent c48fbdca and the delivered R18 tree. Relative to current main the release
+task still changes14 paths; no upstream production edit is rewritten. Locked
+Behavior/Actors0.30, macros0.16, Address0.3, Communication0.1.7, Timers0.2 and
+Tokio1.53.3 remain selected; Observe remains native. The existing public pressure
+control and both deadlines remain exact. Fresh integration starts with withdrawal
+ownership/lifecycle cases and the pressure parent in both profiles, plus the
+actual remote-surface compiler checks, strict Clippy and format. Do not invent
+new policy, generic plumbing or compatibility syntax from compiler fallout.
+Current archives, caller checks and hosted CI above retain their e272 limits;
+they do not certify this new public withdrawal/error contract or its costs.
+The runtime changelog now records that already-delivered API and shared cause.
+
 ## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote

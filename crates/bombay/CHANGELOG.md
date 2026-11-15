@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** runner methods infer the actor and its staging and child failure
   types. Remove those redundant generic arguments; only actual work, futures and
   delivery routers remain caller type inputs.
+- **Breaking:** export withdrawal failures use shared `ExportError` values;
+  `Error::source` retains the original native cause for live and final consumers.
 - Compose supervisors and pools through owning Config values and inferred startup.
 - Use wrapper-owned timer targets, `stash.take()` and explicit Stash/Machine
   holding policies with complete refused-input custody.
@@ -32,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clients, HTTP and Entity families with complete recursive retirement custody.
 - Compose typed remote requests and replies through Node Client/Export interfaces
   while retaining isolated actor requests and verified provider results.
+- Withdraw one export through its single-use operation while preserving its
+  target actor, sibling exports and shared connection.
 
 ### Fixed
 
