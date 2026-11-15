@@ -996,6 +996,55 @@ Rust1.99/1.96, archive consumer checks and current release-head CI are required
 before publication. Older package receipts certify their older sources only.
 Joel's existing auto-merge setting remains enabled.
 
+### Refreshed release archive verification
+
+Clean release candidate `679e33819053fbedc2111b27f928b6a301dcb741` passes actual
+joint `cargo package --locked -p bombay-engine -p bombay-macros -p bombay-rs
+--all-features` verification through pinned Nix on Rust1.99.0/b940084d7 and
+Rust1.96.0/ac68faa20. All three archives are byte-identical across compilers:
+576 extracted files,114 shipped source files, exact original manifests and
+679e VCS provenance. Every shipped source byte matches the clean candidate.
+The extra source file versus the old575-file epoch belongs to peer PR422;
+old archives and consumers remain qualified to their earlier source.
+
+Fresh isolated consumers retain all80 prior selected native caller cases and
+add the seven unchanged accounts cases. Each compiler/profile passes87 cases,
+zero failures, one controlled ignored child registration and the same16 caller
+fixtures. Its independently limited parent executes and checks that child;
+ignored registration receives no extra positive credit. Entity26/profile,
+renamed callers3/compiler and all-feature doctests10/compiler pass. Eight
+example packages compile and six local examples execute with complete cleanup;
+remote and HTTP examples receive compile-only example credit. Actual selected
+Node/HTTP lifecycle cases execute in the native cohort. All30 tracked example/
+renamed caller files remain exact, apart from the nine recorded manifest path
+adapters. Registry dependency/version/source sets match the established
+consumer selection; only the three candidates use actual extracted archives.
+
+The first minimum trial omitted the existing compiler-specific diagnostic
+selection and failed suggestion text. Its corrected isolated copy applies
+exactly the same three shipped minimum.patch sections as the prior accepted
+consumer (selected SHA256 `1a35b9a36bffca7a3d62045b8f6fb313971d69d7a3caa8df1956fd40f053452c`).
+Both new corpora also initially omitted three repository certificate fixtures;
+their real-Node opening failures are preserved. Copying the exact existing
+fixtures after those runs terminated restores the unchanged Node witnesses.
+These setup failures explain only these new isolated trials, not historical
+opening failures. No production, fixture source, assertion or canonical
+archive was edited. Native copies adapt only Cargo manifest/lock, plus the
+three stock minimum diagnostic expectations in the minimum copy.
+
+All576 extracted archive files,114 shipped source files,724 repository inputs
+and caller source hashes remain unchanged throughout successful execution.
+The restart handoff retains `retirement-release-package-results.json`,
+`retirement-release-consumer-final-summary.json`, exact hashes/raw logs and
+original failed setup trials. Completed current compiler cache cleanup removes
+only non-executable compiled files, preserving463 executable hashes, all
+sources, archives, receipts and roots; active minimum caches remain separate.
+This evidence certifies679e. Final PRD evidence changes only Markdown; source
+conservation and no-build Nix evaluation must bind the submitted head. Fresh
+release-head hosted CI, ordinary merge, actual registry/tag/source verification
+and acknowledged Bombay notice remain required. Full DX01–DX28, broader costs
+and other selected consumer acceptance remain active.
+
 ### Entity retirement completion: before the regression (2026-11-14)
 
 Final release PR381 head `48c32f1a` failed CI43623798724/job132535080252:
