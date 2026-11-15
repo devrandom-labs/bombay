@@ -6,8 +6,16 @@ stage couples pending-provider surrender and exact retained custody with release
 of the original query-count allocation, plus a completed-provider control.
 Production/API/dependencies are unchanged. Both focused profiles pass 20 cases;
 both intended leak controls fail at the new allocation assertions, and the
-byte-exact restored pair passes 20 cases each. Full checks, final audit and
-delivery remain pending.
+byte-exact restored pair passes 20 cases each. Three scoped audits and workspace
+Nextest pass. The full native Nix run fails one of 28 checks: an existing
+application-client target test refuses actual Node opening before its target
+assertion, with the underlying cause discarded. The original log is preserved;
+a test-only diagnostic preserves future opening causes. An independent occupied
+socket control proves the released-port setup defect in both profiles; native
+port zero preserves the complete target laws under the same control. Temporary
+controls are removed, and all 59 owning cases pass in both profiles. The original
+failure remains unattributed; the other 27 original checks pass. Renewed full
+checks and delivery remain pending.
 The full boundary/drop/task-baseline/reconnect matrix remains open.
 
 R18's [public withdrawal slice](../prds/static-remote-actors.md#public-export-withdrawal-delivery--2026-11-15)

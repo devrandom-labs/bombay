@@ -118,14 +118,76 @@ Restored positive reruns pass all 20 owner cases in each profile, with zero
 ignored. Production and test hashes match the healthy source; broader
 acceptance remains pending.
 
-The two source/test reviews map the observations to their independent outcomes
+The source/test reviews map the observations to their independent outcomes
 and check empty Weak, held Arc, fake pending producer, cleanup masking and
-rollback counterexamples. A third scoped audit remains pending. Exact test
+rollback counterexamples. All three scoped audits pass. Exact test
 hashes, source patch, control patch, original source and executed logs are in
 common Git `session-archives/2026-11-15/export-resource-retirement/`.
 The Weak proves expiration of this one allocation; it does not prove every
 numeric permit is returned, all tasks end, or arbitrary callbacks are quiescent.
 Native EOF can also follow its deadline and is not given stronger causal credit.
+
+### Export resource retirement — native gate failure and diagnostic scope
+
+The original full Nix run at `d66c9412` terminates with exit 1: 27 of 28 native
+checks pass, but optimized workspace `application_clients` fails
+`node_exports::consumer::targets::duplicate_actor_targets_refuse_before_any_declaration_or_work`.
+Its 58 sibling cases pass. The failure is at `targets.rs:69`, opening the actual
+Node, before target certification; the original closure discards the opening
+error. Neither a timeout nor either new resource assertion failed. The complete
+failed log and original flake log are retained under the stage's common Git
+archive. The independent workspace Nextest run passed 1021 cases, with six
+parent-owned child registrations; that earlier pass does not resolve this gate.
+Three scoped source audits passed, but delivery remains held for this failure.
+
+Before further edits, the diagnostic scope adds only the actual startup refusal,
+its existing `Error::source()` and the selected test address to the failing
+test's panic. Expected cumulative paths: five (the existing four plus
+`tests/application_clients/node_exports/targets.rs`); production +0/-0/net0,
+public types +0/-0, no dependency or timeout/assertion changes. Existing
+`NodeStartupRefusal` and standard Error own all required information.
+The fixture releases a temporary listener before native binding; port reuse is
+a hypothesis, not the established historical cause. Inspect and exercise that
+boundary before selecting any repair. A successful replay alone is not a fix.
+
+The diagnostic-only focused pair passes both target cases in debug and optimized
+builds; no historical cause is recovered. Independent source reviews confirm
+the selected TCP address is used only by Node opening, while the other actual
+Application stays local. Before any setup repair, a temporary control will bind
+and retain an actual listener at the released reservation's endpoint through
+native opening. Credit requires the real opening cause to identify refusal of
+that occupied endpoint, not an assumed DNS/address-family match or a timeout.
+Then compare native `tls/localhost:0` while the same occupied endpoint stays
+held: existing target, callable, identity and joined-cleanup assertions must
+still execute. This reuses the established zero-port fixture spelling, removes
+the unnecessary reservation from this test only, and adds no production code,
+policy or API. Restore control instrumentation before final paired runs.
+
+The occupied-endpoint controls fail both target cases in each profile, at the
+actual native Open cause: OS48 `Address already in use` names the exact held
+IPv6 loopback sockets. The unchanged watchdog does not fail. With native port
+zero selected while those competing sockets stay held through opening, both
+cases pass in each profile and execute all original target, callable, payload,
+actor and joined-cleanup assertions. This establishes an independent setup
+defect and repair, not the cause of the earlier discarded refusal. The retained
+change removes this test's temporary port reservation and keeps its source
+diagnostic. All socket occupation instrumentation is removed; no production,
+dependency, public type, assertion or timeout change remains. The original
+resource test sources are unchanged. Formatting passes; the full owning cohort
+passes 59 cases with zero failures or ignored cases in each profile. Final
+`targets.rs` SHA256 is
+`fde666d885b65bc647d17bb3b4ceec70ba657be655053761dc38f66d865095f5`.
+The two independent source/control reviews and coordinator review preserve
+the historical-cause limit. Renewed repository gates and delivery remain pending.
+
+Cumulative checkpoint against main `43104330`: five paths, no untracked files;
+production +0/-0/net0; tests +272/-12/net260; public types +0/-0. The other two
+paths are this requirement record and its backlog status. The original complete
+Nix failure, all 27 passing check logs, paired leak controls/restoration,
+occupied-port controls/native-port comparisons and final owning runs remain
+separate archived source epochs. The original Nix workspace library run also
+passed both new resource tests before its later target-startup failure. No old
+passing check is transferred to the renewed source.
 
 ## Public export withdrawal — prerequisites (2026-11-14)
 
