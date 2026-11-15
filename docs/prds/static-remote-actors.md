@@ -2,7 +2,7 @@
 
 ## Export resource retirement — prerequisites and change record (2026-11-15)
 
-**State: active.** This test-only R18 stage starts from main
+**State: distilled (resource test slice); PR delivery pending.** This test-only R18 stage starts from main
 `43104330146d960c461e80488ed71a8dcedfd8ed`, after PR425's public capability and
 PR426's delivery record merged with all eight checks passing. The accepted
 requirement remains the complete R18 startup/drop/retirement/resource/reconnect
@@ -188,6 +188,47 @@ occupied-port controls/native-port comparisons and final owning runs remain
 separate archived source epochs. The original Nix workspace library run also
 passed both new resource tests before its later target-startup failure. No old
 passing check is transferred to the renewed source.
+
+### Export resource retirement — acceptance and minimization
+
+The renewed pinned native command
+`nix flake check --keep-going --max-jobs 2 --cores 2 --no-update-lock-file`
+finishes with exit 0 at `07667d16`; all 28 mapped aarch64-darwin outputs are
+registered and their actual logs reviewed. The optimized workspace gate runs
+1021 passing cases across 123 summaries, with six child entry points exercised
+through passing parent tests. Both new resource observations and both corrected
+target-refusal cases explicitly pass. The Driver benchmark smoke also succeeds.
+The separate workspace Nextest run passes 1021 cases with the same six child
+registrations. Remote debug and optimized gates each pass 550 cases, zero ignored.
+All four owner coverage floors pass. These are native results; hosted Linux CI
+and merge are still required.
+
+Rust 1.96 runs 114 cases across 28 selected integration targets, with one
+parent-owned child registration, and four remote-surface cases with zero ignored.
+The latter checks typed authoring, privacy and error display. These selected
+minimum-compiler gates do not execute the new remote resource tests. Current
+source, logs, receipts and controls are retained in the stage archive, separate
+from the original failed epoch. The Nix Cargo source snapshot matches Cargo.lock
+and all three changed Rust files; flake.lock is checked separately because the
+Cargo source filter excludes it. The earlier discarded startup refusal remains
+unattributed.
+
+Final minimization retains two independent allocation observations in their
+existing Export-owner tests, plus the target test's native port selection and
+actual-cause diagnostic. The completed-provider comparison and pending-provider
+withdrawal exercise distinct ownership paths; both reject the actual permit leak.
+No production accessor, wrapper, public product, dependency or second lifecycle
+authority is needed. Existing exact-custody assertions, watchdogs and real actor
+cleanup remain. Three scoped source audits and the paired control reviews pass.
+This proves expiration of one original allocation, not a global task/resource
+baseline, callback quiescence, complete R18 or AUTH1/NET1.
+
+Final checkpoint: five changed paths, no untracked project files; production
++0/-0/net0; tests +272/-12/net260; public types +0/-0. Source and lock hashes
+remain those recorded above. The completed local test batch's unused build cache
+was checked for open files and active users, then removed: 7.8 GiB occupied,
+7.4 GiB measured net free-space gain during concurrent builds. Exact inputs and
+evidence remain; the unfinished delivery worktree is retained.
 
 ## Public export withdrawal — prerequisites (2026-11-14)
 

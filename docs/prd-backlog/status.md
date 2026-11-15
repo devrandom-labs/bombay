@@ -1,7 +1,7 @@
 # Backlog status and dependencies
 
 R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement--prerequisites-and-change-record-2026-11-15)
-is active from main 43104330 with fresh locked-owner verification. The test-only
+test slice is distilled from main 43104330 with fresh locked-owner verification. The test-only
 stage couples pending-provider surrender and exact retained custody with release
 of the original query-count allocation, plus a completed-provider control.
 Production/API/dependencies are unchanged. Both focused profiles pass 20 cases;
@@ -14,8 +14,12 @@ a test-only diagnostic preserves future opening causes. An independent occupied
 socket control proves the released-port setup defect in both profiles; native
 port zero preserves the complete target laws under the same control. Temporary
 controls are removed, and all 59 owning cases pass in both profiles. The original
-failure remains unattributed; the other 27 original checks pass. Renewed full
-checks and delivery remain pending.
+failure remains unattributed; the other 27 original checks pass. The renewed
+native run passes all 28 checks, including 1021 optimized workspace cases and
+550 remote cases per profile. The scoped test slice is distilled; hosted CI and
+PR delivery remain pending. Minimum-compiler and allocation-proof limits remain
+in its acceptance record. The unused completed-batch local build cache is removed,
+with 7.4 GiB measured free-space gain and source/evidence preserved.
 The full boundary/drop/task-baseline/reconnect matrix remains open.
 
 R18's [public withdrawal slice](../prds/static-remote-actors.md#public-export-withdrawal-delivery--2026-11-15)
