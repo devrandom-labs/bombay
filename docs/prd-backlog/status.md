@@ -1,18 +1,16 @@
 # Backlog status and dependencies
 
-R18's [public withdrawal prerequisite review](../prds/static-remote-actors.md#public-export-withdrawal--prerequisites-2026-11-14)
-is locally distilled; complete R18 remains active. Main5070f561's retirement-order repair is integrated at
-f0fbb717. All28 integrated native checks and ordinary flake check pass on the
-recorded immutable source; workspace/Nextest each pass1020 cases with six
-parent-owned child registrations. Both remote profiles pass549 cases; the1.96
-remote consumer gate passes four outer cases/all twelve compiler fixtures.
-The initial compiler-note mismatch and its exact correction retain their source
-epochs in the owning PRD. Fresh verification finds no dependency-version blocker.
-The authorized sixteen-path capability adds no public nominal type; three local
-code audits and applied-guide review pass. Hosted delivery remains open. The coordinator reports an
-unexplained seeded Linux main failure and temporarily holds PR381 automatic
-merging; local passes do not resolve that failure. Complete R18/AUTH1/NET1 and
-example distillation remain open.
+R18's [public withdrawal slice](../prds/static-remote-actors.md#public-export-withdrawal-delivery--2026-11-15)
+merged through PR425/d41c3739 after all eight checks and final independent
+reviews passed. Reviewed, actual CI and merged trees match; the clean worktree
+and branch are removed. Linux qualifies all28 Bombay Nix owners, remote549 per
+profile and workspace1020 with six parent-owned child registrations. Exact
+minimum-compiler, bounded schedule/fuzz and source scopes remain in the owning
+record, including the unexplained one-file Observe ops retention difference.
+The public capability adds no nominal type. Complete R18/AUTH1/NET1 and example
+distillation remain open. PR381's release hold is separate; neither historical
+watchdog cause is established by these successful runs or Communication0.1.7's
+publication. This delivered tree retains its qualified0.1.6 lock.
 
 R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
 has fresh prerequisites and local debug/optimized healthy, shared-close and
