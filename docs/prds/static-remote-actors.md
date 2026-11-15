@@ -1,5 +1,654 @@
 # Static remote actors and typed admission
 
+## Public export withdrawal — prerequisites (2026-11-14)
+
+**State: distilled (public withdrawal slice).** PR422's private isolation witness and PR423's delivery
+reconciliation are merged. The initial baseline is `011e7ad0`; PR423 passed all
+eight checks and its reviewed, actual CI and merged trees match. Its clean
+merged worktree is removed. The model and pre-edit record below select the
+public callable. Scoped public native, ownership execution and restored fault
+controls pass in both profiles below. Current main5070f561 is now integrated at
+f0fbb717. Integrated native gates, workspace Nextest and three scoped code
+audits pass. The applied guides also pass review; this public withdrawal slice
+is locally distilled. Hosted delivery and both Linux watchdog causes remain
+open; PR381's release owner retains its automatic-merge hold.
+
+Fresh archive checksums and packaged VCS metadata verify Behavior/Actors0.30.0
+at `628649da`, Macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0 and
+bombay-zenoh1.10.10. Observe and Engine remain workspace owners. The selected
+Cargo/flake locks are unchanged from the exact checksums in the private witness
+record below; there are no patches. The selected revision's complete775-line
+Behavior instructions match archive `aa5c4e70`. Current owner source, public
+APIs, relevant tests and documentation have been inspected afresh. No upstream
+contract/version change is identified as a prerequisite for this capability.
+
+| Owner | Contract retained for this work |
+| --- | --- |
+| Behavior / Actors | Pure Actions and exact actor shutdown policy; withdrawing an export grants no target actor stop authority. |
+| Address / Communication | Exact endpoint generations and admission/rejected originals; native callback retention is not actor admission. |
+| Observe | Existing shared/affine publication; a noncloneable native result cannot be moved to two independent consumers. |
+| Timers / Engine | Existing scheduling and causal execution; no new clock, actor turn or runtime is selected. |
+| Export | Actual declaration, query/producer custody and original native withdrawal result. |
+| Node | Shared Session, closed export product, Application execution and final close. |
+
+The public gap at baseline011e7ad0 is source-proven: `Node::run_with` borrows the whole product and
+passes only the ordinary Application handle to Work. `Exports::withdraw` is
+crate-private; `Node::into_parts` requires final close. Neither actor messaging
+nor actor shutdown authority owns an export's declaration. Closing Node or
+extracting an unfinished Export cannot stand in for independent withdrawal.
+
+The required public witness must request one live export's withdrawal and
+observe its actual native result before final shared cleanup, then obtain real
+sibling effects and independent local Reads while the same Session remains
+open. Completed actor work and request/provider originals retained by the existing
+policy must survive. Target retirement alone must retain cached-reply eligibility.
+Two Nodes, a request acknowledgement or a fabricated completion signal cannot
+substitute for this trace.
+
+The ordinary-Rust comparison and focused prior-design regression below select
+cutoff timing, pending-producer disposition, startup absence, live versus final
+native-result ownership, cancellation and repeat-request policy. Runtime
+acceptance remains required. A lifetime future alone cannot replace the complete
+request/result law. No macro, registry, new observation implementation,
+transport escape hatch or second lifecycle is selected. Expected production
+files/delta and zero new public types are recorded before production edits.
+
+The SDK's selected undeclaration returns Ready after synchronous work and does
+not by itself establish callback quiescence, a resource baseline or actor
+retirement. Full R18's boundary/drop/resource/reconnect matrix, AUTH1/NET1 and
+final example simplification remain open. Fresh source/provenance evidence is
+retained under common Git `session-archives/2026-11-14/public-withdrawal/prerequisites/`.
+PR423's separate final CI evidence lives under `delivery/export-withdrawal/pr423/`;
+its promotion-operations fuzz archive has an unexplained one-file retention
+difference from the run's final corpus count. Bounded execution passed; complete
+in-memory-to-retained corpus equality is not claimed or attributed a cause.
+
+Prerequisite checkpoint against main011e7ad0: two existing Markdown files;
+production +0/-0/net0; tests +0/-0/net0; public types +0/-0.
+Records +72/-1/net71; no untracked files. `git diff --check` passes.
+
+### Public withdrawal — model and pre-edit record (2026-11-15)
+
+The selected Bombay policy is one detachable, affine request for one exact
+Export. The proposed ordinary caller spelling is:
+
+```rust,ignore
+let withdraw = export.take_withdrawal().expect("fresh export authority");
+let mut node = node.exports(export, binding);
+node.run_with(async move |application| {
+    let native_withdrawal = withdraw().await;
+    // The sibling export and both actors remain available here.
+    (native_withdrawal, application.shutdown())
+}).await;
+```
+
+`take_withdrawal` transfers the actual unique request publisher using
+`Option::take`; a second take is absent. It returns an opaque ordinary
+`AsyncFnOnce`, not a new actor, public wrapper, generic strategy or macro.
+Calling it creates a cold operation. The first poll records intent; the owning
+Export then selects its cutoff. Dropping before first poll surrenders unused
+authority without requesting withdrawal. A pinned operation retained outside a
+cancelled borrowed wait can still complete; dropping the entire started
+operation surrenders its observation, without revoking intent or erasing the
+owner's acquired native result. Neither take nor request acknowledges native
+completion. Whole Node surrender retains the established incomplete-Observe
+contract and does not manufacture a result.
+
+Ordinary functions/closures express both issuance and observation. An extension
+trait, associated type or builder cannot supply authority through Node's live
+mutable borrow. A lifetime future alone misses actual-result observation; the
+complete callable supplies both obligations. Typestate would forbid a second
+take but adds an unnecessary generic dimension: storing and taking the real
+affine publisher already prevents duplicate authority. A named capability has
+no remaining proven advantage over the measured callable. No macro is eligible.
+
+The retained error equation is `Result<(), Arc<ExportError>>`, with native
+failure classified as Withdrawal and owning the exact original Box/pointee.
+This explicitly transforms the Result's error type; its carrier address is no
+domain fact. Whole-Result Arc sharing and exclusive transfer were compared.
+Sharing only the error avoids a success allocation and a Transferred state.
+The initial Arc<Box<dyn Error>> probe preserves custody but fails standard Error
+interoperability; the measured correction below reuses the existing semantic
+root rather than retaining that interface. Existing success patterns still
+work; the baseline owned Box error and exhaustive root-variant matches require
+migration. Standard error forwarding and the original Error::source remain
+required. No new wrapper is authorized merely to hide a compiler bound.
+
+The existing Observe completion slot will be the one retained native-result
+owner. Export extraction and live observation read that same slot; no second
+mutable result cell or duplicate authoritative result field is selected. Two
+existing Observe pairs per Export own request and completion, including exports
+whose request authority remains unused. This is bounded allocation/refcount
+cost, not a zero-allocation claim. Completion is published only after actual
+undeclaration, or after a settled no-declaration path with None. Native Ok does
+not prove callback quiescence, resource reclamation or target retirement.
+
+The request branch surrenders only that Export's pending producers through
+the existing FuturesUnordered clear operation, then reuses its native
+undeclaration and request/reply drain. Completed work and originals remain in
+existing Request custody. Application-owned termination and cached replies
+after target retirement keep their existing policies. Node and tuple Exports
+remain the sole existing execution composition; no second loop is selected.
+
+The smallest prior-design regression extends the existing external
+remote_export_policies compile consumer with this detached request, moves Export
+into Node and awaits its native result in Work. The pinned-Nix corrected run
+exits101: exactly that consumer fails with E0599 for missing take_withdrawal,
+while the other six compile-pass/denial controls pass. This establishes the
+public API gap, not native withdrawal semantics. The runtime witness will strengthen the
+delivered private isolation test to use public Node.exports/run_with and the
+callable, preserving every independent effect/custody assertion. Owning tests
+will distinguish cold/started cancellation, settled absence, actual shared
+error identity and repeat completion; the ordinary compile suite will reject
+reuse of consumed authority. Native isolation inversions remain required.
+
+Expected production paths: remote/export/mod.rs and query.rs, roughly
+80–120 added /10–20 removed lines. Expected public types +0/-0. Expected
+remaining paths: owning Export tests, existing retirement witness, the existing
+compile consumer/runner and one reuse fixture with diagnostics, the runtime
+capability guide and these two requirement records (about ten paths total).
+No dependency, Observe implementation, Node kernel, protocol, example policy
+or runtime task is selected for change. This adds a capability; no code-reduction
+claim is made. Existing private caller startup/serve/cancel plumbing is removed
+from the strengthened witness in favor of the real public Node composition.
+
+Aggregate checkpoint: Export keeps its existing native declaration/ingress/
+request ownership. Unique request publication is either retained or transferred;
+unique completion publication is either retained or consumed. Those are actual
+owned capabilities, not arrival-history flags. Pending completion, settled None
+and acquired Some(Ok/Err) remain distinct in the existing Observe slot. One
+additional select branch interprets intent; one private completion operation
+records the actual result once. No actor phase, protocol alternative, semantic
+boolean, positional application route or public nominal type is added.
+
+Pinned-Nix Rust1.99 ownership probes pass three tests in debug and optimized
+builds. The compile-once control passes and reuse fails specifically with
+E0382 at the second callable invocation. The first optimized process handle was
+already missing at recovery; a fresh captured optimized run exits0. These
+simulated-error/std-only probes prove their narrow allocation/callable laws,
+not native runtime or minimum-compiler acceptance. The first public Cargo
+invocation selected the wrong package name and is not intended-failure evidence;
+the corrected bombay-rs consumer run supplies the focused failure above. The
+additional error-source probe passes1/0 and confirms generic question-mark
+conversion into Box fails with E0277, while matching shared-error propagation
+compiles. This initially proposed cost is rejected by the interoperability
+correction below. Independent model and
+two-pass probe reviews retain those limits. Exact sources and receipts are
+archived under public-withdrawal; full feature acceptance remains open.
+
+First lowering checkpoint: the public seven-fixture cohort now passes, including
+the detached take/move-Export-into-Node/await syntax. This closes the receiver
+lifetime-capture question with the explicit Rust2024 capture list; it is not
+native execution or strict-lint acceptance. The first compile reported an unused
+import, which is removed. Independent source review finds no confirmed model
+blocker and identifies completion-waker unwind for explicit documentation and an
+owning retention test. The Node witness now uses public execution and removes
+its manual private preflight/declaration/serve/cancellation loop. All prior
+post-cleanup effect, matching, native reply and custody assertions remain.
+Six deterministic owner tests additionally exercise cold authority, cancelled
+borrowed waits, whole-operation surrender, pending versus settled absence,
+repeat finalization and original-error retention through notification panic.
+They use an explicitly unbound owner for that narrow concern; real constructor
+and interpreter acceptance belongs to the native witness. Native and owning
+test execution, fault controls, minimum compiler and full gates are pending.
+
+Complete checkpoint against main011e7ad0, including both untracked Rust files:
+production +80/-9/net71; tests +261/-86/net175; public types +0/-0.
+Eleven paths total; records +197/-4/net193 at that checkpoint. `git diff --check` passes.
+The required reuse diagnostic will add one forecast path. No merged delivery
+or public example code-reduction claim follows from this local checkpoint.
+
+The first native debug compilation exits101 before executing tests: LLVM reports
+No space left on device. Its partial objects alone occupied about25GB. The exact
+failed log is retained. Only that terminated invocation's scoped generated object
+files were removed; no source, evidence or other worktree was deleted. The new
+focused debug/optimized run uses the existing flake commonArgs settings
+CARGO_PROFILE_DEV_DEBUG=0, CARGO_PROFILE_TEST_DEBUG=0 and CARGO_INCREMENTAL=0.
+These omit debugger data without disabling assertions. Formatting passes; its
+single-line layout change makes production +79/-9/net70. The recovery run passes
+all six deterministic owner cases (442 filtered) and both native retirement/
+withdrawal cases (446 filtered), with no failures or ignored cases. The native
+pair finishes0.02s. Source hashes match the independently reviewed unit5d0affee
+and public witness2f1b01c8. The optimized run likewise passes6/0/0 and2/0/0,
+with the native pair finishing0.01s. The complete four-command run exits0.
+The earlier infrastructure failure is neither an intended falsifier nor a
+runtime test failure. Deliberate source controls and restored healthy runs
+remain required before broader acceptance.
+
+The result-classification control changes only completion publication from
+retaining the original Err to mapping every acquired result to Ok. The exact
+borrowed-wait refusal regression then fails at its required Some(Err) observation
+in both debug and optimized builds (one executed/failed,447 filtered; each
+Cargo exit101). Its pointer/disposal assertions are later and earn no fault-run
+execution credit. The original source is restored byte for byte: Export9de0687f,
+query512bcb65, matching both retained healthy copies. The restored six-case
+owner suites now pass6/0/0 in both profiles before native omission. Raw
+healthy/fault/restoration source and logs remain under public-withdrawal.
+
+The native omission control changes only serving's undeclaration arm to forget
+the actual Queryable and retain no native result, plus its module-scope standard
+mem import. SDK Drop must be bypassed because it otherwise undeclares. This
+lexical cut also affects the sibling's later final serving exit; only the first
+live declaration's captured matching fact is the selected oracle. Pending
+producer surrender and endpoint draining stay intact. Both debug and optimized
+runs execute one unchanged public witness and fail after its cleanup/effect
+assertions at matching(true,true), required(false,true), line289. Cargo exits101
+in each; runtimes0.07/0.02s. Later result/custody assertions earn no fault-run
+execution credit. Query512bcb65 and Export9de0687f are restored byte for byte;
+tests2f1b01c8/5d0affee and both locks remain exact. Restored healthy native-pair
+runs now pass2/0/0 in both profiles (446 filtered;0.03/0.01s), and the complete
+restoration command exits0. This is no callback/resource baseline or full R18 closure.
+
+Earlier complete checkpoint including untracked files: production +79/-9/net70;
+tests +261/-86/net175; public types +0/-0; records +249/-4/net245; eleven paths.
+
+Next acceptance edits reuse the two existing public binding-refusal/disposal-panic
+cases in invocation/startup.rs. They will retain and directly poll the same
+withdrawal operation before Node startup and after actual joined cleanup,
+requiring Pending then Ready(None), while preserving all original Work,
+refusal-allocation, provider and native assertions. A separate148-line fixture
+was compared and rejected as duplicate setup/evidence. One additional owning
+test file keeps the forecast final scope at thirteen paths, including the
+pending reuse diagnostic; production still uses only the two selected files.
+
+The source naming audit also rejects distinguishing the request publisher from
+its observation solely as request/requested. Existing fields will use the
+distinct nouns authority, intent and publication; the vague actual parameter
+will name its withdrawal/result. No state, branch, field, bound, API or type is
+added by this correction. The canonical Observe slot, affine take, same
+first-poll policy and error-sharing equation stay exact. Final source and gates
+will be bound to the corrected names; earlier falsifiers retain their source epoch.
+
+Current-source qualification passes owner6/native2/startup2 in each of debug
+and optimized builds, with zero failures/ignores and actual case names retained.
+Formatting and the complete six-command run exit0. The two existing startup
+cases preserve their original nonpanic/disposal-panic scopes and now directly
+observe Pending before Node open and Ready(None) after joined close. Independent
+two-pass source review accepts the13-added/2-removed-line test extension and
+private role-name correction; no assertions or outcomes were weakened. Current
+source hashes are Export4690bb89, querybc8eda88, owner testse6bcc3a7 and startup
+tests41bc8d1f; the native witness remains2f1b01c8. Private naming/rustfmt account
+for production +83/-9/net74; public types remain +0/-0. The missing-None
+publication fault is now running before final source restoration and broader gates.
+
+### Error interoperability — correction and pre-edit record (2026-11-15)
+
+The missing-None control now fails the normal real startup-refusal case at its
+immediate post-close Ready(None) assertion464 in both profiles, one executed/
+failed and447 filtered,0.05/0.01s, actual Cargo101. It preserves the early Pending
+observation and real close; later custody assertions are not credited in failed
+runs. All four current source files and both locks are restored exactly. The
+six-command restored owner6/native2/startup2 run exits0 with all cases passing in
+both profiles. Earlier source/fault epochs remain immutable in their capsules.
+
+The earlier acceptance of Arc<Box<dyn Error>> as a documented propagation cost
+is reopened. The required Rust API Guidelines [C-GOOD-ERR](https://rust-lang.github.io/api-guidelines/interoperability.html#c-good-err)
+requires public Result error types to support Error, Send and Sync. The actual
+external consumer now forwards its awaited native result using ordinary `?`
+inside Option.map, retaining its independent shutdown result outside that
+conversion. The filtered pinned-Nix trybuild run exits101 with exactly one
+consumer/fixture failure: E0277 at withdrawal?, caused by Arc<Box<dyn Error>>
+not satisfying the standard error conversion. This is an actual public
+consumer failure, not only the earlier simulated-error probe. The supported
+trybuild filename filter isolates that seam from the pending reuse diagnostic.
+
+Select the existing aggregate ExportError owner with one flat Withdrawal
+variant containing the exact original native Box. Publish error-only sharing
+as Arc<ExportError>. Declaration and withdrawal are different operations and
+must not share a misleading Declaration label. The private completion input
+remains the actual optional native Result; one explicit map_err moves the
+original Box into Withdrawal before Arc allocation. None and Ok stay unchanged.
+Error::source returns the original native cause; Display/Debug follow the
+existing native-declaration redaction convention. No native error is cloned,
+formatted, rebuilt or replaced by a summary. The public result is a typed
+Bombay mapping of the acquired native outcome, not the SDK's unchanged R type.
+
+This reuses the one semantic error owner and implements a real operation/error
+distinction. It adds no new wrapper, public nominal type, alias, observation
+cell, runtime policy or generic bound. A custom Error wrapper has no advantage
+over this existing owner; converting Box into Arc<dyn Error> would weaken exact
+original allocation custody. Sharing the whole R still adds an unnecessary
+success allocation and changes its outer shape. The selected flat root variant
+supports standard error use while preserving the smaller error-only sharing
+equation. Auto-trait fitness is supported by current owned root fields and must
+be demonstrated by the actual public consumer; no manual auto-trait impl is
+authorized by this model.
+
+Before this correction's production edit: expected shipping changes only in
+export/mod.rs, at most about20 additional net lines over this capability's
+current source. Existing query/Node/Observe execution stays exact. Public types
++0/-0, public variants +1; both the baseline Box-to-shared-root error change and
+new exhaustive ExportError variant are real source migrations. Owning tests
+will retain same-Arc, original native error/payload addresses and final single
+disposal, add exact Withdrawal classification/redaction and standard error
+forwarding, and keep waker-panic custody. The public consumer must pass its
+unchanged `?` syntax after correction. Current requirement records/capability
+guidance will replace the rejected representation in current guidance while
+preserving its historical measured rejection. No new file is forecast; final
+scope stays thirteen paths including the reuse diagnostic.
+
+Current dependencies, owners and lock hashes above are unchanged. This is the
+same Export-owned boundary, not a new upstream contract. No production error
+mapping change exists at the time of this pre-edit record. Current lifetime/
+fault proofs retain their exact earlier representations and are not relabeled
+as verification of the proposed typed root error.
+
+The corrected external consumer now passes1/1 on the same ordinary question-mark
+syntax (12.91s). The root-error owner6/native2/startup2 cohorts also pass in both
+profiles, but independent review finds the first formatting test input too close
+to its expected public message: a faulty formatter using network plus the native
+cause could satisfy it. The native test input is changed to a distinctive private
+detail while both expected public strings stay exact. A public-surface value
+test additionally checks those strings and the same original IO-error source
+address/text. This is the public Error formatting/source contract, not another
+native runtime journey. The next focused run will qualify that stronger input;
+the new root classification and formatting source inversions remain required.
+
+The stronger cause input and public-surface value check now pass: owner6 and
+public formatting1 in both profiles, zero failures/ignores; the complete run
+exits0. Independent review closes the input-collision finding with unchanged
+root expectations. The private source message is also checked explicitly.
+Current owner tests07ea306a and public surface281617c0 bind those results;
+shipping Export31924d44/querybc8eda88 remain unchanged. Root classification's
+one-constructor inversion is running next, before its exact restoration and
+the independent native-text formatting control. Earlier34920def passes retain
+their pointer/source/forwarding scope, without stronger-redaction credit.
+
+The typed-kind control changes only the canonical native-Err constructor from
+Withdrawal to Declaration, preserving the original Box, shared result and
+standard error interface. Both profiles execute one unchanged primary owner
+test and fail at the exact Withdrawal-kind assertion84 after Some(Err) and
+same-Arc checks (Cargo101;447 filtered;0.03/0.00s). Later formatting, source,
+forwarding and disposal assertions are not credited in those failed runs.
+Export31924d44 and both current test sources are restored exactly; the healthy
+owner6/public-format1 runs are pending before the independent formatting fault.
+
+Those restored suites now pass in both profiles. The independent formatting
+control changes only Withdrawal's Display arm to format network plus the native
+cause. Both profiles execute the public value test and reject the actual text
+network private native withdrawal detail against the required fixed public
+message at assertion14 (Cargo101;one failed/three filtered;0.00s each). Later
+Debug/source checks are unexecuted in fault runs. Exact source restoration is
+followed by public-format1 passes in both profiles. The stronger input therefore
+rejects the specific leak that the original input could have hidden.
+
+The actual reuse fixture produces only E0382 at the second call6, moving the
+opaque AsyncFnOnce authority. Its new diagnostic is copied byte for byte from
+trybuild's WIP; existing diagnostics are unchanged. After this new expectation,
+the complete public suite passes4/0/0, including all twelve pass/denial fixtures
+(23.93s), and formatting passes. A subsequent strict all-targets lint run stops
+on five representation/style issues: the private publication type's complexity,
+an obsolete expectation on the now-shorter public return type, the larger
+public-Node test future and two reference casts. Corrections retain the direct
+standard product, scope its expectation to that field, remove the obsolete
+expectation, pin the watchdog future on the heap and use ptr::from_ref. No
+outcome, assertion, error class or runtime operation changes. Strict lint,
+documentation and public consumer checks are rerunning before full Nix gates.
+
+### Final local consumer qualification — 2026-11-15
+
+The final source passes `nix develop -c cargo fmt --all -- --check` (terminal0).
+It also passes strict remote all-targets Clippy (17.94s), remote documentation
+(13.90s), and the complete public surface suite:
+four outer tests, all twelve compiler fixtures, zero failures/ignores/filtered
+outer tests (25.62s). The complete sequential pinned-Nix invocation exits0.
+It uses the existing flake's no-debug-information/nonincremental environment
+settings; no assertion or compiler diagnostic is weakened. The new reuse
+diagnostic matches its reviewed E0382 expectation; the actual configured
+consumer retains ordinary question-mark error forwarding.
+
+The final code epoch is Export d4282f4f, query bc8eda88, owning tests58837cb0,
+native withdrawal witnessf82efe53, startup41bc8d1f and public surface281617c0.
+The only changes since the scoped debug/optimized healthy and restored-control
+epochs are the lint expectation's scope, ptr::from_ref and heap-pinning the
+native watchdog future. Those prior executions keep their exact source epochs;
+they are not relabeled as fresh final-source native execution. The final public
+suite and lint/docs receipts are archived under public-withdrawal/final/ with
+the exact source manifest and candidate patch. A supplemental ten-file manifest
+includes the test module mount and matches the immutable Nix source exactly.
+The existing production/error and execution/test reviews now close their
+pending local steps and bind those receipts to this code. The separate final
+formatting-check receipt is retained. Local documentation succeeded without an
+explicit deny-warnings override; the full Nix documentation gates retain their
+own stricter command scope. No final-source native runtime or whole-Nix pass
+is inferred from these completed local checks or reviews.
+
+All thirteen paths, including the new denial and its diagnostic, were staged
+before starting `nix flake check --keep-going --max-jobs 2 --cores 2` on candidate
+tree62ee5c79171036439eec5b06377f1426cc48ef90. That native28-check run remains
+live and has begun actual builds; evaluation is not passing execution. The
+subsequent changes to these requirement records do not alter that immutable
+source epoch. Final source minimization, completed native gates, hosted CI,
+reviewed merge and complete R18 acceptance remain open.
+
+The workspace coverage gate now completes on that exact immutable Nix source.
+All448 library cases pass without ignores, including the six final-source
+withdrawal owner cases, actual public Node withdrawal, cached replies after
+target retirement and both startup-refusal cases. Public formatting and the
+new reuse compiler fixture also execute successfully. This is fresh final-source
+debug execution with coverage instrumentation; optimized and minimum-compiler
+qualification keep their separate pending gates. All four existing owner floors
+pass: Driver737/818, actor execution1006/1048, actor outcome95/97 and
+Observe504/526 lines. The complete coverage JSON is retained compressed; its
+decompressed checksum matches the original, alongside the raw log and report.
+
+The separate required pinned-Nix workspace Nextest command exits0:
+`cargo nextest run --locked --workspace --test-threads 2`, with the existing
+no-debug-information/nonincremental settings and one compiler job. Actual
+unoptimized execution reports1018 passed across123 binaries,577.356s and four
+slow cases. All current withdrawal, cached-reply, startup and public formatting
+cases are named PASS. The six skipped top-level entries are unchanged subprocess
+registrations: four remote-counter roles, the interpreter-retirement child and
+the descriptor-limited runtime-construction child. Their passing parents invoke
+the exact children with `--ignored --exact` and check execution/status markers;
+these are not six ordinary acceptance cases left unexecuted. No ignore or
+filter is added by this change. This command is separate from the flake's Cargo
+test checks. Its CLI trace, pinned versions, raw summary and source identity are
+retained under public-withdrawal/final/.
+
+Twenty-seven individual native outputs have been validated at this checkpoint.
+Both final-source remote gates pass547 cases across twelve targets per profile,
+without failures or ignores. Its448 library cases include all six withdrawal
+owner tests, public Node isolation, cached-target replay and both startup-refusal
+cases; the public surface suite also executes the new reuse denial. The
+complete logs are retained as final/nix-remote-debug.log and
+final/nix-remote-release.log. This closes both final-source native execution
+gaps, without implying complete R18. The debug gate also passes strict remote
+all-targets Clippy and remote documentation with warnings denied. The separate
+optimized workspace all-targets Clippy, workspace documentation with warnings
+denied and formatting gates pass. Their raw commands and logs remain archived.
+
+The selected Rust/Cargo1.96.0 diagnostic and consumer gate passes114 cases
+across28 target summaries, without failures or filtering. Its one ignored
+descriptor-limited subprocess registration is invoked by the passing parent.
+The existing minimum.patch supplies this gate's compiler-specific diagnostics.
+This completed gate does not execute the new remote owner/native
+withdrawal cases. The separate minimum-remote gate's initial and corrected
+outcomes are recorded below; its public consumer and reuse denial now pass1.96.
+
+The optimized workspace all-target build passes in36m55s. Its actual command is
+`cargo build --release --workspace --all-targets` through the pinned Nix gate;
+no test execution or additional command flag is inferred from that build.
+
+The remote-counter package gate passes its eight parent process cases and three
+protocol cases in both profiles, including actual separate-program TLS work.
+Four ignored child registrations are exercised by their passing parents. The
+existing Entity/Observe Loom gates pass6/28 cases respectively; the panic-unwind
+gate executes both selected retirement cases. Driver and actor-execution law
+gates pass their positive, deliberate inversion and restored controls. The
+worker-pool example registers zero tests and its real cargo run succeeds.
+Their complete logs and law receipts are retained alongside the earlier gates.
+The web-example package also registers zero tests, so its gate supplies
+compilation evidence only; the later example audit must retain the owning
+router-test mapping. The aggregate28-check run is still live. Workspace tests
+remain pending. Its initial minimum-remote failure is retained despite the
+corrected gate's success; no successful aggregate exit is claimed. Final
+minimization, hosted delivery and full R18/AUTH1/NET1 remain open.
+
+### Minimum-compiler diagnostic correction — pre-edit record
+
+The remote Rust1.96 gate executes all four public surface cases: three pass,
+and the compiler-suite case fails only the new withdrawal-reuse diagnostic.
+The compiler still rejects the second call with E0382 at line6 and preserves
+the exact receiver-move explanation. Its note names async_call_once without
+Rust1.99's std::ops::AsyncFnOnce qualification. The retained raw expected/actual
+blocks differ only in that note. This is a failed gate, not a weakened denial.
+
+The correction will add that observed one-line spelling difference to the
+existing compile/diagnostics/minimum.patch. The ordinary1.99 expectation,
+fixture, owning tests and production code remain unchanged. One existing test
+patch path joins the scope (fourteen paths total); expected production delta0,
+public types0, test patch roughly9 added lines. The failed receipt remains
+archived as final/nix-minimum-remote-initial-failure.log. Corrected minimum
+execution and actual workspace/aggregate outcomes remain required.
+
+The corrected native gate c6l1k8da exits0. Rust/Cargo1.96.0 executes
+`cargo test --release --locked -p bombay-rs --all-features --test remote_surface`:
+four cases pass, all twelve compiler fixtures match, and no case is ignored or
+filtered (364.96s). Both the real export-policy consumer and the E0382 reuse
+denial pass. The original twelve-line diagnostic matches exactly after the
+single method-name qualification change; the full existing patch also passes
+git apply --check --unidiff-zero. No fixture or ordinary1.99 diagnostic changes.
+The initial default-context git apply probe rejected existing short-context
+hunks and is not credited as a passing patch check.
+
+Immutable source mjd977n1 retains all ten code/fixture checksums from the original
+native source b4yyy5dd. Its selected minimum.patch matches09acf9c0. The raw
+corrected log and an explicitly transcribed observation receipt are retained in
+final/. Output2lgk1y2w and its matching deriver c6l1k8da were validated before
+both became unavailable. Later native metadata reads fail or return null; their
+cause is not established, and no surviving output or native JSON is claimed.
+This closes the compiler-snapshot failure. It does not execute new native
+withdrawal cases on1.96 or turn the original aggregate into a passing run.
+The original aggregate closure and subsequent integration are recorded below.
+
+### Original-source closure and current-main integration
+
+The optimized workspace gate now passes1018 cases across123 target summaries,
+zero failures or filtering and six unchanged parent-owned child registrations
+ignored. All current withdrawal, cached-reply and startup cases are named PASS.
+The initial full request89174 exits1 solely for the recorded minimum-compiler
+note mismatch; corrected minimum request74479 exits0. All28 individual gates
+therefore have passing evidence across these explicit source epochs, without a
+successful original aggregate exit. The complete workspace log/native metadata
+and initial aggregate log are archived. A temporary standard Nix root protects
+the existing workspace output; its request waited for the original build lock
+and performed no duplicate compilation.
+
+Main has advanced to5070f561 through PR424. Fresh inspection finds an Entity
+retirement-order repair: the existing private FIFO now publishes the original
+retirement mode after exact routing removal, including when another consumer
+owns interpretation. Its source, owning regressions and DevX record are read;
+the Application method documents that same completion guarantee. No Export,
+request, public withdrawal consumer, dependency, lock, Nix configuration or
+selected Behavior instruction changes. This peer change is integrated normally
+at f0fbb717, after its eight actual PR checks pass. The owned implementation is
+restored without conflicts; all ten code/fixture hashes still match, and the
+upstream Entity/Application files match main5070f561 exactly. The owned feature
+remains fourteen paths with no additional public type or production edit.
+
+### Integrated qualification and delivery hold — 2026-11-15
+
+All28 existing native Nix check owners pass on staged tree
+`d23c7c342ed720403ad849540d08a557251a3450`, based on f0fbb717. Their immutable
+source is `/nix/store/nkq8v8pqrj9dnv47wv909njnmps3fvv9-source`. The standard
+rooted build exits0; all28 outputs and matching derivers are validated and their
+native metadata/logs retained. Twenty-seven derivations name that source in
+env.src; the references derivation names it in its build command and inputs.
+The subsequent ordinary `nix flake check --keep-going --max-jobs 2 --cores 2`
+exits0, reusing exactly those28 built checks. This is aarch64-darwin evidence,
+not Linux execution. No project tool, additional check or assertion is added.
+All727 tracked input checksums match before result-record edits. These later
+record edits form a new source epoch; hosted CI must qualify the submitted tree.
+
+Both remote profiles pass549 cases across twelve targets, including450 library
+cases and every new withdrawal/startup case, with no failures/ignores/filtering.
+The instrumented coverage gate also passes450 library cases and all four owner
+floors: Driver737/818, actor execution1006/1048, actor outcome95/97 and
+Observe504/526. Its compressed full JSON matches the original decompressed hash.
+Optimized workspace tests pass1020 across123 target summaries, with zero
+failures/filtering and six unchanged parent-owned child registrations ignored.
+The all-target workspace build, strict Clippy, warning-denied docs, doctests,
+formatting, two panic-retirement cases, expected panic-abort denial, existing
+Entity6/Observe28 Loom cases and Driver/actor inversion controls pass.
+
+Rust/Cargo1.96.0 remote-surface qualification passes all four outer cases and
+twelve compiler fixtures, including the actual question-mark consumer and
+E0382 reuse denial. The other minimum gate passes114 selected cases across28
+targets, with one parent-executed child registration ignored. These are selected
+compiler/consumer scopes, not native withdrawal execution on1.96.
+
+The separate pinned-shell command first passes `cargo fmt --all -- --check`,
+then `cargo nextest run --locked --workspace --test-threads 2`:1020 pass across
+123 binaries, six skipped child registrations and four slow cases,486.272s.
+The passing parents retain their exact child invocation/status checks. This
+does not claim zero skips. Native remote-counter gates also pass eight parent
+process cases and three protocol cases per profile, including separate-program
+TLS; their four child registrations are parent-executed. Counter, templates,
+worker-pool, supervision and topology example gates execute actual cargo run;
+Axum registers zero tests and supplies compilation evidence only. The later
+example audit still needs the owning HTTP router-test mapping.
+
+Current raw commands, per-owner scopes,28-output native metadata, source
+manifest, coverage/law artifacts and separate Nextest log live under common Git
+`session-archives/2026-11-14/public-withdrawal/integration/`. Earlier results and
+the initial failed aggregate retain their separate source epochs above.
+
+The release coordinator reports that main5070's Linux CI43683207786 failed
+`generated_delivery_orders_preserve_native_admission` at its unchanged10s
+watchdog (schedule.rs:403), while443 other cases passed. The actual seed is
+`cc8783b4ac29d10abeccd1b945242a3a19af43fde799162d77bdcdb0a8982e56dd`;
+the reported word is [Expiring, Initial, Repeat, Repeat, Fresh, Revoked, Repeat,
+ConstructorExpired]. That failed run did not print the stalled input/stage
+before awaiting. Passing runs cannot identify it. PR381 at cf397568 adds seven
+cfg(test)-only input/await progress messages, preserving every assertion,
+timeout and987 source lines; CI43689245510 and peer replay45213 were reported
+active. Native isolated258/258 and full444 optimized controls pass, but the
+Linux cause remains unknown. These are coordination receipts, not an independent
+CI audit or a production fix. PR381 automatic merging is temporarily held;
+its original MERGE request/metadata is retained for restoration by its owner
+after resolution and final checks. This R18 work preserves its step order and
+does not restore that setting. Local green results do not resolve the failed
+seed. No new publication, version, hosted readiness or merged delivery is claimed.
+Fresh read-only GitHub verification confirms PR381's exact cf397568 head is
+open with autoMergeRequest null. Its dedicated Incoming schedules (release)
+job132736226999 has since failed the distinct outgoing Client test
+generated_delivery_orders_preserve_processed_increments at overlap.rs:290/306.
+The retained raw job log reports seed
+`1609ece3c49631a68a74ab964ba3ff462ed3059d066c7693316623d4ae000241`,
+184 invocations/183 completions and minimized [Repeat, Fresh(26), Fresh(25),
+Fresh(24)]; five other cases pass. This is not proof of the original incoming
+failure's cause. Its raw log is retained in integration/; no retry or fix is
+selected here while the release owner investigates. Main remains5070f561.
+Three local code audits now pass: independent production/model review,
+independent execution/test review including both required test passes, and
+the coordinator's source/minimization audit. Their completed existing reports
+and exact hashes are retained in integration/review-closure.json. These verdicts
+retain the qualified code epoch and do not discharge hosted failures.
+
+The user relayed standing authorization, "auto approve everything from now on,
+no need to ask me", and "good good go on full steam ahead!". This satisfies the
+routine fourteen-to-sixteen-file checkpoint for the exact reviewed guide patch
+6230b59a: module-boundaries.md now describes explicit withdrawal before cleanup;
+public-api-audit.md inventories the method, shared error/source migration and
+awaited pending/absence distinction. No production/test edit or public type is
+added by this expansion. All ten code/fixture hashes, minimum.patch and both
+locks still match the integrated qualified source. Only four records differ
+from the qualified tree. The applied-guide review now passes, including exact
+agreement with the reviewed patch. This closes local minimization; no hosted
+readiness or repeated runtime execution is inferred. Communication's Notify
+candidate is unpublished research, without Bombay adoption or watchdog-fix credit.
+Complete R18's boundary/drop/resource/reconnect matrix, AUTH1/NET1 and final
+example distillation remain open.
+
+Complete code checkpoint against main5070f561, including all new files:
+production +91/-11/net80; tests +354/-90/net264; public types +0/-0,
+one new existing-root error variant and one public method. The sixteen-path
+scope contains two production paths, nine test paths and five records;
+Records +694/-11/net683. No untracked project source files are present.
+This checkpoint includes the complete staged and unstaged working tree.
+No public example changed and no application code-reduction claim follows.
+
 ## Export withdrawal isolation — prerequisites and change record (2026-11-14)
 
 **Current scope:** the private owner isolation witness is qualified, minimized

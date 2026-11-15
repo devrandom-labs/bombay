@@ -2,6 +2,7 @@ use bombay::actors::ActorExt;
 use bombay::behavior::Never;
 use bombay::remote::{Export, ExportLimits, Network, json, reply, stop};
 use bombay::{Application, MailAddr};
+use std::error::Error;
 
 #[path = "../../../../../examples/counter/src/counter.rs"]
 #[expect(
@@ -48,7 +49,7 @@ async fn configured(
             Err(deployment::Refusal::Scope)
         }
     };
-    let export = Export::new(
+    let mut export = Export::new(
         protocol::KEY,
         counts,
         framing,
@@ -78,13 +79,26 @@ async fn configured(
         &current,
         &current,
     );
+    let withdraw = export
+        .take_withdrawal()
+        .expect("a fresh export retains its unique withdrawal authority");
     let mut node = node.exports(export, async |application| {
         Ok::<_, Never>(application.root().established_recipient())
     });
-    let outcome = node.run().await.unwrap_or_else(|original| {
-        drop(original);
-        panic!("the supplied host executes the actual Counter")
-    });
+    let outcome = node
+        .run_with(async move |application| {
+            let withdrawn = withdraw().await.map(|withdrawal| {
+                withdrawal?;
+                Ok::<(), Box<dyn Error + Send + Sync>>(())
+            });
+            let shutdown = application.shutdown();
+            (withdrawn, shutdown)
+        })
+        .await
+        .unwrap_or_else(|original| {
+            drop(original);
+            panic!("the supplied host executes the actual Counter")
+        });
     // This is a compile-only consumer. No native/runtime evidence is claimed.
     drop((outcome, node));
 }

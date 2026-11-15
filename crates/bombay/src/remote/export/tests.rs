@@ -63,6 +63,9 @@ enum Command {
 #[path = "comparison.rs"]
 mod comparison;
 
+#[path = "withdrawal.rs"]
+mod withdrawal;
+
 fn request_originals(
     protected: &[u8],
     proof: &[u8],

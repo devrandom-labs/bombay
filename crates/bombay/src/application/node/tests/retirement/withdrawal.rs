@@ -1,4 +1,4 @@
-//! Surrender one serving borrow, then acquire its exact withdrawal beside a live sibling.
+//! Request one public export's withdrawal while its sibling and actors remain live.
 use super::super::CounterMessage;
 use super::super::counter::{CounterIncremented, CounterProcessed, CounterValue};
 use super::super::protocol::{
@@ -6,18 +6,15 @@ use super::super::protocol::{
     VerificationError, configuration, limits, metadata, recorded,
 };
 use super::Command;
-use super::actors::{ActorExports, Creator, Exports as CreatorExports, ManagedCounter, topology};
+use super::actors::{ActorExports, Creator, Exports as CreatorExports, topology};
 use crate::actors::ActorExt;
-use crate::application::execution::ApplicationWorkPresence;
-use crate::application::work::invoke;
-use crate::application::{ApplicationHandle, ApplicationScope};
-use crate::behavior::{Behavior, EstablishedActor, EstablishedRecipient, Never, User};
-use crate::remote::{Attempt, Export, ExportLimits, Exports, RefusalRetention, reply};
+use crate::application::ApplicationScope;
+use crate::behavior::{EstablishedRecipient, Never, User};
+use crate::remote::{Attempt, Export, ExportLimits, RefusalRetention, reply};
 use crate::{
     ActorFailureAssessment, ActorRetirement, Completion, MailAddr, RetirementAssessment,
     RetirementOutcome,
 };
-use behavior_actors::StopOnShutdown;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -28,8 +25,6 @@ use std::time::Duration;
 use tokio::sync::oneshot;
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
-
-type CreatorEvent = <StopOnShutdown<Creator> as Behavior>::Event;
 
 struct HeldProtection<'scope> {
     entered: Option<oneshot::Sender<()>>,
@@ -60,16 +55,8 @@ impl Drop for HeldProtection<'_> {
     clippy::await_holding_refcell_ref,
     reason = "one causal withdrawal trace retains actual native/provider/application originals; its configured receipt table stays immutable during verification"
 )]
-async fn surrendered_export_withdraws_without_stopping_its_sibling() {
-    tokio::time::timeout(Duration::from_secs(40), async {
-        let session = zenoh::open(
-            configuration("tls/localhost:0", &EndpointRole::Receiver)
-                .to_configuration()
-                .unwrap(),
-        )
-        .await
-        .expect("the shared private Session opens before the isolation experiment");
-        let runtime = session.zid().to_string();
+async fn requested_export_withdraws_without_stopping_its_sibling() {
+    Box::pin(tokio::time::timeout(Duration::from_secs(40), async {
         let records = RefCell::new(Vec::<ProtectedMessage>::new());
         let binding = Binding {
             deployment: "export-withdrawal", caller: "caller", controller: "owner",
@@ -128,7 +115,7 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
             },
             same, &current, &current,
         );
-        let mut second = Export::new(
+        let second = Export::new(
             "bombay/withdrawal/sibling", bounds, limits(), &decode,
             reply(
                 |command| match command {
@@ -151,16 +138,19 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
         let application = scope.with_topology(
             Creator::default().stop_on_shutdown(), topology::Topology::new(),
         );
-        let (cancel, cancelled) = oneshot::channel();
-        let (withdrawn, withdrawal_received) = oneshot::channel();
+        let node = application
+            .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+            .await.unwrap_or_else(|_| panic!("the public Node opens its shared connection"));
+        let runtime = node.runtime_id();
+        let session = node.session.clone();
+        let withdraw = first.take_withdrawal()
+            .expect("the first export retains one exact withdrawal authority");
+        let second_authority = first.take_withdrawal();
+        assert!(second_authority.is_none());
         let (configured, configuration_received) = oneshot::channel();
-        let first_owner = &mut first;
-        let second_owner = &mut second;
         let connection = &session;
         let registered = &records;
-        let startup = async move |application: &ApplicationHandle<
-            Creator, CreatorEvent,
-        >| {
+        let mut node = node.exports((first, second), async move |application| {
             let creation_admission = exports.send(
                 &application.root().established_recipient(), exports.recipient(),
             ).await;
@@ -186,50 +176,17 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
                 requests.push((original.protected.to_vec(), original.proof.to_vec()));
                 registered.borrow_mut().push(original);
             }
-            let mut addresses = Vec::new();
-            let first_controls = first_owner.preflight(application, counter, &mut addresses)
-                .unwrap_or_else(|()| panic!("the first exact Counter belongs to this Application"));
-            let second_controls = second_owner.preflight(application, sibling, &mut addresses)
-                .unwrap_or_else(|()| panic!("the distinct sibling belongs to the same Application"));
-            addresses.push(application.actor_address(&ledger.recipient()).unwrap());
-            <_ as Exports<Creator, CreatorEvent, (), EstablishedActor<ManagedCounter>>>::declare(first_owner, connection).await
-                .unwrap_or_else(|()| panic!("the actual first declaration opens"));
-            <_ as Exports<Creator, CreatorEvent, (), EstablishedActor<ManagedCounter>>>::declare(second_owner, connection).await
-                .unwrap_or_else(|()| panic!("the actual sibling declaration opens"));
-            let joined = application.cleanup().expect("actual startup owns the cleanup publication");
+            let addresses = [
+                application.actor_address(&counter.recipient()).unwrap(),
+                application.actor_address(&sibling.recipient()).unwrap(),
+                application.actor_address(&ledger.recipient()).unwrap(),
+            ];
+            let targets = (counter.clone(), sibling.clone());
             let publication = configured.send((creation_admission, original, requests, addresses));
             publication.unwrap_or_else(|_| panic!("Work awaits configured real actor proofs"));
-            Ok::<_, ()>(Some(async move {
-                let sibling_runtime = runtime.clone();
-                let sibling_joined = joined.clone();
-                let first_retirement = async {
-                    {
-                        let serving = <_ as Exports<Creator, CreatorEvent, (), EstablishedActor<ManagedCounter>>>::serve(first_owner, first_controls, runtime, joined);
-                        tokio::pin!(serving);
-                        tokio::select! {
-                            biased;
-                            request = cancelled => request.expect("Work explicitly surrenders only first serving"),
-                            () = serving.as_mut() => panic!("first serving cannot finish before its explicit cancellation"),
-                        }
-                    }
-                    // This ends only the first serving borrow. It is not actor or Application cleanup.
-                    <_ as Exports<Creator, CreatorEvent, (), EstablishedActor<ManagedCounter>>>::withdraw(first_owner).await;
-                    // Replay teardown against the same owner; no second declaration is issued.
-                    <_ as Exports<Creator, CreatorEvent, (), EstablishedActor<ManagedCounter>>>::withdraw(first_owner).await;
-                    // A shared-Session close injected here is a test-owned adverse control,
-                    // never a production-source inversion: Export owns no Session close authority.
-                    let publication = withdrawn.send(());
-                    publication.expect("Work waits for actual first declaration withdrawal");
-                };
-                let sibling_serving = <_ as Exports<Creator, CreatorEvent, (), EstablishedActor<ManagedCounter>>>::serve(second_owner,
-                    second_controls, sibling_runtime, sibling_joined,
-                );
-                tokio::join!(first_retirement, sibling_serving);
-            }))
-        };
-        let work = |application: ApplicationHandle<
-            Creator, CreatorEvent,
-        >| async move {
+            Ok::<_, Never>(targets)
+        });
+        let outcome = node.run_with(async move |application| {
             let (creation_admission, actors, requests, addresses) = configuration_received.await
                 .expect("actual startup declares both exports before Work");
             let first_querier = connection.declare_querier("bombay/withdrawal/first")
@@ -244,8 +201,7 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
                 .consolidation(ConsolidationMode::None).timeout(Duration::from_secs(5))
                 .await.expect("first native query starts before the isolation cutoff");
             pending_protection.await.expect("first protection actually returned Pending");
-            let cancellation = cancel.send(());
-            withdrawal_received.await.expect("the exact first withdrawal finishes before sibling work");
+            let withdrawal_result = withdraw().await;
             let first_matching = first_querier.matching_status().await;
             let sibling_matching = sibling_querier.matching_status().await;
             let first_inspection = first_querier.undeclare().await;
@@ -289,21 +245,19 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
                 .expect("Work shares actual cleanup observation").now_or_never();
             let shutdown = application.shutdown();
             (
-                creation_admission, actors, requests, addresses, cancellation, first_replies, first_ending,
+                creation_admission, actors, requests, addresses, withdrawal_result, first_replies, first_ending,
                 submitted, sibling_replies, sibling_ending, first_admission, first_value,
                 sibling_admission, sibling_value, session_open, cleanup_pending, shutdown,
                 first_matching, sibling_matching, first_inspection, sibling_inspection,
             )
-        };
-        let (execution, (receiving, families)) = application.execute_with_entities_invocation(
-            ApplicationWorkPresence::<_, Never>::Supplied((work, invoke)), Some(startup),
-        ).unwrap_or_else(|_| panic!("the real Application host is entered"));
-        let ((), (work, report, native, notifications), ()) = tokio::join!(execution, receiving, families);
-        let (observations, cleanup) = work.into_supplied_with_entities().try_into_completed()
+        }).await.unwrap_or_else(|_| panic!("the public Node execution starts"));
+        let ((first, second), binding_result, closed, polling, disposal) = node.into_parts()
+            .unwrap_or_else(|_| panic!("the Node retains its actual joined finalization"));
+        let (work, report, native, notifications, ()) = outcome.into_parts();
+        let (observations, cleanup) = work.try_into_completed()
             .unwrap_or_else(|_| panic!("real Work completes before joined cleanup extraction"));
-        let closed = session.close().await;
         let (
-            creation_admission, actors, requests, addresses, cancellation, first_replies, first_ending,
+            creation_admission, actors, requests, addresses, withdrawal_result, first_replies, first_ending,
             submitted, sibling_replies, sibling_ending, first_admission, first_value,
             sibling_admission, sibling_value, session_open, cleanup_pending, shutdown,
             first_matching, sibling_matching, first_inspection, sibling_inspection,
@@ -324,7 +278,9 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
         assert!(submitted.is_ok() && sibling_ending.is_some());
         assert_eq!(sibling_replies.len(), 1, "the still-live sibling export must return its real native reply");
         assert!(cleanup.is_ok() && closed.is_ok() && session.is_closed());
-        assert!(creation_admission.is_ok() && cancellation.is_ok() && shutdown.is_ok());
+        assert!(creation_admission.is_ok() && shutdown.is_ok());
+        assert!(matches!(binding_result, Some(Ok(_))));
+        assert!(polling.is_none() && disposal.is_none());
         assert_ne!(actors.message.counter.recipient(), actors.message.sibling.recipient());
         assert!(first_admission.is_ok() && sibling_admission.is_ok());
         assert!(first_inspection.is_ok() && sibling_inspection.is_ok());
@@ -335,6 +291,7 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
             (false, true),
             "withdrawal must remove only the first native declaration",
         );
+        assert!(matches!(withdrawal_result, Some(Ok(()))));
         assert!(first_replies.is_empty());
         assert_eq!(first_ending.to_string(), "receiving on a closed channel");
         let received = sibling_replies[0].result();
@@ -422,5 +379,5 @@ async fn surrendered_export_withdraws_without_stopping_its_sibling() {
         assert!(matches!(&sibling.8, (None, None, None)));
         assert!(matches!(&sibling.9, (None, None, None, None, None, None)));
         // This scope cannot inspect request.completed or callback permits; no such baseline is claimed.
-    }).await.expect("watchdog only; native replies, local actor effects and acquired cleanup prove the law");
+    })).await.expect("watchdog only; native replies, local actor effects and acquired cleanup prove the law");
 }
