@@ -1025,13 +1025,65 @@ inversion/restoration hashes and before/after measurements. The restored debug
 control passes all26 Entity cases. The original accounts witness also passes32
 consecutive executions in each profile, with no retry after failure. These
 bounded results do not prove every schedule. Workspace gates, full Nix, hosted
-CI, PR merge and runtime publication remain pending; no release retry or
-publication is claimed.
+CI, PR merge and runtime publication were pending at this focused checkpoint;
+the final local results follow. No release retry or publication is claimed.
 
 The first workspace Nextest epoch passes1,013 cases with6 skipped registrations.
 Its sole Clippy failure is similar test-local names; only the held consumer
 binding is renamed to `slot_consumer`, matching the one-consumer law above.
-No assertion, production symbol or lint is changed. Final-source checks follow.
+No assertion, production symbol or lint is changed.
+
+#### Final retirement verification
+
+Candidate `9f1ffd277b59eff9e15c850f0500c943051751f6` freezes724 tracked inputs;
+the696 filtered source files match Nix source
+`fhd3c4rnbyzh47kcmdarqccc6zvx2p24-source`. Committing changes no input hash or
+any of the28 derivation/output identities. Formatting, strict workspace Clippy
+and final-source Nextest pass:1,013 cases, six skipped registrations. The exact
+optimized full-workspace Nix owner also passes1,013 registrations, zero failures,
+six controlled ignored child registrations and153 unique caller fixtures.
+Each child has a passing exact parent which requires its name, successful exit
+and one-test summary; ignored registrations receive no independent extra credit.
+All153 fixture sources match the frozen inputs and retained caller cohort. One
+row split by Cargo's progress notice is retained verbatim. Both new retirement
+regressions and the original accounts reactivation witness pass exactly once.
+
+All28 aarch64-darwin owners are reviewed, registered and rooted. Debug and
+optimized remote each pass542 cases and31 caller fixtures; six guard reprints
+per profile are excluded from execution counts. Debug remote's additional
+Clippy and Rustdoc stages pass with warnings denied, as do the separate optimized
+workspace lint/documentation owners. Generated public `retire_entity` rustdoc
+contains the ordering guarantee. The minimum1.96 owners pass their selected
+114 cases/138 fixtures and three remote cases/11 fixtures; this is not the full
+minimum-compiler runtime catalogue. Driver evidence retains16 healthy references
+and eight intended viable kills; execution evidence retains nine healthy cases,
+ten intended kills and two exact E0382 denials. Observe28/Entity6 Loom cases
+retain their configured exploration bounds. All four coverage floors pass:
+Driver737/818, execution1,006/1,048, outcome95/97 and Observe504/526. Example
+execution and compile-only scopes remain qualified in their owner receipts;
+in particular, the Axum example earns no HTTP runtime credit.
+
+The original all28 request ends1 with exactly two ENOSPC failures, in child
+default-features-disabled and remote debug. Both source-identical serial retries
+pass; their original failed logs remain preserved. A subsequent cached request
+returns all28 exact successful output records, ordinary `nix flake check` passes,
+and store-content verification passes for all28 outputs plus the frozen source.
+No check or assertion was removed or weakened. `entity-retirement-full-summary.json`,
+the final verification commands/results, and per-owner raw logs/receipts in the
+existing restart handoff bind these results to the tested source. Shared-machine
+elapsed times do not establish controlled compiler costs. Miri, Windows and new
+package/archive consumers are unclaimed; earlier receipts retain their epochs.
+
+After verification, main `011e7ad0` is normally integrated: its three later
+commits change only the peer's remote Markdown records. Final evidence also
+corrects the existing backlog README's stale PR421 disposition, making six
+owned paths. Production, tests, manifests, locks and Nix configuration remain
+identical to the frozen candidate; the integration and final evidence change
+only Markdown. The scoped ownership/minimization checkpoint remains `pass`.
+Fresh final-head hosted CI, review requirements and normal PR merge remain
+pending, followed by release381 refresh, exact package/consumer verification,
+publication and the acknowledged Bombay release notice. Full DX01–DX28 and its
+remaining consumer, cost and documentation acceptance stay open.
 
 ## Verification and remaining work
 
