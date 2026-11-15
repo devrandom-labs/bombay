@@ -52,8 +52,11 @@ invocation owner. Caller-local borrows and non-Send outputs remain supported.
 The cold service merged through PR387 attaches typed declarations with Node.exports.
 Node owns binding, startup, concurrent serving, withdrawal, joined Application/
 family receiving and native close. The runtime owns operation interpretation;
-the existing Application cleanup publication ends declaration/cache serving,
-while native requests independently observe actual target/root retirement.
+the existing Application cleanup publication normally ends declaration/cache
+serving. An Export's affine take_withdrawal operation can end that export's
+declaration earlier without stopping its actor or siblings. Export owns the
+actual native outcome, shared through its existing Observe completion slot.
+Native requests independently observe actual target/root retirement.
 Wire/security functions remain explicit typed policies. Request extraction is
 optional and transfers original native products without a presentation callback.
 Full remote acceptance remains pending; transport fixtures do not establish it. Protected Counter

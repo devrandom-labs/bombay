@@ -6,6 +6,7 @@ mod request;
 
 use crate::address::MailAddr;
 use crate::application::ExternalActorError;
+use crate::observe::{Observation, Publisher};
 use behavior::Protocol;
 use core::fmt;
 use core::marker::PhantomData;
@@ -23,7 +24,7 @@ use zenoh::query::{Query, Queryable};
 ///
 /// Construction returns its original target beside this cause. Retention returns
 /// the supplied protected bytes, proof and opaque receipt beside this cause.
-/// `Display` and `Debug` omit native declaration text; `Error::source` retains
+/// `Display` and `Debug` omit native cause text; `Error::source` retains
 /// that actual original cause.
 pub enum ExportError {
     /// The target is not an actor associated with this exact Application.
@@ -36,6 +37,8 @@ pub enum ExportError {
     Storage { cause: TryReserveError },
     /// The native declaration was refused.
     Declaration { cause: Box<dyn Error + Send + Sync> },
+    /// Native declaration withdrawal failed; the actual cause remains owned.
+    Withdrawal { cause: Box<dyn Error + Send + Sync> },
     /// A retained logical identity already protects different request bytes.
     Conflict,
     /// This export cannot retain another distinct request.
@@ -66,6 +69,7 @@ impl fmt::Display for ExportError {
             Self::QueryCapacity => formatter.write_str("query count exceeds native capacity"),
             Self::Storage { cause } => write!(formatter, "request storage was refused: {cause}"),
             Self::Declaration { .. } => formatter.write_str("network declaration was refused"),
+            Self::Withdrawal { .. } => formatter.write_str("network withdrawal was refused"),
             Self::Conflict => formatter.write_str("request identity protects different bytes"),
             Self::RetentionCapacity => formatter.write_str("retained request capacity exhausted"),
             Self::DuplicateTarget => formatter.write_str("actor is already exported by this Node"),
@@ -102,7 +106,7 @@ impl Error for ExportError {
             Self::IngressCapacity { cause } => Some(cause),
             Self::Endpoint { cause } => Some(cause),
             Self::Storage { cause } => Some(cause),
-            Self::Declaration { cause } => Some(cause.as_ref()),
+            Self::Declaration { cause } | Self::Withdrawal { cause } => Some(cause.as_ref()),
         }
     }
 }
@@ -225,7 +229,14 @@ pub struct Export<Inputs, Declarations, Entry> {
     inputs: Inputs,
     declarations: Declarations,
     startup: Option<Result<(), ExportError>>,
-    withdrawal: Option<Result<(), Box<dyn Error + Send + Sync>>>,
+    withdrawal: Observation<Option<Result<(), Arc<ExportError>>>>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "one affine publication retains the optional native withdrawal outcome and its shared original error"
+    )]
+    withdrawal_publication: Option<Publisher<Option<Result<(), Arc<ExportError>>>>>,
+    withdrawal_authority: Option<Publisher<()>>,
+    withdrawal_intent: Observation<()>,
     ingress: Arc<Mutex<Vec<ExportError>>>,
     entries: RefCell<Vec<Option<Entry>>>,
     declaration: RefCell<Option<Queryable<()>>>,
@@ -239,8 +250,63 @@ pub struct Export<Inputs, Declarations, Entry> {
     )>,
 }
 impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
+    /// Take the unique authority to withdraw this exact export during Node execution.
+    ///
+    /// A second take returns `None`. Calling the returned operation creates a
+    /// cold future; its first poll requests withdrawal. The owner then stops
+    /// accepting queries and surrenders pending producers without rolling back
+    /// completed actor work. The target actor, sibling exports and shared
+    /// connection remain under their existing owners.
+    ///
+    /// Awaiting yields the actual native withdrawal result, or `None` after a
+    /// settled path that acquired no declaration. Native success does not prove
+    /// callback quiescence or actor retirement. Failures use
+    /// [`ExportError::Withdrawal`], shared with final consuming extraction.
+    /// Its original native cause is neither cloned nor rebuilt.
+    ///
+    /// Keep the started future outside a cancelled borrowed wait to await it
+    /// again. Dropping that whole future surrenders its observation without
+    /// revoking the request or erasing the owner's retained result. Dropping it
+    /// before its first poll sends no request. Dropping the entire Node before
+    /// completion leaves the observation pending; it is not joined withdrawal.
+    ///
+    /// # Panics
+    /// Request publication retains Observe's waker contract: notification may
+    /// unwind after intent has been recorded. This does not roll back intent.
+    /// Completion notification can likewise unwind after retaining the actual
+    /// native result; Node's existing panic and cleanup policy still applies.
+    pub fn take_withdrawal(
+        &mut self,
+    ) -> Option<
+        impl AsyncFnOnce() -> Option<Result<(), Arc<ExportError>>> + use<Inputs, Declarations, Entry>,
+    > {
+        let authority = self.withdrawal_authority.take()?;
+        let withdrawal = self.withdrawal.clone();
+        Some(async move || {
+            authority.complete(());
+            withdrawal.await
+        })
+    }
+
+    fn complete_withdrawal(
+        &mut self,
+        withdrawal: Option<Result<(), Box<dyn Error + Send + Sync>>>,
+    ) {
+        if let Some(publication) = self.withdrawal_publication.take() {
+            // Observe retains the original before notifying any foreign waker.
+            publication.complete(
+                withdrawal.map(|result| {
+                    result.map_err(|cause| Arc::new(ExportError::Withdrawal { cause }))
+                }),
+            );
+        }
+    }
+
     /// Transfer configuration, declarations and every retained acquired fact.
     /// With refusal discharge, storage order is not query acquisition order.
+    /// Withdrawal failures share one [`ExportError::Withdrawal`] with live
+    /// observers. [`Error::source`] borrows its actual native cause. Standard
+    /// error forwarding is supported; unique native Box extraction is not promised.
     #[expect(
         clippy::type_complexity,
         reason = "consuming extraction transfers the existing configuration, declarations and independent original receipts"
@@ -251,7 +317,7 @@ impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
         Inputs,
         Declarations,
         Option<Result<(), ExportError>>,
-        Option<Result<(), Box<dyn Error + Send + Sync>>>,
+        Option<Result<(), Arc<ExportError>>>,
         Vec<ExportError>,
         Vec<Entry>,
     ) {
@@ -264,6 +330,7 @@ impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
             entries,
             declaration,
             active,
+            ..
         } = self;
         drop(declaration.into_inner());
         drop(active);
@@ -277,7 +344,7 @@ impl<Inputs, Declarations, Entry> Export<Inputs, Declarations, Entry> {
             inputs,
             declarations,
             startup,
-            withdrawal,
+            withdrawal.try_get().flatten(),
             diagnostics,
             entries.into_inner().into_iter().flatten().collect(),
         )

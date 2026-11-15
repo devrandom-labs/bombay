@@ -92,9 +92,25 @@ Discharge runs in Node's caught serving poll, before ordinary withdrawal.
 Keyed requests and acquired provider panic facts keep their lifetime positions;
 vacancy reuse never compacts or retargets an issued key. Extraction omits vacant
 positions and does not promise chronological row order under discharge.
-Declaration/cache lifetime follows the existing Application cleanup publication,
-so supplied Work may retrieve a cached result after target retirement. Native
-request reception retains its own target/root retirement observations. Node
+Declaration/cache lifetime normally follows the existing Application cleanup
+publication, so supplied Work may retrieve a cached result after target retirement.
+An Export's `take_withdrawal` transfers its one exact detached withdrawal
+operation before the Export moves into Node. Its first poll requests that
+Export's cutoff, surrenders its pending producers and awaits the actual native
+undeclaration result; sibling exports and target actors keep their existing
+lifetimes. Cancellation of a borrowed wait does not revoke the request.
+Dropping the unstarted operation sends no request; dropping the entire Node
+before completion is surrender, not joined withdrawal.
+The existing Observe slot retains completion for both live observation and final
+extraction. Settled no-declaration paths publish None; pending is distinct.
+Withdrawal failures share the existing `ExportError::Withdrawal` through Arc;
+the public slot is `Option<Result<(), Arc<ExportError>>>`. Its source retains
+the exact original native Box, and standard Rust error forwarding remains
+available. This changes the baseline owned error type and adds one exhaustive
+root error variant. Native Ok establishes undeclaration,
+not callback quiescence, resource reclamation or actor retirement. Foreign waker
+panics preserve acquired results and follow Node's existing panic/cleanup policy.
+Native request reception retains its own target/root retirement observations. Node
 extraction keeps separate original kernel poll and disposal panic payloads.
 Current permission loans span construction and the synchronous native attempt.
 Cached duplicates end the request loan before the independent reply check,

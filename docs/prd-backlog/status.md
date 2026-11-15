@@ -1,13 +1,18 @@
 # Backlog status and dependencies
 
 R18's [public withdrawal prerequisite review](../prds/static-remote-actors.md#public-export-withdrawal--prerequisites-2026-11-14)
-is active on baseline main011e7ad0 after PR423 records the delivered private witness.
-Fresh locked-owner verification identifies no upstream version blocker. The
-public request/result model selects an opaque cold one-shot callable and shares
-only the original native error through the existing Observe owner. The external
-compile consumer fails specifically at the missing take_withdrawal method;
-the pre-edit record selects the two owning production paths. Native public
-execution and complete R18 acceptance remain open.
+is locally distilled; complete R18 remains active. Main5070f561's retirement-order repair is integrated at
+f0fbb717. All28 integrated native checks and ordinary flake check pass on the
+recorded immutable source; workspace/Nextest each pass1020 cases with six
+parent-owned child registrations. Both remote profiles pass549 cases; the1.96
+remote consumer gate passes four outer cases/all twelve compiler fixtures.
+The initial compiler-note mismatch and its exact correction retain their source
+epochs in the owning PRD. Fresh verification finds no dependency-version blocker.
+The authorized sixteen-path capability adds no public nominal type; three local
+code audits and applied-guide review pass. Hosted delivery remains open. The coordinator reports an
+unexplained seeded Linux main failure and temporarily holds PR381 automatic
+merging; local passes do not resolve that failure. Complete R18/AUTH1/NET1 and
+example distillation remain open.
 
 R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
 has fresh prerequisites and local debug/optimized healthy, shared-close and

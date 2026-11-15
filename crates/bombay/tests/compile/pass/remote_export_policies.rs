@@ -2,6 +2,7 @@ use bombay::actors::ActorExt;
 use bombay::behavior::Never;
 use bombay::remote::{Export, ExportLimits, Network, json, reply, stop};
 use bombay::{Application, MailAddr};
+use std::error::Error;
 
 #[path = "../../../../../examples/counter/src/counter.rs"]
 #[expect(
@@ -86,7 +87,10 @@ async fn configured(
     });
     let outcome = node
         .run_with(async move |application| {
-            let withdrawn = withdraw().await;
+            let withdrawn = withdraw().await.map(|withdrawal| {
+                withdrawal?;
+                Ok::<(), Box<dyn Error + Send + Sync>>(())
+            });
             let shutdown = application.shutdown();
             (withdrawn, shutdown)
         })
