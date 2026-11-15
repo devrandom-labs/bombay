@@ -306,8 +306,8 @@ the final evidence reviews passed. Reviewed, actual CI and delivered trees
 match. The clean merged worktree and branch are removed. Earlier private
 isolation and prerequisite records retain their exact source epochs below.
 Complete R18, AUTH1/NET1 and final example distillation remain open. Both
-historical Linux watchdog causes remain unknown; PR381's independent release
-hold is preserved.
+historical Linux watchdog causes remain unknown. PR381 was independently held
+at that delivery checkpoint; its later merge is recorded in the integration above.
 
 Fresh archive checksums and packaged VCS metadata verify Behavior/Actors0.30.0
 at `628649da`, Macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0 and
