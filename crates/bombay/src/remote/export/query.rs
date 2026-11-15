@@ -4,12 +4,13 @@ use super::{Export, ExportError, ExportLimits, RefusalRetention, RequestKey};
 use crate::address::MailAddr;
 use crate::application::{ActorInterface, ApplicationHandle, ApplicationLifecycle};
 use crate::local::endpoint::ExtractLocalEndpoint;
+use crate::observe;
 use crate::remote::verification::{poll_verification, provide};
 use crate::remote::{IngressError, json, try_retain};
 use crate::{ActorRetirementReport, InstalledActor};
 use behavior::{EstablishedRecipient, Protocol};
 use communication::Capacity;
-use core::future::{Future, poll_fn};
+use core::future::{Future, IntoFuture, poll_fn};
 use core::marker::PhantomData;
 use core::pin::pin;
 use futures_util::{
@@ -129,6 +130,8 @@ where
         current_request: CurrentRequest,
         current_reply: CurrentReply,
     ) -> Self {
+        let (withdrawal_authority, withdrawal_intent) = observe::pair();
+        let (withdrawal_publication, withdrawal) = observe::pair();
         Self {
             inputs: (
                 key.into(),
@@ -143,7 +146,10 @@ where
             ),
             declarations,
             startup: None,
-            withdrawal: None,
+            withdrawal,
+            withdrawal_publication: Some(withdrawal_publication),
+            withdrawal_authority: Some(withdrawal_authority),
+            withdrawal_intent,
             ingress: Arc::new(Mutex::new(Vec::new())),
             entries: RefCell::new(Vec::new()),
             active: None,
@@ -487,11 +493,16 @@ where
             .interpret(&mut ExtractLocalEndpoint)
             .address();
         let mut requests = FuturesUnordered::new();
+        let mut intent = self.withdrawal_intent.clone().into_future();
         loop {
             tokio::select! {
                 biased;
                 // Work may still request a cached result after its target retires.
                 _ = &mut joined => break,
+                () = &mut intent => {
+                    requests.clear();
+                    break;
+                }
                 Some(()) = requests.next(), if !requests.is_empty() => {
                     self.publish(&runtime, address);
                     self.discharge();
@@ -560,7 +571,7 @@ where
             self.publish(&runtime, address);
         }
         drop(requests);
-        self.withdrawal = withdrawal;
+        self.complete_withdrawal(withdrawal);
         self.drain().await;
     }
     #[expect(
@@ -753,15 +764,17 @@ where
     }
     async fn withdraw(&mut self) {
         let declaration = self.declaration.borrow_mut().take();
-        if let Some(queryable) = declaration {
-            self.withdrawal = Some(queryable.undeclare().await);
-        }
+        let withdrawal = match declaration {
+            Some(queryable) => Some(queryable.undeclare().await),
+            None => None,
+        };
         if let Some((mut incoming, _)) = self.active.take() {
             incoming.close();
             while let Ok(original) = incoming.try_recv() {
                 discard_query(Some(original));
             }
         }
+        self.complete_withdrawal(withdrawal);
         self.drain().await;
     }
     fn serve(

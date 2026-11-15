@@ -989,3 +989,12 @@
 -              found closure signature `fn(&Receipt, &Receipt) -> _`
 +   = note: expected closure signature `for<'a, 'b> fn((&'a [u8], &'b Receipt)) -> _`
 +              found closure signature `fn((&Receipt, &Receipt)) -> _`
+--- a/crates/bombay/tests/compile/fail/remote_export_withdrawal_reuse.stderr
++++ b/crates/bombay/tests/compile/fail/remote_export_withdrawal_reuse.stderr
+@@ -8,5 +8,5 @@
+ 6 |     let second = withdraw().await;
+   |                  ^^^^^^^^ value used here after move
+   |
+-note: `std::ops::AsyncFnOnce::async_call_once` takes ownership of the receiver `self`, which moves `withdraw`
++note: `async_call_once` takes ownership of the receiver `self`, which moves `withdraw`
+  --> $RUST/core/src/ops/async_function.rs

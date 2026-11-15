@@ -1,5 +1,19 @@
 # Backlog status and dependencies
 
+R18's [public withdrawal prerequisite review](../prds/static-remote-actors.md#public-export-withdrawal--prerequisites-2026-11-14)
+is locally distilled; complete R18 remains active. Main5070f561's retirement-order repair is integrated at
+f0fbb717. All28 integrated native checks and ordinary flake check pass on the
+recorded immutable source; workspace/Nextest each pass1020 cases with six
+parent-owned child registrations. Both remote profiles pass549 cases; the1.96
+remote consumer gate passes four outer cases/all twelve compiler fixtures.
+The initial compiler-note mismatch and its exact correction retain their source
+epochs in the owning PRD. Fresh verification finds no dependency-version blocker.
+The authorized sixteen-path capability adds no public nominal type; three local
+code audits and applied-guide review pass. Hosted delivery remains open. The coordinator reports an
+unexplained seeded Linux main failure and temporarily holds PR381 automatic
+merging; local passes do not resolve that failure. Complete R18/AUTH1/NET1 and
+example distillation remain open.
+
 R18's [withdrawal-isolation experiment](../prds/static-remote-actors.md#export-withdrawal-isolation--prerequisites-and-change-record-2026-11-14)
 has fresh prerequisites and local debug/optimized healthy, shared-close and
 undeclaration-omission evidence with exact restoration. Branch4489f1af,
@@ -62,7 +76,7 @@ merged through PR411 after all six checks and independent reviews passed.
 Independent network campaigns, replay beyond the bounded incoming campaign,
 restart and full R24 remain open.
 
-Updated: 2026-11-14 UTC. This delivery snapshot uses main `63c50988`. The
+Updated: 2026-11-14 UTC. This delivery snapshot uses main `011e7ad0`. The
 original remote PRD goal is resumed with the user's approved choices, parallel
 work and removed implementation budgets. The scoped legacy transport-research retirement is
 delivered; its conservation map and exact deletion scope live in the

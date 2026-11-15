@@ -18,7 +18,7 @@ use crate::{
 };
 use behavior_actors::StopOnShutdown;
 use core::future::{Future, Ready, poll_fn, ready};
-use core::pin::Pin;
+use core::pin::{Pin, pin};
 use core::task::{Context, Poll};
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroUsize;
@@ -382,7 +382,7 @@ async fn public_binding_refusal(disposal: Option<Arc<Vec<u8>>>) {
             } else { Err(protocol::VerificationError::Invalid) }
         };
         let maximum = NonZeroUsize::new(2).unwrap();
-        let export = Export::new(
+        let mut export = Export::new(
             "bombay/binding-disposal/read",
             ExportLimits { refusals: RefusalRetention::Retain,
 queued_queries: maximum, retained_queries: maximum,
@@ -409,6 +409,13 @@ queued_queries: maximum, retained_queries: maximum,
             },
             &current, &current,
         );
+        let withdraw = export.take_withdrawal()
+            .expect("the cold export retains its exact withdrawal authority");
+        let mut withdrawal = pin!(withdraw());
+        let before_startup = poll_fn(|context| {
+            Poll::Ready(withdrawal.as_mut().poll(context))
+        }).await;
+        assert!(before_startup.is_pending(), "pre-start intent has no native withdrawal result");
         let calls = Rc::new(Cell::new(0));
         let invoked = Rc::clone(&calls);
         let output = Box::new(239_u64);
@@ -443,6 +450,9 @@ queued_queries: maximum, retained_queries: maximum,
         });
         let outcome = node.run_with(work).await
             .unwrap_or_else(|_| panic!("the actual cold declaration accepts execution"));
+        let settled = poll_fn(|context| {
+            Poll::Ready(withdrawal.as_mut().poll(context))
+        }).await;
         let (work, root_report, native, notifications, ()) = outcome.into_parts();
         let application = application.borrow_mut().take()
             .expect("the actual binder acquired its root handle");
@@ -451,6 +461,7 @@ queued_queries: maximum, retained_queries: maximum,
         let notifications = notifications.expect("both original notifications are received");
         let closed = node.closed.as_ref().expect("Node acquires native close before returning");
         assert!(!initially_closed && connection.is_closed() && closed.is_ok());
+        assert!(matches!(settled, Poll::Ready(None)), "settled binding refusal acquired no native declaration");
         assert_eq!(root_report, Some(retired));
         assert_eq!(origin.address(), application.root().address());
         assert!(matches!(&native, ActorRetirement::Retained { outcome: RetirementOutcome::OwnerCancelled { .. }, .. }));

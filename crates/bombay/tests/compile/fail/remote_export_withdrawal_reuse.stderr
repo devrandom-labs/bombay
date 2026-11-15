@@ -1,0 +1,12 @@
+error[E0382]: use of moved value: `withdraw`
+ --> tests/compile/fail/remote_export_withdrawal_reuse.rs:6:18
+  |
+4 |     let withdraw = export.take_withdrawal().unwrap();
+  |         -------- move occurs because `withdraw` has type `impl AsyncFnOnce() -> Option<Result<(), Arc<ExportError>>>`, which does not implement the `Copy` trait
+5 |     let first = withdraw().await;
+  |                 ---------- `withdraw` moved due to this method call
+6 |     let second = withdraw().await;
+  |                  ^^^^^^^^ value used here after move
+  |
+note: `std::ops::AsyncFnOnce::async_call_once` takes ownership of the receiver `self`, which moves `withdraw`
+ --> $RUST/core/src/ops/async_function.rs
