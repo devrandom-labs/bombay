@@ -341,6 +341,54 @@ original10/15/40-second failures remain unexplained. Full DX01–DX28 and broade
 R18 remain active; normal release workflow, registry/archive/tag verification
 and actual Bombay acknowledgment are still required before claiming delivery.
 
+#### Receiver startup diagnostic
+
+Final99d2001d hosted CI43737385295/job132882881038 fails the optimized remote
+owner. application_clients passes58 cases and fails
+outbound::disposal::verification_disposal_preserves_ready_receipt_without_delivering
+at disposal.rs143, before Export construction: receiving Counter open_node
+returns Err. The existing closure discards the error, so its actual cause is
+unknown. Driver/Observe fuzz steps are skipped. The failing source is identical
+to092; no port collision or runtime defect is established. Raw log SHA256 is
+befe5c9fd9ccf0b449a8d5c4277b6a8ccb7c37512affa81a4e8e334405544b9c.
+Both final99 package and16-command archive consumer suites pass on1.99/1.96;
+those scopes do not override this full-gate failure. Local full22500 was
+intentionally cancelled after this failure, before authoritative flake. Its
+completed owners retain99 scope; cancellation is not a passing gate.
+
+Pre-edit diagnostic policy: a refused fixture startup must report the returned
+NodeStartupRefusal and its supported Error::source. Application::open_node owns
+the original Application, Network and refusal; startup.rs preserves its native
+cause while ordinary Display/Debug deliberately redact it. Existing
+remote_node::startup_diagnostics_keep_native_cause_out_of_ordinary_output proves
+that distinction. This test-only observation changes no runtime or actor law.
+
+Expected edits are this PRD and outbound/disposal.rs: add one module-scope Error
+import and expose the refusal/source in the already failing receiver branch.
+Production Rust/API/state changes +0/-0; assertions, deadlines, fixture inputs,
+provider traces and successful paths remain exact. Cumulative release scope
+becomes16 paths; standing user auto-approval applies. Review1 maps the observed
+failure to the owning startup contract. Review2 rejects Debug-only printing,
+which would still omit the cause, and confirms no speculative retry or transport
+policy enters the patch. Both reviews are by the author. Detailed review and
+original failure receipts remain in the existing handoff. Verify original three
+disposal cases in debug/release and strict format/Clippy through pinned Nix;
+retain original failure limits and require fresh final gates before delivery.
+
+The scoped observation passes pinned1.99 format, both original3-case disposal
+profiles, the existing startup-source contract and strict application_clients
+Clippy. A separate original optimized application_clients invocation preserves
+all59 cases, nine compiler fixtures and original concurrency; all pass. Every
+one of727 frozen inputs remains exact. Receipts are
+native-startup-diagnostic-focused-result.json and
+native-startup-diagnostic-original-target-result.json. The original hosted
+refusal did not reproduce: this supplies observation/replay evidence, not a
+root cause, repair or final release certificate. Two interleaved libtest rows
+were verified from raw tokens alongside the exact59-name cohort and summary.
+The closed disposable target was removed after source/result audit and empty
+lsof; logs, source inputs and executable hashes remain. Final committed-source
+CI, local Nix and release-package evidence must still be refreshed before merge.
+
 ## Incoming schedule watchdog evidence
 
 Main `5070f561` CI43683207786/job132718094489 fails the optimized remote
