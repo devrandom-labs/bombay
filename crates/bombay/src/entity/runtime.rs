@@ -1296,8 +1296,8 @@ where
         slot.submit_owned(SlotEvent::Terminated {
             activation_id: activation,
         });
-        self.interpret_slot(id, DirectoryArc::clone(&slot));
         slot.complete_retirement(mode);
+        self.interpret_slot(id, slot);
     }
 
     fn spawn_owned(self: &Arc<Self>, task: impl Future<Output = ()> + Send + 'static) {
