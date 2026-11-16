@@ -241,6 +241,57 @@ allocation's disposal do not prove original Drop-close Result custody, all-task
 or heap quiescence, later startup rollback, active-declaration surrender,
 coexisting failures or reconnect. Full R18, AUTH1/NET1 and delivery remain open.
 
+### DevX integration prerequisites and caller review
+
+Fresh inspection selects fetched main6110f8a8/tree956da1ec above. Cargo.lock
+remains644c8853 and flake.lock13ea9617; no patch, replacement, dependency feature
+or version change is selected. All775 selected Behavior instructions were reread,
+and current source/API/tests/docs of all six owners plus Engine and Entity were
+inspected again. Behavior/Actors0.30, BehaviorMacros0.16, Address0.3,
+Communication0.1.7, Timers0.2, Engine0.3 and BombayMacros0.2 retain their exact
+earlier VCS/checksum relationships. Node still uses the selected1.10.10 SDK
+privately. No contract blocker or dependency-edge change was found. The fresh
+contracts and caller reports are preserved as `devx-contracts.txt` and
+`devx-callers.txt` in the stage archive.
+
+Entity and family-free applications now use the same public `run_with` and
+`execute_with` names. The existing private invocation kernel and complete
+original Application/Work/refusal, root, notification and family products remain
+owned as before. Node's new listener getter projects current owned address
+strings, with no stored second list, Session clone or readiness/grant policy.
+All five R18 control-site bodies are byte-identical: native construction and
+close, unused-Work publication Drop, cancellation request and classification.
+The original R18 binding test has no incoming diff and needs no source migration
+from this inspection. These facts do not relabel old native gates or controls as
+combined-source executions.
+
+The expected focused diff after integrating main remains four paths: the owning
+binding test, this PRD, backlog status and one public-API inventory correction
+for `Node::listen_addresses`. Own production +0/-0/net0, tests +112/-34/net78,
+public API +0/-0 types; no new runtime, wrapper, recipe or dependency is selected.
+Incoming main's48 changed paths remain upstream work. Preserve this branch's
+PR430 delivery record and whole-owner evidence when merging current status.
+The changed Cargo/full-source filesets require fresh derivation attribution.
+
+Caller review found the simpler runner spelling and actual-port listener API
+usable without a transport escape hatch or borrow-ending/drop sequence. It also
+records remaining acceptance limits: both remote-counter roles repeat binding,
+close, callback, Work and root-result checks, and their documented first-error
+policy returns summary `Retirement`/`Result` refusals rather than every original
+coexisting outcome. Final R18/error/example distillation remains open. Older
+Entity/Counter static panic mapping remains DX residue; finite assignment/proof
+provider setup remains separate AUTH/deployment policy. Do not conceal those
+limits with defaults or grow this test slice into a result facade.
+
+After integration, execute the unchanged three-case binding cohort in both
+profiles and the current owning native gates. Observe the actual listener
+cardinality/port-zero test, canonical paired receiving consumers and separate
+remote-counter process cases through their existing owners. Explicitly run the
+ordinary Entity main; a zero-test binary build is insufficient. Reuse actual
+current-owner execution evidence for the Counter main and other selected cases,
+without repeating passing gates merely to create another receipt. Required
+hosted CI, scoped minimization and normal PR delivery remain mandatory.
+
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 
 **State: merged (bounded binding test slice).** [Verified delivery](#pending-node-binding--delivery-2026-11-16)
