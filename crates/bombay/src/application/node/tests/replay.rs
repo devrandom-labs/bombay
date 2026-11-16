@@ -420,7 +420,7 @@ async fn read_counter<Receipt>(
     proof: fn(&Receipt) -> Option<&[u8]>,
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let records = RefCell::new(Vec::new());
     let claims = RefCell::new(None::<Metadata>);
     let allocations = RefCell::new(Vec::new());
@@ -512,6 +512,7 @@ async fn read_counter<Receipt>(
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("the actual receiving Counter Node opens"));
+    let address = listener_address(node.listen_addresses().await);
     let runtime = node.runtime_id();
     let mut node = node.exports(export, async |application| {
         Ok::<_, Never>(application.root().established_recipient())
@@ -660,7 +661,7 @@ async fn read_ledger<Receipt>(
     proof: fn(&Receipt) -> Option<&[u8]>,
     same_request: fn(&Receipt, &Receipt) -> bool,
 ) {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let records = RefCell::new(Vec::new());
     let claims = RefCell::new(None::<Metadata>);
     let allocations = RefCell::new(Vec::new());
@@ -765,6 +766,7 @@ async fn read_ledger<Receipt>(
     .open_node(configuration(&address, &EndpointRole::Receiver))
     .await
     .unwrap_or_else(|_| panic!("the actual receiving Ledger Node opens"));
+    let address = listener_address(node.listen_addresses().await);
     let runtime = node.runtime_id();
     let mut node = node.exports(export, async |application| {
         Ok::<_, Never>(application.root().established_recipient())

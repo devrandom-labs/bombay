@@ -2,7 +2,7 @@
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
-**State: active; frozen-source native qualification passed; DevX integration pending.** This stage starts from main
+**State: active; frozen-source native qualification passed; combined DevX source qualification pending.** This stage starts from main
 `ae2d36cfa1832143438db0bb4ffdd61387844db5`, with the local PR430 delivery
 receipt committed as `b67b7d2a`. It continues the earlier R18 startup cut before
 later tuple rollback, coexisting close failures, resource baselines or reconnect.
@@ -291,6 +291,14 @@ ordinary Entity main; a zero-test binary build is insufficient. Reuse actual
 current-owner execution evidence for the Counter main and other selected cases,
 without repeating passing gates merely to create another receipt. Required
 hosted CI, scoped minimization and normal PR delivery remain mandatory.
+
+The branch integration of6110 applies cleanly after local checkpoint35b567b0,
+preserving PR430's delivered record and this test's exact07 bytes. The public-API
+inventory now includes the new listener method as metadata, separate from
+identity and readiness. Cargo/flake locks and all dependency selections remain
+unchanged. This updates only the R18 feature branch; main is not advanced.
+Combined-source runtime qualification is still pending, and the old28-owner
+native result is not transferred to this tree.
 
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 

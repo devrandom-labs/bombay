@@ -2,7 +2,7 @@
 mod network;
 #[allow(
     unused_imports,
-    reason = "the shared fixture exposes address reservation for Node unit consumers; this external cohort supplies its own addresses"
+    reason = "the shared fixture exposes listener metadata for Node unit consumers; this external cohort supplies its own addresses"
 )]
 pub(super) use network::listener_address;
 pub(super) use network::{EndpointRole, configuration};

@@ -31,11 +31,12 @@ use protocol::{
 )]
 async fn foreign_client_is_refused_while_the_listener_remains_usable() {
     timeout(Duration::from_secs(10), async {
-        let address = listener_address();
+        let address = "tls/localhost:0".to_owned();
         let node = Application::new(Counter::new().stop_on_shutdown())
             .open_node(configuration(&address, &EndpointRole::Receiver))
             .await
             .unwrap_or_else(|_| panic!("the public listening Node opens"));
+        let address = listener_address(node.listen_addresses().await);
         let runtime = node.runtime_id();
         let connection = configuration(&address, &EndpointRole::Caller);
         let mut foreign_connection = configuration(&address, &EndpointRole::Caller);

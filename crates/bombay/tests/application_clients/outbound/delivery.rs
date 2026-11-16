@@ -40,7 +40,7 @@ async fn actor_read_uses_the_node_owned_outgoing_contract() {
     reason = "one causal two-Node trace preserves exact rejected requests and immutable configured claims through the actual borrowed protector"
 )]
 async fn read() {
-    let address = protocol::listener_address();
+    let address = "tls/localhost:0".to_owned();
     let maximum = NonZeroUsize::new(4).unwrap();
     let records = &RefCell::new(Vec::<(Scope, ProtectedMessage)>::new());
     let claims = &RefCell::new(None::<Metadata>);
@@ -62,6 +62,7 @@ async fn read() {
         ))
         .await
         .unwrap_or_else(|_| panic!("the actual receiving Counter Node opens"));
+    let address = protocol::listener_address(receiver.listen_addresses().await);
     let receiver_id = receiver.runtime_id();
     let export = Export::new(
         "bombay/outbound/read",

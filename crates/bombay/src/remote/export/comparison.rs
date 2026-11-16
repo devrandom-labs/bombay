@@ -22,7 +22,7 @@ use zenoh::sample::Locality;
 
 use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadRequest, ReadRequestRef,
-    configuration, limits, listener_address, metadata, recorded,
+    configuration, limits, metadata, recorded,
 };
 use super::{Command, Event};
 
@@ -59,7 +59,7 @@ async fn pending_protection_keeps_canonical_receipt_readable() {
     reason = "one finite comparison retains pending protection, complete native custody and cleanup before checking its trace"
 )]
 async fn compare() {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let mut network = configuration(&address, &EndpointRole::Receiver);
     network.max_retained_queries = NonZeroUsize::new(4).unwrap();
     let session = zenoh::open(network.to_configuration().unwrap())

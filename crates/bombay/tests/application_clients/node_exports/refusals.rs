@@ -217,7 +217,7 @@ async fn protection_factory_panic_preserves_the_actual_native_reply() {
     reason = "one complete refusal trace preserves native, provider, family, Work and cleanup originals"
 )]
 async fn refused(stage: RefusalStage) {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let reports = Arc::new(Mutex::new(Vec::new()));
     let scope = ApplicationScope::new();
     let mut exported = scope.external::<Exports>().unwrap();
@@ -240,6 +240,7 @@ async fn refused(stage: RefusalStage) {
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("actual refusal Node opens"));
+    let address = listener_address(node.listen_addresses().await);
     let receiver_id = node.runtime_id();
     let peer = peer::Peer::open(&address).await;
     let caller_id = peer.runtime_id();

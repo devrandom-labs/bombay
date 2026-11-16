@@ -31,13 +31,14 @@ async fn noncanonical_requests_keep_their_original_registered_pair() {
     reason = "one native request retains the complete protected pair, moved Ledger payload and independently joined owners before the byte oracle"
 )]
 async fn registered_originals() {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let node = Application::new(MailLedger {
         entries: Vec::new(),
     })
     .open_node(configuration(&address, &EndpointRole::Receiver))
     .await
     .unwrap_or_else(|_| panic!("the actual Ledger Node opens"));
+    let address = listener_address(node.listen_addresses().await);
     let receiver_id = node.runtime_id();
     let peer = peer::Peer::open(&address).await;
     let caller_id = peer.runtime_id();

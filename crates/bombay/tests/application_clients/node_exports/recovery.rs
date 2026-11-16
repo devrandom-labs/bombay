@@ -90,7 +90,7 @@ async fn valid_increment_recovers_after_request_scope_refusal() {
     reason = "one finite trace retains invalid and valid originals, independent processing and all joined cleanup before its progress oracle"
 )]
 async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidRequest) {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
@@ -100,6 +100,7 @@ async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidReque
                 cause.source()
             )
         });
+    let address = listener_address(node.listen_addresses().await);
     let receiver_id = node.runtime_id();
     let peer = peer::Peer::open(&address).await;
     let caller_id = peer.runtime_id();
@@ -509,7 +510,7 @@ async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidReque
 )]
 async fn issued_request_keys_survive_reused_refusal_capacity() {
     let trace = async {
-        let address = listener_address();
+        let address = "tls/localhost:0".to_owned();
         let maximum = NonZeroUsize::new(4).unwrap();
         let mut network = configuration(&address, &EndpointRole::Receiver);
         network.max_retained_queries = maximum;
@@ -517,6 +518,7 @@ async fn issued_request_keys_survive_reused_refusal_capacity() {
             .open_node(network)
             .await
             .unwrap_or_else(|_| panic!("the same actual Counter Node opens"));
+        let address = listener_address(node.listen_addresses().await);
         let receiver_id = node.runtime_id();
         let peer = peer::Peer::open(&address).await;
         let caller_id = peer.runtime_id();

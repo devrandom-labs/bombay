@@ -28,7 +28,11 @@ Zenoh stays internal: configuration conversion, sessions and queries are private
 public foreign causes use the standard error contract. Final interface acceptance
 still requires the selected source, consumer and delivery gates.
 
-## Communication adoption and current release gates
+## Communication adoption and release investigation (2026-11-15)
+
+This investigation precedes PR381's publication recorded under
+[Current delivery](#current-delivery). Its release holds and unfinished gates
+describe those earlier source epochs.
 
 Communication0.1.7 is independently published and verified. Source
 [PR15](https://github.com/devrandom-labs/bombay-communication/pull/15) merged
@@ -530,6 +534,319 @@ before treating the current release as verified.
 
 ## Current delivery
 
+Runtime0.2.0, Engine0.3.0 and macros0.2.0 are published. PR381 merged as
+`43687efbd0a334e036db8930f4c1b650a04e2319`; normal push publication succeeds.
+All three official registry downloads are byte-identical to the joint archives
+verified on Rust1.99 and1.96. Their tags and package VCS identify `b1c32050`,
+whose28 local gates, actual flake check and eight hosted checks pass. Main's
+additional PR427 tests are outside those tagged packages. Both compilers now
+complete the original16-command extracted-package caller corpus:87 native
+cases and16 UI fixtures per profile, withdrawal7/profile, Entity26/profile,
+remote-surface4/12 UI, renamed3, doctests10, eight example builds and six actual
+example runs. Original named cases, diagnostics, dependency identities and
+588 caller inputs per compiler remain exact. Counter1, pool3, worker replacement
+and the Entity40/2 incarnations retain joined cleanup. HTTP/remote examples are
+compile-only in that corpus; actual selected HTTP/Node lifecycle cases execute
+in the native cohort. Bombay explicitly acknowledges all three published versions
+in completed turn01a1e191-37b5-7e02-a741-cbad7064f2de. Source, archives, exact
+inputs and required evidence are retained; completed caller caches reclaim
+11,139,772KiB. The existing restart handoff owns
+`native-router-lock-release-{publication-result,consumer-final-summary}.json`.
+This closes this release batch; broader DX01–DX28 acceptance remains active.
+
+### Supplied-work runners, before implementation (2026-11-16)
+
+Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
+
+DX01/05/22 still have a caller inconsistency: adding an Entity family changes
+`application.run_with(work)` to `application.run_with_entities(work)`, and the
+independent pair similarly changes from `execute_with` to
+`execute_with_entities`. Select one ordinary supplied-work spelling for both
+the empty family product and the existing nonempty declaration product. This
+is Bombay interface policy; no actor transition or scheduling law changes.
+
+Desired syntax is the existing `Application::with_topology(...).entity_family(...)`
+followed by `.run_with(work)` or `.execute_with(work)`, with work/future types
+inferred. Keep the exact root, work, notification and role-indexed family
+results. A missing host returns the original application and callable; unpolled
+execution returns cold inputs, staging refusal retains partial declarations,
+prepared cancellation retains actual prepared inputs, interrupted work retains
+cleanup, and completed work retains its original value beside independent
+cleanup/retirement failures. Caller-local borrowed and non-Send work remains
+local. This batch does not change absent-work, HTTP prebinding or Node protocols.
+
+Before production, change only the canonical Entity caller to the desired
+`run_with` spelling and establish its compile failure on the old interface.
+Also compile the same real family journey with independent `execute_with` and
+retained receiving as a separate pre-edit witness. Retain exact caller inputs
+and diagnostics. The existing family, Node and ordinary execution kernels,
+`EntityApplicationFamilies`, `InstallEntityFamilies`, and the existing
+`(Role, Definition, DirectoryConfig, EntityCapacity, Tail)` product supply the
+complete implementation. Public family methods may move to a disjoint inherent
+implementation on that existing nonempty product. Empty families keep their
+current owned Spaces; nonempty families keep their current shared Spaces.
+No allocation, callback, public wrapper, trait, bound law or effect is added.
+Remove the two family-specific public names; keep no compatibility alias.
+
+Ledger before production: expected owner `application/execution.rs`, the Entity
+example and this PRD for design, with the two existing backlog rows refreshed
+to actual publication; expected production delta0–100 physical lines,
+public types added/removed0/0, public spellings removed2. Existing private family
+invocation and all runtime bodies remain exact, apart from the internal call to
+the renamed public method. Only after focused proof may the already-selected
+syntax migrate through native callers, compile diagnostics, Node's unit caller,
+examples and current guidance. Inventory that complete mechanical file set
+before that stage; it may introduce no new abstraction. Root/pool/supervisor
+and both policy orders, family refusal/retry/cancellation, independent receiving,
+both compilers/profiles and final repository/package delivery remain required.
+
+Aggregate before: WorkOutcome6, work-publication custody5 and work presence2;
+the complete application enum alternatives and their exact owned representations,
+production lines/modules/branch tokens/public spellings are measured in
+`application-runners-before.json` in the existing restart handoff. Each surviving
+alternative must keep that exact current value. Expected after: identical sums,
+branches, effects and ownership; only the two competing public names disappear.
+Cross-check `WorkOutcome`, application composition, family installation,
+`docs/module-boundaries.md` and `docs/runtime-capability-interfaces.md` against
+the caller regressions. No history, repeated cause, cardinality inference,
+semantic boolean, nested transition authority or structural caller path may be
+introduced. Disposition remains unproven until the measured post-edit checkpoint
+and both test reviews pass; no production candidate has yet been retained.
+
+The pre-edit canonical and independent callers each fail exactly once with
+E0599 for the missing ordinary runner on the existing family product. Their
+otherwise identical old-interface controls both execute balances40/2, actual
+Graceful retirement and complete cleanup. Both intended caller sources are
+restored after the controls. All62 prepared registry lock identities equal the
+existing workspace lock. Two source/oracle reviews reject unrelated setup
+failure, universal refusal and empty-work success; production is still
+unchanged. Exact source, logs and reviews: `application-runners-pre-edit-proof.json`.
+
+The focused design is retained. Both actual1.99/1.96 compilers in debug and
+optimized profiles pass20 commands:16 real binary runs across the canonical
+Entity caller, independent receiving caller, supervisor replacement and FIFO
+pool, plus both timer/finalization orders in each configuration. Exact original
+caller inputs and40/2/3 business values survive. Formatting and strict selected
+library/example Clippy pass. No full catalogue, native recovery or repository
+completion is claimed by this focused result.
+
+The measured checkpoint is `pass`: application production physical lines
+5640 to5656, modules10 to10, match-arm tokens199 to199 and public spellings77
+to75. Every owned enum representation is byte-identical, including Work6,
+publication custody5 and presence2. The private family invocation, family
+execute body and all five ordinary runner bodies remain byte-identical; family
+run changes only its canonical execute call. Production execution.rs is
++150/-134/net+16; tests there remain byte-identical. No public type is added or
+removed. Two author reviews separately establish the transition/ownership
+mapping and challenge unrelated failures, universal refusal, empty-work
+success and discarded custody. No independent review is claimed.
+
+Mechanical migration may now apply only the proven spelling to the17 exact
+paths in `application-runners-mechanical-plan.json` (22 cumulative changed
+paths). Source, native assertions and diagnostic oracles are snapshotted first.
+The single missing-effect-host diagnostic changes only the canonical method
+spelling and its lexical underline (17 to8 carets); its original cause and every other byte remain required. There is no
+existing minimum-patch/snapshot section for that fixture. Current public guides
+remove the duplicate method entries; qualified historical remote experiments
+retain their old source names. No new abstraction or caller workaround is
+permitted. Existing auto-approval authorizes this cumulative scope. Complete
+native recovery/cancellation, both compiler diagnostic corpora, repository,
+rendered docs and actual package/delivery checks remain open.
+
+Mechanical verification completes on actual1.99/1.96 in both profiles: all92
+cases across the eight complete affected integration targets pass, with exactly
+the same named cases and zero ignored/filtered cases. Both compilers also pass
+the exact five family class/capability denials, including the original missing
+`Hosts<Ledger>` cause. Pinned formatting and strict workspace/all-targets/
+all-features Clippy pass. The source review preserves all1,644 original assertion
+sites, identifiers, literal values and operators; shorter calls cause only
+trusted rustfmt layout/trailing-comma changes. The final ledger before broader
+verification is production+152/-136/net+16, tests+198/-215/net-17, public types
+added/removed0/0 and competing public names removed2, across22 paths. No new
+semantic surface or caller workaround was needed during migration.
+
+The aggregate checkpoint remains `pass`: unchanged complete control sums,
+current-value custody,199 branch tokens and10 application owner modules. Existing
+runtime bodies remain exact under the one declared call rename. The two source/
+oracle reviews reject misplaced host authority, discarded family/root custody,
+empty-work success and universal refusal; the complete integration/cancellation
+cases and both compiler denials retain their original oracles. Raw inputs,
+commands, source reviews and exact log hashes are retained in the existing
+handoff's `application-runners-{focused,migration}-result.json` and checkpoint.
+Full repository, compiler inventory, rendered documentation, archive callers
+and PR checks are delivery gates. Their current results and qualified Git
+revisions belong to the feature PR and the same existing handoff records;
+these scoped passes do not replace those gates or complete DX01–DX28.
+
+### Cargo check inputs, before implementation (2026-11-16)
+
+The supplied-work runner change is fully qualified at825045e7: all28 native
+owners and the actual flake check pass, as do all eight hosted checks and both
+compiler archive/caller matrices. Normal integrationf7399327 changes only two
+upstream documentation paths; every Rust, Cargo, public-guide and package input
+remains exact. This separates the accepted interface change from the following
+build-input correction.
+
+A one-comment requirement-document edit currently changes all28 Nix check
+derivations. The pre-edit source copy and28-owner evaluations are retained in
+check-inputs-red-result.json; six representative Cargo-only owners all fail the
+intended isolation law. The controlled document is restored byte-exactly.
+
+Select this build-input policy: Cargo checks receive every existing non-Markdown
+input plus their README/public guide; repository-policy consumers additionally
+receive the complete current Markdown set. This is Nix input ownership, with no
+actor transition, public interface, compiler flag or test-command change.
+Engine law_manifest reads all repository artifacts and its Driver law, so the
+workspace test, coverage and Driver evidence owners retain the complete source.
+Opt-in whole-workspace coverage/mutation packages keep those same policy inputs.
+ActorExecution's library audit reads flake.nix and its evidence script; these
+existing non-Markdown inputs remain in both source sets. TLS certificates,
+compiler diagnostics, fixtures, locks, JSON/YAML, scripts and corpus seeds stay
+unchanged. Trace existing Cargo/fixture/readme owners before changing the filter.
+
+Before production, compare only supported fileset/source alternatives in the
+isolated source copy. Require requirement-only edits to leave unrelated Cargo
+owners identical, while guide/Rust/certificate edits still invalidate them and
+policy owners still react to complete repository inputs. Preserve every selected
+file byte. Re-run all28 owners and the authoritative flake after integration.
+No command, expected diagnostic, assertion, coverage floor or owner may be removed.
+
+Ledger: expected flake.nix plus this existing PRD;24 cumulative task paths after
+upstream integration, authorized by standing auto-approval. Expected Nix production
+delta10–45 lines; Rust production/tests/public types0/0. Use pinned Crane/Fenix and
+Nix filesets, as in the existing workspace and inspected CESR/Mnesis patterns;
+add no helper executable, tool framework or dependency. The aggregate checkpoint
+keeps every Rust control state, owned alternative, branch, module and public
+spelling byte-identical to the accepted runner design. Two reviews separately
+check all real file consumers and counterexamples (missing guide, fixtures,
+certificate, policy source or stale input). Acceptance remains unproven until
+both source controls and the original complete gate pass.
+
+The supported fileset candidate and final formatted production source pass all
+four controls. Requirement-only changes now invalidate exactly four policy
+checks, leaving24 Cargo check derivations identical. Guide, Rust and certificate
+changes still invalidate all24. The repository source remains699 files; Cargo
+receives660, removing only39 unrelated Markdown records. Every retained byte and
+all23 explicit build-phase command definitions are conserved. Full workspace
+policy tests, coverage and mutation packages explicitly keep their complete
+repository inputs. No dependency, custom executable or new permanent check is
+added.
+
+Actual stage delta: Nix production+23/-2/net21; Rust production/tests0/0;
+public types0/0, public spellings0/0. Both author reviews pass: one traces actual
+file readers and retained input bytes; the second checks the original red,
+requirement isolation and required-input counterexamples. No independent review
+is claimed. The aggregate checkpoint is `pass`: this stage changes no Rust
+state, owned alternative, transition branch, module or public interface. The
+handoff's check-inputs-final-{controls,source-review}.json retains exact source
+and controls. Full integrated local/hosted gates and PR delivery remain open;
+this measured input policy does not complete the DX programme.
+
+### Bound listener addresses, before implementation (2026-11-16)
+
+Final392346c0 passes all eight hosted checks and27 of28 local owners. The
+remaining local workspace owner failed one generated Client case before its
+receiver's native TLS startup; the test discarded the native cause. Its exact
+seed740589cc and full trace are retained. Both later shrink replays succeeded.
+An isolated original59-case target with actual startup diagnostics passed4100
+invocations. The original cause remains unknown; none of these later passes
+replaces the failed full owner or actual flake gate.
+
+An independent focused regression proves a fixture defect: listener_address
+returns only a String after releasing its OS-selected port. An exclusive socket
+can claim that still-live address before the native listener binds. The negative
+fails on this intended law; the existing host-resolution test and native bind
+control pass. A private owned-socket/address candidate protects the port but
+blocks the native listener's reuseaddr bind on Darwin (AddrInUse/os48). Reopen
+and reject that representation; no production representation was retained.
+
+Select the authoritative owner instead: open the native listener on port zero
+and read its actual bound addresses through Node. This is deliberate Bombay
+runtime metadata policy, using the current native listener's supported metadata;
+it changes no actor-model communication, creation, watching or lifecycle law.
+The native TLS listener already replaces zero with its selected port while
+preserving the configured hostname. Session.info().locators() owns those facts;
+Node already owns that Session. Do not add cached Node state, a port pool,
+retry-to-pass policy, native Session escape or another reservation framework.
+
+Required caller syntax is receiver.listen_addresses().await, yielding owned
+HOST:PORT strings accepted directly by ConnectionEndpoints.addresses. The query
+borrows Node and supplies zero or more listening addresses; it does not transfer
+the Application, execute initialization, assert actor readiness or grant ingress.
+Caller-only nodes have no listeners; multiple listeners must not collapse to one.
+The existing Counter/MessageAdapter real TLS trace is the smallest end-to-end
+witness. Its port-zero variant fails before implementation with E0599 for this
+missing method. Preserve its original assertions, all failed/persisted inputs,
+complete retirement and notification oracles, and both wrapper orders.
+
+Expected production owner: application/node.rs, one public async metadata method,
+about10–25 added lines, public types/generics/bounds/state fields0/0. Reuse the
+existing Node generic impl, Network inputs and native locator metadata; no new
+trait, callback, wrapper or error sum. Trace every consumer of the shared test
+network fixture and its duplicate before mechanical migration. Add only focused
+caller/cardinality/ownership proofs first; retain the established helper until
+the interface has actual end-to-end evidence, then remove obsolete reservation
+work. Update current public guidance and real server output with the proven API.
+
+The aggregate checkpoint keeps every actor/control sum, subordinate alternative,
+transition branch, effect lane and initialization order unchanged. Expected
+public spellings+1, production modules+0. Cumulative file surface remains covered
+by standing auto-approval; measure actual deltas and both source/oracle reviews.
+The existing handoff's listener-port-{plan,red-result,green-result}.json and
+bound-listeners-{plan,red}.nix retain exact primary-source/prototype/falsifier
+inputs. Full local/hosted gates and delivery remain open, with the failed local
+owner unresolved. This stage does not complete the wider DX programme.
+
+### Bound listener design result and migration (2026-11-16)
+
+The focused design passes in debug and optimized builds: both actual receiving
+listeners retain their configured hostnames, use nonzero ports and refuse an
+exclusive competing bind. A caller connects using the returned address and has
+zero listeners. The unchanged generated Counter/MessageAdapter trace completes
+4100/4100 cases in each profile, including the three original seeds and the new
+failed input. Original failure attribution and complete local acceptance remain
+open. The capability adds15 production lines and one method, with no state,
+variant, type, bound, dependency or transition branch. Both author reviews pass:
+the first traces native ownership and the second rejects configured-zero,
+first-listener-only, released-socket and caller-listener counterexamples. No
+independent review is claimed. The aggregate checkpoint passes; all actor laws,
+complete control sums, subordinate values and wrapper interpretation stay exact.
+
+Mechanical migration now reuses this proven method throughout the shared TLS
+fixture's consumers and its requests.rs duplicate. The existing single-listener
+fixture formats the actual address; it no longer allocates or releases sockets.
+Preserve its original hostname-resolution test and every domain/retirement oracle.
+The private raw-Session comparison can bind zero directly because no external
+peer consumes its address. Update the public guide, Node ownership description
+and remote Counter: report bound listener addresses on stderr, then use that
+actual metadata in its two process tests instead of predicting a free port.
+Expected additional production is3–5 example lines; public types/state/bounds0.
+This migration may add no semantic machinery. Full gates and normal delivery
+still follow; the existing source392 evidence keeps its original qualification.
+
+### Bound listener migration result and final gate scope (2026-11-16)
+
+The migrated candidate passes52 Node cases, one private comparison,59 public
+Client cases and eight Counter process cases in each profile. The four existing
+child registrations remain executed and checked by their exact-named parents.
+The generated Client trace completes4100/4100 invocations per profile. Two
+one-off wrapper setup errors (a missing module in a filter, then a count that
+omitted included process-test modules) are preserved separately; neither changed
+a project test or supplied a missing pass. Final lint corrections remove two
+unconsumed loopback metadata reads and one obsolete length-lint exception,
+clarify rustdoc, and express the same zero-listener oracle as exact vector
+equality. Whole-workspace strict Clippy and formatting pass those final bytes.
+
+The retained batch changes28 files: production+20/-0/net20, tests+147/-98/net49,
+public types+0/-0 and one new public method. All1,232 original assertion sites
+remain. Removing the new method restores the complete Node production preimage;
+its38 transition branches and both existing control sums are unchanged. Both
+author source/oracle reviews pass, with no independent review claimed. The
+aggregate checkpoint is `pass`; exact raw/source/command/measurement receipts
+are the existing handoff's bound-listeners-* records. The original source392
+failure stays qualified as failed with unknown cause. Final new-source full
+local gates, hosted checks, normal PR delivery and publication remain open.
+
 Runner-type inference and the listener ownership correction merged through
 [PR421](https://github.com/devrandom-labs/bombay/pull/421) as
 `2e328cd422dc1fbb1221fb60c6b1becd47cc959a`. All eight exact-head checks pass,
@@ -547,12 +864,12 @@ Behavior [PR121](https://github.com/devrandom-labs/bombay-behavior/pull/121) and
 corresponding owner evidence. Their successful retries do not explain the
 historical startup or optimized original-work-retry failures.
 
-DX01–DX28 remains active for selected consumer and policy acceptance, costs,
-interface/documentation reconciliation and runtime registry delivery. Engine
-0.3.0, macros 0.2.0 and runtime 0.2.0 are unpublished candidates. Published
-Behavior/Actors 0.30.0 and macros 0.16.0 retain their verified registry/tag and
-Bombay acknowledgment evidence in the owning PRD. Main-push CI is separate
-from the completed PR gates. Other active worktrees remain preserved.
+DX01–DX28 remains active for selected consumer and policy acceptance, costs
+and interface/documentation reconciliation. Current runtime publication and
+its exact source bounds are recorded above. Published Behavior/Actors0.30.0
+and macros0.16.0 retain their verified registry/tag and Bombay acknowledgment
+evidence in the owning PRD. Main-push CI is separate from the completed PR
+gates. Other active worktrees remain preserved.
 
 ### Transported roots
 

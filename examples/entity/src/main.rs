@@ -48,7 +48,7 @@ async fn main() {
         DirectoryConfig::default(),
         capacity,
     )
-    .run_with_entities(|application| async move {
+    .run_with(|application| async move {
         let caller = application
             .sender_to(application.entities(AccountsRole).entity(ACCOUNT_ID))
             .unwrap_or_else(|_| panic!("the account sender is established"));

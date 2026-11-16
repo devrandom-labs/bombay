@@ -102,6 +102,21 @@
             root = ./.;
             fileset = pkgs.lib.fileset.difference (pkgs.lib.fileset.intersection sourceFiles withoutCargoTargets) buildOutputs;
           };
+        # Cargo embeds its public guide, while repository-policy tests also
+        # inspect the other Markdown records.
+        cargoSrc = pkgs.lib.fileset.toSource {
+          root = ./.;
+          fileset = pkgs.lib.fileset.difference (pkgs.lib.fileset.fromSource src) (
+            pkgs.lib.fileset.fileFilter (
+              file:
+              file.hasExt "md"
+              && !(builtins.elem file.name [
+                "README.md"
+                "user-facing-api.md"
+              ])
+            ) ./.
+          );
+        };
         registrySources = pkgs.lib.unique (
           map (package: package.source) (
             builtins.filter (
@@ -116,7 +131,7 @@
           }"
         ) registrySources;
         commonArgs = {
-          inherit src;
+          src = cargoSrc;
           pname = "bombay-workspace";
           version = "0.1.0";
           strictDeps = true;
@@ -146,7 +161,7 @@
           commonArgs // { cargoExtraArgs = "--locked ${minimumRemoteCargoArgs}"; }
         );
         protectedCounterVendor = craneLib.vendorCargoDeps {
-          inherit src;
+          src = cargoSrc;
           cargoLock = ./docs/prds/static-remote-actors/transport-custody/Cargo.lock;
         };
 
@@ -198,6 +213,7 @@
           bombay-test = craneLib.cargoTest (
             commonArgs
             // {
+              inherit src;
               inherit cargoArtifacts;
               cargoTestExtraArgs = "--workspace --all-targets";
             }
@@ -320,6 +336,7 @@
           bombay-owner-coverage = craneLib.mkCargoDerivation (
             commonArgs
             // {
+              inherit src;
               inherit cargoArtifacts;
               nativeBuildInputs = [
                 pkgs.cargo-llvm-cov
@@ -400,6 +417,7 @@
           bombay-driver-law-evidence = craneLib.mkCargoDerivation (
             commonArgs
             // {
+              inherit src;
               inherit cargoArtifacts;
               nativeBuildInputs = [
                 pkgs.jq
@@ -566,6 +584,7 @@
           coverage = craneLib.cargoLlvmCov (
             commonArgs
             // {
+              inherit src;
               inherit cargoArtifacts;
               cargoLlvmCovCommand = "test";
               cargoLlvmCovExtraArgs = "--workspace --all-targets --html --output-dir $out";
@@ -576,6 +595,7 @@
           mutants = craneLib.mkCargoDerivation (
             commonArgs
             // {
+              inherit src;
               inherit cargoArtifacts;
               pnameSuffix = "-mutants";
               nativeBuildInputs = [
@@ -605,6 +625,7 @@
           mutants-sweep = craneLib.mkCargoDerivation (
             commonArgs
             // {
+              inherit src;
               inherit cargoArtifacts;
               pnameSuffix = "-mutants-sweep";
               nativeBuildInputs = [

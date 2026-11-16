@@ -56,7 +56,7 @@ async fn exhausted_endpoint_keeps_the_unused_original_append_constructor() {
     reason = "one complete constructor trace retains all native originals; the immutable provider table remains borrowed through its actual verification"
 )]
 async fn constructor_refusal() {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let scope = ApplicationScope {
         allocations: ApplicationAddresses::from_next(u64::MAX - 2),
         client_capacity: MailboxCapacity::default(),
@@ -71,6 +71,7 @@ async fn constructor_refusal() {
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("actual constructor-refusal Node opens"));
+    let address = listener_address(node.listen_addresses().await);
     let receiver = node.runtime_id();
     let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");

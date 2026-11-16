@@ -361,6 +361,9 @@ async fn serve(configuration: Configuration) -> Result<Outcome, Refusal> {
         *identity.borrow_mut() = Some(assignment(&configuration.assignment, &actual).await?);
         Ok::<_, Refusal>(target)
     });
+    for address in node.listen_addresses().await {
+        eprintln!("counter listening: {address}");
+    }
     let outcome = node.run().await.map_err(|cause| match cause {
         NodeExecutionRefusal::ExecutionIssued { .. } => Refusal::ExecutionIssued,
         NodeExecutionRefusal::SessionClosed { .. } => Refusal::SessionClosed,

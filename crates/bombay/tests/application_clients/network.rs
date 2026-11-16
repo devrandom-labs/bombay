@@ -1,5 +1,6 @@
 //! Shared concrete TLS inputs for public remote application tests.
 use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
+#[cfg(test)]
 use std::net::TcpListener;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
@@ -41,15 +42,16 @@ pub(crate) enum EndpointRole {
     Caller,
     Receiver,
 }
+#[cfg(test)]
 fn reserve_listener() -> TcpListener {
     TcpListener::bind(("localhost", 0)).unwrap()
 }
 
-pub(crate) fn listener_address() -> String {
-    let reservation = reserve_listener();
-    let address = reservation.local_addr().unwrap();
-    drop(reservation);
-    format!("tls/localhost:{}", address.port())
+pub(crate) fn listener_address(addresses: Vec<String>) -> String {
+    let [address]: [String; 1] = addresses
+        .try_into()
+        .expect("the fixture Node owns exactly one TLS listener");
+    format!("tls/{address}")
 }
 
 #[cfg(test)]

@@ -393,7 +393,7 @@ fn actual_family_shutdown_survives_pure_root_startup_refusal() {
         }),
         shutdowns,
     ) = application_host
-        .block_on(application.run_with_entities(|_| async {
+        .block_on(application.run_with(|_| async {
             panic!("startup refusal leaves original work uninvoked");
         }))
         .unwrap_or_else(|(application, work, error)| {
@@ -1655,13 +1655,11 @@ fn family_report_disposal_preserves_acquired_products(panic_payload: Option<Arc<
             .build()
             .expect("the synchronous disposal controller owns one enabled application host");
         let products = application_host
-            .block_on(
-                application.run_with_entities(move |application| async move {
-                    let requested = application.shutdown();
-                    requested.expect("the actual live root accepts shutdown");
-                    output
-                }),
-            )
+            .block_on(application.run_with(move |application| async move {
+                let requested = application.shutdown();
+                requested.expect("the actual live root accepts shutdown");
+                output
+            }))
             .unwrap_or_else(|(application, work, error)| {
                 drop((application, work));
                 panic!("the explicit application host must be entered: {error}");
@@ -2088,13 +2086,11 @@ fn root_and_family_disposal_preserve_original_results(
             .build()
             .expect("the actual application host builds");
         runtime
-            .block_on(
-                application.run_with_entities(move |application| async move {
-                    let requested = application.shutdown();
-                    requested.expect("the original root accepts its shutdown");
-                    output
-                }),
-            )
+            .block_on(application.run_with(move |application| async move {
+                let requested = application.shutdown();
+                requested.expect("the original root accepts its shutdown");
+                output
+            }))
             .unwrap_or_else(|(application, work, error)| {
                 drop((application, work));
                 panic!("the actual application host is entered: {error}");
@@ -3171,43 +3167,41 @@ fn admitted_family_disposal_preserves_original_products(disposal_cause: Option<A
             .build()
             .expect("the synchronous disposal controller owns one enabled application host");
         let products = application_host
-            .block_on(
-                application.run_with_entities::<_, _>(move |application| async move {
-                    let accounts = application.entities(AccountsRole(selection));
-                    let account = accounts.entity(73);
-                    let interface = application.interface(account);
-                    let mut observer = interface
-                        .external::<LiveAccountNotice>()
-                        .expect("the actual external recipient is established");
-                    let admitted = observer
-                        .send(
-                            interface.api(),
-                            LiveAccountCommand {
-                                observer: observer.recipient(),
-                                value: 283,
-                            },
-                        )
-                        .await;
-                    let ready = match &admitted {
-                        Ok(()) => observer.receive().await,
-                        Err(_) => None,
-                    };
-                    let shutdown = application.shutdown();
-                    let termination = application.lifecycle().termination().await;
-                    let retirements_before_work_completion = work_retirements
-                        .lock()
-                        .unwrap_or_else(PoisonError::into_inner)
-                        .len();
-                    (
-                        output,
-                        admitted,
-                        ready,
-                        shutdown,
-                        termination,
-                        retirements_before_work_completion,
+            .block_on(application.run_with::<_, _>(move |application| async move {
+                let accounts = application.entities(AccountsRole(selection));
+                let account = accounts.entity(73);
+                let interface = application.interface(account);
+                let mut observer = interface
+                    .external::<LiveAccountNotice>()
+                    .expect("the actual external recipient is established");
+                let admitted = observer
+                    .send(
+                        interface.api(),
+                        LiveAccountCommand {
+                            observer: observer.recipient(),
+                            value: 283,
+                        },
                     )
-                }),
-            )
+                    .await;
+                let ready = match &admitted {
+                    Ok(()) => observer.receive().await,
+                    Err(_) => None,
+                };
+                let shutdown = application.shutdown();
+                let termination = application.lifecycle().termination().await;
+                let retirements_before_work_completion = work_retirements
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .len();
+                (
+                    output,
+                    admitted,
+                    ready,
+                    shutdown,
+                    termination,
+                    retirements_before_work_completion,
+                )
+            }))
             .unwrap_or_else(|(application, work, error)| {
                 drop((application, work));
                 panic!("the explicit application host must be entered: {error}");
@@ -5187,7 +5181,7 @@ mod family_cleanup {
             .expect("the actual family owns its original role");
         let paired = {
             let entered = selected_host.enter();
-            let paired = application.execute_with_entities::<_, _>(move |application| async move {
+            let paired = application.execute_with::<_, _>(move |application| async move {
                 let entities = application.entities(TailAccounts {
                     original: selection_identity,
                     disposal_cause: None,
@@ -5500,7 +5494,7 @@ mod family_cleanup {
             .expect("the actual family owns its original role");
         let paired = {
             let entered = selected_host.enter();
-            let paired = application.execute_with_entities(move |application| async move {
+            let paired = application.execute_with(move |application| async move {
                 let entities = application.entities(TailAccounts {
                     original: selection_identity,
                     disposal_cause: None,
