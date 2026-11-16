@@ -678,6 +678,70 @@ and PR checks are delivery gates. Their current results and qualified Git
 revisions belong to the feature PR and the same existing handoff records;
 these scoped passes do not replace those gates or complete DX01–DX28.
 
+### Cargo check inputs, before implementation (2026-11-16)
+
+The supplied-work runner change is fully qualified at825045e7: all28 native
+owners and the actual flake check pass, as do all eight hosted checks and both
+compiler archive/caller matrices. Normal integrationf7399327 changes only two
+upstream documentation paths; every Rust, Cargo, public-guide and package input
+remains exact. This separates the accepted interface change from the following
+build-input correction.
+
+A one-comment requirement-document edit currently changes all28 Nix check
+derivations. The pre-edit source copy and28-owner evaluations are retained in
+check-inputs-red-result.json; six representative Cargo-only owners all fail the
+intended isolation law. The controlled document is restored byte-exactly.
+
+Select this build-input policy: Cargo checks receive every existing non-Markdown
+input plus their README/public guide; repository-policy consumers additionally
+receive the complete current Markdown set. This is Nix input ownership, with no
+actor transition, public interface, compiler flag or test-command change.
+Engine law_manifest reads all repository artifacts and its Driver law, so the
+workspace test, coverage and Driver evidence owners retain the complete source.
+Opt-in whole-workspace coverage/mutation packages keep those same policy inputs.
+ActorExecution's library audit reads flake.nix and its evidence script; these
+existing non-Markdown inputs remain in both source sets. TLS certificates,
+compiler diagnostics, fixtures, locks, JSON/YAML, scripts and corpus seeds stay
+unchanged. Trace existing Cargo/fixture/readme owners before changing the filter.
+
+Before production, compare only supported fileset/source alternatives in the
+isolated source copy. Require requirement-only edits to leave unrelated Cargo
+owners identical, while guide/Rust/certificate edits still invalidate them and
+policy owners still react to complete repository inputs. Preserve every selected
+file byte. Re-run all28 owners and the authoritative flake after integration.
+No command, expected diagnostic, assertion, coverage floor or owner may be removed.
+
+Ledger: expected flake.nix plus this existing PRD;24 cumulative task paths after
+upstream integration, authorized by standing auto-approval. Expected Nix production
+delta10–45 lines; Rust production/tests/public types0/0. Use pinned Crane/Fenix and
+Nix filesets, as in the existing workspace and inspected CESR/Mnesis patterns;
+add no helper executable, tool framework or dependency. The aggregate checkpoint
+keeps every Rust control state, owned alternative, branch, module and public
+spelling byte-identical to the accepted runner design. Two reviews separately
+check all real file consumers and counterexamples (missing guide, fixtures,
+certificate, policy source or stale input). Acceptance remains unproven until
+both source controls and the original complete gate pass.
+
+The supported fileset candidate and final formatted production source pass all
+four controls. Requirement-only changes now invalidate exactly four policy
+checks, leaving24 Cargo check derivations identical. Guide, Rust and certificate
+changes still invalidate all24. The repository source remains699 files; Cargo
+receives660, removing only39 unrelated Markdown records. Every retained byte and
+all23 explicit build-phase command definitions are conserved. Full workspace
+policy tests, coverage and mutation packages explicitly keep their complete
+repository inputs. No dependency, custom executable or new permanent check is
+added.
+
+Actual stage delta: Nix production+23/-2/net21; Rust production/tests0/0;
+public types0/0, public spellings0/0. Both author reviews pass: one traces actual
+file readers and retained input bytes; the second checks the original red,
+requirement isolation and required-input counterexamples. No independent review
+is claimed. The aggregate checkpoint is `pass`: this stage changes no Rust
+state, owned alternative, transition branch, module or public interface. The
+handoff's check-inputs-final-{controls,source-review}.json retains exact source
+and controls. Full integrated local/hosted gates and PR delivery remain open;
+this measured input policy does not complete the DX programme.
+
 Runner-type inference and the listener ownership correction merged through
 [PR421](https://github.com/devrandom-labs/bombay/pull/421) as
 `2e328cd422dc1fbb1221fb60c6b1becd47cc959a`. All eight exact-head checks pass,
