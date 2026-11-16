@@ -336,7 +336,7 @@ kill_mutation() {
     exit 1
   fi
   if [[ "$native_phase" == inverse ]]; then
-    if [[ $status -ne 101 ]] || ! grep -Fxq "test $killer ... FAILED" <<< "$output" \
+    if [[ $status -ne 101 ]] \
       || ! grep -Eq 'joined child report precedes no unfinished owned preparation|joined child report stays absent across parent and sibling progress' <<< "$output" \
       || grep -Eq 'resumed after completion|called after complete' <<< "$output"; then
       printf '%s\n' "$output" >&2

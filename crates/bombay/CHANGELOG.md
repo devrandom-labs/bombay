@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.2.0...bombay-rs-v0.3.0) - 2026-11-16
+
+### Added
+
+- `Node::listen_addresses()` returns actual bound listener addresses, including
+  assigned ports when configured with port zero. These addresses describe the
+  network listeners; they do not prove actor readiness or ingress acceptance.
+
+### Changed
+
+- **Breaking:** use `Application::run_with` and `Application::execute_with` for
+  applications with Entity families too. Replace `run_with_entities` and
+  `execute_with_entities` with those names; the work, root, family and cleanup
+  results retain their existing ownership and meaning.
+- Retain additional startup and listener custody regression coverage.
+
 ## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.3...bombay-rs-v0.2.0) - 2026-11-15
 
 ### Changed

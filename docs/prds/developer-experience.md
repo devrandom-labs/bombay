@@ -554,6 +554,136 @@ inputs and required evidence are retained; completed caller caches reclaim
 `native-router-lock-release-{publication-result,consumer-final-summary}.json`.
 This closes this release batch; broader DX01–DX28 acceptance remains active.
 
+### Runner and listener delivery (2026-11-16)
+
+[PR429](https://github.com/devrandom-labs/bombay/pull/429) merged normally as
+`6110f8a83edbc2d5a589f73ad50de22235c8014e`. Its delivered tree
+`956da1ec965bea4ebdf7b956efd23c3ea978d6fd` is exactly the accepted integrated
+source `b982f852`, including main's two unchanged binding-custody cases.
+All28 local Nix checks and actual `nix flake check` pass; Nextest passes1025
+cases, retaining six controlled child registrations. All eight exact-head
+hosted checks pass, including the actual Linux workspace1025 cases and154
+compiler fixtures, protected Counter132 cases and bounded Driver/Observe fuzz
+campaigns. Both Rust1.99 and1.96 package verification and the589-input archive
+caller matrices pass. Their original cases, diagnostics, complete custody and
+source bounds remain in `bound-listeners-integrated-acceptance.json` and its
+hashed receipts in the existing restart handoff. The original historical
+opening cause remains unknown; these passes do not establish it.
+
+The normal bot-generated [release PR431](https://github.com/devrandom-labs/bombay/pull/431)
+selects only `bombay-rs`0.3.0. Engine0.3.0 and macros0.2.0 remain published
+siblings; their local joint candidate checksums must not substitute for the
+registry checksums in the final runtime package. Current registry runtime
+remains0.2.0 until publication, tags, downloaded contents and consumer checks
+are independently verified. The complete DX01–DX28 programme remains active.
+
+Before release documentation edits, `runtime030-pre-edit.json` records the
+remaining README reference to removed `run_with_entities` and the generated
+changelog's missing migration. Correct only that current reference, spell out
+both replacements and listener metadata limits, and remove the unrelated old
+merge entry. Expected release scope: five paths including the three generated
+version/changelog paths; production Rust, tests, public types and runtime state
+all have zero delta. Review1 maps the text to the already-proven canonical
+family callers and actual Node metadata. Review2 challenges false readiness,
+unchanged-sibling publication and premature whole-programme completion claims.
+Both reviews are by the author; no independent review is claimed. Final
+release-head checks, package verification and registry delivery remain required.
+
+Release-head `92ec5c54` fails the hosted protected Counter Nix check and both
+native TLS profiles before compilation or transport execution: the isolated
+transport-custody lock still names path runtime0.2.0 while its manifest resolves
+the new workspace runtime0.3.0. Both uploaded native build stderr files and the
+actual Nix log report the same `--locked` refusal. The pinned local
+`cargo metadata --locked` command reproduces exit101 for that exact stale lock.
+These are metadata failures, not failed actor/TLS assertions. Raw logs, both
+artifact archives and the local red command remain `runtime030-*` in the handoff.
+
+Before correction, select only Cargo's supported offline update for that owning
+lock. Require the resulting diff to change exactly the path package's runtime
+version0.2.0 to0.3.0, with every other byte, package, checksum and dependency edge
+preserved. Then repeat locked metadata successfully and run the original
+protected Counter owners and complete final-source gates. Expected release
+scope becomes six paths; production Rust, test sources, expectations, public
+types, protocols and runtime state remain unchanged. Review1 checks the owning
+manifest and exact lock entry; review2 rejects dependency drift, weakened
+`--locked`, a passing metadata probe credited as TLS execution, and historical
+checks credited to the corrected source. Both are author reviews.
+
+The obsolete local28-owner build is intentionally interrupted after this proven
+failure to avoid completing an invalid source gate. Earlier completed package
+checks still qualify92ec only. Existing Nextest/archive callers keep that frozen
+worktree; the correction uses a separate owned temporary worktree, to be removed
+after delivery and verification. No old failure or exact input is discarded.
+
+Cargo updates exactly that one runtime version line; every other lock byte is
+unchanged. The original locked/offline metadata command then exits0 and resolves
+the complete protected package graph with runtime0.3.0. This establishes the
+metadata correction, while actual protected/TLS execution and final-source
+Nix/hosted checks remain required. Total release delta is six metadata/document
+paths, with production Rust/tests/public types still +0/-0. Both author reviews
+retain the original `--locked` gates and all source and diagnostic oracles.
+
+### Release verification corrections, before implementation (2026-11-16)
+
+The frozen release head `caaa3c52` has two newly established verification
+failures. Preserve its source, package archives and raw failures; its 26 passed
+owners are evidence for that source only, not final release acceptance.
+
+The native child-retirement inversion exits101, reports exactly the original
+named killer as its only failed test, and emits the original unfinished-owned-
+preparation assertion. With `--nocapture`, the harness prints the test header,
+panic text and final `FAILED` on separate lines. The extra same-line `grep`
+rejects that lawful transcript after the existing named-failure/summary check
+has already accepted it. Remove only that redundant formatting condition.
+Retain exit101, the exact named single failure, the original preparation oracle,
+the rejection of resumed/completed-future panics, every mutation and both
+debug/optimized healthy/inverse/restored journeys. Replay the actual red log
+and challenge wrong killer, wrong summary, absent oracle and wrong-panic inputs
+before accepting the corrected owner. No actor test assertion is changed.
+
+The pinned Clippy help independently establishes that
+`debug_assert_with_mut_call` and `let_underscore_must_use` are allowed by default
+and absent from the workspace's `all`/`pedantic` groups. `AGENTS.md` requires
+both denied. An explicit same-source, all-targets check fails at
+`application/http.rs:259`: `let _ = invoke` discards a must-use closure.
+The closure is constructed internally without captures; its router, listener
+and application handle are supplied only when invoked. After composition
+refusal, retain no unused binding for that zero-capture function. Preserve the
+complete existing rejected product: root, spaces, router, failure, listener
+and scope. This is explicit existing rejection custody, not a new actor law,
+callback, route, type, bound or runtime policy.
+
+Expected cumulative release scope: nine files versus main, adding only the
+owning HTTP source, existing ActorExecution evidence script and existing flake
+to the six release paths. HTTP production delta is +1/-2/net-1; public types,
+generic bounds, modules, control-state alternatives and transition branches are
+unchanged. Reuse the current Clippy owner and require both lint flags in its
+ordinary command. No new validation tool, suite or permanent task is added.
+The exact red commands, complete raw transcripts, pinned help and frozen
+source remain `runtime030-final-*` in the existing restart handoff.
+
+Review1 maps the guard to its prior exact named-failure and summary proof, and
+the HTTP pattern to its existing complete rejection product. Review2 rejects
+counting arbitrary panics as a killed defect, losing an owned callback capture,
+using `drop` on this known noncapturing Copy closure, suppressing either lint,
+or crediting historical source checks to the corrected candidate. These are
+author reviews; independent acceptance is not claimed. Focused red/green,
+complete final-source gates, package/caller verification, hosted acceptance
+and actual registry publication remain required. The wider programme is active.
+
+The pre-edit replay establishes the checker defect from the actual native
+failure transcript. Seven cases retain both same-line and split reporting and
+reject a wrong killer, wrong summary, absent oracle, completed-future panic and
+wrong exit. The applied condition is byte-identical to that proven candidate;
+all prior named-failure and oracle checks remain intact. The ordinary corrected
+Clippy owner then passes with both required lints explicitly denied across all
+workspace targets. Its exact source, command, registered deriver and 728 working
+inputs are independently checked in `runtime030-corrections-focused-review.json`.
+HTTP production is +1/-2/net-1; Rust test assertions, public types, generic bounds,
+modules, control-state alternatives and transition branches have zero delta.
+All nine release paths are accounted for. Both author reviews pass this scoped
+correction; final clean-source full verification and delivery remain open.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
