@@ -4,7 +4,6 @@ use serde_json::json;
 use std::fs::{File, Permissions};
 use std::future::poll_fn;
 use std::io::{self, Read};
-use std::net::TcpListener;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{self, Child, Command, Output, Stdio};
@@ -113,6 +112,21 @@ impl Program {
             output,
             diagnostics,
         })
+    }
+
+    fn listener_address(&self) -> io::Result<String> {
+        let output = bounded_output(&self.diagnostics)?;
+        let output = std::str::from_utf8(&output).map_err(io::Error::other)?;
+        let mut addresses = output
+            .lines()
+            .filter_map(|line| line.strip_prefix("counter listening: "));
+        match (addresses.next(), addresses.next()) {
+            (Some(address), None) => Ok(address.to_owned()),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "the server must report its one actual bound listener",
+            )),
+        }
     }
 
     async fn finish(&mut self) -> io::Result<Output> {
@@ -241,13 +255,7 @@ async fn separate_programs_increment_read_and_stop_through_real_tls() {
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
     let trace = tokio::time::timeout(Duration::from_secs(40), async {
         let listener = UnixListener::bind(&socket)?;
-        // Reservation only avoids ordinary test-port collisions. The actual
-        // server binding below, not elapsed time, gates caller startup.
-        let port = {
-            let reservation = TcpListener::bind(("localhost", 0))?;
-            reservation.local_addr()?.port()
-        };
-        let address = format!("localhost:{port}");
+        let address = "localhost:0".to_owned();
         let mut receiver = Program::start(
             ProgramRole::Serve,
             Mode::Test,
@@ -258,6 +266,7 @@ async fn separate_programs_increment_read_and_stop_through_real_tls() {
         )?;
         let receiver_pid = receiver.child.id();
         let (receiver_binding, mut receiver_input) = assignment(&listener).await?;
+        let address = receiver.listener_address()?;
         match receiver_binding.role {
             Role::Serve => {}
             Role::Call => {
@@ -421,10 +430,6 @@ async fn production_required_refuses_before_tls_or_assignment() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[expect(
-    clippy::too_many_lines,
-    reason = "the wrong-proof trace preserves both actual child exits and server liveness before judging uncertainty"
-)]
 async fn wrong_caller_reply_proof_reports_uncertain_read_without_stopping_server() {
     let directory = Builder::new()
         .prefix("counter-")
@@ -436,11 +441,7 @@ async fn wrong_caller_reply_proof_reports_uncertain_read_without_stopping_server
         .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
     let trace = tokio::time::timeout(Duration::from_secs(15), async {
         let listener = UnixListener::bind(&socket)?;
-        let port = {
-            let reservation = TcpListener::bind(("localhost", 0))?;
-            reservation.local_addr()?.port()
-        };
-        let address = format!("localhost:{port}");
+        let address = "localhost:0".to_owned();
         let mut receiver = Program::start(
             ProgramRole::Serve,
             Mode::Test,
@@ -451,6 +452,7 @@ async fn wrong_caller_reply_proof_reports_uncertain_read_without_stopping_server
         )?;
         let receiver_pid = receiver.child.id();
         let (receiver_binding, mut receiver_input) = assignment(&listener).await?;
+        let address = receiver.listener_address()?;
         match receiver_binding.role {
             Role::Serve => {}
             Role::Call => {

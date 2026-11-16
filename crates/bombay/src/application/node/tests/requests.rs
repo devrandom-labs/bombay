@@ -1,5 +1,6 @@
 //! Live existing Requester consumes a verified, typed protected Counter Read reply.
 //! Positive finite test providers and one configured logical binding only.
+use super::protocol::{EndpointRole, configuration, listener_address};
 use super::providers::{
     CounterOperation, ProofScope, ProtectedMessage, ProviderProfile, Purpose, ReadReply,
     ReadReplyRef, ReadRequest, ReadRequestRef, VerificationError, limits, logical_scope, metadata,
@@ -19,14 +20,11 @@ use bombay::remote::{
     Attempt, Export, ExportError, ExportLimits, Metadata, RefusalRetention, json, reply,
     try_retain, verify,
 };
-use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use bombay::{ActorFailureAssessment, RetirementAssessment};
 use core::ops::AsyncFn;
 use std::cell::{Cell, RefCell};
 use std::future::{Future, poll_fn};
-use std::net::TcpListener;
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
 use std::pin::pin;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -39,49 +37,6 @@ use tokio::time::timeout;
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
 
-fn configuration(address: &str, role: &EndpointRole) -> Network {
-    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
-    let (certificate, private_key) = match role {
-        EndpointRole::Receiver => ("recipient-certificate.pem", "recipient-private-key.pem"),
-        EndpointRole::Caller => ("caller-certificate.pem", "caller-private-key.pem"),
-    };
-    let endpoints = ConnectionEndpoints {
-        addresses: vec![
-            address
-                .strip_prefix("tls/")
-                .expect("the fixture uses TLS")
-                .to_owned(),
-        ],
-        certificate: CredentialSource::File(certificates.join(certificate)),
-        private_key: CredentialSource::File(certificates.join(private_key)),
-    };
-    let layout = match role {
-        EndpointRole::Receiver => NetworkLayout::Peer {
-            connect: None,
-            listen: Some(endpoints),
-        },
-        EndpointRole::Caller => NetworkLayout::Peer {
-            connect: Some(endpoints),
-            listen: None,
-        },
-    };
-    Network {
-        layout,
-        deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
-        max_retained_queries: NonZeroUsize::new(2).unwrap(),
-    }
-}
-enum EndpointRole {
-    Caller,
-    Receiver,
-}
-fn listener_address() -> String {
-    let reservation = TcpListener::bind(("127.0.0.1", 0)).unwrap();
-    let address = reservation.local_addr().unwrap();
-    drop(reservation);
-    format!("tls/localhost:{}", address.port())
-}
 #[expect(
     clippy::trivially_copy_pass_by_ref,
     reason = "preserve the original fixture's borrowed validation signature during owner relocation"
@@ -131,11 +86,12 @@ async fn live_read<Receipt>(
     projection: fn(&Receipt) -> (&ProofScope, Scope),
     evidence: fn(&Receipt) -> Option<&[u8]>,
 ) {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let mut receiver = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("explicit receiver Node startup"));
+    let address = listener_address(receiver.listen_addresses().await);
     let receiver_connection = receiver.session.clone();
     let receiver_session = &receiver_connection;
     let (execution, receiving) = receiver.execute_with(|receiver| async move {
@@ -632,7 +588,7 @@ async fn cold_pending_protection<Receipt>(
     let (configured_requests, requests) = oneshot::channel();
     let maximum = NonZeroUsize::new(4).unwrap();
     let deadline = Instant::now() + Duration::from_secs(60);
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let mut network = configuration(&address, &EndpointRole::Receiver);
     network.max_retained_queries = maximum;
     let node = Application::new(Counter::new().stop_on_shutdown())

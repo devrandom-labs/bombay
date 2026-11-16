@@ -742,6 +742,111 @@ handoff's check-inputs-final-{controls,source-review}.json retains exact source
 and controls. Full integrated local/hosted gates and PR delivery remain open;
 this measured input policy does not complete the DX programme.
 
+### Bound listener addresses, before implementation (2026-11-16)
+
+Final392346c0 passes all eight hosted checks and27 of28 local owners. The
+remaining local workspace owner failed one generated Client case before its
+receiver's native TLS startup; the test discarded the native cause. Its exact
+seed740589cc and full trace are retained. Both later shrink replays succeeded.
+An isolated original59-case target with actual startup diagnostics passed4100
+invocations. The original cause remains unknown; none of these later passes
+replaces the failed full owner or actual flake gate.
+
+An independent focused regression proves a fixture defect: listener_address
+returns only a String after releasing its OS-selected port. An exclusive socket
+can claim that still-live address before the native listener binds. The negative
+fails on this intended law; the existing host-resolution test and native bind
+control pass. A private owned-socket/address candidate protects the port but
+blocks the native listener's reuseaddr bind on Darwin (AddrInUse/os48). Reopen
+and reject that representation; no production representation was retained.
+
+Select the authoritative owner instead: open the native listener on port zero
+and read its actual bound addresses through Node. This is deliberate Bombay
+runtime metadata policy, using the current native listener's supported metadata;
+it changes no actor-model communication, creation, watching or lifecycle law.
+The native TLS listener already replaces zero with its selected port while
+preserving the configured hostname. Session.info().locators() owns those facts;
+Node already owns that Session. Do not add cached Node state, a port pool,
+retry-to-pass policy, native Session escape or another reservation framework.
+
+Required caller syntax is receiver.listen_addresses().await, yielding owned
+HOST:PORT strings accepted directly by ConnectionEndpoints.addresses. The query
+borrows Node and supplies zero or more listening addresses; it does not transfer
+the Application, execute initialization, assert actor readiness or grant ingress.
+Caller-only nodes have no listeners; multiple listeners must not collapse to one.
+The existing Counter/MessageAdapter real TLS trace is the smallest end-to-end
+witness. Its port-zero variant fails before implementation with E0599 for this
+missing method. Preserve its original assertions, all failed/persisted inputs,
+complete retirement and notification oracles, and both wrapper orders.
+
+Expected production owner: application/node.rs, one public async metadata method,
+about10–25 added lines, public types/generics/bounds/state fields0/0. Reuse the
+existing Node generic impl, Network inputs and native locator metadata; no new
+trait, callback, wrapper or error sum. Trace every consumer of the shared test
+network fixture and its duplicate before mechanical migration. Add only focused
+caller/cardinality/ownership proofs first; retain the established helper until
+the interface has actual end-to-end evidence, then remove obsolete reservation
+work. Update current public guidance and real server output with the proven API.
+
+The aggregate checkpoint keeps every actor/control sum, subordinate alternative,
+transition branch, effect lane and initialization order unchanged. Expected
+public spellings+1, production modules+0. Cumulative file surface remains covered
+by standing auto-approval; measure actual deltas and both source/oracle reviews.
+The existing handoff's listener-port-{plan,red-result,green-result}.json and
+bound-listeners-{plan,red}.nix retain exact primary-source/prototype/falsifier
+inputs. Full local/hosted gates and delivery remain open, with the failed local
+owner unresolved. This stage does not complete the wider DX programme.
+
+### Bound listener design result and migration (2026-11-16)
+
+The focused design passes in debug and optimized builds: both actual receiving
+listeners retain their configured hostnames, use nonzero ports and refuse an
+exclusive competing bind. A caller connects using the returned address and has
+zero listeners. The unchanged generated Counter/MessageAdapter trace completes
+4100/4100 cases in each profile, including the three original seeds and the new
+failed input. Original failure attribution and complete local acceptance remain
+open. The capability adds15 production lines and one method, with no state,
+variant, type, bound, dependency or transition branch. Both author reviews pass:
+the first traces native ownership and the second rejects configured-zero,
+first-listener-only, released-socket and caller-listener counterexamples. No
+independent review is claimed. The aggregate checkpoint passes; all actor laws,
+complete control sums, subordinate values and wrapper interpretation stay exact.
+
+Mechanical migration now reuses this proven method throughout the shared TLS
+fixture's consumers and its requests.rs duplicate. The existing single-listener
+fixture formats the actual address; it no longer allocates or releases sockets.
+Preserve its original hostname-resolution test and every domain/retirement oracle.
+The private raw-Session comparison can bind zero directly because no external
+peer consumes its address. Update the public guide, Node ownership description
+and remote Counter: report bound listener addresses on stderr, then use that
+actual metadata in its two process tests instead of predicting a free port.
+Expected additional production is3–5 example lines; public types/state/bounds0.
+This migration may add no semantic machinery. Full gates and normal delivery
+still follow; the existing source392 evidence keeps its original qualification.
+
+### Bound listener migration result and final gate scope (2026-11-16)
+
+The migrated candidate passes52 Node cases, one private comparison,59 public
+Client cases and eight Counter process cases in each profile. The four existing
+child registrations remain executed and checked by their exact-named parents.
+The generated Client trace completes4100/4100 invocations per profile. Two
+one-off wrapper setup errors (a missing module in a filter, then a count that
+omitted included process-test modules) are preserved separately; neither changed
+a project test or supplied a missing pass. Final lint corrections remove two
+unconsumed loopback metadata reads and one obsolete length-lint exception,
+clarify rustdoc, and express the same zero-listener oracle as exact vector
+equality. Whole-workspace strict Clippy and formatting pass those final bytes.
+
+The retained batch changes28 files: production+20/-0/net20, tests+147/-98/net49,
+public types+0/-0 and one new public method. All1,232 original assertion sites
+remain. Removing the new method restores the complete Node production preimage;
+its38 transition branches and both existing control sums are unchanged. Both
+author source/oracle reviews pass, with no independent review claimed. The
+aggregate checkpoint is `pass`; exact raw/source/command/measurement receipts
+are the existing handoff's bound-listeners-* records. The original source392
+failure stays qualified as failed with unknown cause. Final new-source full
+local gates, hosted checks, normal PR delivery and publication remain open.
+
 Runner-type inference and the listener ownership correction merged through
 [PR421](https://github.com/devrandom-labs/bombay/pull/421) as
 `2e328cd422dc1fbb1221fb60c6b1becd47cc959a`. All eight exact-head checks pass,

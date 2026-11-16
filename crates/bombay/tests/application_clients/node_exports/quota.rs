@@ -49,11 +49,12 @@ async fn provider_refusal_consumes_request_custody_before_the_next_factory() {
     reason = "one complete quota trace retains original causes, native outcomes and both closes"
 )]
 async fn complete(policy: VerificationPolicy) {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let node = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
         .unwrap_or_else(|_| panic!("actual quota Node opens"));
+    let address = listener_address(node.listen_addresses().await);
     let receiver_id = node.runtime_id();
     let peer = peer::Peer::open(&address).await;
     let caller_id = peer.runtime_id();

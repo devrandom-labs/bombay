@@ -38,3 +38,15 @@ Ledger; no Commands import is needed. Return-position impl Trait does not hide
 an entailed supertrait. Reject this exact opaque-supertrait form before building
 its full retained-row candidate. All588 compiler inputs and the exact restored
 mount remain in cold-comparison/privacy-source; no runtime/retention credit.
+
+## Holding an auxiliary socket for native listener adoption
+
+The shared application TLS fixture released its selected port before native
+startup. A bound unlistening TcpSocket with reuseaddr protects that port, but the
+native owner's supported reuseaddr/bind/listen path then refuses adoption on
+Darwin with AddrInUse (os48). The exclusive-binding control passes while native
+adoption fails. Reject the held-socket/address wrapper; no production form is
+retained. Exact source, failure log and diagnosis remain in the existing DevX
+handoff's listener-port-green-result.json. Let the native owner bind port zero
+and project its actual addresses through Node instead. This independent fixture
+defect does not establish the cause of the earlier intermittent startup failure.

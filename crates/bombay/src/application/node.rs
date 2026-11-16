@@ -187,6 +187,23 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, BindResult>
         self.session.zid().to_string()
     }
 
+    /// Read this Node's listener address metadata.
+    ///
+    /// Values use the host-and-port form accepted by `ConnectionEndpoints::addresses`,
+    /// including the actual ports selected for port-zero inputs. Application
+    /// execution and grants separately control actor initialization and ingress.
+    /// All current listeners are included; a Node that only connects returns an
+    /// empty list.
+    pub async fn listen_addresses(&self) -> Vec<String> {
+        self.session
+            .info()
+            .locators()
+            .await
+            .into_iter()
+            .map(|locator| locator.address().as_str().to_owned())
+            .collect()
+    }
+
     #[expect(
         clippy::type_complexity,
         reason = "return the original declaration and callable together without a wrapper or a self loan"

@@ -568,6 +568,13 @@ For independently driven basic transport operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
 
+For an OS-selected port, configure a listener such as `localhost:0`, open the
+Node, then await `node.listen_addresses()`. The returned `Vec<String>` contains
+its actual host-and-port addresses, accepted directly by another Node's
+`ConnectionEndpoints.addresses`. A connecting-only Node returns an empty list;
+multiple listeners are all retained. This is current listener metadata, while
+actor execution and explicit grants separately control readiness and admission.
+
 For remote metadata, `node.runtime_id()` returns the connection owner's identity
 as a string. `application.actor_address(&recipient)` returns an actor's address
 only after checking its association with that Application; foreign actors and
