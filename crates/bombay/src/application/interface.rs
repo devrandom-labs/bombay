@@ -1058,7 +1058,7 @@ mod tests {
             DirectoryConfig::default(),
             capacity,
         )
-        .run_with_entities(|mut application| async move {
+        .run_with(|mut application| async move {
             let target = application.entities(AccountsRole).entity(original);
             let allocations = application.allocations.clone();
             application.allocations = ApplicationAddresses::from_next(u64::MAX);

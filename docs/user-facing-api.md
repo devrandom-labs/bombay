@@ -479,9 +479,9 @@ cold application.
 
 All entry points select descendant custody from the application's topology.
 Use `execute_with(work)` and `execute()` without retirement type arguments.
-The same selection applies to `execute_axum(address, router)`,
-`run_axum(address, router)`, `execute_with_entities(work)` and
-`run_with_entities(work)`. The [entry-point regressions](../crates/bombay/tests/application_outcome.rs)
+The same selection applies to `execute_axum(address, router)` and
+`run_axum(address, router)`. Declaring Entity families keeps the same
+`execute_with(work)` and `run_with(work)` names and retains their family results. The [entry-point regressions](../crates/bombay/tests/application_outcome.rs)
 exercise local non-Send work, cold cancellation/retry, initialization refusal
 and original-router recovery on HTTP bind refusal.
 
@@ -1140,7 +1140,7 @@ let application = Application::with_topology(root, spaces).entity_family(
     EntityCapacity::new(concurrent_hydrations, residents),
 );
 
-let application_receiving = application.run_with_entities(
+let application_receiving = application.run_with(
     |application| async move {
         let accounts = application.entities(AccountsRole);
         let account = accounts.entity(account_id);
@@ -1211,8 +1211,8 @@ Entity.
 
 Native lowering hydrates before address allocation, uses the application allocator, preserves
 forced-retirement provenance and descendant terminals, and launches the exact
-authored lifecycle stack. `run_with_entities` awaits the same paired owner as
-`execute_with_entities`. The result keeps Work outcome, root receiving,
+authored lifecycle stack. `run_with` awaits the same paired owner as
+`execute_with`. The result keeps Work outcome, root receiving,
 notification receiving, and the recursive family receiving product separate.
 Work cleanup has a unit normal result or a distinct `ApplicationCleanupError`
 for its receiving/task failure. The independent

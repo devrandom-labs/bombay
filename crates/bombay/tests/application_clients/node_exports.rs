@@ -45,7 +45,7 @@ async fn combined_actor_exports_use_the_exact_family_hosts() {
             EntityCapacity::new(NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(2).unwrap()),
         );
     let outcome = application
-        .run_with_entities(|application| async move {
+        .run_with(|application| async move {
             let export_admission = exports
                 .send(
                     &application.root().established_recipient(),

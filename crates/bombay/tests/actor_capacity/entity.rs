@@ -154,7 +154,7 @@ async fn installed_entity_family_carries_actor_limit_into_fresh_descendants_and_
             EntityCapacity::new(NonZeroUsize::MIN, NonZeroUsize::MIN),
         );
     let outcome = application
-        .run_with_entities(|application| async move {
+        .run_with(|application| async move {
             let libraries = application.entities(Libraries);
             let library = libraries.entity(7);
             let mut caller = application

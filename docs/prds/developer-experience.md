@@ -28,7 +28,11 @@ Zenoh stays internal: configuration conversion, sessions and queries are private
 public foreign causes use the standard error contract. Final interface acceptance
 still requires the selected source, consumer and delivery gates.
 
-## Communication adoption and current release gates
+## Communication adoption and release investigation (2026-11-15)
+
+This investigation precedes PR381's publication recorded under
+[Current delivery](#current-delivery). Its release holds and unfinished gates
+describe those earlier source epochs.
 
 Communication0.1.7 is independently published and verified. Source
 [PR15](https://github.com/devrandom-labs/bombay-communication/pull/15) merged
@@ -530,6 +534,148 @@ before treating the current release as verified.
 
 ## Current delivery
 
+Runtime0.2.0, Engine0.3.0 and macros0.2.0 are published. PR381 merged as
+`43687efbd0a334e036db8930f4c1b650a04e2319`; normal push publication succeeds.
+All three official registry downloads are byte-identical to the joint archives
+verified on Rust1.99 and1.96. Their tags and package VCS identify `b1c32050`,
+whose28 local gates, actual flake check and eight hosted checks pass. Main's
+additional PR427 tests are outside those tagged packages. Both compilers now
+complete the original16-command extracted-package caller corpus:87 native
+cases and16 UI fixtures per profile, withdrawal7/profile, Entity26/profile,
+remote-surface4/12 UI, renamed3, doctests10, eight example builds and six actual
+example runs. Original named cases, diagnostics, dependency identities and
+588 caller inputs per compiler remain exact. Counter1, pool3, worker replacement
+and the Entity40/2 incarnations retain joined cleanup. HTTP/remote examples are
+compile-only in that corpus; actual selected HTTP/Node lifecycle cases execute
+in the native cohort. Bombay explicitly acknowledges all three published versions
+in completed turn01a1e191-37b5-7e02-a741-cbad7064f2de. Source, archives, exact
+inputs and required evidence are retained; completed caller caches reclaim
+11,139,772KiB. The existing restart handoff owns
+`native-router-lock-release-{publication-result,consumer-final-summary}.json`.
+This closes this release batch; broader DX01–DX28 acceptance remains active.
+
+### Supplied-work runners, before implementation (2026-11-16)
+
+DX01/05/22 still have a caller inconsistency: adding an Entity family changes
+`application.run_with(work)` to `application.run_with_entities(work)`, and the
+independent pair similarly changes from `execute_with` to
+`execute_with_entities`. Select one ordinary supplied-work spelling for both
+the empty family product and the existing nonempty declaration product. This
+is Bombay interface policy; no actor transition or scheduling law changes.
+
+Desired syntax is the existing `Application::with_topology(...).entity_family(...)`
+followed by `.run_with(work)` or `.execute_with(work)`, with work/future types
+inferred. Keep the exact root, work, notification and role-indexed family
+results. A missing host returns the original application and callable; unpolled
+execution returns cold inputs, staging refusal retains partial declarations,
+prepared cancellation retains actual prepared inputs, interrupted work retains
+cleanup, and completed work retains its original value beside independent
+cleanup/retirement failures. Caller-local borrowed and non-Send work remains
+local. This batch does not change absent-work, HTTP prebinding or Node protocols.
+
+Before production, change only the canonical Entity caller to the desired
+`run_with` spelling and establish its compile failure on the old interface.
+Also compile the same real family journey with independent `execute_with` and
+retained receiving as a separate pre-edit witness. Retain exact caller inputs
+and diagnostics. The existing family, Node and ordinary execution kernels,
+`EntityApplicationFamilies`, `InstallEntityFamilies`, and the existing
+`(Role, Definition, DirectoryConfig, EntityCapacity, Tail)` product supply the
+complete implementation. Public family methods may move to a disjoint inherent
+implementation on that existing nonempty product. Empty families keep their
+current owned Spaces; nonempty families keep their current shared Spaces.
+No allocation, callback, public wrapper, trait, bound law or effect is added.
+Remove the two family-specific public names; keep no compatibility alias.
+
+Ledger before production: expected owner `application/execution.rs`, the Entity
+example and this PRD for design, with the two existing backlog rows refreshed
+to actual publication; expected production delta0–100 physical lines,
+public types added/removed0/0, public spellings removed2. Existing private family
+invocation and all runtime bodies remain exact, apart from the internal call to
+the renamed public method. Only after focused proof may the already-selected
+syntax migrate through native callers, compile diagnostics, Node's unit caller,
+examples and current guidance. Inventory that complete mechanical file set
+before that stage; it may introduce no new abstraction. Root/pool/supervisor
+and both policy orders, family refusal/retry/cancellation, independent receiving,
+both compilers/profiles and final repository/package delivery remain required.
+
+Aggregate before: WorkOutcome6, work-publication custody5 and work presence2;
+the complete application enum alternatives and their exact owned representations,
+production lines/modules/branch tokens/public spellings are measured in
+`application-runners-before.json` in the existing restart handoff. Each surviving
+alternative must keep that exact current value. Expected after: identical sums,
+branches, effects and ownership; only the two competing public names disappear.
+Cross-check `WorkOutcome`, application composition, family installation,
+`docs/module-boundaries.md` and `docs/runtime-capability-interfaces.md` against
+the caller regressions. No history, repeated cause, cardinality inference,
+semantic boolean, nested transition authority or structural caller path may be
+introduced. Disposition remains unproven until the measured post-edit checkpoint
+and both test reviews pass; no production candidate has yet been retained.
+
+The pre-edit canonical and independent callers each fail exactly once with
+E0599 for the missing ordinary runner on the existing family product. Their
+otherwise identical old-interface controls both execute balances40/2, actual
+Graceful retirement and complete cleanup. Both intended caller sources are
+restored after the controls. All62 prepared registry lock identities equal the
+existing workspace lock. Two source/oracle reviews reject unrelated setup
+failure, universal refusal and empty-work success; production is still
+unchanged. Exact source, logs and reviews: `application-runners-pre-edit-proof.json`.
+
+The focused design is retained. Both actual1.99/1.96 compilers in debug and
+optimized profiles pass20 commands:16 real binary runs across the canonical
+Entity caller, independent receiving caller, supervisor replacement and FIFO
+pool, plus both timer/finalization orders in each configuration. Exact original
+caller inputs and40/2/3 business values survive. Formatting and strict selected
+library/example Clippy pass. No full catalogue, native recovery or repository
+completion is claimed by this focused result.
+
+The measured checkpoint is `pass`: application production physical lines
+5640 to5656, modules10 to10, match-arm tokens199 to199 and public spellings77
+to75. Every owned enum representation is byte-identical, including Work6,
+publication custody5 and presence2. The private family invocation, family
+execute body and all five ordinary runner bodies remain byte-identical; family
+run changes only its canonical execute call. Production execution.rs is
++150/-134/net+16; tests there remain byte-identical. No public type is added or
+removed. Two author reviews separately establish the transition/ownership
+mapping and challenge unrelated failures, universal refusal, empty-work
+success and discarded custody. No independent review is claimed.
+
+Mechanical migration may now apply only the proven spelling to the17 exact
+paths in `application-runners-mechanical-plan.json` (22 cumulative changed
+paths). Source, native assertions and diagnostic oracles are snapshotted first.
+The single missing-effect-host diagnostic changes only the canonical method
+spelling and its lexical underline (17 to8 carets); its original cause and every other byte remain required. There is no
+existing minimum-patch/snapshot section for that fixture. Current public guides
+remove the duplicate method entries; qualified historical remote experiments
+retain their old source names. No new abstraction or caller workaround is
+permitted. Existing auto-approval authorizes this cumulative scope. Complete
+native recovery/cancellation, both compiler diagnostic corpora, repository,
+rendered docs and actual package/delivery checks remain open.
+
+Mechanical verification completes on actual1.99/1.96 in both profiles: all92
+cases across the eight complete affected integration targets pass, with exactly
+the same named cases and zero ignored/filtered cases. Both compilers also pass
+the exact five family class/capability denials, including the original missing
+`Hosts<Ledger>` cause. Pinned formatting and strict workspace/all-targets/
+all-features Clippy pass. The source review preserves all1,644 original assertion
+sites, identifiers, literal values and operators; shorter calls cause only
+trusted rustfmt layout/trailing-comma changes. The final ledger before broader
+verification is production+152/-136/net+16, tests+198/-215/net-17, public types
+added/removed0/0 and competing public names removed2, across22 paths. No new
+semantic surface or caller workaround was needed during migration.
+
+The aggregate checkpoint remains `pass`: unchanged complete control sums,
+current-value custody,199 branch tokens and10 application owner modules. Existing
+runtime bodies remain exact under the one declared call rename. The two source/
+oracle reviews reject misplaced host authority, discarded family/root custody,
+empty-work success and universal refusal; the complete integration/cancellation
+cases and both compiler denials retain their original oracles. Raw inputs,
+commands, source reviews and exact log hashes are retained in the existing
+handoff's `application-runners-{focused,migration}-result.json` and checkpoint.
+Full repository, compiler inventory, rendered documentation, archive callers
+and PR checks are delivery gates. Their current results and qualified Git
+revisions belong to the feature PR and the same existing handoff records;
+these scoped passes do not replace those gates or complete DX01–DX28.
+
 Runner-type inference and the listener ownership correction merged through
 [PR421](https://github.com/devrandom-labs/bombay/pull/421) as
 `2e328cd422dc1fbb1221fb60c6b1becd47cc959a`. All eight exact-head checks pass,
@@ -547,12 +693,12 @@ Behavior [PR121](https://github.com/devrandom-labs/bombay-behavior/pull/121) and
 corresponding owner evidence. Their successful retries do not explain the
 historical startup or optimized original-work-retry failures.
 
-DX01–DX28 remains active for selected consumer and policy acceptance, costs,
-interface/documentation reconciliation and runtime registry delivery. Engine
-0.3.0, macros 0.2.0 and runtime 0.2.0 are unpublished candidates. Published
-Behavior/Actors 0.30.0 and macros 0.16.0 retain their verified registry/tag and
-Bombay acknowledgment evidence in the owning PRD. Main-push CI is separate
-from the completed PR gates. Other active worktrees remain preserved.
+DX01–DX28 remains active for selected consumer and policy acceptance, costs
+and interface/documentation reconciliation. Current runtime publication and
+its exact source bounds are recorded above. Published Behavior/Actors0.30.0
+and macros0.16.0 retain their verified registry/tag and Bombay acknowledgment
+evidence in the owning PRD. Main-push CI is separate from the completed PR
+gates. Other active worktrees remain preserved.
 
 ### Transported roots
 
