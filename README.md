@@ -154,7 +154,7 @@ Behavior-originated admission preserve truthful caller provenance and exact
 rejected commands without claiming processing or durable commit. Native
 activation hydrates before routability, shares the application address source,
 preserves exact failure and descendant-terminal facts, and returns bounded
-family metrics after root-first shutdown. `run_with_entities` returns Work
+family metrics after root-first shutdown. `run_with` returns Work
 outcome, a separate root receipt, and the recursive family receipts together.
 Each acquired root or family report leaves the cleanup producer before it
 awaits the next owner. Native cleanup failure and receiving errors remain

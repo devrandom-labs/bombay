@@ -554,6 +554,41 @@ inputs and required evidence are retained; completed caller caches reclaim
 `native-router-lock-release-{publication-result,consumer-final-summary}.json`.
 This closes this release batch; broader DX01–DX28 acceptance remains active.
 
+### Runner and listener delivery (2026-11-16)
+
+[PR429](https://github.com/devrandom-labs/bombay/pull/429) merged normally as
+`6110f8a83edbc2d5a589f73ad50de22235c8014e`. Its delivered tree
+`956da1ec965bea4ebdf7b956efd23c3ea978d6fd` is exactly the accepted integrated
+source `b982f852`, including main's two unchanged binding-custody cases.
+All28 local Nix checks and actual `nix flake check` pass; Nextest passes1025
+cases, retaining six controlled child registrations. All eight exact-head
+hosted checks pass, including the actual Linux workspace1025 cases and154
+compiler fixtures, protected Counter132 cases and bounded Driver/Observe fuzz
+campaigns. Both Rust1.99 and1.96 package verification and the589-input archive
+caller matrices pass. Their original cases, diagnostics, complete custody and
+source bounds remain in `bound-listeners-integrated-acceptance.json` and its
+hashed receipts in the existing restart handoff. The original historical
+opening cause remains unknown; these passes do not establish it.
+
+The normal bot-generated [release PR431](https://github.com/devrandom-labs/bombay/pull/431)
+selects only `bombay-rs`0.3.0. Engine0.3.0 and macros0.2.0 remain published
+siblings; their local joint candidate checksums must not substitute for the
+registry checksums in the final runtime package. Current registry runtime
+remains0.2.0 until publication, tags, downloaded contents and consumer checks
+are independently verified. The complete DX01–DX28 programme remains active.
+
+Before release documentation edits, `runtime030-pre-edit.json` records the
+remaining README reference to removed `run_with_entities` and the generated
+changelog's missing migration. Correct only that current reference, spell out
+both replacements and listener metadata limits, and remove the unrelated old
+merge entry. Expected release scope: five paths including the three generated
+version/changelog paths; production Rust, tests, public types and runtime state
+all have zero delta. Review1 maps the text to the already-proven canonical
+family callers and actual Node metadata. Review2 challenges false readiness,
+unchanged-sibling publication and premature whole-programme completion claims.
+Both reviews are by the author; no independent review is claimed. Final
+release-head checks, package verification and registry delivery remain required.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
