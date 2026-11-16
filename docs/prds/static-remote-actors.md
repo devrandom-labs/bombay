@@ -1,5 +1,144 @@
 # Static remote actors and typed admission
 
+## Pending Node binding — prerequisites and change record (2026-11-16)
+
+**State: active; bounded binding slice locally verified and distilled, PR delivery pending.** This is the earliest
+remaining R18 startup cut, based on main `efad360cbb55c6753ac5e861382bda0b593c47bf`
+(PR428's merged delivery record). Complete R18, AUTH1/NET1, later declaration
+rollback, coexisting close failures, resource baselines and reconnect remain open.
+
+Fresh selected-contract verification inspected the complete 775-line Behavior
+instructions at `628649da014a527d47f21567a859c5c78494df13`, and the current APIs,
+tests and documentation of all six owners plus Engine, Node and the native SDK.
+Cargo.lock SHA256 is
+`644c8853d0f45ce226e5171de3701e284d17b0ee938f0d3b7ad309a01befa192`;
+flake.lock SHA256 is
+`13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`.
+There are no patch or replacement entries. Selection is Behavior/Actors0.30.0
+at628649da, BehaviorMacros0.16.0 at55dbac2d, Address0.3.0 at9f058dc0,
+Communication0.1.7 at2d71c2f6, Timers0.2.0 at9369d1f6, and this main's
+Engine/Observe. BombayMacros0.2 is distinct from BehaviorMacros0.16.
+The already-selected bombay-zenoh1.10.10 atc34eb350 enables TLS and unstable;
+Tokio1.53.3 and rustix1.1.6 remain selected. No upgrade is required for this cut.
+
+Behavior owns pure Actions, Actors owns Counter's shutdown composition,
+Address owns exact registrations, Communication owns admission and original
+payload recovery, Observe owns completion publication, and Timers owns scheduling.
+Engine owns the affine Driver boundary; Bombay owns invocation, cancellation,
+joining and the actual Node binding/declaration/withdrawal/close sequence.
+The SDK owns its native Session. Test gates remain outside Behavior folds.
+
+The missing witness is a genuinely pending asynchronous binder through public
+`Node::run_with`, before export declaration and supplied Work. Existing pending
+binder tests use private paired invocation; existing public Node binder tests
+cover ready refusal. Neither supplies this witness. Native open and queryable
+builders are ready operations in the selected SDK; no artificial pending native
+builder will be introduced.
+
+The first trace retains the same pinned run operation and Node while cancelling
+only its borrowed wait. Acquire an actual Counter reply before holding binding,
+prove the binder is Pending and Work uninvoked, and prove independent application
+progress while held. Resume that same operation after releasing its original
+permission. Preserve the exact binding result, Work output allocation and value,
+actual actor reply, complete outcome, root and notification products, export
+withdrawal and native close result. Invocation and original ownership occur once.
+
+The second trace drops the complete run operation while retaining Node. Observe
+actual unused Work disposal, pending binder disposal, actor cancellation and joined
+cleanup through existing independent observations. Snapshot incomplete binding,
+withdrawal and Node extraction before explicit later cleanup can hide the cut.
+First polling the withdrawal operation requests real withdrawal; its pending
+result is not a passive probe or an acquired native cleanup result.
+Do not claim returned Work or a joined native close from surrender. Dropping Node
+itself is a distinct owner cut and remains unqualified by this retained-Node trace.
+A retained Session clone cannot prove last-owner release. A separate control
+Application must make actual progress after surrender and before its own cleanup.
+
+Start with tests of the existing concrete composition. The planned finite
+adverse controls discard the actual binding receipt before acquisition, and
+misclassify the reachable owner-cancellation result at its owning source.
+Credit requires failure of the intended independent outcome assertion after
+cleanup in both profiles, not a compiler error or watchdog. Suppressing owner
+cancellation is eligible only with an independently observed finite forbidden
+actor trace and unconditional rescue cleanup. At planning time these were
+proposed controls; the executed results follow below.
+
+Expected paths: the owning invocation test module and a focused binding test
+file, this PRD, backlog status/README, and the capability guide (six paths).
+Expected production +0/-0/net0; tests additive, measured after implementation;
+public API +0/-0 types; no dependency or lock changes. Reuse Node, Export,
+Counter, Application lifecycle/cleanup, Observe and ordinary futures. Add no
+public accessor, fixture framework, policy, wrapper or runtime abstraction.
+The two current guidance corrections record selected Communication0.1.7 and the
+delivered Native release; historical qualification epochs retain their limits.
+Two test reviews, paired positive/inversion/restoration runs, three scoped audits,
+owning Nix checks and actual PR delivery remain required before accepting this slice.
+
+The two tests are implemented in `invocation/binding.rs`, using the existing
+public Node and Counter. The complete post-cleanup reply trace rejects a second
+causally later Counter turn, including a reply drained after retirement won a
+race. Closed unused-Work notification proves disposal of its captured sender;
+it is not an independently counted allocation release. Two source reviews
+resolved vacuous admission checks, premature extraction and that final-drain
+counterexample. Production: +0/-0/net0; tests: +423/-0/net423; public API:
++0/-0 types. Six paths are changed, including the new test file.
+
+Pinned Rust1.99 debug and optimized runs each pass both focused cases, zero
+failures or ignored cases:
+`nix develop --no-update-lock-file -c cargo test --locked -p bombay-rs --features remote --lib application::node::tests::invocation::binding:: -- --nocapture`.
+The optimized command adds `--release`. Discarding only the supplied-Work
+path's acquired binding receipt makes the retained-operation case reject its
+missing Completed outcome in both profiles; the surrender case still passes.
+Both profile runs exit101 with one intended failure, without compiler or watchdog
+failure. Node source is restored byte-for-byte before the next control.
+Both cancellation controls also reject their intended defect in each profile:
+the actual termination is CapabilityFailed rather than Cancelled, or the actual
+Counter returns both correlated post-surrender replies479/487. The latter
+assertion runs after rescue shutdown and actual cleanup; neither uses a timeout
+as its counterexample. Each control retains one passing sibling and one intended
+failure, exit101. All three production source originals are restored byte-for-byte.
+The final restored debug and optimized runs each pass both cases, zero failures
+or ignored cases, with explicit exit0 receipts. The three source audits pass
+the retained test source. These focused results alone do not deliver the slice.
+Logs and exact source
+are retained in common Git `session-archives/2026-11-16/startup-custody/`.
+
+### Pending Node binding — native verification and minimization
+
+The original native command
+`nix flake check --no-update-lock-file -L --max-jobs 1 --cores 2`
+finished with an explicit exit0 receipt. All28 aarch64-darwin owners pass on
+immutable source `ycg6sbi7yf8d0ysvqrrmnjwq59klzsra-source`, with unchanged
+test SHA256 `1247e6ff62479f7b3131d0ff9efb525b1aa55e6a99759b0e47fcd580d6625a89`.
+The workspace release run passes1024 cases with zero failures and six existing
+parent-owned child registrations; their exact child execution and passing
+parents were independently checked. Both new cases explicitly pass once.
+Remote debug and optimized owners each pass553 cases, zero failures or ignored
+cases; the debug owner also passes strict Clippy and documentation checks. Coverage runs
+the same1024-case workspace cohort and meets all four existing owner floors.
+Rust1.96's selected28 integration targets pass114 cases, with one existing
+parent-owned child registration; its separate remote-surface owner passes four
+cases and the selected compiler fixtures. Neither minimum-compiler gate runs
+the new Node library tests. Hosted Linux verification remains pending.
+
+The complete native log is20,844,773 bytes, SHA256
+`e661cf77c5b6de00229cf6c677e4c68f12bcaa43a5c30654ce3e01806a6e5be6`.
+The archive retains the28-owner map, actual source/input hashes, per-owner
+reviews, exact controls and explicit terminal receipts. Expected negative
+source controls and parent-owned child registrations retain their own scope;
+they are not unexplained gate failures or directly executed ignored tests.
+
+The scoped minimization retains two observations of existing owners, with no
+production change, new public type, accessor, runtime abstraction or dependency.
+Three source audits and the execution review preserve the retained-Node limit:
+whole Node-owner drop, native/task baselines, later startup cuts, partial rollback,
+coexisting close failures and reconnect remain open. Completed standalone Cargo
+cache cleanup reclaimed2.09GiB after checking active use; source, exact inputs,
+packages, evidence and shared builds were preserved. Final six-path checkpoint,
+including the new test file: production +0/-0/net0; tests +423/-0/net423;
+public API +0/-0 types; four documentation paths, no dependency or lock changes.
+Hosted checks and PR delivery remain required before this slice is marked merged.
+
 ## Export resource retirement — prerequisites and change record (2026-11-15)
 
 **State: merged (resource test slice).** [Verified delivery](#export-resource-retirement-delivery--2026-11-15)

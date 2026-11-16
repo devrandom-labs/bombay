@@ -1,5 +1,19 @@
 # Backlog status and dependencies
 
+R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--prerequisites-and-change-record-2026-11-16)
+stage is active on merged PR428/main efad360c. Fresh six-owner verification
+selects Communication0.1.7 with Behavior/Actors0.30 and finds no upgrade blocker.
+Two focused public Node tests pass in debug and optimized builds, distinguishing
+cancellation of a borrowed wait from surrender of the complete run operation.
+Three deliberate defects each fail their intended outcome assertion in both
+profiles; original production source is restored and both restored profiles
+pass both cases. All28 native Nix gates pass, including1024 workspace release
+cases and553 cases in each remote profile; existing parent-owned child
+registrations retain their documented scope. The bounded slice is locally
+distilled; hosted checks and PR delivery remain pending. Complete
+R18's later cuts, resource baselines and reconnect, AUTH1/NET1 and final example
+distillation remain open. Existing dependency edges are unchanged.
+
 R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement-delivery--2026-11-15)
 test slice merged through PR427/274c5e71 after all 28 native Nix gates, all eight
 hosted checks and three scoped code audits passed. Reviewed, actual CI and
