@@ -623,6 +623,67 @@ Nix/hosted checks remain required. Total release delta is six metadata/document
 paths, with production Rust/tests/public types still +0/-0. Both author reviews
 retain the original `--locked` gates and all source and diagnostic oracles.
 
+### Release verification corrections, before implementation (2026-11-16)
+
+The frozen release head `caaa3c52` has two newly established verification
+failures. Preserve its source, package archives and raw failures; its 26 passed
+owners are evidence for that source only, not final release acceptance.
+
+The native child-retirement inversion exits101, reports exactly the original
+named killer as its only failed test, and emits the original unfinished-owned-
+preparation assertion. With `--nocapture`, the harness prints the test header,
+panic text and final `FAILED` on separate lines. The extra same-line `grep`
+rejects that lawful transcript after the existing named-failure/summary check
+has already accepted it. Remove only that redundant formatting condition.
+Retain exit101, the exact named single failure, the original preparation oracle,
+the rejection of resumed/completed-future panics, every mutation and both
+debug/optimized healthy/inverse/restored journeys. Replay the actual red log
+and challenge wrong killer, wrong summary, absent oracle and wrong-panic inputs
+before accepting the corrected owner. No actor test assertion is changed.
+
+The pinned Clippy help independently establishes that
+`debug_assert_with_mut_call` and `let_underscore_must_use` are allowed by default
+and absent from the workspace's `all`/`pedantic` groups. `AGENTS.md` requires
+both denied. An explicit same-source, all-targets check fails at
+`application/http.rs:259`: `let _ = invoke` discards a must-use closure.
+The closure is constructed internally without captures; its router, listener
+and application handle are supplied only when invoked. After composition
+refusal, retain no unused binding for that zero-capture function. Preserve the
+complete existing rejected product: root, spaces, router, failure, listener
+and scope. This is explicit existing rejection custody, not a new actor law,
+callback, route, type, bound or runtime policy.
+
+Expected cumulative release scope: nine files versus main, adding only the
+owning HTTP source, existing ActorExecution evidence script and existing flake
+to the six release paths. HTTP production delta is +1/-2/net-1; public types,
+generic bounds, modules, control-state alternatives and transition branches are
+unchanged. Reuse the current Clippy owner and require both lint flags in its
+ordinary command. No new validation tool, suite or permanent task is added.
+The exact red commands, complete raw transcripts, pinned help and frozen
+source remain `runtime030-final-*` in the existing restart handoff.
+
+Review1 maps the guard to its prior exact named-failure and summary proof, and
+the HTTP pattern to its existing complete rejection product. Review2 rejects
+counting arbitrary panics as a killed defect, losing an owned callback capture,
+using `drop` on this known noncapturing Copy closure, suppressing either lint,
+or crediting historical source checks to the corrected candidate. These are
+author reviews; independent acceptance is not claimed. Focused red/green,
+complete final-source gates, package/caller verification, hosted acceptance
+and actual registry publication remain required. The wider programme is active.
+
+The pre-edit replay establishes the checker defect from the actual native
+failure transcript. Seven cases retain both same-line and split reporting and
+reject a wrong killer, wrong summary, absent oracle, completed-future panic and
+wrong exit. The applied condition is byte-identical to that proven candidate;
+all prior named-failure and oracle checks remain intact. The ordinary corrected
+Clippy owner then passes with both required lints explicitly denied across all
+workspace targets. Its exact source, command, registered deriver and 728 working
+inputs are independently checked in `runtime030-corrections-focused-review.json`.
+HTTP production is +1/-2/net-1; Rust test assertions, public types, generic bounds,
+modules, control-state alternatives and transition branches have zero delta.
+All nine release paths are accounted for. Both author reviews pass this scoped
+correction; final clean-source full verification and delivery remain open.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).

@@ -313,7 +313,7 @@
             commonArgs
             // {
               inherit cargoArtifacts;
-              cargoClippyExtraArgs = "--workspace --all-targets -- --deny warnings";
+              cargoClippyExtraArgs = "--workspace --all-targets -- --deny warnings --deny clippy::debug_assert_with_mut_call --deny clippy::let_underscore_must_use";
             }
           );
           bombay-doc = craneLib.cargoDoc (
