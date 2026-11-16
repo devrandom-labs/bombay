@@ -556,6 +556,8 @@ This closes this release batch; broader DX01–DX28 acceptance remains active.
 
 ### Supplied-work runners, before implementation (2026-11-16)
 
+Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
+
 DX01/05/22 still have a caller inconsistency: adding an Entity family changes
 `application.run_with(work)` to `application.run_with_entities(work)`, and the
 independent pair similarly changes from `execute_with` to
