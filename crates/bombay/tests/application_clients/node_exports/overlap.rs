@@ -37,7 +37,7 @@ async fn overlapping_queries_admit_only_the_assigned_counter() {
     reason = "one two-responder trace preserves both original receptions, native actor states and every joined owner before its ownership oracle"
 )]
 async fn overlapping_counters() {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let assigned = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&address, &EndpointRole::Receiver))
         .await
@@ -47,7 +47,7 @@ async fn overlapping_counters() {
                 cause.source()
             )
         });
-    let other_address = listener_address();
+    let other_address = "tls/localhost:0".to_owned();
     let other = Application::new(Counter::new().stop_on_shutdown())
         .open_node(configuration(&other_address, &EndpointRole::Receiver))
         .await
@@ -57,6 +57,8 @@ async fn overlapping_counters() {
                 cause.source()
             )
         });
+    let address = listener_address(assigned.listen_addresses().await);
+    let other_address = listener_address(other.listen_addresses().await);
     let assigned_runtime = assigned.runtime_id();
     let other_runtime = other.runtime_id();
     // Each receiver has a direct connection; no implicit Peer relay is assumed.

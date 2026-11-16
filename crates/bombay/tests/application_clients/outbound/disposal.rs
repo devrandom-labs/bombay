@@ -109,7 +109,7 @@ async fn verification_disposal_preserves_ready_receipt_without_delivering() {
     reason = "one causal provider fault trace retains the original request, independent acquired results, exact panic cause and both joined outcomes"
 )]
 async fn read(fault: ProviderFault) {
-    let address = protocol::listener_address();
+    let address = "tls/localhost:0".to_owned();
     let maximum = NonZeroUsize::new(4).unwrap();
     let records = &RefCell::new(Vec::<(Scope, ProtectedMessage)>::new());
     let claims = &RefCell::new(None::<Metadata>);
@@ -147,6 +147,7 @@ async fn read(fault: ProviderFault) {
                 cause.source()
             )
         });
+    let address = protocol::listener_address(receiver.listen_addresses().await);
     let receiver_id = receiver.runtime_id();
     let export = Export::new(
         "bombay/outbound/read",

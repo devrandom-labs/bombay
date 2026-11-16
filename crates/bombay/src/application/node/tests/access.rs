@@ -633,3 +633,62 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
     .await
     .expect("watchdog supplies no connectivity, ACL, permission or retirement credit");
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn node_addresses_preserve_listener_ownership_and_cardinality() {
+    let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    let NetworkLayout::Peer {
+        listen: Some(endpoints),
+        ..
+    } = &mut network.layout
+    else {
+        panic!("the receiving Node has a listener direction");
+    };
+    endpoints.addresses.push("127.0.0.1:0".to_owned());
+    let mut receiver = Application::new(Counter::new().stop_on_shutdown())
+        .open_node(network)
+        .await
+        .unwrap_or_else(|(_, _, cause)| panic!("the two-listener Node opens: {cause}"));
+    let mut addresses = receiver.listen_addresses().await;
+    let mut refusals = Vec::new();
+    for address in &addresses {
+        let selected = lookup_host(address.as_str())
+            .await
+            .expect("the configured listener hostname resolves")
+            .next()
+            .expect("the native listener selects a resolved address");
+        let competing = TcpListener::bind(selected);
+        let refusal = competing.expect_err("the Node still owns its reported listener socket");
+        refusals.push((selected.port(), refusal.kind()));
+    }
+    let address = addresses
+        .iter()
+        .find(|address| address.starts_with("localhost:"))
+        .expect("the configured localhost is preserved");
+    let mut caller = Application::new(Counter::new().stop_on_shutdown())
+        .open_node(configuration(
+            &format!("tls/{address}"),
+            &EndpointRole::Caller,
+        ))
+        .await
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!("the caller connects using returned metadata: {cause}")
+        });
+    let caller_addresses = caller.listen_addresses().await;
+    let caller_closed = caller.close().await;
+    let receiver_closed = receiver.close().await;
+    caller_closed.expect("the listener-free caller closes");
+    receiver_closed.expect("the receiver closes both listeners");
+    addresses.sort();
+
+    assert_eq!(addresses.len(), 2);
+    assert!(addresses[0].starts_with("127.0.0.1:"));
+    assert!(addresses[1].starts_with("localhost:"));
+    assert_ne!(addresses[0], addresses[1]);
+    assert_eq!(refusals.len(), 2);
+    for (port, refusal) in refusals {
+        assert_ne!(port, 0);
+        assert_eq!(refusal, ErrorKind::AddrInUse);
+    }
+    assert_eq!(caller_addresses, Vec::<String>::new());
+}

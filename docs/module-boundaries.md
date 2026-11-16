@@ -43,6 +43,9 @@ they are tests rather than a second production receiver. The optional remote gra
 owners. Private application/node.rs owns one finalized Application and one fresh
 Session; Application::open_node consumes Network and constructs private
 configuration through remote/network.rs. Original Network inputs survive refusal.
+Node::listen_addresses borrows that same owner to project actual listener
+host/port metadata, including port-zero allocation; it stores no second address
+list and exposes no native connection capability.
 Node carries the ordinary declaration's root, children and Entity families.
 Its Work receives the existing family receptionists and its outcome retains
 their exact shutdown results. Node::run_with joins the existing Application execution and receiving operations;

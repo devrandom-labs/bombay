@@ -239,7 +239,7 @@ fn missing_host_returns_original_work_before_handoff() {
         host.block_on(async {
             tokio::time::timeout(Duration::from_secs(10), async {
                 let (execution, receiving) = application
-                    .execute_with_entities(work)
+                    .execute_with(work)
                     .unwrap_or_else(|_| panic!("the same originals enter the real host"));
                 execution.await;
                 let outcome = receiving.await;

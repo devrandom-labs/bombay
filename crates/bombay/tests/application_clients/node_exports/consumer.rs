@@ -108,7 +108,7 @@ async fn pending_verification_allows_other_actor_requests() {
     reason = "one causal two-target trace retains all native, provider, family and cleanup originals"
 )]
 async fn complete(presence: Presence, pending: ProviderStage) {
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let reports = Arc::new(Mutex::new(Vec::new()));
     let scope = ApplicationScope::new();
     let mut exports = scope.external::<Exports>().unwrap();
@@ -136,6 +136,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
             let source = refusal.source();
             panic!("actual Node opens at {address}: {refusal}; source: {source:?}");
         });
+    let address = listener_address(node.listen_addresses().await);
     let receiver_id = node.runtime_id();
     let peer = peer::Peer::open(&address).await;
     let caller_id = peer.runtime_id();

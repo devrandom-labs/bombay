@@ -417,7 +417,7 @@ async fn entity_work_selection_keeps_original_family_shutdowns_and_actor_retirem
         counter_application::Topology::new(),
     )
     .entity_family(CountersRole, counters, DirectoryConfig::default(), capacity)
-    .run_with_entities(|application| async move {
+    .run_with(|application| async move {
         let counter = application.entities(CountersRole).entity(59);
         let mut caller = application
             .client_to(counter)
@@ -664,7 +664,7 @@ async fn same_protocol_families_select_both_real_positions_and_preserve_separate
     )
     .entity_family(CountersRole, counters, DirectoryConfig::default(), capacity)
     .entity_family(VisitsRole, visits, DirectoryConfig::default(), capacity)
-    .run_with_entities(|application| async move {
+    .run_with(|application| async move {
         let target = application.entities(CountersRole).entity(59);
         let visit = application.entities(VisitsRole).entity(59);
         let mut caller = application

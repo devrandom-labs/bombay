@@ -37,6 +37,11 @@ duration in seconds. The directory supplies
 `caller-certificate.pem` and `caller-private-key.pem`. The server listens;
 the customer connects. Use credentials issued for the configured DNS name.
 The assignment socket requires a Unix host.
+Use `localhost:0` for an OS-selected server port. The server reports each actual
+bound address as `counter listening: HOST:PORT` on stderr; supply that address to
+`call`. This reports the listening socket; the assignment and explicit grants
+still govern actor admission. The process tests use this output after the actual
+binding, keeping the port owned throughout startup.
 
 ## Test assignment
 

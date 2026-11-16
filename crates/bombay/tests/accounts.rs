@@ -182,28 +182,26 @@ fn accounts_passivate_reactivate_and_preserve_complete_retirement() {
         .build()
         .expect("the synchronous example owns one enabled application host");
     let outcome = application_host
-        .block_on(
-            application.run_with_entities(move |application| async move {
-                let accounts = application.entities(AccountsRole);
-                let account = accounts.entity(ACCOUNT_ID);
-                let caller = application
-                    .sender_to(account)
-                    .unwrap_or_else(|_| panic!("the account sender is established"));
+        .block_on(application.run_with(move |application| async move {
+            let accounts = application.entities(AccountsRole);
+            let account = accounts.entity(ACCOUNT_ID);
+            let caller = application
+                .sender_to(account)
+                .unwrap_or_else(|_| panic!("the account sender is established"));
 
-                caller
-                    .send(AccountCommand::Deposit(40))
-                    .await
-                    .expect("the first incarnation accepts its command");
-                let retirement = application.retire_entity(AccountsRole, &ACCOUNT_ID).await;
-                assert_eq!(retirement, Ok(bombay::entity::RetirementMode::Graceful));
-                caller
-                    .send(AccountCommand::Deposit(2))
-                    .await
-                    .expect("the same stable reference activates a replacement");
-                let shutdown = application.shutdown();
-                assert_eq!(shutdown, Ok(()));
-            }),
-        )
+            caller
+                .send(AccountCommand::Deposit(40))
+                .await
+                .expect("the first incarnation accepts its command");
+            let retirement = application.retire_entity(AccountsRole, &ACCOUNT_ID).await;
+            assert_eq!(retirement, Ok(bombay::entity::RetirementMode::Graceful));
+            caller
+                .send(AccountCommand::Deposit(2))
+                .await
+                .expect("the same stable reference activates a replacement");
+            let shutdown = application.shutdown();
+            assert_eq!(shutdown, Ok(()));
+        }))
         .unwrap_or_else(|(application, work, error)| {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
@@ -475,7 +473,7 @@ fn entity_retirement_waits_for_callback_and_preserves_independent_observers() {
         .expect("the caller owns its host");
     let entering = &entering;
     let outcome = host
-        .block_on(application.run_with_entities(|application| async move {
+        .block_on(application.run_with(|application| async move {
             let accounts = application.entities(AccountsRole);
             let first = application
                 .sender_to(accounts.entity(ACCOUNT_ID))
@@ -601,7 +599,7 @@ fn entity_retirement_keeps_callback_failure_in_the_family_outcome() {
         .build()
         .expect("the caller owns its host");
     let outcome = host
-        .block_on(application.run_with_entities(|application| async move {
+        .block_on(application.run_with(|application| async move {
             let caller = application
                 .sender_to(application.entities(AccountsRole).entity(ACCOUNT_ID))
                 .unwrap_or_else(|_| panic!("the sender exists"));
@@ -682,7 +680,7 @@ fn entity_retirement_preserves_the_forced_fence_reason() {
         .build()
         .expect("the caller owns its host");
     let outcome = host
-        .block_on(application.run_with_entities(|application| async move {
+        .block_on(application.run_with(|application| async move {
             let caller = application
                 .sender_to(application.entities(AccountsRole).entity(ACCOUNT_ID))
                 .unwrap_or_else(|_| panic!("the sender exists"));
@@ -774,7 +772,7 @@ fn reactivated_entity_cannot_reuse_the_previous_retirement_fact() {
         .expect("the caller owns its host");
     let entering = &entering;
     let outcome = host
-        .block_on(application.run_with_entities(|application| async move {
+        .block_on(application.run_with(|application| async move {
             let caller = application
                 .sender_to(application.entities(AccountsRole).entity(ACCOUNT_ID))
                 .unwrap_or_else(|_| panic!("the stable sender exists"));
@@ -941,7 +939,7 @@ mod account_reports {
                         DirectoryConfig::default(),
                         capacity,
                     )
-                    .run_with_entities(|application| async move {
+                    .run_with(|application| async move {
                         let caller = application
                             .sender_to(application.entities(AccountsRole).entity(ACCOUNT_ID))
                             .unwrap_or_else(|_| panic!("the actual account sender starts"));

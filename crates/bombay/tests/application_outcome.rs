@@ -587,7 +587,7 @@ async fn independent_entity_execution_infers_root_custody_without_families() {
     let original = Rc::new(Cell::new(71));
     let work = Rc::clone(&original);
     let (execution, receiving) = Application::new(Counter::new().stop_on_shutdown())
-        .execute_with_entities(|application| async move {
+        .execute_with(|application| async move {
             let shutdown = application.lifecycle().shutdown();
             assert_eq!(shutdown, Ok(()));
             work
@@ -623,7 +623,7 @@ async fn entity_runner_infers_rejected_root_and_preserves_uninvoked_work() {
     let calls = Rc::clone(&invoked);
     let (outcome, _root_report, root, notifications, ()) =
         Application::new(RejectedCounter { original }.stop_on_shutdown())
-            .run_with_entities(|_| async move {
+            .run_with(|_| async move {
                 calls.set(calls.get() + 1);
             })
             .await

@@ -73,7 +73,7 @@ fn main() {
         .entity_family(AuditorsRole, Auditors, DirectoryConfig::default(), EntityCapacity::new(
             NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(1).unwrap()));
     let host = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-    let _outcome = host.block_on(application.run_with_entities(|application| async move {
+    let _outcome = host.block_on(application.run_with(|application| async move {
         application.shutdown().unwrap();
     }));
 }

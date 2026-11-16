@@ -4,8 +4,8 @@ use super::{
     Binding, EndpointRole, LedgerCommand, LedgerOperation, MailLedger, ProofScope,
     ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef, ReadRequest,
     ReadRequestRef, VerificationError, assert_completed, assert_notifications, assert_report,
-    configuration, current_scope, limits, listener_address, metadata, recorded,
-    same_recorded_ledger, same_scheduled_ledger, scheduled,
+    configuration, current_scope, limits, metadata, recorded, same_recorded_ledger,
+    same_scheduled_ledger, scheduled,
 };
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Never, User};
@@ -69,7 +69,7 @@ async fn stashed_ledger_reads<Receipt>(
         },
     )
     .stop_on_shutdown();
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let mut network = configuration(&address, &EndpointRole::Receiver);
     network.max_retained_queries = NonZeroUsize::new(3).unwrap();
     let node = Application::new(root)

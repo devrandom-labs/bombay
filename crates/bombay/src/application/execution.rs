@@ -4,7 +4,10 @@ use crate::NativeHost;
 use crate::address::{ApplicationAddresses, MailAddr};
 use crate::application::composition::ComposeApplication;
 use crate::application::{Application, ApplicationHandle, ApplicationOutcome, WorkOutcome};
-use crate::entity::{InstallEntityFamilies, InstalledEntityFamilies};
+use crate::entity::{
+    DirectoryConfig, EntityApplicationFamilies, EntityCapacity, InstallEntityFamilies,
+    InstalledEntityFamilies,
+};
 use crate::launch::spawn_local_execution;
 use crate::local::children::{
     ChildBindings, ChildBindingsIn, RetireChildTasks, RuntimeChildBindings,
@@ -62,131 +65,6 @@ where
     Families: InstallEntityFamilies<Spaces> + Send,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
-    /// Pair caller-local Entity work with original root and family retirement receiving.
-    /// The application's topology selects the complete descendant schema;
-    /// callers need no retirement type argument.
-    /// The receiving product keeps work/startup phase, root receiving and each family receiving result.
-    /// Its cleanup join remains the actual unit producer outcome beside independently acquired facts.
-    /// A receiving error never infers root absence or completed family shutdown.
-    /// Definitions install before receptionists; the original borrowed setup cause stays native.
-    ///
-    /// # Errors
-    /// Returns untouched application and bare Work with actual missing-host error.
-    ///
-    /// # Panics
-    /// Original borrowed setup or Work causes unwind in the caller; retained receiving remains independent.
-    #[expect(
-        clippy::type_complexity,
-        reason = "retain independent work phase, original root reply and role-indexed shutdown receiving results"
-    )]
-    pub fn execute_with_entities<Work, WorkFuture>(
-        self,
-        work: Work,
-    ) -> Result<
-        (
-            impl Future<Output = ()>,
-            impl Future<
-                Output = ApplicationOutcome<
-                    WorkOutcome<
-                        Self,
-                        Work,
-                        <WorkFuture as Future>::Output,
-                        (),
-                        (
-                            Root,
-                            Spaces,
-                            Families,
-                            Work,
-                            StagingFailure,
-                            ApplicationScope,
-                        ),
-                        (Actor, Arc<Spaces>, ApplicationScope),
-                    >,
-                    (
-                        RootOrigin<Root>,
-                        ActorRetirement<
-                            Actor,
-                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                            Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
-                        >,
-                    ),
-                    Families::Shutdowns,
-                >,
-            >,
-        ),
-        (Self, Work, TryCurrentError),
-    >
-    where
-        Spaces: ApplicationTopology<Root, Members> + NativeHost,
-        Spaces::Runtime: NativeConstruction,
-        Actor: BehaviorBase
-            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
-            + Send
-            + 'static,
-        Actor::Event: Send + 'static,
-        BehaviorMessage<Actor>: Send + 'static,
-        Actor::Sends: Send + 'static,
-        Actor::Error: Send + 'static,
-        Actor::InterpretationCustody: Send + 'static,
-        Actor::SourceCustody: Send + 'static,
-        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
-                RuntimeChildBindings<
-                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                    Members::Origins,
-                >,
-            > + Send
-            + 'static,
-        ChildBindings<
-            Actor,
-            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-            Members::Origins,
-        >: ChildBindingsIn<Actor, Arc<Spaces>>
-            + RetireChildTasks<
-                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
-            > + Send
-            + 'static,
-        RootInterpreter<
-            Actor,
-            Arc<Spaces>,
-            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
-            Members::Origins,
-        >: CommitActions<
-                Actor,
-                Retired = (
-                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
-                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
-                ),
-            > + Send
-            + 'static,
-        Actor::Settlements: ClassifySettlement + Send,
-        RootOrigin<Root>: Send + 'static,
-        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
-            RetirementSchema + Send + 'static,
-        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
-        Families::Installed: 'static,
-        Work: FnOnce(
-            ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
-        ) -> WorkFuture,
-        WorkFuture: Future,
-    {
-        match self.execute_with_entities_invocation(
-            ApplicationWorkPresence::Supplied((work, invoke)),
-            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
-        ) {
-            Ok((execution, (receiving, received_families))) => Ok((execution, async move {
-                let (work, root_report, root, notifications) = receiving.await;
-                let work = work.into_supplied_with_entities();
-                let families = received_families.await;
-                ApplicationOutcome::new(work, root_report, root, notifications, families)
-            })),
-            Err((application, work, cause)) => {
-                let (work, _invoke) = work.into_supplied();
-                Err((application, work, cause))
-            }
-        }
-    }
-
     // Preserve original Work independently from the concrete invocation callable.
     #[expect(
         clippy::too_many_lines,
@@ -426,17 +304,155 @@ where
         );
         Ok((execution, (receiving, received_families)))
     }
+}
+
+#[allow(
+    private_bounds,
+    reason = "native installation and launch proofs remain private static composition"
+)]
+impl<Root, Spaces, Members, Role, Definition, Tail, Actor, StagingFailure>
+    Application<Root, Spaces, Members, (Role, Definition, DirectoryConfig, EntityCapacity, Tail)>
+where
+    Root: Behavior<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
+    Members: ComposeApplication<Root, Actor = Actor, StagingFailure = StagingFailure>,
+    (Role, Definition, DirectoryConfig, EntityCapacity, Tail): InstallEntityFamilies<Spaces> + Send,
+    Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
+{
+    /// Pair caller-local Entity work with original root and family retirement receiving.
+    /// The application's topology selects the complete descendant schema;
+    /// callers need no retirement type argument.
+    /// The receiving product keeps work/startup phase, root receiving and each family receiving result.
+    /// Its cleanup join remains the actual unit producer outcome beside independently acquired facts.
+    /// A receiving error never infers root absence or completed family shutdown.
+    /// Definitions install before receptionists; the original borrowed setup cause stays native.
+    ///
+    /// # Errors
+    /// Returns untouched application and bare Work with actual missing-host error.
+    ///
+    /// # Panics
+    /// Original borrowed setup or Work causes unwind in the caller; retained receiving remains independent.
+    #[expect(
+        clippy::type_complexity,
+        reason = "retain independent work phase, original root reply and role-indexed shutdown receiving results"
+    )]
+    pub fn execute_with<Work, WorkFuture>(
+        self,
+        work: Work,
+    ) -> Result<
+        (
+            impl Future<Output = ()>,
+            impl Future<
+                Output = ApplicationOutcome<
+                    WorkOutcome<
+                        Self,
+                        Work,
+                        <WorkFuture as Future>::Output,
+                        (),
+                        (
+                            Root,
+                            Spaces,
+                            (Role, Definition, DirectoryConfig, EntityCapacity, Tail),
+                            Work,
+                            StagingFailure,
+                            ApplicationScope,
+                        ),
+                        (Actor, Arc<Spaces>, ApplicationScope),
+                    >,
+                    (
+                        RootOrigin<Root>,
+                        ActorRetirement<
+                            Actor,
+                            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                            Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
+                        >,
+                    ),
+                    <(Role, Definition, DirectoryConfig, EntityCapacity, Tail) as EntityApplicationFamilies<Spaces>>::Shutdowns,
+                >,
+            >,
+        ),
+        (Self, Work, TryCurrentError),
+    >
+    where
+        Spaces: ApplicationTopology<Root, Members> + NativeHost,
+        Spaces::Runtime: NativeConstruction,
+        Actor: BehaviorBase
+            + BehaviorSettlements<Protocol = Root::Protocol, Ph = Never>
+            + Send
+            + 'static,
+        Actor::Event: Send + 'static,
+        BehaviorMessage<Actor>: Send + 'static,
+        Actor::Sends: Send + 'static,
+        Actor::Error: Send + 'static,
+        Actor::InterpretationCustody: Send + 'static,
+        Actor::SourceCustody: Send + 'static,
+        <Actor::Birth as BirthMode>::Child: ChildOccurrenceProduct<
+                RuntimeChildBindings<
+                    <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                    Members::Origins,
+                >,
+            > + Send
+            + 'static,
+        ChildBindings<
+            Actor,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: ChildBindingsIn<Actor, Arc<Spaces>>
+            + RetireChildTasks<
+                Root = <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+                Failures = Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
+            > + Send
+            + 'static,
+        RootInterpreter<
+            Actor,
+            Arc<Spaces>,
+            <Spaces as ApplicationTopology<Root, Members>>::Descendants,
+            Members::Origins,
+        >: CommitActions<
+                Actor,
+                Retired = (
+                    Vec<<Spaces as ApplicationTopology<Root, Members>>::Descendants>,
+                    Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
+                ),
+            > + Send
+            + 'static,
+        Actor::Settlements: ClassifySettlement + Send,
+        RootOrigin<Root>: Send + 'static,
+        <Spaces as ApplicationTopology<Root, Members>>::Descendants:
+            RetirementSchema + Send + 'static,
+        Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
+        <(Role, Definition, DirectoryConfig, EntityCapacity, Tail) as InstallEntityFamilies<Spaces>>::Installed: 'static,
+        Work: FnOnce(
+            ApplicationHandle<Root::Protocol, Actor::Event, <(Role, Definition, DirectoryConfig, EntityCapacity, Tail) as EntityApplicationFamilies<Spaces>>::Receptionists>,
+        ) -> WorkFuture,
+        WorkFuture: Future,
+{
+        match self.execute_with_entities_invocation(
+            ApplicationWorkPresence::Supplied((work, invoke)),
+            None::<fn(&_) -> Ready<Result<Option<Ready<()>>, ()>>>,
+        ) {
+            Ok((execution, (receiving, received_families))) => Ok((execution, async move {
+                let (work, root_report, root, notifications) = receiving.await;
+                let work = work.into_supplied_with_entities();
+                let families = received_families.await;
+                ApplicationOutcome::new(work, root_report, root, notifications, families)
+            })),
+            Err((application, work, cause)) => {
+                let (work, _invoke) = work.into_supplied();
+                Err((application, work, cause))
+            }
+        }
+    }
 
     /// Await caller-local Entity work and the exact independent root/family receiving product.
     /// Descendant custody is selected by the same application topology as ordinary execution.
-    /// Use `execute_with_entities` to retain receiving independently after execution is dropped.
+    /// Use `execute_with` to retain receiving independently after execution is dropped.
     ///
     /// # Errors
     /// Returns original application and Work with the actual entered-host error.
     ///
     /// # Panics
     /// Setup and Work can unwind; original native causes remain caller-owned.
-    pub async fn run_with_entities<Work, WorkFuture>(
+    pub async fn run_with<Work, WorkFuture>(
         self,
         work: Work,
     ) -> Result<
@@ -449,7 +465,7 @@ where
                 (
                     Root,
                     Spaces,
-                    Families,
+                    (Role, Definition, DirectoryConfig, EntityCapacity, Tail),
                     Work,
                     StagingFailure,
                     ApplicationScope,
@@ -464,7 +480,7 @@ where
                     Vec<<Spaces::Descendants as RetirementSchema>::Failure>,
                 >,
             ),
-            Families::Shutdowns,
+            <(Role, Definition, DirectoryConfig, EntityCapacity, Tail) as EntityApplicationFamilies<Spaces>>::Shutdowns,
         >,
         (Self, Work, TryCurrentError),
     >
@@ -516,13 +532,13 @@ where
         <Spaces as ApplicationTopology<Root, Members>>::Descendants:
             RetirementSchema + Send + 'static,
         Vec<<Spaces::Descendants as RetirementSchema>::Failure>: Send + 'static,
-        Families::Installed: 'static,
+        <(Role, Definition, DirectoryConfig, EntityCapacity, Tail) as InstallEntityFamilies<Spaces>>::Installed: 'static,
         Work: FnOnce(
-            ApplicationHandle<Root::Protocol, Actor::Event, Families::Receptionists>,
+            ApplicationHandle<Root::Protocol, Actor::Event, <(Role, Definition, DirectoryConfig, EntityCapacity, Tail) as EntityApplicationFamilies<Spaces>>::Receptionists>,
         ) -> WorkFuture,
         WorkFuture: Future,
-    {
-        let (execution, result) = self.execute_with_entities(work)?;
+{
+        let (execution, result) = self.execute_with(work)?;
         execution.await;
         Ok(result.await)
     }

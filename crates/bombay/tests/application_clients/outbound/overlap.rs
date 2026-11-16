@@ -21,6 +21,7 @@ use proptest::test_runner::{Config, FileFailurePersistence, RngSeed, TestError, 
 use proptest::{collection, sample};
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
+use std::error::Error;
 use std::future::{Future, poll_fn};
 use std::num::NonZeroUsize;
 use std::pin::pin;
@@ -42,8 +43,8 @@ use zenoh::try_init_log_from_env;
 mod protocol;
 use protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef,
-    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits,
-    listener_address, metadata, recorded,
+    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits, metadata,
+    recorded,
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -354,7 +355,7 @@ async fn increments(deliveries: &[Delivery]) {
     let expected_acknowledgements = fresh.iter().copied().chain([23, 23]).collect::<Vec<_>>();
     let expected_value = u64::try_from(expected_effects.len()).unwrap();
     let query_count = expected_requests.len();
-    let address = listener_address();
+    let address = "tls/localhost:0".to_owned();
     let maximum = NonZeroUsize::new(query_count).unwrap();
     let records = &RefCell::new(Vec::<ProtectedMessage>::new());
     let claims = &RefCell::new(Vec::<Metadata>::new());
@@ -397,7 +398,17 @@ async fn increments(deliveries: &[Delivery]) {
     let receiver = Application::new(Counter::new().stop_on_shutdown())
         .open_node(receiver_network)
         .await
-        .unwrap_or_else(|_| panic!("the receiving Counter opens its actual TLS Session"));
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!(
+                "the receiving Counter opens its actual TLS Session: {cause}; native: {:?}",
+                cause.source()
+            )
+        });
+    let addresses = receiver.listen_addresses().await;
+    let [address]: [String; 1] = addresses
+        .try_into()
+        .expect("the receiver owns one actual TLS listener");
+    let address = format!("tls/{address}");
     let receiver_id = receiver.runtime_id();
     let scope = ApplicationScope::new();
     let requests = scope.external::<CounterRequests>().unwrap();
@@ -411,7 +422,12 @@ async fn increments(deliveries: &[Delivery]) {
             network
         })
         .await
-        .unwrap_or_else(|_| panic!("the caller opens a distinct actual TLS Session"));
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!(
+                "the caller opens a distinct actual TLS Session: {cause}; native: {:?}",
+                cause.source()
+            )
+        });
     let caller_id = caller.runtime_id();
     let current = |receipt: &recorded::Receipt<Operation>, runtime: &str, target: MailAddr| {
         let actual = recorded::projection(receipt);

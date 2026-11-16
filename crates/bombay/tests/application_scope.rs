@@ -249,36 +249,34 @@ fn run_cold_account_family<Spaces, Descendants>(
         .build()
         .expect("the synchronous example owns one enabled application host");
     let (outcome, _root_report, root_receiving, notifications, shutdowns) = application_host
-        .block_on(
-            application.run_with_entities(move |application| async move {
-                let accounts = application.entities(AccountsRole);
-                let account = accounts.entity(ACCOUNT_ID);
-                let caller = application
-                    .sender_to(account.clone())
-                    .unwrap_or_else(|original| {
-                        drop(original);
-                        panic!("the external caller is established");
-                    });
+        .block_on(application.run_with(move |application| async move {
+            let accounts = application.entities(AccountsRole);
+            let account = accounts.entity(ACCOUNT_ID);
+            let caller = application
+                .sender_to(account.clone())
+                .unwrap_or_else(|original| {
+                    drop(original);
+                    panic!("the external caller is established");
+                });
 
-                caller
-                    .send(AccountCommand::Deposit(40))
-                    .await
-                    .expect("the first incarnation accepts its command");
-                let passivation = application.passivate_entity(AccountsRole, &ACCOUNT_ID);
-                assert_eq!(passivation, Passivation::Begun);
-                Arc::clone(&retired)
-                    .acquire_owned()
-                    .await
-                    .expect("the first incarnation retires")
-                    .forget();
-                caller
-                    .send(AccountCommand::Deposit(2))
-                    .await
-                    .expect("the same stable reference activates a replacement");
-                let shutdown = application.shutdown();
-                assert_eq!(shutdown, Ok(()));
-            }),
-        )
+            caller
+                .send(AccountCommand::Deposit(40))
+                .await
+                .expect("the first incarnation accepts its command");
+            let passivation = application.passivate_entity(AccountsRole, &ACCOUNT_ID);
+            assert_eq!(passivation, Passivation::Begun);
+            Arc::clone(&retired)
+                .acquire_owned()
+                .await
+                .expect("the first incarnation retires")
+                .forget();
+            caller
+                .send(AccountCommand::Deposit(2))
+                .await
+                .expect("the same stable reference activates a replacement");
+            let shutdown = application.shutdown();
+            assert_eq!(shutdown, Ok(()));
+        }))
         .unwrap_or_else(|(application, work, error)| {
             drop((application, work));
             panic!("the explicit application host must be entered: {error}");
@@ -616,23 +614,21 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .build()
         .expect("actual caller host");
     let (outcome, _root_report, root, notifications, (family, ())) = host
-        .block_on(
-            application.run_with_entities(move |application| async move {
-                calls.fetch_add(1, Ordering::SeqCst);
-                let requested = application.shutdown();
-                assert_eq!(requested, Ok(()));
-                early
-                    .send(&early.recipient(), payload)
-                    .await
-                    .expect("same early endpoint accepts original work after retry");
-                let retained = early
-                    .receive()
-                    .await
-                    .expect("early receiving survives staging rejection");
-                assert_eq!(retained.from, early_address);
-                retained.message
-            }),
-        )
+        .block_on(application.run_with(move |application| async move {
+            calls.fetch_add(1, Ordering::SeqCst);
+            let requested = application.shutdown();
+            assert_eq!(requested, Ok(()));
+            early
+                .send(&early.recipient(), payload)
+                .await
+                .expect("same early endpoint accepts original work after retry");
+            let retained = early
+                .receive()
+                .await
+                .expect("early receiving survives staging rejection");
+            assert_eq!(retained.from, early_address);
+            retained.message
+        }))
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("entered host owns original application execution")
@@ -673,7 +669,7 @@ fn combined_staging_rejection_returns_original_family_and_work() {
         .child(ColdAccount::Declared, actor)
         .entity_family(role, definition, directory, capacity);
     let (outcome, _root_report, root, notifications, (family, ())) = host
-        .block_on(application.run_with_entities(work))
+        .block_on(application.run_with(work))
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("same original work runs after deliberate role replacement")
@@ -757,7 +753,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
         .expect("actual caller host");
     let entered = host.enter();
     let (execution, receiving) = application
-        .execute_with_entities(move |application| async move {
+        .execute_with(move |application| async move {
             let requested = application.shutdown();
             assert_eq!(requested, Ok(()));
             payload
@@ -783,7 +779,7 @@ fn unstarted_combined_execution_returns_original_application_and_work() {
         panic!("complete original cold declaration survives cancellation")
     };
     let (outcome, _root_report, root, notifications, (family, ())) = host
-        .block_on(application.run_with_entities(work))
+        .block_on(application.run_with(work))
         .unwrap_or_else(|rejected| {
             drop(rejected);
             panic!("same complete original application reruns")
@@ -897,7 +893,7 @@ fn root_refusal_keeps_original_cold_actor_and_family_shutdown() {
         .build()
         .expect("actual caller-owned host");
     let (outcome, _root_report, root, notifications, (family, ())) = host
-        .block_on(application.run_with_entities(move |_| async move {
+        .block_on(application.run_with(move |_| async move {
             drop((original_work, work_token));
             panic!("the original refused root never invokes work")
         }))
