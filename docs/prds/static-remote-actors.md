@@ -2,7 +2,8 @@
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
-**State: active; frozen-source native qualification passed; combined DevX source qualification pending.** This stage starts from main
+**State: active; combined-source qualification remains open, including a known
+shared lint blocker.** This stage starts from main
 `ae2d36cfa1832143438db0bb4ffdd61387844db5`, with the local PR430 delivery
 receipt committed as `b67b7d2a`. It continues the earlier R18 startup cut before
 later tuple rollback, coexisting close failures, resource baselines or reconnect.
@@ -234,7 +235,7 @@ single protected-Counter nested-lock version correction, with final gates still
 running and runtime0.3 not published. Coordinate and warn before any R18 merge
 advances main during that release acceptance.
 
-Current change checkpoint remains production +0/-0/net0, tests +112/-34/net78,
+At that frozen checkpoint, production is +0/-0/net0, tests +112/-34/net78,
 public API +0/-0 types, three tracked changed paths and no untracked project
 files. Native admission closure, one listener's release and the captured Work
 allocation's disposal do not prove original Drop-close Result custody, all-task
@@ -297,8 +298,65 @@ preserving PR430's delivered record and this test's exact07 bytes. The public-AP
 inventory now includes the new listener method as metadata, separate from
 identity and readiness. Cargo/flake locks and all dependency selections remain
 unchanged. This updates only the R18 feature branch; main is not advanced.
-Combined-source runtime qualification is still pending, and the old28-owner
-native result is not transferred to this tree.
+Configured native qualification of this snapshot is recorded below; full-stage
+acceptance remains open. The old28-owner result was not transferred to this tree.
+
+The original `nix flake check --no-update-lock-file -L --max-jobs 2 --cores 2`
+exits0 on frozen commit `284983f5ad060e88e29e9d686ff012d32f76e3ae`,
+tree `87fcfc33d0300daa53c0649ef389e0ed3630184e`. All28 configured
+aarch64-darwin owners pass. Final independent review reconciles the terminal
+checkmarks, exact registered derivers, every isolated build log and both source
+groups; the other three systems were omitted. Optimized workspace tests pass
+1026/0 with six parent-controlled ignored registrations; all three Node binding
+cases and the listener test pass once. Both remote profiles pass555/0/0 each.
+Rust1.96 integration owners pass114/0/1 and4/0/0, with the one ignored registration
+controlled by its passing parent; neither selects the private Node unit tests.
+Coverage passes all four floors, with Observe504/526 in this epoch. The ordinary
+Entity and Counter mains and both profiles of the separate TLS process example
+have their own execution evidence; zero-test example builds are not substituted
+for those runs.
+
+Final configured-source review is `devx-native-owner-review.txt`, SHA256
+`70f4488e0de59c5c07094f68f630a8602eb42452173c7f7b6c3d48842481f267`.
+The original terminal receipt, complete log and source/derivation reconciliation
+are bound by `devx-native-completion.json`. All700 declared full-source files and
+the661 Cargo-source subset are preserved and byte-verified, together with the
+small law artifacts and compressed complete coverage report. These results
+belong to the frozen snapshot, not later record edits or the corrected release
+candidate. They do not close the mandatory lint blocker below, hosted checks,
+delivery, full R18 or AUTH1/NET1.
+
+Qualification found a shared verification blocker. The configured workspace
+Clippy command denies warnings without enabling the two specific AGENTS lints,
+`clippy::debug_assert_with_mut_call` and `clippy::let_underscore_must_use`.
+Both default to allow outside the selected all/pedantic groups. Configured-gate
+passes therefore do not establish those mandatory denials. The owning DevX
+session's actual strict check rejects `let _ = invoke` at
+`crates/bombay/src/application/http.rs:259`. Our entire frozen HTTP source is
+byte-identical to that pre-fix source, SHA256
+`89921a92e7b2872a0e7e20ac971d6214dda6ff362ed7240055c2b5a0036747ca`.
+The prepared same-input supplemental derivation remains unexecuted; it is
+retained as reproduction input and supplies no passing lint evidence.
+
+Correction candidate [PR431](https://github.com/devrandom-labs/bombay/pull/431)
+at `b83b5d89e93bd7e669ce1ae7032e3e441a583c0e` adjusts the internal callback
+destructuring, removes a redundant same-line FAILED match from the child-law
+checker, and enables both required flags in normal flake Clippy. The reported
+child inverse reached its intended native assertion; output formatting caused
+the extra match to reject it. The owning session reports that corrected normal
+Clippy passed both required denials; its complete new-source gates remain open.
+This candidate remains open and unaccepted; runtime0.3 is unpublished.
+Preserve the R18 test's exact07 source and its bounded
+results, then adopt the reviewed merged correction and qualify the combined
+source before stage acceptance. Keep the release main hold and coordinate before
+our main advance. Exact source comparisons, configured-owner outcomes and the
+correction receipt are retained in the stage archive's `progress.json` and
+`devx-native-owner-review.txt`; no corrected-source execution is inferred here.
+
+The complete checkpoint against main6110 remains four tracked paths and no
+untracked project files: production +0/-0/net0, tests +112/-34/net78, public API
++0/-0 types. This update changes only the PRD and status record; Rust sources and
+both locks retain their frozen bytes.
 
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 

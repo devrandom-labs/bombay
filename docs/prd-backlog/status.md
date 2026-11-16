@@ -1,17 +1,21 @@
 # Backlog status and dependencies
 
 R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--prerequisites-and-change-record-2026-11-16)
-passes all28 native Nix gates on frozen07 over ae2d36cf, with independent final
-source/outcome/control review. Optimized workspace cases pass1025/0; six ignored
+passes all28 configured native Nix gates on frozen284983f5 after DevX6110
+integration, with independent final source/outcome/control review. Optimized
+workspace cases pass1026/0; six ignored
 child registrations are exercised by passing parents. All three Node cases pass,
 and five paired source controls retain their actual1f execution plus reviewed07
 equivalence. Production and locks are restored unchanged; exact inputs/evidence
-are preserved. Fresh six-owner and caller reviews found no blocker to merged
-DevX6110, now integrated on the feature branch; affected-path qualification remains
-before this slice's PR/hosted checks and delivery. Remaining example error/cleanup ceremony is
-explicit in the PRD. Coordinate before
-advancing main during release431 acceptance; runtime0.3 is not yet published in
-the received notice. Dependency edges, later R18 cuts/baselines/reconnect and
+are preserved. Fresh six-owner and caller reviews verified the merged DevX6110
+contracts, now integrated on the feature branch. Full-stage acceptance remains
+open: the required lint denials expose the same pre-fix HTTP binding reported by
+DevX. Corrected PR431/b83b5d89 reports its owning Clippy passes both denials, but
+remains open and unaccepted; adopt its reviewed merged source and qualify it
+before this slice's PR/hosted checks and delivery. Remaining
+example error/cleanup ceremony is explicit in the PRD. Coordinate before advancing
+main during release acceptance; runtime0.3 remains unpublished in the received
+notice. Dependency edges, later R18 cuts/baselines/reconnect and
 AUTH1/NET1 remain open.
 
 R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--delivery-2026-11-16)
