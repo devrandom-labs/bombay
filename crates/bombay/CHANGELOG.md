@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.2.0...bombay-rs-v0.3.0) - 2026-11-16
+
+### Added
+
+- *(node)* expose actual bound listener addresses
+
+### Other
+
+- retain startup custody coverage from main
+- *(application)* [**breaking**] unify supplied-work runners
+- Merge pull request #381 from devrandom-labs/release-plz-2026-10-16T02-16-47Z
+
 ## [0.2.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.1.3...bombay-rs-v0.2.0) - 2026-11-15
 
 ### Changed
