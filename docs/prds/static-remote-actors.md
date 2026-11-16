@@ -2,8 +2,9 @@
 
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 
-**State: active; bounded binding slice locally verified and distilled, PR delivery pending.** This is the earliest
-remaining R18 startup cut, based on main `efad360cbb55c6753ac5e861382bda0b593c47bf`
+**State: merged (bounded binding test slice).** [Verified delivery](#pending-node-binding--delivery-2026-11-16)
+records PR430's passing checks, merge and cleanup. This R18 startup cut began
+on main `efad360cbb55c6753ac5e861382bda0b593c47bf`
 (PR428's merged delivery record). Complete R18, AUTH1/NET1, later declaration
 rollback, coexisting close failures, resource baselines and reconnect remain open.
 
@@ -28,10 +29,10 @@ Engine owns the affine Driver boundary; Bombay owns invocation, cancellation,
 joining and the actual Node binding/declaration/withdrawal/close sequence.
 The SDK owns its native Session. Test gates remain outside Behavior folds.
 
-The missing witness is a genuinely pending asynchronous binder through public
-`Node::run_with`, before export declaration and supplied Work. Existing pending
-binder tests use private paired invocation; existing public Node binder tests
-cover ready refusal. Neither supplies this witness. Native open and queryable
+The missing witness at that base was a genuinely pending asynchronous binder
+through public `Node::run_with`, before export declaration and supplied Work.
+Its pending binder tests used private paired invocation; its public Node binder
+tests covered ready refusal. Neither supplied this witness. Native open and queryable
 builders are ready operations in the selected SDK; no artificial pending native
 builder will be introduced.
 
@@ -71,8 +72,8 @@ Counter, Application lifecycle/cleanup, Observe and ordinary futures. Add no
 public accessor, fixture framework, policy, wrapper or runtime abstraction.
 The two current guidance corrections record selected Communication0.1.7 and the
 delivered Native release; historical qualification epochs retain their limits.
-Two test reviews, paired positive/inversion/restoration runs, three scoped audits,
-owning Nix checks and actual PR delivery remain required before accepting this slice.
+Acceptance required two test reviews, paired positive/inversion/restoration runs,
+three scoped audits, owning Nix checks and actual PR delivery.
 
 The two tests are implemented in `invocation/binding.rs`, using the existing
 public Node and Counter. The complete post-cleanup reply trace rejects a second
@@ -119,7 +120,8 @@ the same1024-case workspace cohort and meets all four existing owner floors.
 Rust1.96's selected28 integration targets pass114 cases, with one existing
 parent-owned child registration; its separate remote-surface owner passes four
 cases and the selected compiler fixtures. Neither minimum-compiler gate runs
-the new Node library tests. Hosted Linux verification remains pending.
+the new Node library tests. Hosted Linux verification was still pending at this
+local checkpoint; its completed scope is recorded below.
 
 The complete native log is20,844,773 bytes, SHA256
 `e661cf77c5b6de00229cf6c677e4c68f12bcaa43a5c30654ce3e01806a6e5be6`.
@@ -137,7 +139,65 @@ cache cleanup reclaimed2.09GiB after checking active use; source, exact inputs,
 packages, evidence and shared builds were preserved. Final six-path checkpoint,
 including the new test file: production +0/-0/net0; tests +423/-0/net423;
 public API +0/-0 types; four documentation paths, no dependency or lock changes.
-Hosted checks and PR delivery remain required before this slice is marked merged.
+The hosted qualification and normal PR delivery follow.
+
+### Pending Node binding — delivery (2026-11-16)
+
+[PR430](https://github.com/devrandom-labs/bombay/pull/430) merged as
+`ae2d36cfa1832143438db0bb4ffdd61387844db5` at09:43:43UTC after all eight
+current-head checks and final independent evidence review passed. Reviewed head
+`c87177c755bc7f81b213521c0c4cff5813c2ddac`, actual CI checkout
+`657d99cced04833f217b631e16d1f80f35ba12ab` and the merge have the same tree,
+`3b68b85f6ca638b4bde3507df60f55a671f9ef4b`. The merge's exact parents are
+the recorded base efad360c and reviewed head c87177c7.
+
+[CI43818863296](https://github.com/devrandom-labs/bombay/actions/runs/43818863296)
+qualifies all28 x86_64-linux Bombay owners. The optimized workspace passes1024
+cases, zero failures, with six existing parent-owned child registrations whose
+actual guarded parent executions pass. Remote debug and release each pass553
+cases, zero failures or ignored cases; both new binding tests pass once in each
+current cohort. Debug additionally passes strict remote Clippy and docs.
+Coverage passes1024 cases and all four existing floors. Expected allocation
+children and Driver source-inversion failures retain their controlled scope.
+Rust1.96 retains its selected114-case integration and four-case remote-surface
+qualification; neither gate executes the new Node library tests.
+
+The same job passes the ASan Driver campaign:2048 executions, seed20260928,
+maximum input4096. Its downloaded corpus contains119 files/30,179 measured
+bytes, compatible with the rounded29Kb DONE value. Four Observe campaigns each
+complete1024 executions, seed20261001, maximum input512. Their retained
+counts/bytes match exact DONE values: ops89/1405, future_ops83/1409,
+promotion_ops85/1453 and waker_ops85/1431. Official ZIP digests and integrity,
+result logs and all16 named seeds were independently checked. No current
+retention gap was found; this does not explain or repair PR428's historical gap.
+These are bounded nightly1.98 campaigns. Their artifacts omit full source and
+resolved dependency manifests; they do not establish complete dependency equality
+with the stable1.99 runtime checks. Miri is explicitly skipped for this PR run.
+
+[Deny43818863521](https://github.com/devrandom-labs/bombay/actions/runs/43818863521)
+and both [CodeQL43818863353](https://github.com/devrandom-labs/bombay/actions/runs/43818863353)
+checks pass. CodeQL's successful extraction/upload reports465 files without
+extraction errors and seven with errors, including the new test's select macro;
+complete static macro analysis is not claimed. Source reviews and actual runtime
+execution are separate evidence.
+
+The complete hosted Nix-job log is25,170,776 bytes, SHA256
+`54be8fa793d1892afd3c6c8f341ca52334e299f957ad86b2682dd6947e712c29`.
+Common Git `session-archives/2026-11-16/startup-custody/` retains actual sources,
+locks, controls, restored runs, owner maps, full logs, downloaded artifacts,
+reviews and official CI/merge receipts. The original six-path change measures
++579/-3 overall: production +0/-0/net0; tests +423/-0/net423; public API
++0/-0 types; four documentation paths. Dependencies and locks are unchanged.
+The clean merged worktree, measured14.17MiB, and its local branch are removed
+after ancestry, active-use and configuration checks; the remote branch is also
+absent. The earlier2.09GiB disposable Cargo-cache cleanup retains its own receipt.
+This subsequent delivery-record reconciliation touches only this PRD and backlog
+status: production +0/-0/net0; tests +0/-0/net0; public API +0/-0 types.
+
+This delivers only the retained borrowed wait and complete run-future surrender
+with Node retained. Whole Node-owner drop, complete startup/drop/rollback,
+coexisting close failures, task/resource baselines, reconnect, AUTH1/NET1 and final
+example distillation remain open. R18 remains active.
 
 ## Export resource retirement — prerequisites and change record (2026-11-15)
 

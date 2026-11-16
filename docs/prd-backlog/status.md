@@ -1,18 +1,19 @@
 # Backlog status and dependencies
 
-R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--prerequisites-and-change-record-2026-11-16)
-stage is active on merged PR428/main efad360c. Fresh six-owner verification
-selects Communication0.1.7 with Behavior/Actors0.30 and finds no upgrade blocker.
-Two focused public Node tests pass in debug and optimized builds, distinguishing
-cancellation of a borrowed wait from surrender of the complete run operation.
-Three deliberate defects each fail their intended outcome assertion in both
-profiles; original production source is restored and both restored profiles
-pass both cases. All28 native Nix gates pass, including1024 workspace release
-cases and553 cases in each remote profile; existing parent-owned child
-registrations retain their documented scope. The bounded slice is locally
-distilled; hosted checks and PR delivery remain pending. Complete
-R18's later cuts, resource baselines and reconnect, AUTH1/NET1 and final example
-distillation remain open. Existing dependency edges are unchanged.
+R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--delivery-2026-11-16)
+test slice merged through PR430/ae2d36cf after all28 local Nix gates, all28
+Linux owners, all eight hosted checks and the scoped reviews passed. Reviewed,
+actual CI and merged trees match. The two public Node tests distinguish
+cancellation of a borrowed wait from surrender of the complete run operation
+while retaining Node. Three intended defects fail their outcome assertions in
+both profiles; original production source is restored. Workspace release passes
+1024 cases and remote profiles553 each; existing parent-owned child registrations
+retain their documented scope. Current fuzz artifact counts match their recorded
+outcomes, within the owning record's compiler/source limits. The clean merged
+worktree and branch are removed. Production/API/dependencies are unchanged.
+Whole Node-owner drop and R18's later cuts, resource baselines and reconnect,
+AUTH1/NET1 and final example distillation remain open. Existing dependency edges
+are unchanged; R18 remains active.
 
 R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement-delivery--2026-11-15)
 test slice merged through PR427/274c5e71 after all 28 native Nix gates, all eight
