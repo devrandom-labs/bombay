@@ -1,26 +1,16 @@
 # Backlog status and dependencies
 
-R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement--prerequisites-and-change-record-2026-11-15)
-test slice is distilled from main 43104330 with fresh locked-owner verification. The test-only
-stage couples pending-provider surrender and exact retained custody with release
-of the original query-count allocation, plus a completed-provider control.
-Production/API/dependencies are unchanged. Both focused profiles pass 20 cases;
-both intended leak controls fail at the new allocation assertions, and the
-byte-exact restored pair passes 20 cases each. Three scoped audits and workspace
-Nextest pass. The full native Nix run fails one of 28 checks: an existing
-application-client target test refuses actual Node opening before its target
-assertion, with the underlying cause discarded. The original log is preserved;
-a test-only diagnostic preserves future opening causes. An independent occupied
-socket control proves the released-port setup defect in both profiles; native
-port zero preserves the complete target laws under the same control. Temporary
-controls are removed, and all 59 owning cases pass in both profiles. The original
-failure remains unattributed; the other 27 original checks pass. The renewed
-native run passes all 28 checks, including 1021 optimized workspace cases and
-550 remote cases per profile. The scoped test slice is distilled; hosted CI and
-PR delivery remain pending. Minimum-compiler and allocation-proof limits remain
-in its acceptance record. The unused completed-batch local build cache is removed,
-with 7.4 GiB measured free-space gain and source/evidence preserved.
-The full boundary/drop/task-baseline/reconnect matrix remains open.
+R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement-delivery--2026-11-15)
+test slice merged through PR427/274c5e71 after all 28 native Nix gates, all eight
+hosted checks and three scoped code audits passed. Reviewed, actual CI and
+merged trees match; the clean worktree and local/remote branches are removed.
+The tests couple pending-provider surrender and exact original custody with
+release of the actual query allocation, plus a completed-provider control.
+Production/API/dependencies are unchanged. Paired leak and occupied-port
+controls, minimum-compiler and bounded-fuzz scopes remain in the owning record;
+the original discarded startup refusal remains unattributed. Full R18's
+startup/drop/rollback/task-baseline/reconnect matrix, AUTH1/NET1 and final
+example distillation remain open.
 
 R18's [public withdrawal slice](../prds/static-remote-actors.md#public-export-withdrawal-delivery--2026-11-15)
 merged through PR425/d41c3739 after all eight checks and final independent
@@ -30,7 +20,8 @@ profile and workspace1020 with six parent-owned child registrations. Exact
 minimum-compiler, bounded schedule/fuzz and source scopes remain in the owning
 record, including the unexplained one-file Observe ops retention difference.
 The public capability adds no nominal type. Complete R18/AUTH1/NET1 and example
-distillation remain open. PR381's release hold is separate; neither historical
+distillation remain open. PR381 was independently held at that checkpoint;
+its later merge is recorded in the linked PRD. Neither historical
 watchdog cause is established by these successful runs or Communication0.1.7's
 publication. This delivered tree retains its qualified0.1.6 lock.
 
@@ -745,7 +736,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): owning PRD tracks DX01–DX28. Retirement PR415/d575c614 and permanent root-transport fixtures PR417/402ff67f merged after eight checks each; delivered/tested trees match. PR417 passes all28 local checks/flake, Linux flake and bounded Driver/Observe campaigns. Paired owner evidence merged through Behavior PR121 after14 checks. Archive receipts retain their exact706810b8/46b34034 source limits. Recovery-startup diagnostic PR418/899af54f and listener correction PR419/eb08c152 merged after eight checks and28 local gates each; historical Linux opening causes remain unknown. PR419 also passed both Linux remote profiles and bounded Driver/Observe campaigns. Runner-type inference merged through PR421/2e328cd4 after eight PR checks and separate main CI passed; local28 checks and exact575-file archive consumers retain their recorded source limits. Release381 remains unpublished after its accounts reactivation failure. The private retirement FIFO fix now passes all28 local owners, ordinary flake check,29-path content verification and full-workspace1,013 cases/153 caller fixtures, including the unchanged failed witness. PR424 merged as5070f561 after all eight submitted checks, all28 Linux Nix builds and bounded fuzz campaigns; the delivered tree equals reviewed c104. Exact local source, original ENOSPC attempts and retries remain qualified in the owning PRD. Main5070 CI fails the unchanged generated incoming10-second watchdog (443 other library cases pass). Its actual saved seed is retained at0010; native optimized isolated258/258 and full444 controls pass but do not explain the Linux failure. Incoming await-progress diagnostics remain; the actual cf397 generated Client watchdog failure and seed are retained too. Communication0.1.7 is published with registry/tag/archive proof and actual Bombay acknowledgment. Native adoption selects that compatible API plus patched rustix, with the Client corpus/await observations and final-head gates still under qualification; no native causal cure is claimed. Automatic release merging is temporarily held; restore the retained MERGE request after resolution and final gates. Earlier package/consumer/profile receipts retain their exact source limits. Remaining selected acceptance, broader costs and runtime registry delivery stay open. Main-push CI is separate from passing PR gates. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md): owning PRD tracks DX01–DX28. Retirement PR415/d575c614 and permanent root-transport fixtures PR417/402ff67f merged after eight checks each; delivered/tested trees match. PR417 passes all28 local checks/flake, Linux flake and bounded Driver/Observe campaigns. Paired owner evidence merged through Behavior PR121 after14 checks. Archive receipts retain their exact706810b8/46b34034 source limits. Recovery-startup diagnostic PR418/899af54f and listener correction PR419/eb08c152 merged after eight checks and28 local gates each; historical Linux opening causes remain unknown. PR419 also passed both Linux remote profiles and bounded Driver/Observe campaigns. Runner-type inference merged through PR421/2e328cd4 after eight PR checks and separate main CI passed; local28 checks and exact575-file archive consumers retain their recorded source limits. PR381’s earlier accounts-reactivation publication failure remains historical context. The private retirement FIFO fix now passes all28 local owners, ordinary flake check,29-path content verification and full-workspace1,013 cases/153 caller fixtures, including the unchanged failed witness. PR424 merged as5070f561 after all eight submitted checks, all28 Linux Nix builds and bounded fuzz campaigns; the delivered tree equals reviewed c104. Exact local source, original ENOSPC attempts and retries remain qualified in the owning PRD. Main5070 CI fails the unchanged generated incoming10-second watchdog (443 other library cases pass). Its actual saved seed is retained at0010; native optimized isolated258/258 and full444 controls pass but do not explain the Linux failure. Incoming await-progress diagnostics remain; the actual cf397 generated Client watchdog failure and seed are retained too. Communication0.1.7 is published with registry/tag/archive proof and actual Bombay acknowledgment. At that checkpoint, native adoption selected that compatible API plus patched rustix, with the Client corpus/await observations and final-head gates still under qualification; no native causal cure is claimed. PR381 subsequently merged as 43687efb after eight submitted checks; publication is not verified by this receipt. Earlier package/consumer/profile receipts retain their exact source limits. Remaining selected acceptance, broader costs and runtime registry delivery stay open. Main-push CI is separate from passing PR gates. |
 | NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |
