@@ -589,6 +589,40 @@ unchanged-sibling publication and premature whole-programme completion claims.
 Both reviews are by the author; no independent review is claimed. Final
 release-head checks, package verification and registry delivery remain required.
 
+Release-head `92ec5c54` fails the hosted protected Counter Nix check and both
+native TLS profiles before compilation or transport execution: the isolated
+transport-custody lock still names path runtime0.2.0 while its manifest resolves
+the new workspace runtime0.3.0. Both uploaded native build stderr files and the
+actual Nix log report the same `--locked` refusal. The pinned local
+`cargo metadata --locked` command reproduces exit101 for that exact stale lock.
+These are metadata failures, not failed actor/TLS assertions. Raw logs, both
+artifact archives and the local red command remain `runtime030-*` in the handoff.
+
+Before correction, select only Cargo's supported offline update for that owning
+lock. Require the resulting diff to change exactly the path package's runtime
+version0.2.0 to0.3.0, with every other byte, package, checksum and dependency edge
+preserved. Then repeat locked metadata successfully and run the original
+protected Counter owners and complete final-source gates. Expected release
+scope becomes six paths; production Rust, test sources, expectations, public
+types, protocols and runtime state remain unchanged. Review1 checks the owning
+manifest and exact lock entry; review2 rejects dependency drift, weakened
+`--locked`, a passing metadata probe credited as TLS execution, and historical
+checks credited to the corrected source. Both are author reviews.
+
+The obsolete local28-owner build is intentionally interrupted after this proven
+failure to avoid completing an invalid source gate. Earlier completed package
+checks still qualify92ec only. Existing Nextest/archive callers keep that frozen
+worktree; the correction uses a separate owned temporary worktree, to be removed
+after delivery and verification. No old failure or exact input is discarded.
+
+Cargo updates exactly that one runtime version line; every other lock byte is
+unchanged. The original locked/offline metadata command then exits0 and resolves
+the complete protected package graph with runtime0.3.0. This establishes the
+metadata correction, while actual protected/TLS execution and final-source
+Nix/hosted checks remain required. Total release delta is six metadata/document
+paths, with production Rust/tests/public types still +0/-0. Both author reviews
+retain the original `--locked` gates and all source and diagnostic oracles.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
