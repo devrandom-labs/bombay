@@ -255,8 +255,7 @@ where
                     Ok(actor) => actor,
                     Err((root, failure)) => {
                         let (work, publication) = original_work.into_not_invoked();
-                        let ((router, listener), invoke) = work.into_supplied();
-                        let _ = invoke;
+                        let ((router, listener), _) = work.into_supplied();
                         let inputs = Err((root, spaces, router, failure, listener, scope));
                         return Err(ApplicationWorkPublication {
                             publication: Some((
