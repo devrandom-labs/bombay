@@ -1,5 +1,17 @@
 # Backlog status and dependencies
 
+R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--prerequisites-and-change-record-2026-11-16)
+passes all28 native Nix gates on frozen07 over ae2d36cf, with independent final
+source/outcome/control review. Optimized workspace cases pass1025/0; six ignored
+child registrations are exercised by passing parents. All three Node cases pass,
+and five paired source controls retain their actual1f execution plus reviewed07
+equivalence. Production and locks are restored unchanged; exact inputs/evidence
+are preserved. Merged DevX6110 must now be integrated and the affected path
+qualified before this slice's PR/hosted checks and delivery. Coordinate before
+advancing main during release431 acceptance; runtime0.3 is not yet published in
+the received notice. Dependency edges, later R18 cuts/baselines/reconnect and
+AUTH1/NET1 remain open.
+
 R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--delivery-2026-11-16)
 test slice merged through PR430/ae2d36cf after all28 local Nix gates, all28
 Linux owners, all eight hosted checks and the scoped reviews passed. Reviewed,

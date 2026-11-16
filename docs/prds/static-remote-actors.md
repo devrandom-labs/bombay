@@ -1,5 +1,246 @@
 # Static remote actors and typed admission
 
+## Whole Node-owner drop — prerequisites and change record (2026-11-16)
+
+**State: active; frozen-source native qualification passed; DevX integration pending.** This stage starts from main
+`ae2d36cfa1832143438db0bb4ffdd61387844db5`, with the local PR430 delivery
+receipt committed as `b67b7d2a`. It continues the earlier R18 startup cut before
+later tuple rollback, coexisting close failures, resource baselines or reconnect.
+NET1 remains blocked by AUTH1 and its external protocol/security/resource
+contracts; reciprocal backlog edges are unchanged. This boundary needs no new
+upstream release. The published b1 caller matrix and separate DevX runner work
+retain their own source and execution limits.
+
+Fresh verification reread all 775 lines of selected Behavior instructions at
+`628649da014a527d47f21567a859c5c78494df13` (SHA256
+`aa5c4e70e38e52a1fbae8948ba30ee1c16fe88eddc3ec4fe8bfcf07f494a9207`),
+and inspected all six owners' current APIs, source, relevant tests and docs,
+plus Engine, Node and native SDK close/drop. Cargo.lock remains
+`644c8853d0f45ce226e5171de3701e284d17b0ee938f0d3b7ad309a01befa192`;
+flake.lock remains
+`13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`.
+There are no patch, replacement or path overrides. Selection is
+Behavior/Actors0.30.0 at628649da, BehaviorMacros0.16.0 at55dbac2d,
+Address0.3.0 at9f058dc0, Communication0.1.7 at2d71c2f6, Timers0.2.0 at9369d1f6,
+workspace Engine/Observe and bombay-zenoh1.10.10 atc34eb350 (TLS+unstable,
+without internal). Archive checksums match the lock. Exact API/test paths and
+version relationships are retained in Git's
+`session-archives/2026-11-16/node-retirement/selected-contracts.txt`.
+Behavior owns pure Actions; Actors owns shutdown policy; Address owns leases;
+Communication owns admission/originals; Observe owns completion; Timers owns
+scheduling; Engine owns the affine causal port. Bombay owns actor cancellation,
+joining and Node composition. The SDK owns last-counted-Session automatic close.
+No unverified dependency boundary blocks this bounded test stage.
+
+The missing independent witness is surrender of the complete Node owner while
+its real asynchronous binder is pending. PR430's complete run-future surrender
+retains Node and a counted Session clone, so cannot prove this boundary. The
+Bombay ownership policy is that abandoning the whole owner requests actor
+cancellation and releases its native connection; abandonment cannot manufacture
+returned Work, joined native originals or a retained native close Result.
+Existing native builders are Ready operations; no artificial pending builder
+or test-only production hook is selected.
+
+Reuse the existing complete pending-binding surrender trace for retained and
+surrendered Node ownership, selected by one private closed test sum. Ordinary
+Option owns the retained Node; the surrendered branch moves its actual Node
+inside the pending future. Dropping that future surrenders the real owner.
+Both traces preserve the actual pre-cut Counter reply, unused Work disposal,
+finite post-cut cancellation oracle, original refused commands, exact terminal
+classification and actual independent retirement/cleanup observations. Capture
+an original Work allocation through existing Arc/Weak ownership to distinguish
+its destruction from merely dropping a notification sender.
+
+Observe native admission with an existing Publisher, whose SDK-owned WeakSession
+does not increment the counted Session owner. A before-cut publication must
+succeed. The same publisher after the cut must remain usable with Node retained,
+and return the actual SessionClosedError with the Node surrendered. A competing
+bind to the actual TLS listener must refuse before the cut; afterward it must
+still refuse for retained Node and succeed for surrendered Node. Hold an
+UNPOLLED native close builder only for rescue: sample these automatic-drop
+outcomes first, then resolve that real close action before assertions. Its result
+is separate and cannot recover an earlier Drop error. Weak native handles may
+retain allocation; these observations prove neither total task/heap baselines,
+callback quiescence nor successful original Drop close. No joined Node-close
+receipt is claimed for surrender.
+
+Expected changed paths are this PRD, backlog status and the existing
+`application/node/tests/invocation/binding.rs` (three paths including the local
+delivery receipt). Expected production +0/-0/net0, public API +0/-0 types,
+dependency/lock changes zero; tests reuse the existing body with approximately
+100 additive lines, measured after implementation. No new production abstraction,
+runtime, observer, accessor or SDK feature is selected. The initial checkpoint
+is production +0/-0/net0, tests +0/-0/net0, public API +0/-0 types; the existing
+two-path delivery receipt is documentation +84/-23/net61.
+
+First establish both real positive traces. Proposed finite owning-source
+falsifiers detach a counted native Session during Node construction, retain
+the actual uninvoked Work instead of disposing it, suppress owner cancellation,
+change its actual terminal classification, and make explicit Node close return
+success without closing. Source review identified that resolving weak rescue
+before the retained Node's close would hide the last defect. The retained
+explicit close and subsequent native probe must therefore precede weak rescue;
+all law assertions still follow unconditional rescue cleanup. Every
+accepted inverse must fail its intended independent assertion after rescue
+cleanup in both debug and optimized profiles; compiler/watchdog failure is not
+a kill. Restore exact owning sources and rerun the complete trace. Two test
+reviews, three scoped source audits, pinned-Nix gates, required hosted checks,
+normal PR delivery and owned-cache/worktree cleanup remain mandatory. Full R18,
+AUTH1/NET1 and final example distillation remain open.
+Temporary owning-source controls additionally touch Node, application execution
+and launch; each is applied alone and restored byte-for-byte. Their exact
+candidate sources and patches are retained under the stage archive's `controls/`.
+
+The initial corrected-source positives used Cargo's existing incremental cache
+through the pinned shell (`CARGO_INCREMENTAL=1`, two Cargo jobs and one owned
+temporary target directory). Development/test debug information was disabled
+with the same zero settings used by the existing Nix Cargo checks; debug
+assertions and optimization profiles remained distinct. The first explicit-close
+fault then reached Rust1.99's internal compiler error, `Found unstable fingerprints
+for evaluate_obligation`, before any tests ran. Exit101 is a compiler failure,
+with no inversion credit. The exact original production source is restored;
+raw diagnostics, before-source, fault patch, fingerprints and the failing cache
+are preserved in the stage archive. No new bounds, architecture or expected
+values are introduced to bypass the compiler.
+
+Qualification now returns to the repository's existing nonincremental setting
+(`CARGO_INCREMENTAL=0`), keeping debug information disabled and both profiles.
+Repeat the unchanged corrected-source positives before the five paired faults.
+Authoritative Nix checks keep their normal settings. The initial8ef build had
+debug information and no explicit incremental override; its separate source
+epoch grants no final-source acceptance. Repository configuration is unchanged.
+
+The corrected three-case debug cohort passes with zero failures or ignored
+cases (452 filtered), exit0, on source SHA256
+`1f4742d41363328187a5f8516a2565824153a0a7f78a08ef93c780fe8e67a635`.
+Compilation took2m03s and execution0.03s with the settings above. The optimized
+cohort also passes3/0/0 (452 filtered), exit0, after6m10s compilation and0.01s
+execution. These are incremental-positive receipts; at that checkpoint normal-mode
+repetitions and all five paired semantic faults/restorations remained pending. Exact commands,
+logs and source reviews are retained in the stage's Git archive. The source
+checkpoint is production +0/-0/net0, tests +107/-29/net78, public API +0/-0
+types, three changed paths and no untracked project files. No production defect,
+full gate pass, new PR or delivery is claimed.
+
+Normal nonincremental repetitions also pass all three cases in both profiles,
+zero failures or ignored cases, exit0 (452 filtered). Debug builds in47.84s and
+executes in0.04s; optimized builds in4m00s and executes in0.01s. The explicit-close
+fault then compiles and fails only the retained-Node case's saved native-admission
+assertion at `binding.rs:494`, after cleanup, in both profiles: two passes, one
+intended failure, exit101. The actual observed publication succeeded before weak
+rescue, contradicting the false close success. The other two cases pass.
+Node source is restored exactly to SHA256
+`7e00cd7276a73f0228c9a00534222fd41bb2b6691d74e50b7d3f555db5d4b0e1`.
+At that checkpoint four paired controls and final restored positives remained. The unused initial
+debug-information cache and matching objects are removed after empty whole-target
+open-file checks:31.396GiB measured allocated bytes. The failing corrected
+incremental cache and compiler reproduction inputs remain preserved. Cleanup
+records attribute no concurrent filesystem free-space change to this task.
+
+All five normal-mode controls now reach their intended finite assertions in both
+profiles, after real rescue/cleanup, with zero ignored cases (452 filtered each):
+
+| Owning-source fault | Debug / optimized result | Independent failure |
+| --- | --- | --- |
+| Explicit Node close returns success without closing | 2 pass /1 fail each, exit101 | Saved native publication succeeds before weak rescue; `binding.rs:494` rejects false close success. |
+| Node construction leaks a counted native Session | 2 pass /1 fail each, exit101 | Whole-owner drop leaves native publication usable; `binding.rs:486` rejects the acquired success after rescue. The later socket assertion is not reached in the failed row. |
+| Uninvoked Work is retained in its publication owner's Drop | 1 pass /2 fail each, exit101 | Both captured allocations retain a strong owner: actual held/disposed `(1,1)`, expected `(1,0)`, at436 before the sender assertion. |
+| Owner cancellation Drop disarms instead of requesting | 1 pass /2 fail each, exit101 | Both complete post-cleanup traces retain the two causal replies479/487 at444, after rescue shutdown and final draining. |
+| Actual owner cancellation publishes capability failure | 1 pass /2 fail each, exit101 | Both actual terminal results are `Err(CapabilityFailed)`, contradicting `Err(Cancelled)` at448 after cleanup. |
+
+Every temporary source is restored byte-for-byte: Node7e00cd72,
+application executione611a3f8, launch7d50eb35; termination and both locks remain
+unchanged. `controls/complete.json`, raw paired logs/exit receipts and
+`all-originals-restored-final.json` bind these facts. Final restored-source
+positive runs, strict checks, complete Nix qualification and normal PR delivery
+remain pending; no full R18 acceptance follows from these finite controls.
+
+The separate DevX runner/listener work is draft
+[PR429](https://github.com/devrandom-labs/bombay/pull/429), head406751c3,
+outside current mainae2d36cf. Its active checkout is preserved. Integration
+rechecks main before submission/delivery and adopts newly merged APIs with
+affected qualification; full Remote Actors completion includes the current
+DevX surface, without silently adopting an unverified draft.
+
+Strict remote all-target Clippy reaches three test-only findings after focused
+qualification: two local result names resemble the native publisher, and the
+new extraction closure returns the complete large Node refusal. The correction
+renames only those results and passes existing `Node::into_parts` directly to
+Option mapping. It retains the exact consuming owner/refusal and introduces no
+boxing, bound, wrapper, policy or production change. The source successor needs
+explicit equivalence review, strict-check success and fresh final positive runs;
+the five fault pairs retain their exact1f source epoch rather than being relabeled.
+
+The lint-clean source SHA256 is
+`07aaa149cea7fe3b4b31d413b9b0e3b167340884638ea04b3a3ba56c7a392315`.
+Three scoped source/equivalence audits pass; the original borrowed-wait case's
+body remains byte-identical. Strict remote all-target Clippy exits0 in13.20s;
+fresh pinned formatting exits0. Fresh normal-mode debug and optimized runs each
+pass all three cases, zero failures/ignored (452 filtered), exit0. Debug builds
+in47.25s and executes in0.02s; optimized builds in4m12s and executes in0.01s.
+Earlier1f final-restored runs also pass3/0 in both profiles after all five
+controls. Independent raw-log/exit/source restoration review passes that focused
+epoch; the later lint-only source binding is explicit, with no relabeled fault
+execution. At that checkpoint complete full-flake and hosted qualification remained
+pending; the native result below closes only that frozen source's local gates.
+
+### Native qualification and integration boundary
+
+The original command `nix flake check --no-update-lock-file -L --max-jobs 1 --cores 2`
+exits0. All28 required aarch64-darwin owners pass, with independent final
+command, source, outcome, control-artifact and output/deriver reconciliation.
+The selected1.96 minimum owners were also realized by one bounded supporting
+Nix client using their exact captured derivations; its exit is0. These are the
+same two required owners, with no added gates or repeated-execution credit.
+Exact argv, both full logs, exit receipts and the28-owner map remain in Git's
+`session-archives/2026-11-16/node-retirement/`.
+
+Regular optimized workspace tests pass1025/0, with six ignored registrations
+whose exact child tests are exercised and checked by passing parents. The455
+library cases pass in15.46s, including each of the three Node binding cases
+once. Both remote profiles pass554/0 each (455 library plus99 integration).
+Coverage passes1025/0 with the same parent-owned registration distinction, and
+all four owning coverage floors pass. Benchmark smoke programs and UI child
+fixtures are separate evidence, not extra harness passes or performance claims.
+Selected1.96 integration tests pass114/0 with one parent-owned ignored child;
+the optimized all-features remote-surface target passes4/0. Neither minimum
+command selects these private Node unit tests, so no whole-Node1.96 execution
+is claimed. Other platform systems and this slice's hosted CI remain unqualified.
+
+Final independent native review is `native-owner-review.txt`, SHA256
+`d5f61045fa80dcb98ff07b6f78b510ea39ddfebb9944ef08452dd8dc35ac7c63`.
+Its verdict has no veto within frozen source
+`/nix/store/va6cx7p4ij8g37jgfwg785mmxsq0dlyx-source`, test07 above, HEADb67b7d2a
+over baseae2d36cf. All700 included tracked files were reconciled: only this test
+and the two feature records differ from HEAD. Production, manifests and both
+locks remain exact originals. The five paired source controls retain their
+actual1f execution and reviewed07 equivalence; no07 control rerun is invented.
+All700 frozen source files, the small physical Actor/Driver control receipts,
+selected Behavior instructions and diagnostic-only minimum patch are copied
+and byte-verified in the stage archive. `native-preserved-inputs.json` binds
+those copies. No Cargo target archive is copied as evidence. Earlier completed
+standalone-cache cleanup and the preserved compiler-failure cache retain their
+own measured receipts.
+
+This is native acceptance before DevX integration, not current-main delivery.
+[PR429](https://github.com/devrandom-labs/bombay/pull/429) has since merged as
+`6110f8a83edbc2d5a589f73ad50de22235c8014e`, tree
+`956da1ec965bea4ebdf7b956efd23c3ea978d6fd`; GitHub independently confirms all eight
+hosted checks succeeded for that upstream batch. Its canonical Application
+runners and actual bound-listener API must now be inspected and integrated,
+with affected qualification, before this R18 slice is submitted or delivered.
+The separate release431 notice reports final candidatecaaa3c52, including the
+single protected-Counter nested-lock version correction, with final gates still
+running and runtime0.3 not published. Coordinate and warn before any R18 merge
+advances main during that release acceptance.
+
+Current change checkpoint remains production +0/-0/net0, tests +112/-34/net78,
+public API +0/-0 types, three tracked changed paths and no untracked project
+files. Native admission closure, one listener's release and the captured Work
+allocation's disposal do not prove original Drop-close Result custody, all-task
+or heap quiescence, later startup rollback, active-declaration surrender,
+coexisting failures or reconnect. Full R18, AUTH1/NET1 and delivery remain open.
+
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 
 **State: merged (bounded binding test slice).** [Verified delivery](#pending-node-binding--delivery-2026-11-16)
