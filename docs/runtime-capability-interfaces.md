@@ -284,7 +284,7 @@ verification snapshots retain their exact revisions and do not prove new signatu
 | Behavior | lockfile-selected crates.io `bombay-behavior` and `bombay-behavior-macros` | pure `Behavior -> Actions` algebra, named interpreter requests, total typed settlement products, exact source custody, explicit generated creation-settlement policy, static `DispatchBirth`/`InstallBirth`, and stable protocol/birth/event composition |
 | Behavior Actors | lockfile-selected crates.io `bombay-behavior-actors` | reusable actor templates and their topology, supervision, shutdown, timing, terminal-disposition, routing, discovery, persistence, workflow, and operations policies over the same foundational algebra |
 | Address | crates.io `bombay-address 0.3.0`, checksum `8dfc2197b4156cc87c4021a2fa0e8767a5efb009c98d4238c4147714840fc1dc` | exclusive non-resolvable reservation, exact publication lease and retirement, opaque resolution |
-| Communication | crates.io checksum `e5d5a581c47408d64234b7e89a229b63a333584cfe5c10b6fe656daa2c1e4853`, package `bombay-communication 0.1.6`, archive revision `963067e0e6bdef15549088966cde354fd820be7e` | two-lane mailbox, delivery, backpressure, affine user-admission retirement, capacity observation and exact original custody through notification failure |
+| Communication | crates.io checksum `e876b25eaaf115a651212666690e6a284da635d3169d09c414a4fa70d84bdc7d`, package `bombay-communication 0.1.7`, archive revision `2d71c2f6d9c8c8c5b48fd8cc8b73ca262b800157` | two-lane mailbox, delivery, backpressure, affine user-admission retirement, capacity observation and exact original custody through notification failure |
 | Observe | Bombay-private import of semantic commit `b3b5f36a3b514713012086dfc72f5327d15fe2b2` plus exact Loom-bound fix `ef2ea13e65889aa3bf713822041e032020e98d73` from `feat/affine-observation` | keyed exact-generation facts plus shared and affine unkeyed publication pairs; no separately published actor API |
 | Timers | crates.io `bombay-timers 0.2.0`, archive revision `9369d1f6c7fcda91e7de5bf3c19e6769f92145bd` | single-owner generation-safe timer queue; checked scheduling retains complete exhaustion inputs |
 
@@ -524,7 +524,7 @@ already accepted messages and returning exact rejected payloads. Both the
 original failure and released correction are verified through actual ActorRef
 in debug and optimized builds; see
 [EXEC's delivery record (historical)](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#20-communication-correction-checkpoint-2026-10-02).
-The selected Communication0.1.6 retains that correction and the original
+The selected Communication0.1.7 retains that correction and the original
 pre-mapping rejected-item custody. The earlier correction's [release record](prds/static-remote-actors.md#owning-closure-correction-delivery-and-registry-selection)
 preserves source, CI and registry evidence. That prerequisite correction does not accept the remaining EXEC laws.
 

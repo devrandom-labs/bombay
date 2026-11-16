@@ -358,3 +358,5 @@ fn absent_work_still_drives_move_only_ledger_append() {
 mod rejection;
 
 mod startup;
+
+mod binding;
