@@ -2,8 +2,8 @@
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
-**State: active; combined-source qualification remains open, including a known
-shared lint blocker.** This stage starts from main
+**State: active; the shared lint correction is merged and combined-source
+qualification remains open.** This stage starts from main
 `ae2d36cfa1832143438db0bb4ffdd61387844db5`, with the local PR430 delivery
 receipt committed as `b67b7d2a`. It continues the earlier R18 startup cut before
 later tuple rollback, coexisting close failures, resource baselines or reconnect.
@@ -338,14 +338,15 @@ byte-identical to that pre-fix source, SHA256
 The prepared same-input supplemental derivation remains unexecuted; it is
 retained as reproduction input and supplies no passing lint evidence.
 
-Correction candidate [PR431](https://github.com/devrandom-labs/bombay/pull/431)
+At the configured-source checkpoint, correction candidate
+[PR431](https://github.com/devrandom-labs/bombay/pull/431)
 at `b83b5d89e93bd7e669ce1ae7032e3e441a583c0e` adjusts the internal callback
 destructuring, removes a redundant same-line FAILED match from the child-law
 checker, and enables both required flags in normal flake Clippy. The reported
 child inverse reached its intended native assertion; output formatting caused
 the extra match to reject it. The owning session reports that corrected normal
 Clippy passed both required denials; its complete new-source gates remain open.
-This candidate remains open and unaccepted; runtime0.3 is unpublished.
+The candidate was then open and unaccepted; no runtime0.3 publication was verified.
 Preserve the R18 test's exact07 source and its bounded
 results, then adopt the reviewed merged correction and qualify the combined
 source before stage acceptance. Keep the release main hold and coordinate before
@@ -357,6 +358,45 @@ The complete checkpoint against main6110 remains four tracked paths and no
 untracked project files: production +0/-0/net0, tests +112/-34/net78, public API
 +0/-0 types. This update changes only the PRD and status record; Rust sources and
 both locks retain their frozen bytes.
+
+### Corrected release integration prerequisites
+
+PR431 merged normally as `9d34155cd787db45467b850ddac27b61408323ee`
+at2026-11-16T20:13:54Z. Fresh GitHub REST and fetched Git objects verify the
+merge, all eight successful accepted-head checks and exact accepted
+tree `091c38367cc7cb57abfe1137924cf788baf35e7c`, identical to b83b5d89.
+This is source delivery, not verified runtime0.3 registry publication. The
+owner reports all28 local gates, Linux/fuzz and both compiler caller matrices;
+those reports are not qualification of this branch's combined source.
+
+Fresh prerequisite inspection rereads the complete selected Behavior
+instructions and all six owners' current API/rustdoc and relevant tests.
+Behavior/Actors0.30, BehaviorMacros0.16, Address0.3, Communication0.1.7,
+Timers0.2, Engine0.3, BombayMacros0.2 and the native SDK retain their prior
+selected revisions and ownership. Incoming lock changes only the workspace
+bombay-rs version0.2 to0.3 in both existing locks; external dependency versions,
+checksums, features and flake.lock are unchanged. No override or new dependency
+edge is introduced. The five retirement owners and binding source07 remain
+byte-identical. No prerequisite blocks feature-branch integration.
+
+The incoming nine paths contain only Rust+1/-2/net-1: HTTP destructures away
+an internal callback with no captured caller values. Original router/listener
+custody and rejection products remain intact. The checker removes only its
+redundant same-line FAILED match; its exact failing-test summary, native
+assertion, exit101, compiler-failure and double-poll checks remain. Normal
+workspace Clippy now enables both required denials. No R18 production edit,
+new public type or test expectation change is selected. The previously clean
+merge preview supplies no execution credit.
+
+Integrate this reviewed main into the preserved feature branch, then qualify
+the actual combined source with the normal pinned-Nix gates, including both
+mandatory lint flags. Retain the prior configured-source evidence separately;
+do not transfer its passing outcomes to the new derivations. The own stage
+continues to touch four paths, with production+0/-0/net0, tests+112/-34/net78
+and public API+0/-0 types. Hosted verification, minimization and normal R18 PR
+delivery remain open. This integration does not advance main; coordinate
+before any later main merge while release acceptance continues. Later R18
+cuts/baselines/reconnect and AUTH1/NET1 remain in their established order.
 
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 

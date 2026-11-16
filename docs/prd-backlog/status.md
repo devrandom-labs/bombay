@@ -10,12 +10,13 @@ equivalence. Production and locks are restored unchanged; exact inputs/evidence
 are preserved. Fresh six-owner and caller reviews verified the merged DevX6110
 contracts, now integrated on the feature branch. Full-stage acceptance remains
 open: the required lint denials expose the same pre-fix HTTP binding reported by
-DevX. Corrected PR431/b83b5d89 reports its owning Clippy passes both denials, but
-remains open and unaccepted; adopt its reviewed merged source and qualify it
-before this slice's PR/hosted checks and delivery. Remaining
+DevX. Corrected PR431 merged as9d34155c with exact accepted tree091c3836 and
+all eight hosted checks passing. The merged correction enables both mandatory
+Clippy denials. Integrate that reviewed source and qualify this branch's
+combined source before this slice's PR/hosted checks and delivery. Remaining
 example error/cleanup ceremony is explicit in the PRD. Coordinate before advancing
-main during release acceptance; runtime0.3 remains unpublished in the received
-notice. Dependency edges, later R18 cuts/baselines/reconnect and
+main during release acceptance; runtime0.3 publication remains unverified in
+the received notice. Dependency edges, later R18 cuts/baselines/reconnect and
 AUTH1/NET1 remain open.
 
 R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--delivery-2026-11-16)
