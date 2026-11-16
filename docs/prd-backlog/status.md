@@ -1,26 +1,16 @@
 # Backlog status and dependencies
 
-R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement--prerequisites-and-change-record-2026-11-15)
-test slice is distilled from main 43104330 with fresh locked-owner verification. The test-only
-stage couples pending-provider surrender and exact retained custody with release
-of the original query-count allocation, plus a completed-provider control.
-Production/API/dependencies are unchanged. Both focused profiles pass 20 cases;
-both intended leak controls fail at the new allocation assertions, and the
-byte-exact restored pair passes 20 cases each. Three scoped audits and workspace
-Nextest pass. The full native Nix run fails one of 28 checks: an existing
-application-client target test refuses actual Node opening before its target
-assertion, with the underlying cause discarded. The original log is preserved;
-a test-only diagnostic preserves future opening causes. An independent occupied
-socket control proves the released-port setup defect in both profiles; native
-port zero preserves the complete target laws under the same control. Temporary
-controls are removed, and all 59 owning cases pass in both profiles. The original
-failure remains unattributed; the other 27 original checks pass. The renewed
-native run passes all 28 checks, including 1021 optimized workspace cases and
-550 remote cases per profile. The scoped test slice is distilled; hosted CI and
-PR delivery remain pending. Minimum-compiler and allocation-proof limits remain
-in its acceptance record. The unused completed-batch local build cache is removed,
-with 7.4 GiB measured free-space gain and source/evidence preserved.
-The full boundary/drop/task-baseline/reconnect matrix remains open.
+R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement-delivery--2026-11-15)
+test slice merged through PR427/274c5e71 after all 28 native Nix gates, all eight
+hosted checks and three scoped code audits passed. Reviewed, actual CI and
+merged trees match; the clean worktree and local/remote branches are removed.
+The tests couple pending-provider surrender and exact original custody with
+release of the actual query allocation, plus a completed-provider control.
+Production/API/dependencies are unchanged. Paired leak and occupied-port
+controls, minimum-compiler and bounded-fuzz scopes remain in the owning record;
+the original discarded startup refusal remains unattributed. Full R18's
+startup/drop/rollback/task-baseline/reconnect matrix, AUTH1/NET1 and final
+example distillation remain open.
 
 R18's [public withdrawal slice](../prds/static-remote-actors.md#public-export-withdrawal-delivery--2026-11-15)
 merged through PR425/d41c3739 after all eight checks and final independent
@@ -30,7 +20,8 @@ profile and workspace1020 with six parent-owned child registrations. Exact
 minimum-compiler, bounded schedule/fuzz and source scopes remain in the owning
 record, including the unexplained one-file Observe ops retention difference.
 The public capability adds no nominal type. Complete R18/AUTH1/NET1 and example
-distillation remain open. PR381's release hold is separate; neither historical
+distillation remain open. PR381 was independently held at that checkpoint;
+its later merge is recorded in the linked PRD. Neither historical
 watchdog cause is established by these successful runs or Communication0.1.7's
 publication. This delivered tree retains its qualified0.1.6 lock.
 

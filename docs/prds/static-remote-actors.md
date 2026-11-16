@@ -2,14 +2,17 @@
 
 ## Export resource retirement — prerequisites and change record (2026-11-15)
 
-**State: distilled (resource test slice); PR delivery pending.** This test-only R18 stage starts from main
+**State: merged (resource test slice).** [Verified delivery](#export-resource-retirement-delivery--2026-11-15)
+records the passing checks, merge and cleanup. The preparation and local
+qualification records below retain their original source epochs. This test-only
+R18 stage started from main
 `43104330146d960c461e80488ed71a8dcedfd8ed`, after PR425's public capability and
 PR426's delivery record merged with all eight checks passing. The accepted
 requirement remains the complete R18 startup/drop/retirement/resource/reconnect
 matrix; this stage supplies two concrete resource observations without replacing
-the remaining matrix. No upstream upgrade or production change is selected.
+the remaining matrix. That slice selected no upstream upgrade or production change.
 
-Fresh selected-contract inspection confirms Cargo.lock SHA256
+At that source epoch, selected-contract inspection confirmed Cargo.lock SHA256
 `9bb2db13348df5df86703c3d67abc8a8c580e9dee2f0533bc80e11d358c6d394`
 and flake.lock
 `13ea961730a74f4bc222ac4a7d879e1b5cd64e4fc820949211e01f8e3df10dc1`,
@@ -30,8 +33,8 @@ affine withdrawal request and retained result. Timers and Engine acquire no new
 role. Export owns the original native callback, query permits, provider futures
 and Request custody; Application owns real actor execution/retirement; Session
 owns native close. No dependency contract blocks this finite owner-level test.
-PR381's release hold and both unresolved historical watchdog causes remain
-separate. Published Communication 0.1.7 is not adopted or credited here.
+PR381's then-current release hold and both unresolved historical watchdog causes
+were separate. That slice did not adopt or credit published Communication 0.1.7.
 
 The missing conjunction is actual pending protection surrender, preserved
 completed actor work and exact original request values, followed by release of
@@ -61,8 +64,8 @@ at its owning `discard_query` release (`drop(permit)` to
 `mem::forget(permit)`), while leaving native Query disposal and all expected
 custody/effect outcomes intact. Both new allocation observations must reject
 that defect in debug and optimized builds. Restore production bytes exactly
-before retaining positive runs. This is a proposed falsifier, not executed
-evidence or a claim that the baseline leaks.
+before retaining positive runs. At planning time this was a proposed falsifier,
+not executed evidence or a claim that the baseline leaks.
 
 Expected files: existing export comparison.rs and withdrawal.rs, this PRD,
 and the backlog status (four paths). Expected production +0/-0/net0; public
@@ -200,8 +203,9 @@ through passing parent tests. Both new resource observations and both corrected
 target-refusal cases explicitly pass. The Driver benchmark smoke also succeeds.
 The separate workspace Nextest run passes 1021 cases with the same six child
 registrations. Remote debug and optimized gates each pass 550 cases, zero ignored.
-All four owner coverage floors pass. These are native results; hosted Linux CI
-and merge are still required.
+All four owner coverage floors pass. These are native results at `07667d16`;
+final-head native verification, hosted Linux CI and merge are recorded in the
+delivery section below.
 
 Rust 1.96 runs 114 cases across 28 selected integration targets, with one
 parent-owned child registration, and four remote-surface cases with zero ignored.
@@ -228,7 +232,71 @@ Final checkpoint: five changed paths, no untracked project files; production
 remain those recorded above. The completed local test batch's unused build cache
 was checked for open files and active users, then removed: 7.8 GiB occupied,
 7.4 GiB measured net free-space gain during concurrent builds. Exact inputs and
-evidence remain; the unfinished delivery worktree is retained.
+evidence remain. At this local checkpoint the delivery worktree was retained;
+its later removal is recorded below.
+
+### Export resource retirement delivery — 2026-11-15
+
+[PR427](https://github.com/devrandom-labs/bombay/pull/427) merged as
+[`274c5e71`](https://github.com/devrandom-labs/bombay/commit/274c5e7179c396921d892998c9144e9ddefceca2)
+at 21:58:05 UTC after all eight hosted checks and the three scoped code audits
+passed. The hosted evidence is [CI43752695776](https://github.com/devrandom-labs/bombay/actions/runs/43752695776),
+[CodeQL43752695725](https://github.com/devrandom-labs/bombay/actions/runs/43752695725)
+and [Deny43752695753](https://github.com/devrandom-labs/bombay/actions/runs/43752695753).
+Reviewed head `93289ce8`, actual CI checkout `88ed420d` and the merge share tree
+`a3426b2c4ce7c74e8cc784f54acb989097de42e8`.
+
+The final-head pinned native Nix command above finishes with exit 0; actual
+logs for all 28 checks are reviewed and retained. Linux also executes all 28
+Nix checks. Native and Linux workspace gates each pass 1021 cases, with six
+child entry points exercised through their passing parents. Both remote
+profiles on each platform pass 550 cases, zero ignored; both new allocation
+observations and both corrected target cases explicitly pass. The four owner
+coverage floors and Driver benchmark smoke pass. Later absence of two native
+output cache paths does not replace their already archived passing logs.
+
+Rust 1.96 passes 114 cases across 28 selected integration targets, with one
+parent-owned child registration, and four remote-surface cases. These selected
+gates do not execute the new remote resource tests. Linux ASAN fuzzing completes
+2048 Driver executions and four Observe campaigns of 1024 executions each;
+downloaded artifact checksums and all four Observe corpus counts/byte totals
+match the actual retained results. The Observe fuzzer resolves its standalone
+compatible dependencies; this is bounded execution evidence, not production-lock
+qualification. Miri is skipped on PRs by the existing workflow.
+
+The clean merged worktree, local branch and remote branch are removed after
+checking users and consumer references; about 14 MiB of worktree allocation is
+removed. The merged source and tracked lock files remain in Git; controls and
+raw evidence remain in the task archive. Cleanup removed no release packages.
+Full R18 startup/drop/rollback, close failures, task/resource baselines,
+reconnect, AUTH1/NET1 and final example distillation remain open. Earlier
+unattributed failure causes remain unknown; PR381's release state is independent.
+
+This delivery receipt changes only this PRD and the backlog status: production
++0/-0/net0; tests +0/-0/net0; public types +0/-0. No untracked project files
+are retained. PR427's accepted five-path delta remains recorded above.
+
+### Receipt integration with release main
+
+While this two-document receipt was awaiting CI, [PR381](https://github.com/devrandom-labs/bombay/pull/381)
+merged to main as [`43687efb`](https://github.com/devrandom-labs/bombay/commit/43687efbd0a334e036db8930f4c1b650a04e2319)
+at 22:46:58 UTC on November 15. The receipt integrates that main before delivery.
+This verifies a merge, not registry publication. Main now selects
+Communication 0.1.7 and rustix 1.1.6; Behavior/Actors 0.30.0, Macros 0.16.0,
+Address 0.3.0, Timers 0.2.0 and the SDK versions remain unchanged. Cargo.lock
+SHA256 is `644c8853d0f45ce226e5171de3701e284d17b0ee938f0d3b7ad309a01befa192`;
+flake.lock is unchanged. The SDK's `unstable` feature is now enabled by main.
+
+The imported runtime-source changes are test-owned diagnostics and listener
+qualification; they introduce no new ordinary caller API. The receipt itself
+still changes only two documents, with production, tests and public types all
+unchanged against the integrated main. Earlier native and hosted results retain
+their recorded source and lock epochs; they do not qualify this new combination.
+Fresh hosted checks and renewed scoped receipt reviews are required before its
+merge. Communication adoption and successful controls do not establish either
+historical watchdog cause. Full R18, production admission, transport privacy and
+the final ordinary-caller/example audit remain open; the next feature stage
+requires fresh inspection of all selected owners.
 
 ## Public export withdrawal — prerequisites (2026-11-14)
 
@@ -238,8 +306,8 @@ the final evidence reviews passed. Reviewed, actual CI and delivered trees
 match. The clean merged worktree and branch are removed. Earlier private
 isolation and prerequisite records retain their exact source epochs below.
 Complete R18, AUTH1/NET1 and final example distillation remain open. Both
-historical Linux watchdog causes remain unknown; PR381's independent release
-hold is preserved.
+historical Linux watchdog causes remain unknown. PR381 was independently held
+at that delivery checkpoint; its later merge is recorded in the integration above.
 
 Fresh archive checksums and packaged VCS metadata verify Behavior/Actors0.30.0
 at `628649da`, Macros0.16.0, Address0.3.0, Communication0.1.6, Timers0.2.0 and
