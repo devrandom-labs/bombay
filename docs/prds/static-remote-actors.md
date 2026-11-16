@@ -2,8 +2,9 @@
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
-**State: active; the shared lint correction is merged and combined-source
-qualification remains open.** This stage starts from main
+**State: distilled (bounded whole Node-owner test slice); reviewed PR delivery
+remains open.** Full R18 remains active.
+This stage starts from main
 `ae2d36cfa1832143438db0bb4ffdd61387844db5`, with the local PR430 delivery
 receipt committed as `b67b7d2a`. It continues the earlier R18 startup cut before
 later tuple rollback, coexisting close failures, resource baselines or reconnect.
@@ -39,8 +40,8 @@ retains Node and a counted Session clone, so cannot prove this boundary. The
 Bombay ownership policy is that abandoning the whole owner requests actor
 cancellation and releases its native connection; abandonment cannot manufacture
 returned Work, joined native originals or a retained native close Result.
-Existing native builders are Ready operations; no artificial pending builder
-or test-only production hook is selected.
+Native open and queryable builders are Ready operations; no artificial pending
+builder or test-only production hook is selected.
 
 Reuse the existing complete pending-binding surrender trace for retained and
 surrendered Node ownership, selected by one private closed test sum. Ordinary
@@ -154,14 +155,13 @@ application executione611a3f8, launch7d50eb35; termination and both locks remain
 unchanged. `controls/complete.json`, raw paired logs/exit receipts and
 `all-originals-restored-final.json` bind these facts. Final restored-source
 positive runs, strict checks, complete Nix qualification and normal PR delivery
-remain pending; no full R18 acceptance follows from these finite controls.
+were pending at that checkpoint; no full R18 acceptance follows from these controls.
 
-The separate DevX runner/listener work is draft
+At that checkpoint, the separate DevX runner/listener work was draft
 [PR429](https://github.com/devrandom-labs/bombay/pull/429), head406751c3,
-outside current mainae2d36cf. Its active checkout is preserved. Integration
-rechecks main before submission/delivery and adopts newly merged APIs with
-affected qualification; full Remote Actors completion includes the current
-DevX surface, without silently adopting an unverified draft.
+outside mainae2d36cf. Its active checkout was preserved. The later integration
+records below inspect the reviewed merge and qualify the affected surface;
+the draft supplied no integration acceptance.
 
 Strict remote all-target Clippy reaches three test-only findings after focused
 qualification: two local result names resemble the native publisher, and the
@@ -227,13 +227,13 @@ This is native acceptance before DevX integration, not current-main delivery.
 [PR429](https://github.com/devrandom-labs/bombay/pull/429) has since merged as
 `6110f8a83edbc2d5a589f73ad50de22235c8014e`, tree
 `956da1ec965bea4ebdf7b956efd23c3ea978d6fd`; GitHub independently confirms all eight
-hosted checks succeeded for that upstream batch. Its canonical Application
-runners and actual bound-listener API must now be inspected and integrated,
-with affected qualification, before this R18 slice is submitted or delivered.
-The separate release431 notice reports final candidatecaaa3c52, including the
-single protected-Counter nested-lock version correction, with final gates still
-running and runtime0.3 not published. Coordinate and warn before any R18 merge
-advances main during that release acceptance.
+hosted checks succeeded for that upstream batch. At this pre-integration
+checkpoint, its canonical Application runners and actual bound-listener API
+still needed inspection, integration and affected qualification before R18
+submission. The release431 notice then reported candidatecaaa3c52 and the
+protected-Counter nested-lock correction, with gates running and publication
+unverified. Later corrected acceptance and publication are recorded below;
+coordinate before a main advance.
 
 At that frozen checkpoint, production is +0/-0/net0, tests +112/-34/net78,
 public API +0/-0 types, three tracked changed paths and no untracked project
@@ -323,8 +323,8 @@ are bound by `devx-native-completion.json`. All700 declared full-source files an
 the661 Cargo-source subset are preserved and byte-verified, together with the
 small law artifacts and compressed complete coverage report. These results
 belong to the frozen snapshot, not later record edits or the corrected release
-candidate. They do not close the mandatory lint blocker below, hosted checks,
-delivery, full R18 or AUTH1/NET1.
+candidate. At that checkpoint, they did not close the mandatory lint blocker
+below, hosted checks, delivery, full R18 or AUTH1/NET1.
 
 Qualification found a shared verification blocker. The configured workspace
 Clippy command denies warnings without enabling the two specific AGENTS lints,
@@ -344,13 +344,13 @@ at `b83b5d89e93bd7e669ce1ae7032e3e441a583c0e` adjusts the internal callback
 destructuring, removes a redundant same-line FAILED match from the child-law
 checker, and enables both required flags in normal flake Clippy. The reported
 child inverse reached its intended native assertion; output formatting caused
-the extra match to reject it. The owning session reports that corrected normal
-Clippy passed both required denials; its complete new-source gates remain open.
+the extra match to reject it. The owning session then reported that corrected
+normal Clippy passed both required denials; its complete new-source gates were open.
 The candidate was then open and unaccepted; no runtime0.3 publication was verified.
-Preserve the R18 test's exact07 source and its bounded
-results, then adopt the reviewed merged correction and qualify the combined
-source before stage acceptance. Keep the release main hold and coordinate before
-our main advance. Exact source comparisons, configured-owner outcomes and the
+The next step then retained the R18 test's exact07 source and bounded results
+while awaiting the reviewed correction and combined-source qualification.
+The release main hold remained in effect. Exact source comparisons,
+configured-owner outcomes and the
 correction receipt are retained in the stage archive's `progress.json` and
 `devx-native-owner-review.txt`; no corrected-source execution is inferred here.
 
@@ -365,9 +365,10 @@ PR431 merged normally as `9d34155cd787db45467b850ddac27b61408323ee`
 at2026-11-16T20:13:54Z. Fresh GitHub REST and fetched Git objects verify the
 merge, all eight successful accepted-head checks and exact accepted
 tree `091c38367cc7cb57abfe1137924cf788baf35e7c`, identical to b83b5d89.
-This is source delivery, not verified runtime0.3 registry publication. The
-owner reports all28 local gates, Linux/fuzz and both compiler caller matrices;
-those reports are not qualification of this branch's combined source.
+At that integration checkpoint, runtime0.3 registry publication was not yet
+verified. The owner's all28 local gates, Linux/fuzz and both compiler caller
+matrices qualified the release source, not this branch's combined source.
+The later verified publication and current qualification are recorded below.
 
 Fresh prerequisite inspection rereads the complete selected Behavior
 instructions and all six owners' current API/rustdoc and relevant tests.
@@ -388,15 +389,107 @@ workspace Clippy now enables both required denials. No R18 production edit,
 new public type or test expectation change is selected. The previously clean
 merge preview supplies no execution credit.
 
-Integrate this reviewed main into the preserved feature branch, then qualify
-the actual combined source with the normal pinned-Nix gates, including both
-mandatory lint flags. Retain the prior configured-source evidence separately;
-do not transfer its passing outcomes to the new derivations. The own stage
-continues to touch four paths, with production+0/-0/net0, tests+112/-34/net78
-and public API+0/-0 types. Hosted verification, minimization and normal R18 PR
-delivery remain open. This integration does not advance main; coordinate
-before any later main merge while release acceptance continues. Later R18
+This reviewed main was integrated into the preserved feature branch as
+`d0b36548401a1eeb48af46458892b561e5e2369f`, tree
+`41fa2082ba01757c261ba9bb405b0ce244e18369`, without advancing main.
+The own stage retains four paths, production+0/-0/net0, tests+112/-34/net78
+and public API+0/-0 types. Earlier configured-source evidence remains separate;
+the following executions qualify the new derivations. Later R18
 cuts/baselines/reconnect and AUTH1/NET1 remain in their established order.
+
+### Corrected-source qualification and publication
+
+The normal pinned-Nix command
+`nix flake check --no-update-lock-file -L --max-jobs 2 --cores 2` completed
+with actual exit0 on frozen d0b36548. All28 aarch64-darwin owners passed;
+the terminal checkmarks, exact registered outputs/derivers and isolated logs
+are reconciled in the stage archive's `corrected-release/native-completion.json`.
+The final independent report `corrected-release/native-owner-review.txt` is
+closed and immutable, SHA256
+`2ab9f9a07b908815ccd73a0e068c4d6675dbe0c9bf7db82984f24b46cd09f575`.
+The other three flake systems were omitted; this is native qualification.
+
+Optimized workspace tests pass1026/0 with six parent-controlled ignored child
+registrations; all three binding tests and the listener cardinality test pass
+once. Both remote profiles pass555/0/0, including those four named cases.
+Normal whole-workspace all-target Clippy actually passes both mandatory named
+denials, closing the earlier lint blocker for this source. The corrected child
+checker accepts both intended debug/optimized inverse failures and their healthy
+and restored controls. No watchdog or Rust assertion is weakened.
+Coverage passes the unchanged floors: Driver737/818, actor execution1006/1048,
+actor outcome95/97 and Observe506/526. Counts belong to this source epoch.
+
+Rust1.96 optimized integration checks pass114/0/1 across28 selected targets,
+with138 compiler observations (22 pass,116 denials); the ignored registration
+is exercised by its passing parent. The remote surface passes4/0/0 with12
+compiler observations (three pass,nine denials). Neither minimum command selects
+the private Node unit tests. Their compilation and execution on1.96 are not
+claimed. Only diagnostic .stderr fixtures receive the existing minimum patch.
+
+Required workspace Nextest separately exits0 with1026 passed and six skipped
+parent-owned registrations. The actual ordinary Entity main uses canonical
+`run_with`, preserves balances40 then2 for Entity7, and reports two activations,
+graceful retirement, cleanup/notifications Ok, no residents and no disposal.
+Counter, template, supervision, topology and worker-pool mains execute through
+their Nix owners; both remote-counter profiles exercise the separate TLS programs
+with actual port-zero listener metadata. Axum remains compile-only here.
+Original five R18 source controls retain their actual1f execution and reviewed07
+equivalence; current positive executions do not relabel those earlier controls.
+
+All700 declared full-source files and the661-file Cargo subset match the frozen
+Git blobs; the full source is byte-preserved. Actor/Driver law artifacts and the
+complete coverage JSON are preserved with independent hashes and gzip roundtrip
+verification. After Nextest and the Entity main completed, guarded cleanup removed
+only their owned disposable target:5.6509017944GiB. Active/shared Nix artifacts,
+exact inputs, publication packages and the earlier compiler-ICE evidence remain.
+
+[bombay-rs0.3.0](https://crates.io/crates/bombay-rs/0.3.0) publication is now
+independently verified: the official non-yanked index entry and retained archive
+have SHA256
+`aab3c7c135e8c0e98f4425488cd5153e58a42e77585bb10cb5df99a91fac65b6`.
+The [annotated release tag](https://github.com/devrandom-labs/bombay/releases/tag/bombay-rs-v0.3.0)
+and embedded package VCS identify b83b5d89/tree091c3836; PR431 delivered it as
+9d34155c. The owning1.99/1.96 archive/caller matrices retain their release-source
+scope. Engine0.3 and BombayMacros0.2 are unchanged. Entity callers migrate
+`run_with_entities` to `run_with` and `execute_with_entities` to `execute_with`.
+`Node::listen_addresses().await` returns actual bound addresses, including
+OS-selected ports for port-zero inputs; it issues no readiness or ingress
+authority. The release receipt is
+`corrected-release/publication-receipt.json` in this stage's Git session archive.
+
+These final record edits leave Rust, configuration and locks unchanged; they
+are not retroactively included in d0b36548's Markdown inputs. The focused PR
+and its actual hosted checks/merge remain open. Full R18's later
+startup/tuple rollback, coexisting close failures, resource baselines and
+reconnect, AUTH1/NET1 and example error/cleanup distillation remain open.
+
+### Scoped minimization and final change record
+
+Three scoped source/minimization audits pass: coordinator review, independent
+contract review, and the independent two-pass assertion/counterexample review.
+Their closed reports are `corrected-release/root-final-review.txt`,
+`final-contract-review.txt` and `final-test-review.txt` in the stage archive.
+The latter two have SHA256
+`1ebc4d9b5d79a3bb438384834ce081333a698d8ad959e0a3774763883114089a`
+and `176608c1db501d3e27d8af531f5c5243e791a0550cfb7e5c2146f3b78e65abb8`.
+Both record findings are resolved: port-zero inputs return OS-selected ports,
+and only open/queryable startup builders are described as Ready.
+
+Retain one private ownership sum and one shared complete trace. Existing
+Option/Either, Arc/Weak, native builders and actual actor/cleanup observations
+express both ownership choices; each independent oracle rejects its recorded
+counterexample. No public wrapper, runtime state, fixture framework, new owner
+or source-policy change is needed. Further deletion would remove a required
+custody/release distinction or duplicate the trace. This is bounded test
+distillation, not completion of full R18 or the remaining product requirements.
+
+The complete stage against main9d34155c contains four tracked paths and no
+untracked project files: production+0/-0/net0, tests+112/-34/net78 and public
+API+0/-0 types. Documentation is +595/-23/net572. This is
+test/evidence growth, with no production reduction claimed. Only the two task
+records changed after frozen qualification; Rust, scripts, manifests, locks
+and build configuration retain their qualified bytes. Normal focused PR/hosted
+verification and reviewed merge are the next delivery steps.
 
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 

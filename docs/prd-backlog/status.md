@@ -1,23 +1,23 @@
 # Backlog status and dependencies
 
 R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--prerequisites-and-change-record-2026-11-16)
-passes all28 configured native Nix gates on frozen284983f5 after DevX6110
-integration, with independent final source/outcome/control review. Optimized
-workspace cases pass1026/0; six ignored
-child registrations are exercised by passing parents. All three Node cases pass,
-and five paired source controls retain their actual1f execution plus reviewed07
-equivalence. Production and locks are restored unchanged; exact inputs/evidence
-are preserved. Fresh six-owner and caller reviews verified the merged DevX6110
-contracts, now integrated on the feature branch. Full-stage acceptance remains
-open: the required lint denials expose the same pre-fix HTTP binding reported by
-DevX. Corrected PR431 merged as9d34155c with exact accepted tree091c3836 and
-all eight hosted checks passing. The merged correction enables both mandatory
-Clippy denials. Integrate that reviewed source and qualify this branch's
-combined source before this slice's PR/hosted checks and delivery. Remaining
-example error/cleanup ceremony is explicit in the PRD. Coordinate before advancing
-main during release acceptance; runtime0.3 publication remains unverified in
-the received notice. Dependency edges, later R18 cuts/baselines/reconnect and
-AUTH1/NET1 remain open.
+passes all28 normal native Nix gates on frozen d0b36548 after integrating
+reviewed PR431/main9d34155c. Independent final review verifies exact source,
+derivers, isolated outcomes and controls. Optimized workspace cases pass1026/0;
+six child registrations are exercised by passing parents. Both remote profiles
+pass555/0/0, and all three Node binding cases plus listener cardinality pass.
+Normal whole-workspace Clippy actually denies both mandatory named lints;
+the shared blocker is closed. Five paired source controls retain actual1f
+execution plus reviewed07 equivalence. Production/API/dependencies are unchanged
+by this test slice. Nextest passes1026 with six parent-owned skipped registrations;
+the ordinary Entity main preserves its exact business and retirement outcomes.
+Required evidence is preserved and the completed standalone cache is removed.
+Runtime0.3 publication, tag/package VCS and checksum are verified in the PRD;
+the release's caller matrices do not replace this branch's qualification.
+This bounded slice is distilled after three scoped reviews, pending the focused
+PR, hosted checks and reviewed merge. Later R18 cuts/baselines/reconnect,
+AUTH1/NET1 and example error/cleanup distillation remain open; dependency edges
+and step order are unchanged. Coordinate before the next main advance.
 
 R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--delivery-2026-11-16)
 test slice merged through PR430/ae2d36cf after all28 local Nix gates, all28
