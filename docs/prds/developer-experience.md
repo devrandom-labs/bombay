@@ -1029,6 +1029,69 @@ full DX01–DX28 completion is claimed. Entity's structural Terminal/ChildFailur
 ceremony, remaining caller criteria, costs, documentation and unresolved
 historical watchdog causes remain active.
 
+### Release consumer locks, before implementation (2026-11-17)
+
+PR434 at frozen `2049988578b86ab3266ed358acfb22b9fd0b508a` changes only
+root Cargo.lock, the runtime manifest and its changelog on actual maincaf0.
+The runtime and root lock declare0.3.1, while the independent transport-custody
+lock still records that path package at0.3.0. Actual CI44175102853 Nix
+job134364260728 and both TLS jobs134364261253/134364261156 refuse that
+lock under unchanged `--locked`, before those protected test binaries run.
+Both official failed TLS archives preserve the same Cargo error. The complete
+source/job/artifact custody is `release434-original/diagnosis.json` in the
+restart handoff. The other five checks pass; no failed outcome is relabelled.
+
+Law: a release proposal must retain consistent Cargo resolution in every
+independent consumer of a changed path package. Cargo mandates that a locked
+command refuse stale resolution; updating all owned consumer locks in the
+release proposal is Bombay workflow policy. Preserve the independent transport
+and Engine fuzz workspaces, their feature isolation and all locked gates.
+The root workspace lock belongs to Release-plz. The two other tracked locks
+belong to transport-custody and Engine fuzz; each existing manifest owns its
+package graph. No duplicate version constant or merged workspace is selected.
+
+Primary sources are Cargo's [workspace-only update contract](https://doc.rust-lang.org/cargo/commands/cargo-update.html)
+and Release-plz's [documented follow-up commit step](https://release-plz.dev/docs/github/output#example-commit-files-to-the-release-pr).
+The actual pinned actionb11437f8 installs CLI0.3.160 and exposes the PR branch.
+Its source has no extra-lock hook. Nixpkgs supplies0.3.159; no tool downgrade
+or new derivation is selected. Existing Bombay/CESR release workflows and
+Trive's Nix execution pattern were inspected before selecting the extension.
+
+Expected retained scope is four existing paths including the three current
+HTTP delivery-record paths and `.github/workflows/release-pr.yml`. Add an
+own-workflow trigger, expose the existing action's PR result, check out that
+branch through the existing authenticated checkout action, install the same
+Nix action already used by CI, and run the two existing consumer manifests
+through pinned-Nix `cargo update --workspace`. Submit only changed nested
+lockfiles as one GitHub API commit with the observed branch head as a required
+precondition. A changed head must reject the write; an empty change set emits
+no commit. Preserve the current bot, release/publish split and permissions.
+Production Rust, public API/types, dependencies, actor states, interpreter
+branches and modules have zero expected delta. No project tool or test suite
+is added. Normal PR acceptance precedes refreshing the actual release proposal;
+its own source gates and published-package checks remain separate.
+
+Before editing the workflow, reproduce the stale lock with pinned-Nix Cargo
+metadata under `--locked` at204. Execute the intended Cargo update and prove
+locked metadata now contains the declared runtime version without changing
+registry package versions/checksums. Exercise the real Engine/fuzz consumer
+law with a temporary Engine version proposal as well; both independent locks
+must follow that real path package. Preserve and restore all temporary input
+bytes. The API witness must prove the complete lock payload, one atomic
+commit, stale-head refusal and an empty-change no-op. No metadata command is
+credited as runtime test execution. Existing owning debug/release, Nix and
+compiler/package gates remain intact.
+
+Pre-edit aggregate checkpoint: actor/application control sums0 changed,
+subordinate sums/results0 changed, Rust transition branches0 changed,
+production Rust lines0 changed, modules0 changed and public spellings0 changed.
+The current values are the proposed manifest versions, consumer-owned locks
+and observed release-branch head; no arrival history or nested transition
+owner is introduced. Standard Cargo resolution and GitHub's existing commit
+product own those facts. The focused refusal, both consumer witnesses and
+final workflow/source review must close before retaining the implementation.
+The full DX01–DX28 programme and Entity work remain active.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
