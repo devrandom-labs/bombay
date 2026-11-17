@@ -972,6 +972,63 @@ this scoped representation; final repository/hosted gates and delivery remain
 open. Entity's Terminal/ChildFailures ceremony and all other unmet DX01–DX28
 criteria remain open.
 
+### HTTP capability delivery (2026-11-17)
+
+[PR436](https://github.com/devrandom-labs/bombay/pull/436) merged normally at
+2026-11-17T20:57:24Z as `caf0b68199f185b7d35c9b41585e122a647ca0b6`.
+Its tree `9ef4486625bc80463c3dea6f6b70b1a616f4f85e` exactly equals accepted
+signed head `2af77356` and tested merge preview `ecc57e00`. Parents
+main `2280a36a` plus `2af77356` were verified through the official API and physical Git
+objects. Fresh before/after notices were sent to Bombay; the before notice
+received an explicit no-hold acknowledgment.
+
+All eight hosted checks passed at `2af77356`. CI44140166922/job134240479658
+completed successfully at 20:35:28 UTC. Its complete 25,535,360-byte raw log binds
+all 28 Linux checks to their declared derivation/output identities. The
+workspace and instrumented runs each preserve all 1029 named passes across 123
+harnesses, the same six controlled child skips, 154 compiler fixtures and
+three benchmark targets. All four coverage floors pass. Each remote profile
+preserves 557 passes and32 fixtures; the protected owner preserves its 12
+commands and 132 top-level executions and expected child controls. The 1.96
+selected contracts retain 28 harnesses/114 passes/138 fixtures, plus the
+separate remote 4-pass/12-fixture scope. These are the actual selected scopes,
+not a claim that every private Node path ran on the minimum compiler.
+
+The local 28-check/actual-flake and Nextest1029 executions remain frozen at `7e1c30e4`.
+PR head `2af77356` adopts those results only through byte-identical 729 source
+inputs and equal parsed 28 native derivation/output objects; tests were not
+rerun at `2af77356`. All three focused HTTP Rust files also match original `9b1b54b9` exactly,
+preserving its executed inversions and two author reviews. Original9b/1027,
+peerabbf/1028 and currentHTTP/1029 evidence remain distinct.
+
+All six schedule/TLS profile archives and their 64 files and 96 source rows are
+qualified. Driver2048 and four Observe1024 bounded ASan completions, every
+original seed and all 447 retained fuzz files are verified. Miri was skipped.
+CodeQL succeeds with the retained baseline gaps in seven extraction-error
+files/nine warning rows. The existing reviewed maintenance exception remains
+unchanged. Hosted coverage JSON, complete static coverage, Windows,
+exhaustiveness, comparative runtime costs and historical watchdog causes are
+not inferred from these results.
+
+The restart handoff retains `http-main-hosted/final-acceptance.json`, SHA256
+`21a8e704b476ae5373ebd9b4ee43d902b658b4a46aa38563fee6d94f9f21eabc`,
+and actual `http-main-delivery.json`, SHA256
+`e270c7b821ac2cb491b8d5da5e51ba423186887be9c78ea114ece9efdea41148`.
+Completed original/combined/main HTTP worktrees were normally removed after
+fresh liveness checks, all 728 original and 729-per-combined-checkout input/archive checks and raw-commit
+preservation. All branch refs remain. Their 42.91MiB allocated removal is
+28.59MiB net after retaining one active full-programme checkout. Losslessly
+archiving an unused older coverage report reclaims another 172.07MiB; its
+complete 193,533,177-byte restoration and SHA256 were verified. Detailed cleanup
+and retention receipts remain in the handoff. Required packages and current
+source/evidence are preserved. These are disk-space measurements; runtime
+memory and performance acceptance remain open.
+
+This delivers the bounded HTTP capability separation. No crate publication or
+full DX01–DX28 completion is claimed. Entity's structural Terminal/ChildFailures
+ceremony, remaining caller criteria, costs, documentation and unresolved
+historical watchdog causes remain active.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
