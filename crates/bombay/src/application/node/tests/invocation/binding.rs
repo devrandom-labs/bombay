@@ -7,7 +7,7 @@ use super::super::protocol::{
 };
 use super::super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
-use crate::application::node::Binding;
+use crate::application::node::{Binding, Node};
 use crate::behavior::{Behavior, EstablishedRecipient, Never, User};
 use crate::local::endpoint::ExtractLocalEndpoint;
 use crate::remote::{Export, ExportLimits, RefusalRetention, reply};
@@ -19,13 +19,19 @@ use behavior_actors::{Crash, StopOnShutdown};
 use core::future::{Future, poll_fn};
 use core::pin::pin;
 use futures_util::FutureExt;
+use futures_util::future::Either;
 use std::cell::Cell;
+use std::io::ErrorKind;
+use std::net::TcpListener;
 use std::num::NonZeroUsize;
 use std::ptr;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::net::lookup_host;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::error::TryRecvError;
 use tokio::time::timeout;
+use zenoh::session::SessionClosedError;
 
 type CounterHandle = ApplicationHandle<
     <Counter as Behavior>::Protocol,
@@ -194,12 +200,26 @@ async fn borrowed_binding_wait_keeps_the_original_node_operation() {
     })).await.expect("failure-only watchdog; actual pending, actor and original outcomes prove the law");
 }
 
+enum NodeRetention {
+    Retained,
+    Surrendered,
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn surrendered_binding_run_retires_its_actor_without_claiming_joined_node_close() {
+    surrender_binding(NodeRetention::Retained).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn surrendered_node_releases_native_admission_and_its_listener() {
+    surrender_binding(NodeRetention::Surrendered).await;
+}
+
 #[expect(
     clippy::too_many_lines,
-    reason = "one surrendered public run retains independent pending, disposal, actor and cleanup observations without inventing native recovery"
+    reason = "one complete pending-binding trace compares actual retained and surrendered Node ownership through weak native and actor observations"
 )]
-async fn surrendered_binding_run_retires_its_actor_without_claiming_joined_node_close() {
+async fn surrender_binding(retention: NodeRetention) {
     Box::pin(timeout(Duration::from_secs(30), async {
         let registered: [ProtectedMessage; 0] = [];
         let binding = protocol::Binding {
@@ -250,11 +270,22 @@ async fn surrendered_binding_run_retires_its_actor_without_claiming_joined_node_
         let node = Application::new(Counter::new().stop_on_shutdown())
             .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver)).await
             .unwrap_or_else(|_| panic!("the actual public Node opens before pending binding"));
-        let connection = node.session.clone();
-        let initially_closed = connection.is_closed();
+        // Both native owners retain WeakSession; neither prevents last-Session Drop.
+        let publisher = node.session.declare_publisher("bombay/binding/ownership").await
+            .expect("the actual Node Session owns native publication admission");
+        let native_before = publisher.put("before-node-drop").await;
+        let locators = node.session.info().locators().await;
+        let locator = locators.iter().find(|locator| locator.protocol().as_str() == "tls")
+            .expect("the configured Node has an actual TLS listener");
+        let listener = lookup_host(locator.address().as_str()).await
+            .expect("the actual native listener address resolves").next()
+            .expect("the actual native listener has a socket address");
+        let listener_before = TcpListener::bind(listener).map(drop);
+        // Constructing this builder does not poll close or retain a counted Session.
+        let rescue_close = node.session.close();
         let (entered, binding_pending) = oneshot::channel();
         let (permission, permitted) = oneshot::channel::<()>();
-        let mut node = node.exports(export, async move |application: &CounterHandle| {
+        let mut node = Some(node.exports(export, async move |application: &CounterHandle| {
             let target = application.root().established_recipient();
             let origin = application.actor_address(&target).unwrap();
             let mut replies = application.client::<CounterProcessed>().unwrap();
@@ -269,40 +300,56 @@ async fn surrendered_binding_run_retires_its_actor_without_claiming_joined_node_
                 if observed.is_pending()
                     && let Some((publication, original)) = entered.take()
                 {
-                    let published = publication.send(original);
-                    published.unwrap_or_else(|_| panic!("the actual Pending binder has an independent observer"));
+                    let handoff = publication.send(original);
+                    handoff.unwrap_or_else(|_| panic!("the actual Pending binder has an independent observer"));
                 }
                 observed
             }).await.expect("this trace never grants binding permission");
             Ok::<_, Never>(target)
-        });
+        }));
         let calls = Cell::new(0);
         let invoked = &calls;
         let (captured, mut unused_work) = oneshot::channel();
-        let output = Box::new(467_u64);
+        // The original Box payload is distinct from the retained weak control block.
+        let output = Arc::new(Box::new(467_u64));
+        let original_output = Arc::downgrade(&output);
         let work = Box::new(move |application: CounterHandle| {
             invoked.set(invoked.get() + 1);
             async move {
-                let published = captured.send(output);
+                let transfer = captured.send(output);
                 let shutdown = application.shutdown();
-                (published, shutdown)
+                (transfer, shutdown)
             }
         });
-        let (application, origin, admission, original, mut replies) = {
-            let mut operation = Box::pin(node.run_with(work));
+        let ((application, origin, admission, original, mut replies), held_output) = {
+            let operation = match &retention {
+                NodeRetention::Retained => Either::Left(node.as_mut().unwrap().run_with(work)),
+                NodeRetention::Surrendered => {
+                    let mut owner = node.take().unwrap();
+                    Either::Right(async move { owner.run_with(work).await })
+                }
+            };
+            let mut operation = Box::pin(operation);
             let original = tokio::select! {
                 biased;
                 original = binding_pending => original.expect("the real opened Node reaches pending binding"),
                 _ = operation.as_mut() => panic!("the owning run cannot finish through a held binder"),
             };
+            let held_output = original_output.strong_count();
             drop(operation);
-            original
+            (original, held_output)
         };
         // These independent observations precede any manual shutdown or connection close.
         let disposed_work = unused_work.try_recv();
+        let disposed_output = original_output.strong_count();
         let disposed_binding = permission.send(());
-        // First polling requests withdrawal; no native result has been acquired.
-        let requested_withdrawal = withdrawal.as_mut().now_or_never();
+        let native_after = publisher.put("after-node-drop").await;
+        let listener_after = TcpListener::bind(listener).map(drop);
+        // Preserve the old retained-Node request. The surrendered row never polls it.
+        let requested_withdrawal = match &retention {
+            NodeRetention::Retained => Some(withdrawal.as_mut().now_or_never()),
+            NodeRetention::Surrendered => None,
+        };
         let joining = application.cleanup().expect("the actual Node binder carries real cleanup observation");
         let reply_address = replies.address();
         let mut admissions = Vec::new();
@@ -356,13 +403,18 @@ async fn surrendered_binding_run_retires_its_actor_without_claiming_joined_node_
             let shutdown = application.shutdown();
             (increment, read, original, shutdown)
         }).await.unwrap_or_else(|_| panic!("the independent Counter Application starts after surrender"));
-        let mut extraction = node.into_parts();
-        let incomplete = extraction.as_mut().err()
+        let mut extraction = node.take().map(Node::into_parts);
+        let incomplete = extraction.as_mut().and_then(|original| original.as_mut().err())
             .map(|original| (original.binding.take(), original.closed.take()));
+        // Probe the retained Node's real close before rescue can conceal a defect.
         let explicit_close = match &mut extraction {
-            Err(original) => original.close().await,
-            Ok(_) => connection.close().await,
+            Some(Err(original)) => Some(original.close().await),
+            Some(Ok(_)) | None => None,
         };
+        let native_closed = publisher.put("before-rescue-close").await;
+        // All automatic-drop and explicit-close observations precede this real rescue.
+        let rescued = rescue_close.await;
+        let publisher_retirement = publisher.undeclare().await;
         let (work, report, native, notifications, ()) = sibling.into_parts();
         let ((increment, read, value, shutdown), sibling_cleanup) = work.try_into_completed()
             .unwrap_or_else(|_| panic!("independent Work completes before cleanup"));
@@ -375,11 +427,15 @@ async fn surrendered_binding_run_retires_its_actor_without_claiming_joined_node_
         assert_eq!(report.retirement(), RetirementAssessment::Established);
         let notifications = notifications.expect("both independent notification receipts remain");
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
-        assert!(cleanup.is_ok() && explicit_close.is_ok());
-        assert!(!initially_closed && connection.is_closed());
+        assert!(cleanup.is_ok() && rescued.is_ok() && publisher_retirement.is_ok());
+        assert!(native_before.is_ok());
+        let occupied = listener_before.expect_err("the actual listener excludes competing binds before surrender");
+        let occupied = occupied.kind();
+        assert_eq!(occupied, ErrorKind::AddrInUse);
         assert_eq!(calls.get(), 0);
+        assert_eq!((held_output, disposed_output), (1, 0));
         assert!(matches!(disposed_work, Err(TryRecvError::Closed)));
-        assert!(disposed_binding.is_err() && requested_withdrawal.is_none());
+        assert!(disposed_binding.is_err());
         let observed = continued.iter().flatten()
             .map(|original| (original.from, original.message.request_sequence)).collect::<Vec<_>>();
         let expected = [479, 487].into_iter().take(observed.len()).map(|sequence| (origin, sequence)).collect::<Vec<_>>();
@@ -406,16 +462,38 @@ async fn surrendered_binding_run_retires_its_actor_without_claiming_joined_node_
                 assert_eq!(endpoint.address(), reply_address);
             }
         }
-        let (binding, closed) = incomplete.expect("the pre-close extraction retained the same incomplete Node");
-        assert!(matches!(binding, Some(Binding::Invoked(None))));
-        assert!(closed.is_none());
-        let Err(node) = extraction else {
-            panic!("whole run surrender cannot manufacture a returned binding and joined native close");
-        };
-        assert!(node.closed.is_none() && node.poll_panic.is_none() && node.disposal_panic.is_none());
-        let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = node.exports.into_parts();
-        assert!(startup.is_none() && withdrawal.is_none());
-        assert!(diagnostics.is_empty() && requests.is_empty());
+        match retention {
+            NodeRetention::Retained => {
+                assert!(native_after.is_ok());
+                let occupied = listener_after.expect_err("the retained Node still owns the actual listener");
+                let occupied = occupied.kind();
+                assert_eq!(occupied, ErrorKind::AddrInUse);
+                assert!(matches!(requested_withdrawal, Some(None)));
+                let (binding, closed) = incomplete.expect("the pre-close extraction retained the same incomplete Node");
+                assert!(matches!(binding, Some(Binding::Invoked(None))));
+                assert!(closed.is_none());
+                let explicit_close = explicit_close.expect("the retained Node permits separate explicit native close");
+                assert!(explicit_close.is_ok());
+                let Some(Err(node)) = extraction else {
+                    panic!("whole run surrender cannot manufacture a returned binding and joined native close");
+                };
+                assert!(node.closed.is_none() && node.poll_panic.is_none() && node.disposal_panic.is_none());
+                let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = node.exports.into_parts();
+                assert!(startup.is_none() && withdrawal.is_none());
+                assert!(diagnostics.is_empty() && requests.is_empty());
+            }
+            NodeRetention::Surrendered => {
+                let cause = native_after.expect_err("whole Node surrender must close native publication admission before rescue");
+                let closed = cause.downcast_ref::<SessionClosedError>();
+                assert!(closed.is_some(), "native refusal retains the actual SessionClosedError");
+                assert!(listener_after.is_ok(), "whole Node surrender must release its actual listener before rescue");
+                assert!(requested_withdrawal.is_none(), "the whole-owner row never polls withdrawal");
+                assert!(extraction.is_none() && incomplete.is_none() && explicit_close.is_none());
+            }
+        }
+        let cause = native_closed.expect_err("actual native admission is closed after actor cleanup and retained Node close, before weak rescue");
+        let closed = cause.downcast_ref::<SessionClosedError>();
+        assert!(closed.is_some(), "post-cleanup refusal retains the actual SessionClosedError");
         // Original Work/native terminal products were surrendered, never reconstructed.
     })).await.expect("failure-only watchdog; actual disposal, actor replies and cleanup prove the law");
 }
