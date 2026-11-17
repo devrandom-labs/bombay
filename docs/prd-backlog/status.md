@@ -1,18 +1,38 @@
 # Backlog status and dependencies
 
-R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--prerequisites-and-change-record-2026-11-16)
-stage is active on merged PR428/main efad360c. Fresh six-owner verification
-selects Communication0.1.7 with Behavior/Actors0.30 and finds no upgrade blocker.
-Two focused public Node tests pass in debug and optimized builds, distinguishing
-cancellation of a borrowed wait from surrender of the complete run operation.
-Three deliberate defects each fail their intended outcome assertion in both
-profiles; original production source is restored and both restored profiles
-pass both cases. All28 native Nix gates pass, including1024 workspace release
-cases and553 cases in each remote profile; existing parent-owned child
-registrations retain their documented scope. The bounded slice is locally
-distilled; hosted checks and PR delivery remain pending. Complete
-R18's later cuts, resource baselines and reconnect, AUTH1/NET1 and final example
-distillation remain open. Existing dependency edges are unchanged.
+R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--prerequisites-and-change-record-2026-11-16)
+passes all28 normal native Nix gates on frozen d0b36548 after integrating
+reviewed PR431/main9d34155c. Independent final review verifies exact source,
+derivers, isolated outcomes and controls. Optimized workspace cases pass1026/0;
+six child registrations are exercised by passing parents. Both remote profiles
+pass555/0/0, and all three Node binding cases plus listener cardinality pass.
+Normal whole-workspace Clippy actually denies both mandatory named lints;
+the shared blocker is closed. Five paired source controls retain actual1f
+execution plus reviewed07 equivalence. Production/API/dependencies are unchanged
+by this test slice. Nextest passes1026 with six parent-owned skipped registrations;
+the ordinary Entity main preserves its exact business and retirement outcomes.
+Required evidence is preserved and the completed standalone cache is removed.
+Runtime0.3 publication, tag/package VCS and checksum are verified in the PRD;
+the release's caller matrices do not replace this branch's qualification.
+This bounded slice is distilled after three scoped reviews, pending the focused
+PR, hosted checks and reviewed merge. Later R18 cuts/baselines/reconnect,
+AUTH1/NET1 and example error/cleanup distillation remain open; dependency edges
+and step order are unchanged. Coordinate before the next main advance.
+
+R18's [pending Node binding](../prds/static-remote-actors.md#pending-node-binding--delivery-2026-11-16)
+test slice merged through PR430/ae2d36cf after all28 local Nix gates, all28
+Linux owners, all eight hosted checks and the scoped reviews passed. Reviewed,
+actual CI and merged trees match. The two public Node tests distinguish
+cancellation of a borrowed wait from surrender of the complete run operation
+while retaining Node. Three intended defects fail their outcome assertions in
+both profiles; original production source is restored. Workspace release passes
+1024 cases and remote profiles553 each; existing parent-owned child registrations
+retain their documented scope. Current fuzz artifact counts match their recorded
+outcomes, within the owning record's compiler/source limits. The clean merged
+worktree and branch are removed. Production/API/dependencies are unchanged.
+Whole Node-owner drop and R18's later cuts, resource baselines and reconnect,
+AUTH1/NET1 and final example distillation remain open. Existing dependency edges
+are unchanged; R18 remains active.
 
 R18's [export resource retirement](../prds/static-remote-actors.md#export-resource-retirement-delivery--2026-11-15)
 test slice merged through PR427/274c5e71 after all 28 native Nix gates, all eight
@@ -750,7 +770,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#runtime-03-delivery-2026-11-16): runtime0.3.0, Engine0.3.0 and macros0.2.0 are published with exact registry/tag/source proof and both supported-compiler caller matrices. PR429 delivered canonical supplied-work runners and bound listener metadata; release PR431 delivered the matching tested tree. The latest Bombay publication notice is queued; acknowledgment remains separate. Historical watchdog causes remain unexplained. The [next selected batch](../prds/developer-experience.md#check-artifacts-before-implementation-2026-11-16) removes unused Cargo check exports through pinned Crane while retaining actual cache providers and every verification gate. Broader DX01–DX28 acceptance, costs and documentation remain active. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#runtime-03-delivery-2026-11-16): runtime0.3.0, Engine0.3.0 and macros0.2.0 registry delivery and Bombay acknowledgment are verified. PR429/431 deliver canonical supplied-work runners, bound listener metadata and matching publication. [PR433](https://github.com/devrandom-labs/bombay/pull/433) removes unused check exports through pinned Crane while preserving actual cache providers and every gate; [frozen049 evidence](../prds/developer-experience.md#check-artifacts-before-implementation-2026-11-16) retains full local acceptance and the10.51GiB-to-zero storage measurement. PR432/main7882 adds one Node-owner test; integration requires fresh source-qualified gates. Historical watchdog causes and broader DX01–DX28 acceptance, costs and documentation remain open. |
 | NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |

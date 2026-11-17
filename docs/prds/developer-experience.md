@@ -704,8 +704,11 @@ receiving callers per compiler therefore qualify the exact published bytes.
 No execution against removed build caches is claimed. Engine0.3.0 and macros0.2.0
 remain unchanged. The owning receipts are `runtime030-corrected-acceptance.json`,
 `-delivery.json` and `-publication-result.json` in the existing restart handoff.
-The published-version notice is queued to the existing Bombay session; receipt
-is not yet acknowledgment. The complete DX01–DX28 programme remains active.
+The existing Bombay session acknowledged the registry checksum, tag/package VCS,
+runner migrations and listener metadata limits. Its R18 qualification remains
+separate. The acknowledgment is retained in
+`runtime030-corrected-peer-publication-ack.json` in the existing handoff.
+The complete DX01–DX28 programme remains active.
 
 ### Check artifacts, before implementation (2026-11-16)
 
@@ -754,6 +757,27 @@ reviews pass this configuration comparison. Rust formatting and assertions are
 unchanged. Full final-source owner/flake, Nextest and hosted verification remain
 required. Receipts are `check-artifacts-{configuration-review,focused-result}.json`
 in the existing restart handoff.
+
+Frozen `049df227` subsequently passes all28 local owners, actual `nix flake check`
+and independent Nextest1025. The optimized workspace retains all123 harnesses,
+154 compiler fixtures, six parent-controlled registrations and three benchmark
+targets. Every original command and actual cache provider is conserved. The same
+21 completed outputs measure10.511GiB allocated before and zero artifact bytes
+after; the default build archive and substantive reports remain. This measures
+persistent output storage, not runtime memory or speed. The owning receipts are
+`check-artifacts-{full,nextest}-result.json`.
+
+PR432 merged as `7882c8d3`, with exactly reviewed tree `a80576e9`, before this
+separate integration. Its one additional whole-Node surrender test belongs to
+main; both earlier binding cases remain. The original049 checkout, all728 exact
+inputs, source archive and pending hosted run are preserved while the combined
+source is prepared elsewhere. Its1025-case proof does not certify the new1026-case
+cohort. Own scope remains three existing files. Relative to that main, Rust source,
+tests, public types, actor states, transition branches and modules have zero delta.
+The three actual providers, all28 commands, reports, features, profiles and
+compiler selections must remain exact. Fresh combined-source local, Nextest and
+hosted acceptance precede
+PR433 delivery; the complete DX01–DX28 programme stays active.
 
 ### Supplied-work runners, before implementation (2026-11-16)
 
