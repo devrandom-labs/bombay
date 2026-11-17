@@ -1,5 +1,12 @@
 # Backlog status and dependencies
 
+R18's [withdrawal notification during finalization](../prds/static-remote-actors.md#withdrawal-notification-during-finalization--prerequisites-and-change-record-2026-11-17)
+has fresh selected-owner prerequisites verified on PR435's actual merge. A focused
+two-export decoder/withdrawal-observer panic regression is being prepared before
+any production design or API change. Execution, acceptance and delivery remain
+open; native close-timeout errors and full resource baselines are not inferred.
+Existing full requirement states and reciprocal dependency edges are unchanged.
+
 R18's [declared-prefix rollback](../prds/static-remote-actors.md#declared-prefix-rollback--delivery-2026-11-17)
 merged through PR435/2280a36a after all28 current native Nix owners, the actual
 flake, all28 Linux owners and all eight exact-head hosted checks passed.

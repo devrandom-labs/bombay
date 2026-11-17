@@ -1,5 +1,137 @@
 # Static remote actors and typed admission
 
+## Withdrawal notification during finalization — prerequisites and change record (2026-11-17)
+
+**State: active (focused regression preparation).** This continues R18 on actual
+PR435 merge2280a36a plus delivery-only record95d2949e. Exact Cargo.lockc0a6f5a6,
+flake.lock13ea9617 and the selected owner graph remain unchanged: Behavior/Actors
+0.30.0 at628649da, BehaviorMacros0.16.0 at55dbac2d, Address0.3.0 at9f058dc0,
+Communication0.1.7 at2d71c2f6, Timers0.2.0 at9369d1f6, workspace Observe/Engine
+and native SDK1.10.10 atc34eb350. Fresh archive/VCS/source/API/test/doc inspection
+and all775 selected Behavior instructions are recorded in the common Git
+session-archives/2026-11-17/remote-retirement/contracts.txt. No dependency,
+feature, interpreter or ownership prerequisite blocks this focused regression.
+Native close-timeout induction remains unverified and is not this test's law.
+
+The gap is composition of two actual notification/unwind causes. Observe retains
+its acquired result before notifying all registered waiters, then propagates the
+first wake panic. Node catches its execution poll/disposal causes and acquires
+Application receiving, but invokes final export withdrawal outside that catch
+before acquiring Session close. Separate component tests do not establish that
+both original causes and the acquired outcome survive this finalization cut.
+
+Use the existing pure Creator topology and two legal distinct Counter exports.
+The first decoder first-polls the second export's genuine public withdrawal
+operation with a one-shot panicking waker, then raises its distinct original
+decoder panic synchronously. The observation future remains outside the decoder
+and disposable kernel, so cancellation cannot deregister its pending waiter.
+The decoder must panic before tuple serving can revisit withdrawal intent.
+Later native withdrawal must retain its canonical actual result; the independent
+notification cause must not erase the decoder cause, acquired Application outcome
+or actual joined close. This is deliberate Bombay failure-custody policy,
+not an actor-model rule or an induced native close Err.
+
+First establish the smallest old-source regression in debug and optimized builds
+through pinned Nix. Save the pre-rescue close acquisition and actual returned
+operation, independent Application cleanup/root retirement, live observation
+registration and both original payload identities. Perform unconditional finite
+external cleanup before assertions on the old source; rescue must not count as
+Node's acquired close. The intended failure is skipped joined Node finalization,
+not setup, compilation, a vanished waiter or a watchdog. Review the test twice,
+including the synchronous ordering and cancellation counterexample.
+
+Initial scope: this PRD/status, one owning retirement test module and its existing
+registration. Production+0/-0/net0; tests approximately+250 before formatting;
+public types+0/-0. Reuse Node, Export, Observe, the nominal recorded provider and
+Creator/Counter topology. Add no failure port, runtime, observer, actor contract,
+erased future or production hook. No production design or API migration is
+selected before the regression establishes the actual defect. Any fix requires
+its own pre-edit record, full surface measurement and applicable scope checkpoint.
+Full R18/R01–R25/AUTH1/NET1 and the remaining resource/reconnect work stay active.
+
+### Withdrawal notification — initial debug regression
+
+The unchanged merged production source now executes the focused regression and
+fails at its intended finalization oracle. Current test sourcea5d71005 passes
+all preceding observations: two distinct original panic allocations (decoder461
+retained by Node, withdrawal notification463 caught outside), registered pending
+observation, one actual wake, canonical native withdrawal Some(Ok), independent
+Application cleanup and established actor retirement. Actual printed snapshots
+before rescue are outcome returned=false, acquired close=None and native
+Session closed=false. Explicit external close succeeds before assertions; it
+is not credited as Node finalization. The single named debug test fails in0.10s
+with458 filtered cases; no watchdog or compilation failure establishes this result.
+
+Earlier compilation attempts reject unsupported boxed-byte SDK conversion and
+a borrowed unit snapshot spanning mutable rescue. Supported into_vec ownership
+transfer and a copied unit/error-pointer snapshot resolve these without new
+types or architecture. Those two runs execute no tests and remain separate.
+An initial executed sourceb3f0da29 already fails the same primary in0.08s;
+a later print-only probe exposes the three actual saved values above.
+
+Both source-review passes accept this as an initial skipped-close/outcome
+regression, not complete successful-fix acceptance: swallowing the notification
+panic and closing would currently pass. Any retained fix must independently
+assert the exact second original on its successful return path and inspect the
+complete returned Application/native originals. The same-source optimized run also fails at the intended oracle in0.01s,
+with the same false/None/false pre-rescue snapshots,458 filtered cases and both
+original identities checked. It builds in6m26s. Independent paired source/outcome
+review37e673f5 confirms both intended failures and their limits; the two initial
+source reviews and debug review remain separate immutable reports.
+Production/API/dependencies remain unchanged; no fix or broader R18 acceptance
+is claimed. Source, raw logs, commands, compiler denials and reviews
+are retained in the current common Git remote-retirement archive.
+
+### Withdrawal notification — proposed owning fix and surface checkpoint
+
+The debug/optimized regression establishes the blocker before any production
+edit. Node must return its already acquired Application outcome and attempt
+actual native Session close even when final export withdrawal panics. Retain
+both the earlier execution cause and every acquired withdrawal cause separately;
+do not replace native close errors, invent successful draining, retry a panicked
+future or discard remaining export/request custody. A withdrawal panic means
+that operation did not establish complete withdrawal/draining; Session close is
+an independent fact. Full quiescence/resource and native close-timeout proofs
+remain open.
+
+Proposed ordinary-Rust composition: reuse the existing Node-owned pinned
+execution poll/disposal acquisition pattern for its final withdrawal future,
+then call the existing Session close. Keep final withdrawal poll and producer
+disposal originals in two distinct optional Node fields, alongside the existing
+execution pair. One private Node retirement operation owns this common path for
+both supplied and absent Work; it does not interpret actor effects or select a
+new lifecycle policy. No new runtime, trait, error wrapper, generic parameter,
+failure port, macro, public type or dependency is proposed.
+
+The existing consuming Node::into_parts product must transfer all seven values:
+exports, binding result, native close result, execution poll panic, execution
+disposal panic, withdrawal poll panic and withdrawal disposal panic. Returning
+the old five-value product would erase newly acquired causes. Adding a second
+extraction method or an ordering barrier only to preserve the old tuple is
+rejected. A new wrapper that merely renames this product is also unnecessary.
+The complete original Node still returns on absence of its binding/close facts.
+
+Current measured patch: four paths including the untracked test, production
+Rust+0/-0/net0, tests+210/-0/net210, public types+0/-0; records are separate.
+The proposed complete repair has one production owner (application/node.rs),
+the focused regression and existing registration, existing consuming callers
+and their assertions, the remote Counter's ordinary typed error handling, and
+the existing PRD/status/capability/module/API records. The current caller scan
+identifies27 affected Rust caller files, excluding an unrelated Engine text
+match. With the production owner, new test and five existing documents this is
+34 known paths; cap the approved migration at40 paths pending the complete
+consumer scan. Expected production is approximately+45/-4 before formatting,
+with no new public types. These are estimates, not accepted final deltas.
+
+This exceeds the repository's15-file checkpoint. Expanded-surface authorization
+is required before production implementation/migration. No production edit has
+been made. After authorization, first extend the successful regression oracle
+to inspect the exact retained notification463 payload and every returned
+Application/native original. Prove the focused debug/optimized fix and its
+original-source restoration/inversion before full caller migration and normal
+Nextest/flake/required hosted delivery. All current assertions and timeouts stay
+intact. Full R18/R01–R25/AUTH1/NET1 remains active.
+
 ## Declared-prefix rollback — prerequisites and change record (2026-11-17)
 
 **State: merged (bounded declared-prefix test slice).**

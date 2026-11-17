@@ -22,6 +22,7 @@ use zenoh::sample::Locality;
     reason = "reuse the pure Creator and topology without installing their separate Entity-family fixture"
 )]
 mod actors;
+mod notification;
 mod withdrawal;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
