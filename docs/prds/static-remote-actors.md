@@ -253,6 +253,76 @@ Integrated checkpoint against main813c: four paths and no untracked project file
 production +0/-0/net0; tests +568/-0/net568; public types +0/-0;
 documentation +316/-10/net306. No production code or public type is added.
 
+### Timestamp maintenance gate — change record (2026-11-17)
+
+Combined head78442ca8 passes Nextest1028 with six controlled child registrations;
+its native and hosted Nix gates remain live. Its required Deny check fails on
+[RUSTSEC-2026-0542](https://rustsec.org/advisories/RUSTSEC-2026-0542.html), added
+to the database at10:14:35 UTC after original1042's successful check. This is an
+informational maintenance advisory, with no patched version. Original acceptance
+does not waive this new failure. Cargo.lockc0a6f5a6 and all selected owners remain
+unchanged; no dependency or parser change is selected.
+
+Select a narrowly constrained maintenance exception for humantime2.4.0 through
+uhlc0.8.2 and zenoh-util1.10.1. Both inspected owners use timestamps, not duration
+parsing. This explicitly accepts runtime maintenance risk: the SDK's selected
+unstable time-selector API can parse caller input. Weak fractional-suffix
+acceptance, platform bounds, pre-epoch formatting panic and future unpatched
+defects remain limitations; this is neither a vulnerability waiver nor proof of
+safety. The maintainer's ended-development notice independently supports the
+advisory, despite its inaccurate claim that this package wraps chrono.
+
+Jiff0.2.35/time0.3.55 consumer probes in both profiles disprove a transparent
+replacement: grammar, fractional precision, leap seconds, range and diagnostics
+differ. A compatible maintained published owner repair is not established.
+The conditional owner migration needs nine publications; renamed clock/util
+ownership expands this to eleven and changes public clock/protocol identities.
+That expansion is not justified merely to remove an advisory name.
+
+Before editing policy, the bounded change record selects existing cargo-deny's
+one-ID exception, immediate-parent wrappers and stable-version bans. Expected
+new owning path: deny.toml; existing PRD/status paths record the decision.
+Cumulative scope becomes five paths, production Rust+0/-0/net0, retained
+tests+568/-0/net568 and public types+0/-0. No parser, SDK, runtime, feature,
+dependency, public type or project tool is added. Expected policy delta is
++10/-1; complete tracked/untracked measurement follows retention.
+
+The isolated candidate passes pinned-Nix cargo-deny0.19.8 advisories/licenses/bans
+on the current whole graph after the original policy reproduces advisory exit1.
+Native bans reject an added immediate caller, humantime2.3.0 with only the two
+approved parents, uhlc0.8.1 and util1.10.2 with intended exit2 diagnostics.
+The owner-only timestamp downgrade restores its exact original lock and passes.
+A separate direct2.3 pin fails both caller and version guards and receives no
+isolated-version credit. Independent law and counterexample reviews retain
+these distinctions. Local controls are not hosted0.20.2 or final-head acceptance.
+
+Exact archive checksums remain humantime15cdd26707701c53297e2fa6afb323d55fbc1d0810c3aec078ae3ef0424c3c15,
+uhlcb62a645e3e4e6c85b7abe49b086aa3204119431f42b6123b0070419fb6e9d24e,
+and util43a473dcc62026b9d9589acc22c62b04cb7dab4070bba5543d2afac741ddf947.
+Native name/stable-semver guards do not enforce checksum/source identity or
+every prerelease. Reopen at the next selected dependency checkpoint, or on any
+version/prerelease/source/checksum/edge/feature/compiler/target/SDK-profile change,
+new exposure or input-trust change, relevant defect/advisory, or compatible
+maintained owner repair. All other advisory, vulnerability, license and source
+checks and the scheduled fresh database scan remain active. The root coordinator
+owns this decision; exact inputs, two reviews, native commands and raw outcomes
+are preserved in this stage's common Git archive under integration/maintenance-policy/.
+The exact reviewed policy896c4e26 is now retained. At11:55:28 UTC the actual
+pinned-Nix cargo-deny0.19.8 command with all-features/locked and a fresh database
+fetch passes advisories, licenses, bans and sources. Database233155b4 and
+Cargo.lockc0a6f5a6 retain their exact identities. The local failed baseline,
+candidate positive, four isolated intended guard refusals, owner-only restoration,
+three scoped reviews and final product-policy result remain separate receipts.
+Other stable-version directions are configured symmetrically, not seven observed
+negative cases. Required fresh final-head hosted checks and normal reviewed
+delivery remain open; the old784 Deny failure is not relabeled as a success.
+Full R18/AUTH1/NET1 and the original PRD goal remain active.
+
+Retained checkpoint against main813c: five paths and no untracked project files;
+production Rust+0/-0/net0; tests+568/-0/net568; public types+0/-0;
+policy+10/-1/net9; documentation+392/-10/net382.
+This is an explicit policy addition, not production reduction or dependency repair.
+
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
 **State: merged (bounded whole Node-owner test slice).**

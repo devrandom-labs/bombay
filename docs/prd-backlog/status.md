@@ -14,7 +14,13 @@ Linux owners and all eight hosted checks, with557 remote cases per profile and
 Miri skips and static-analysis/corpus-retention limits remain in the PRD.
 Main813c's accepted check-cache policy is integrated while its1026-case proof
 stays separate. Fresh combined-source qualification and PR435 delivery remain
-open. These are
+open. Combined784 passes Nextest1028; its new Deny failure is the informational
+humantime maintenance advisory published after the original successful scan.
+The [bounded policy change record](../prds/static-remote-actors.md#timestamp-maintenance-gate--change-record-2026-11-17)
+retains one constrained maintenance exception after independent compatibility
+research and native guard controls. All four local dependency checks pass;
+fresh final-head hosted acceptance remains open. No SDK/parser/dependency change
+is selected. These are
 finite declaration/diagnostic observations, not task/Session resource baselines.
 Full R18/AUTH1/NET1 and their reciprocal dependency edges remain unchanged.
 
