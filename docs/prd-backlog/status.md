@@ -1,6 +1,30 @@
 # Backlog status and dependencies
 
-R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--prerequisites-and-change-record-2026-11-16)
+R18's [declared-prefix rollback](../prds/static-remote-actors.md#declared-prefix-rollback--prerequisites-and-change-record-2026-11-17)
+has fresh selected-owner verification and two owning cases passing debug/optimized
+execution on PR432's actual merge. Both tuple associations reject omitted early
+rollback and retained diagnostic ownership through intended source inversions;
+exact restored positives and the unchanged public Node refusal consumer pass.
+Three scoped reviews, both test-review passes and final minimization close this
+bounded slice. All 28 native Nix owners and the actual flake pass on frozen665;
+Nextest, optimized workspace and coverage each pass 1028 with six controlled child
+registrations. Selected Rust 1.96 gates pass. Original1042 separately passes all28
+Linux owners and all eight hosted checks, with557 remote cases per profile and
+1028 cases each in ordinary workspace and coverage. Bounded fuzz passes; actual
+Miri skips and static-analysis/corpus-retention limits remain in the PRD.
+Main813c's accepted check-cache policy is integrated while its1026-case proof
+stays separate. Fresh combined-source qualification and PR435 delivery remain
+open. Combined784 passes Nextest1028; its new Deny failure is the informational
+humantime maintenance advisory published after the original successful scan.
+The [bounded policy change record](../prds/static-remote-actors.md#timestamp-maintenance-gate--change-record-2026-11-17)
+retains one constrained maintenance exception after independent compatibility
+research and native guard controls. All four local dependency checks pass;
+fresh final-head hosted acceptance remains open. No SDK/parser/dependency change
+is selected. These are
+finite declaration/diagnostic observations, not task/Session resource baselines.
+Full R18/AUTH1/NET1 and their reciprocal dependency edges remain unchanged.
+
+R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--delivery-2026-11-17)
 passes all28 normal native Nix gates on frozen d0b36548 after integrating
 reviewed PR431/main9d34155c. Independent final review verifies exact source,
 derivers, isolated outcomes and controls. Optimized workspace cases pass1026/0;
@@ -14,8 +38,11 @@ the ordinary Entity main preserves its exact business and retirement outcomes.
 Required evidence is preserved and the completed standalone cache is removed.
 Runtime0.3 publication, tag/package VCS and checksum are verified in the PRD;
 the release's caller matrices do not replace this branch's qualification.
-This bounded slice is distilled after three scoped reviews, pending the focused
-PR, hosted checks and reviewed merge. Later R18 cuts/baselines/reconnect,
+This bounded slice merged through PR432/7882c8d3 after three scoped reviews,
+all 28 Linux owners and all eight exact-head hosted checks passed. Reviewed,
+actual CI and merged trees match. The PRD records actual fuzz/artifact and Miri
+scope. Its clean 14.246 MiB worktree remains open in existing terminal shells;
+remove it after those handles release. Later R18 cuts/baselines/reconnect,
 AUTH1/NET1 and example error/cleanup distillation remain open; dependency edges
 and step order are unchanged. Coordinate before the next main advance.
 
@@ -30,7 +57,7 @@ both profiles; original production source is restored. Workspace release passes
 retain their documented scope. Current fuzz artifact counts match their recorded
 outcomes, within the owning record's compiler/source limits. The clean merged
 worktree and branch are removed. Production/API/dependencies are unchanged.
-Whole Node-owner drop and R18's later cuts, resource baselines and reconnect,
+Full whole-Node resource coverage and R18's later cuts, resource baselines and reconnect,
 AUTH1/NET1 and final example distillation remain open. Existing dependency edges
 are unchanged; R18 remains active.
 

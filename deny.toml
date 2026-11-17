@@ -3,10 +3,11 @@
 # dependency tree, and a license allowlist for everything we ship.
 
 [advisories]
-# This one maintenance exception retains the audited immutable build-time macro.
+# These scoped maintenance exceptions retain audited immutable dependencies.
 # Native bans below constrain its owning edge and stable versions; any source,
 # version, edge or compiler change reopens the PRD decision. Vulnerabilities stay checked.
 ignore = [
+  { id = "RUSTSEC-2026-0542", reason = "Audited humantime 2.4.0 timestamp uses only via uhlc 0.8.2 and zenoh-util 1.10.1; runtime maintenance risk and reopening conditions: static-remote-actors PRD." },
   { id = "RUSTSEC-2024-0436", reason = "Audited paste 1.0.15 only via token-cell 2.1.1; see static-remote-actors PRD and owning bans." },
 ]
 
@@ -39,6 +40,14 @@ ignore = true
 # Exact archive/lock custody also remains required: these ranges guard stable versions.
 [bans]
 deny = [
+  # Stable-version and immediate-parent guards; exact source custody is in the PRD.
+  { name = "humantime", wrappers = ["uhlc", "zenoh-util"], reason = "Only the two audited timestamp owners" },
+  { name = "humantime", version = "<2.4.0", reason = "Only the audited timestamp version" },
+  { name = "humantime", version = ">2.4.0", reason = "Reopen timestamp maintenance review before upgrade" },
+  { name = "uhlc", version = "<0.8.2", reason = "Only the audited timestamp owner" },
+  { name = "uhlc", version = ">0.8.2", reason = "Reopen timestamp maintenance review before upgrade" },
+  { name = "zenoh-util", version = "<1.10.1", reason = "Only the audited timestamp owner" },
+  { name = "zenoh-util", version = ">1.10.1", reason = "Reopen timestamp maintenance review before upgrade" },
   { name = "paste", wrappers = [
     "token-cell",
   ], reason = "Only the audited owning edge" },

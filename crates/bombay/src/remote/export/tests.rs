@@ -66,6 +66,9 @@ mod comparison;
 #[path = "withdrawal.rs"]
 mod withdrawal;
 
+#[path = "startup.rs"]
+mod startup;
+
 fn request_originals(
     protected: &[u8],
     proof: &[u8],

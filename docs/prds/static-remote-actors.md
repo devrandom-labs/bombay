@@ -1,9 +1,333 @@
 # Static remote actors and typed admission
 
+## Declared-prefix rollback — prerequisites and change record (2026-11-17)
+
+**State: distilled (bounded declared-prefix test slice); combined-source
+qualification and reviewed delivery remain open.** The original source starts
+from actual PR432 merge 7882c8d3, with its delivery-only record c410fcc6. Its
+hosted acceptance and the later PR433/main813c integration are recorded below.
+Full R18/AUTH1/NET1 remains open;
+reciprocal backlog dependencies are unchanged. This continues the declared-prefix
+cut before coexisting close failures, complete task/resource baselines or reconnect.
+
+Fresh lock/archive/VCS verification selects Behavior/Actors 0.30.0 at 628649da,
+BehaviorMacros 0.16.0 at 55dbac2d, Address 0.3.0 at 9f058dc0, Communication 0.1.7
+at 2d71c2f6, Timers 0.2.0 at 9369d1f6 and SDK 1.10.10 at c34eb350; Engine,
+Observe and Bombay remain workspace owners. Cargo.lock is c0a6f5a6 and flake.lock
+13ea9617; no patch, replacement or feature adoption is needed. The complete
+selected Behavior instructions and all six owners' source/API/tests/docs were
+reread. The fresh report is `contracts.txt` in Git's
+`session-archives/2026-11-17/binding-prefix/`. Behavior owns pure Actions, Actors
+shutdown policy, Address leases, Communication exact admission/drain, Observe
+affine completion and Timers branded scheduling. Bombay's existing Export tuple
+owns declaration rollback; Node owns later global withdrawal and Session close.
+No dependency contract remains unidentified.
+
+The gap is an independent observation of rollback **before** later cleanup.
+The existing public second-declaration refusal test preserves legal distinct
+targets, unused Work and actual Node/actor/native outcomes, but its final
+inspection can pass when Node's later withdrawal repairs omitted tuple rollback.
+Keep that consumer unchanged and reexecute it as the full-Node companion.
+
+Add one shared owning Export trace using real concrete nested tuples and the existing
+native Session: two successful declarations followed by an empty-key SDK
+constructor refusal. Before any rescue, extraction or Session close, retain
+actual current SessionLocal matching, passive withdrawal completion, original
+typed startup causes and diagnostic-allocation ownership. An all-valid tuple
+must match natively. Repeat three failed startups on the same Session and keys,
+then exercise the existing real Counter query path to prove healthy recovery.
+This direct declaration-owner test does not claim public target preflight,
+asynchronous SDK declaration failure, query-permit or whole-runtime baselines.
+Matching callbacks need not preserve a transient true event during Ready calls.
+Both `((A, B), F)` and `(A, (B, F))` are required: successful-product withdrawal
+and nested refusal propagation must each have a separately selected test case.
+Their shared native trace uses one private closed composition choice, with no
+new production type. The all-valid control also measures diagnostic ownership
+before declaration, while declared, after withdrawal and after owner extraction.
+
+The intended falsifier omits the real tuple's early left withdrawal. Capture the
+bad prefix while still live, then perform unconditional real rescue before law
+assertions. Its debug and optimized failures must be the intended prefix oracle,
+not a compiler error or watchdog. Restore exact production bytes, rerun both
+profiles, and verify repeated teardown cannot replace acquired completion.
+Separately retain the original diagnostic Arc at its owning native withdrawal
+to establish the intended count-baseline failure; an earlier matching failure
+does not credit an unreached count assertion.
+
+Expected paths: existing Export tests registration, new owning `startup.rs`,
+this PRD and backlog status. Expected production +0/-0/net0, public types +0/-0;
+test growth is measured after implementation. Temporary inversions alone touch
+the existing query.rs tuple/leaf withdrawal and one module-scope import.
+Reuse Export, Observe, native matching and
+the existing Counter/protocol/query helper; add no production hook, observer,
+actor contract, macro, visibility change or dependency. Aggregate states,
+production branches/modules and public spellings remain unchanged. Two test
+reviews, three scoped audits, pinned-Nix gates and reviewed PR delivery remain
+required. The pre-edit plan grants no broader acceptance; focused results follow.
+
+### Declared-prefix rollback — focused results
+
+Frozen test source `d08e6cbf` exercises `((A, B), F)` and `(A, (B, F))` as two
+separately selected cases. Each snapshots native matching, canonical completion,
+the original suffix error and diagnostic ownership before rescue, extraction or
+Session close. Three fresh failed tuples share one Session; actual Counter replies
+remain 1 then 2, followed by a checked native reply of 2. The all-valid control
+measures diagnostic owners 1→2→1→0. Assertions borrow the saved native results.
+
+| Actual command scope | Debug | Optimized | Qualified observation |
+| --- | --- | --- | --- |
+| Both owning cases, original production `bc8eda88` | 2 pass | 2 pass | Early native absence, retained completion/cause, finite diagnostic baseline and healthy recovery. |
+| Omit only tuple early withdrawal, `7176695b` | 2 intended failures | 2 intended failures | Saved matching fails at startup.rs528 after actual cleanup; later count/source assertions are unreached. |
+| Retain diagnostic Arc in actual leaf withdrawal, `afa75416` | 2 intended failures | 2 intended failures | Native matching remains functional; count assertion494 sees [2,2,2] versus measured [1,1,1]. Later business/prefix assertions are unreached. |
+| Exact `bc8eda88` restoration after each control | 2 pass each | 2 pass each | Both complete healthy/inverse/restored cycles pass on the frozen test source. |
+| Unchanged public second-declaration Node refusal | 1 pass | 1 pass | Separate legal targets, unused Work, original refusal and joined Node/actor/native custody remain verified. |
+
+Every focused test command uses the pinned Nix shell, locked remote feature, two Cargo
+jobs, no incremental cache and one owned target. The two owning cases each have
+456 filtered registrations; the public consumer has 58. These are selected
+cohorts, not full workspace or CI results. Exact sources, patches, raw
+logs and result hashes are in this stage's common Git archive, including
+`borrowed-pair-result.json`, `controls/*-result.json` and `public-refusal-result.json`.
+The raw test logs retain actual names, profiles and toolchain; full historical
+test arguments are in the session command payloads, not a separate archive
+capture. The optimized Clippy command is explicitly archived.
+
+An initial retention edit hit the serving tail and survived both tests. It has
+no kill credit; its separate artifacts remain immutable. After exact restoration,
+the corrected edit was anchored to leaf withdrawal and produced the intended
+count failures above. All production bytes are restored. The diagnostic Arc is
+one allocation family, not the query permit or a task/Session/heap baseline;
+default native undeclare does not prove in-flight callback quiescence. The owning
+primitive and public consumer remain complementary tests, not a new combined
+three-target public Node trace. Full R18/AUTH1/NET1 remains active.
+
+Normal optimized whole-workspace Clippy required twelve mechanical corrections.
+Source939cd7a5 adds a module-scope Weak import, inherent method items and unit
+semicolons; native call order, assertions and expected values remain unchanged.
+Fresh939 focused runs pass two cases in each profile; normal Clippy passes with
+both mandatory lints denied. The d08 inversion records retain their actual
+source identity. Independent review confirms these mechanical changes preserve
+the same control sensitivity; no old execution is relabeled as source939.
+
+Candidate53ab checkpoint against main7882c8d3: four paths including the new test file.
+Production +0/-0/net0; tests +568/-0/net568; public types +0/-0.
+Documentation +161/-10/net151; test/evidence growth, not production reduction.
+
+### Declared-prefix rollback — scoped review and gate candidate
+
+Root, contract and independent test reviews find no scoped ownership or
+minimization veto. The test review separately maps each law to observable
+results, then checks counterexamples, missing outcomes and vacuity. The shared
+trace retains both concrete tuple types without adding a production abstraction.
+All three source reviews confirm the d08→939 mechanical equivalence. A separate
+evidence audit verifies all 20 result-to-log hash bindings and keeps unreached
+assertions, the surviving wrong-site trial and source epochs distinct. Reports
+are `root-final-source-review.txt`, `final-contract-review.txt`,
+`final-test-review.txt` and `focused-evidence-review.txt` in the stage archive.
+
+At that checkpoint full workspace Nextest, all 28 native Nix owners, exact hosted
+checks and reviewed PR delivery remained required. Local qualification follows;
+broader R18 resource/callback/reconnect requirements remain open.
+Frozen665 gate-candidate checkpoint: four paths and no untracked project files;
+production +0/-0/net0; tests +568/-0/net568; public types +0/-0;
+documentation +185/-10/net175.
+
+### Declared-prefix rollback — local acceptance
+
+Frozen head `665de8b633b1fcdd30f36b3069c70d57823eff4a`, tree
+`a575dd2ebdd429c7a1f9f7b9b6cfe4577d0a1daf`, passes the actual
+`nix flake check --no-update-lock-file -L --max-jobs 1 --cores 2` with exit 0
+at 06:27:45 UTC. All 28 aarch64-darwin owners, successful terminal marks and
+registered output derivers reconcile to the selected source. The closed owner
+report was read completely; no local execution finding remains. Other systems
+were omitted by this native command; the separate hosted acceptance follows.
+
+The separate Nextest, optimized workspace and coverage runs each pass 1028 cases
+with six parent-controlled child registrations. Their actual passing parents and
+named child guards are verified; these are distinct runs, not additive cases.
+Both remote profiles pass 557/0/0, including both source939 prefix cases and all
+six replay/protection guards. Coverage retains its full checked JSON losslessly
+and passes unchanged floors: Driver 737/818 at 90%, execution 1006/1048 at 93%,
+outcome 95/97 at 90% and Observe 504/526 at 90%. Source939 remains byte-exact;
+the d08 inversions retain their earlier execution identity.
+
+Rust 1.96 separately passes 114 selected minimum-compiler cases, with one
+parent-controlled child registration, and four remote-surface cases plus twelve
+compile fixtures. These selected commands do not execute the new prefix cases
+or establish full native MSRV qualification. The protected capsule's own lock
+is fd04bf45; its complete twelve-run matrix, both Clippys and formatting pass.
+Driver and actor-law evidence, bounded Loom outcomes, actual example mains and
+the Axum build-only limit retain their individual scopes in the closed report.
+
+Normal optimized workspace Clippy explicitly denies both required extra lints.
+The native formatting owner's literal command is `cargo fmt -- --check`; the
+additional pinned-shell `cargo fmt --all -- --check` also exits 0. The build
+owner runs `cargo build --release --workspace --all-targets` without a literal
+`--locked`; immutable lock/vendor inputs and actual command flags are recorded
+separately. No generic locked-command or unexecuted application claim is made.
+
+Final minimization closes this bounded slice after the three scoped source
+audits and both test-review passes. One private composition choice shares the
+real trace; existing owners express every law without a new production wrapper,
+observer or public surface. Source and evidence are preserved in
+`local-acceptance.json`, `root-final-minimization.txt`,
+`native-registry-reconciliation.json` and `native-owner-review/final-review.txt`
+in this stage's Git archive. The verified standalone cache was removed after an
+empty process-handle check, releasing 7.587547 GiB of allocated cache space.
+Current Rust, configuration and locks retain their qualified bytes; this final
+acceptance prose is a record-only successor to frozen665's Markdown inputs.
+
+Original1042 checkpoint: four paths and no untracked files; production +0/-0/net0;
+tests +568/-0/net568; public types +0/-0; documentation +238/-10/net228.
+Hosted checks and delivery were outstanding at that checkpoint. Original hosted
+acceptance follows; combined-source qualification and merge remain required.
+Full R18/AUTH1/NET1 and the remaining
+resource, callback, coexisting-failure and reconnect obligations remain active.
+
+### Declared-prefix rollback — original hosted acceptance
+
+[PR435](https://github.com/devrandom-labs/bombay/pull/435)'s original head
+`1042a7ed3ecc322cb0d56da8ac5df9fb6f8c3e8c`, tree
+`c8df52749a25d34bda50706d017fbd4356e12000`, passes all eight exact-head checks in
+[run44034227619](https://github.com/devrandom-labs/bombay/actions/runs/44034227619).
+The actual checkout is abcfcc5b, whose tree matches that head and whose parents
+are main7882c8d3 and1042. This acceptance does not qualify later main813c.
+
+All28 x86_64-linux Nix owners pass. Ordinary optimized workspace and coverage
+each independently execute123 test binaries and pass1028/0/6, plus three
+separate benchmark smoke executions. The six ignored registrations are exercised
+by their verified passing subprocess parents. Both remote profiles pass557/0/0;
+both source939 prefix cases pass once in each profile and in coverage. Linux
+coverage passes Driver737/818, execution1006/1048, outcome95/97 and Observe505/526
+against the unchanged90/93/90/90-percent floors. Linux Observe505 and native504
+remain distinct observations. Rust1.96 passes114 selected minimum-compiler cases
+with one controlled child registration and four remote-surface cases plus twelve
+compile fixtures; these selected commands do not run the new prefix cases.
+
+Dedicated Incoming debug/release each complete180 finite orders and258 generated
+invocations, including two saved cases. Public Client debug/release each complete
+32 finite words and260 generated invocations, including four saved cases. Incoming
+uses the production interpreter with test-owned Request custody; Client uses real
+two-Node exchanges. Native TLS debug/release each pass32 configurations,80 child
+cases, one controller and five auxiliary cases. These remain their own bounded
+cohorts; no full AUTH1/NET1 or additional workspace count is inferred.
+
+Driver fuzz completes2048 inputs; each of four Observe targets completes1024.
+Fuzz uses its pinned nightly1.98 shell and independent lock scopes, not the
+ordinary root lock. Both Miri steps are actually skipped. All eight official ZIP
+digests and534 retained members match independently. Current Observe ops reports
+90 files/1412 bytes while its archive retains88/1381; the two-file/31-byte
+difference has unknown cause. All16 original seeds remain byte-exact. This does
+not prove complete runtime-corpus retention or explain earlier corpus gaps.
+CodeQL succeeds with seven unchanged extraction-error files and nine warnings;
+no complete extraction claim is made. Linux coverage JSON, individual Actor
+mutation logs and TLS test binaries are not independently downloaded; the
+owning guarded logs and in-job receipts retain their stated limits.
+
+The closed `hosted/final-hosted-execution-review.txt` has SHA256 c7678949;
+`hosted/final-required-evidence-index.json` has SHA2560743f336. Root read the
+entire report and physically rehashed all622 indexed files/61,849,467 bytes.
+`original-hosted-acceptance.json` and `hosted/root-final-evidence-rehash.json`
+record acceptance within those limits in this stage's Git archive. No old
+inversion is relabeled as freshly executed in hosted CI. PR435 remains open;
+neither merge nor complete R18 acceptance follows from this original run.
+
+### Declared-prefix rollback — main integration
+
+The next candidate includes actual main813c67dd, treef7104748, the normal PR433
+merge over7882c8d3. Its accepted Crane policy stops exporting unused check Cargo
+artifacts while retaining exports for cache providers and the default build.
+The two incoming DevX records are preserved. Cargo.lock, flake.lock, Cargo.toml
+and AGENTS.md are byte-identical between original1042 and813c; incoming main
+changes no Rust, dependency, API or selected owner contract. The fresh comparison
+is `integration-input-verification.json` in this stage's Git archive.
+
+Both source939 tests and production querybc8 retain their exact bytes, so the
+closed source audits and two test-review passes remain applicable. Original665
+native execution, original1042 hosted execution and PR433's1026-case proofs stay
+separate. The combined candidate requires fresh Nextest, all28 native Nix owners
+and exact hosted qualification before normal reviewed merge. Full R18 resource,
+coexisting-failure, callback and reconnect requirements remain active.
+
+Integrated checkpoint against main813c: four paths and no untracked project files;
+production +0/-0/net0; tests +568/-0/net568; public types +0/-0;
+documentation +316/-10/net306. No production code or public type is added.
+
+### Timestamp maintenance gate — change record (2026-11-17)
+
+Combined head78442ca8 passes Nextest1028 with six controlled child registrations;
+its native and hosted Nix gates remain live. Its required Deny check fails on
+[RUSTSEC-2026-0542](https://rustsec.org/advisories/RUSTSEC-2026-0542.html), added
+to the database at10:14:35 UTC after original1042's successful check. This is an
+informational maintenance advisory, with no patched version. Original acceptance
+does not waive this new failure. Cargo.lockc0a6f5a6 and all selected owners remain
+unchanged; no dependency or parser change is selected.
+
+Select a narrowly constrained maintenance exception for humantime2.4.0 through
+uhlc0.8.2 and zenoh-util1.10.1. Both inspected owners use timestamps, not duration
+parsing. This explicitly accepts runtime maintenance risk: the SDK's selected
+unstable time-selector API can parse caller input. Weak fractional-suffix
+acceptance, platform bounds, pre-epoch formatting panic and future unpatched
+defects remain limitations; this is neither a vulnerability waiver nor proof of
+safety. The maintainer's ended-development notice independently supports the
+advisory, despite its inaccurate claim that this package wraps chrono.
+
+Jiff0.2.35/time0.3.55 consumer probes in both profiles disprove a transparent
+replacement: grammar, fractional precision, leap seconds, range and diagnostics
+differ. A compatible maintained published owner repair is not established.
+The conditional owner migration needs nine publications; renamed clock/util
+ownership expands this to eleven and changes public clock/protocol identities.
+That expansion is not justified merely to remove an advisory name.
+
+Before editing policy, the bounded change record selects existing cargo-deny's
+one-ID exception, immediate-parent wrappers and stable-version bans. Expected
+new owning path: deny.toml; existing PRD/status paths record the decision.
+Cumulative scope becomes five paths, production Rust+0/-0/net0, retained
+tests+568/-0/net568 and public types+0/-0. No parser, SDK, runtime, feature,
+dependency, public type or project tool is added. Expected policy delta is
++10/-1; complete tracked/untracked measurement follows retention.
+
+The isolated candidate passes pinned-Nix cargo-deny0.19.8 advisories/licenses/bans
+on the current whole graph after the original policy reproduces advisory exit1.
+Native bans reject an added immediate caller, humantime2.3.0 with only the two
+approved parents, uhlc0.8.1 and util1.10.2 with intended exit2 diagnostics.
+The owner-only timestamp downgrade restores its exact original lock and passes.
+A separate direct2.3 pin fails both caller and version guards and receives no
+isolated-version credit. Independent law and counterexample reviews retain
+these distinctions. Local controls are not hosted0.20.2 or final-head acceptance.
+
+Exact archive checksums remain humantime15cdd26707701c53297e2fa6afb323d55fbc1d0810c3aec078ae3ef0424c3c15,
+uhlcb62a645e3e4e6c85b7abe49b086aa3204119431f42b6123b0070419fb6e9d24e,
+and util43a473dcc62026b9d9589acc22c62b04cb7dab4070bba5543d2afac741ddf947.
+Native name/stable-semver guards do not enforce checksum/source identity or
+every prerelease. Reopen at the next selected dependency checkpoint, or on any
+version/prerelease/source/checksum/edge/feature/compiler/target/SDK-profile change,
+new exposure or input-trust change, relevant defect/advisory, or compatible
+maintained owner repair. All other advisory, vulnerability, license and source
+checks and the scheduled fresh database scan remain active. The root coordinator
+owns this decision; exact inputs, two reviews, native commands and raw outcomes
+are preserved in this stage's common Git archive under integration/maintenance-policy/.
+The exact reviewed policy896c4e26 is now retained. At11:55:28 UTC the actual
+pinned-Nix cargo-deny0.19.8 command with all-features/locked and a fresh database
+fetch passes advisories, licenses, bans and sources. Database233155b4 and
+Cargo.lockc0a6f5a6 retain their exact identities. The local failed baseline,
+candidate positive, four isolated intended guard refusals, owner-only restoration,
+three scoped reviews and final product-policy result remain separate receipts.
+Other stable-version directions are configured symmetrically, not seven observed
+negative cases. Required fresh final-head hosted checks and normal reviewed
+delivery remain open; the old784 Deny failure is not relabeled as a success.
+Full R18/AUTH1/NET1 and the original PRD goal remain active.
+
+Retained checkpoint against main813c: five paths and no untracked project files;
+production Rust+0/-0/net0; tests+568/-0/net568; public types+0/-0;
+policy+10/-1/net9; documentation+392/-10/net382.
+This is an explicit policy addition, not production reduction or dependency repair.
+
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
-**State: distilled (bounded whole Node-owner test slice); reviewed PR delivery
-remains open.** Full R18 remains active.
+**State: merged (bounded whole Node-owner test slice).**
+[Verified delivery](#whole-node-owner-drop--delivery-2026-11-17) records PR432.
+Full R18 remains active.
 This stage starts from main
 `ae2d36cfa1832143438db0bb4ffdd61387844db5`, with the local PR430 delivery
 receipt committed as `b67b7d2a`. It continues the earlier R18 startup cut before
@@ -458,8 +782,9 @@ authority. The release receipt is
 `corrected-release/publication-receipt.json` in this stage's Git session archive.
 
 These final record edits leave Rust, configuration and locks unchanged; they
-are not retroactively included in d0b36548's Markdown inputs. The focused PR
-and its actual hosted checks/merge remain open. Full R18's later
+are not retroactively included in d0b36548's Markdown inputs. Hosted checks and
+merge were still open at that checkpoint; verified delivery is recorded below.
+Full R18's later
 startup/tuple rollback, coexisting close failures, resource baselines and
 reconnect, AUTH1/NET1 and example error/cleanup distillation remain open.
 
@@ -488,8 +813,38 @@ untracked project files: production+0/-0/net0, tests+112/-34/net78 and public
 API+0/-0 types. Documentation is +595/-23/net572. This is
 test/evidence growth, with no production reduction claimed. Only the two task
 records changed after frozen qualification; Rust, scripts, manifests, locks
-and build configuration retain their qualified bytes. Normal focused PR/hosted
-verification and reviewed merge are the next delivery steps.
+and build configuration retain their qualified bytes. The following delivery
+record closes this slice's hosted verification and reviewed merge.
+
+### Whole Node-owner drop — delivery (2026-11-17)
+
+[PR432](https://github.com/devrandom-labs/bombay/pull/432) merged normally as
+`7882c8d39dc6f82d3338899fac530259f16892b9` at 01:44:47 UTC after all eight
+checks passed on accepted head e68ba2f3. Its actual tree
+`a80576e9fc9a3fca1aef0b1d649644b9cdfe6d97` equals the reviewed head and
+actual CI checkout 8a7e7d96; parents are main 9d34155c and accepted e68.
+
+[Hosted Nix job133684646761](https://github.com/devrandom-labs/bombay/actions/runs/43977355341/job/133684646761)
+passes all 28 Linux owners, including the 1026/0/6 workspace and coverage cohorts.
+The six ignored child registrations retain their passing-parent scope. Driver
+fuzz completes 2048 runs and each of four Observe targets completes 1024; both
+official ZIPs, all 16 source seeds and the 119+345 corpus files are verified.
+Miri is actually skipped on this pull-request event. Hosted Actor inverse
+sublogs and full coverage JSON were not uploaded; owning-script/floor success
+is distinct from the directly preserved native artifacts. No private Node 1.96
+execution, full R18/AUTH1/NET1 completion or new publication is claimed.
+
+The final hosted audit has no scoped veto. Root read its complete report and
+rehashed all 518 indexed evidence files. Exact acceptance, checks, merge and
+tree receipts are `corrected-release/pr432-{acceptance,delivery}.json` in this
+stage's common Git session archive. DevX acknowledged the actual merge and
+reviewed tree; frozen PR433 proofs remain separate. The 5.6509017944 GiB standalone cache
+was already removed. The clean 14.246 MiB worktree remains temporarily retained
+because existing terminal shells 4827/5007 still use it; no active shell was
+terminated. Recheck these handles before removing that owned worktree.
+
+Delivery-record checkpoint: two Markdown paths; production/tests +0/-0/net0,
+public types +0/-0; documentation +45/-10/net35. No untracked files.
 
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 
