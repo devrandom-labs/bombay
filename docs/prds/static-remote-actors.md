@@ -132,6 +132,35 @@ original-source restoration/inversion before full caller migration and normal
 Nextest/flake/required hosted delivery. All current assertions and timeouts stay
 intact. Full R18/R01–R25/AUTH1/NET1 remains active.
 
+### Withdrawal notification — actual PR436 integration (2026-11-17)
+
+This local integration uses actual [PR436](https://github.com/devrandom-labs/bombay/pull/436)
+mergecaf0b68199f185b7d35c9b41585e122a647ca0b6, tree9ef4486625bc80463c3dea6f6b70b1a616f4f85e,
+with verified parents2280a36a and2af77356. The tree equals the accepted HTTP head.
+Root rehashed the peer acceptance21a8e704 and deliverye270c7b8 receipts and read
+official merge metadata. HTTP's source-equality adoption of7e local28/1029 is
+not a new execution at2af and does not replace R18's abbf/1028 or da8d70e4
+regression evidence. Those epochs and closed indexes remain unchanged.
+
+The seven delivered HTTP paths merge automatically into the frozen R18 branch.
+Node, Export, Observe, selected manifests/locks/instructions and the exact
+a5d71005 regression have no incoming byte change. Remaining root scope is the
+same four paths: focused test/registration and the two R18 records. Fresh
+selected-owner inspection and exact source comparisons are retained in the
+common Git remote-retirement/caf0-integration archive. The newly combined source
+requires its own debug/optimized regression outcomes before attribution; no
+whole-workspace/flake or completed repair is inferred. Production repair and
+the up-to40-file migration still require the outstanding scope authorization.
+
+The earlier queued merged-worktree cleanup is closed. Four obsolete trees
+(Node, prefix and the two DevX trees) were removed normally at19:10:54 UTC after
+exact preservation, merged ancestry and fresh idle-shell/job/liveness checks.
+All four refs, source archives, raw commits, ignored inputs and required release
+evidence remain. The measured four-tree total is56.96484375MiB, counted once.
+Its authoritative receipt is remote-retirement/merged-worktrees/cleanup-result.json
+in the common Git archive. Active retirement/primary and unfinished HTTP paths
+were excluded.
+
 ## Declared-prefix rollback — prerequisites and change record (2026-11-17)
 
 **State: merged (bounded declared-prefix test slice).**
@@ -1016,9 +1045,10 @@ rehashed all 518 indexed evidence files. Exact acceptance, checks, merge and
 tree receipts are `corrected-release/pr432-{acceptance,delivery}.json` in this
 stage's common Git session archive. DevX acknowledged the actual merge and
 reviewed tree; frozen PR433 proofs remain separate. The 5.6509017944 GiB standalone cache
-was already removed. The clean 14.246 MiB worktree remains temporarily retained
-because existing terminal shells 4827/5007 still use it; no active shell was
-terminated. Recheck these handles before removing that owned worktree.
+was already removed. At that delivery checkpoint, the clean14.246MiB worktree
+was retained by idle terminal shells4827/5007. The later four-tree cleanup above
+closes that queue after preservation and fresh no-job/liveness checks; normal
+removal preserves its exact branch/ref and archive.
 
 Delivery-record checkpoint: two Markdown paths; production/tests +0/-0/net0,
 public types +0/-0; documentation +45/-10/net35. No untracked files.

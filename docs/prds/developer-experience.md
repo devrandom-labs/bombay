@@ -775,9 +775,202 @@ source is prepared elsewhere. Its1025-case proof does not certify the new1026-ca
 cohort. Own scope remains three existing files. Relative to that main, Rust source,
 tests, public types, actor states, transition branches and modules have zero delta.
 The three actual providers, all28 commands, reports, features, profiles and
-compiler selections must remain exact. Fresh combined-source local, Nextest and
-hosted acceptance precede
-PR433 delivery; the complete DX01–DX28 programme stays active.
+compiler selections remain exact in the accepted combined source. All28 local
+owners, actual flake and fresh Nextest1026 pass; the optimized and coverage
+cohorts retain123 harnesses,154 compiler fixtures, six parent-controlled child
+registrations and three benchmark targets. All eight hosted checks succeed at
+head `c8cb9a68`, including CI44016858662/job133816750785. Actual Linux1026,
+protected132, schedule/TLS artifacts and bounded Driver/Observe fuzz results
+were independently audited. Miri was skipped. Original049/1025 evidence and
+peer PR435/1028 evidence remain separate.
+
+[PR433](https://github.com/devrandom-labs/bombay/pull/433) merged normally at
+2026-11-17T07:17:33Z as `813c67dd25feb2e31b9950ce84e09ac3615ff013`.
+Its tree `f710474826149f5c8aeeedf2ae63a00060a769cb` exactly equals accepted
+head c8cb; parents are main7882 plus c8cb. The existing handoff retains
+`check-artifacts-integrated-{hosted-acceptance,delivery}.json`, exact source
+archives, complete raw logs and the actual Bombay acknowledgment. Completed
+owned worktree and redundant raw-log prefixes were removed after liveness and
+preservation checks:38.35MiB allocated, distinct from the earlier10.51GiB
+persistent-output comparison. No new crate publication or runtime-memory
+improvement is claimed. The complete DX01–DX28 programme remains active.
+
+### HTTP capabilities, before implementation (2026-11-17)
+
+Selected DX01/20/21/22/26 scope: the HTTP example currently names
+`ApplicationHandle<OrderBook, <StopOnShutdown<OrderBook> as Behavior>::Event>`.
+Its order route receives lifecycle authority that it never uses. The desired
+ordinary construction supplies the existing message-only `ActorInterface`
+and a separate closure over the existing `ApplicationLifecycle`. Neither the
+HTTP module nor its callers name the installed actor's composed event type.
+This is a derived capability-separation rule and application policy, not a
+new actor-model law or a runtime lifecycle change.
+
+Before production edits, add an owning HTTP regression that constructs routes
+from those two real capabilities. Router construction and POST must never
+invoke shutdown. DELETE invokes the exact supplied request, returns202 on
+admission and503 after actual termination, and retains the original order,
+business state and complete joined retirement. The old router must reject
+this caller for its one-argument/full-handle signature. Preserve every existing
+HTTP and actor test; the existing `actor_interface_has_no_lifecycle` denial
+continues to prove that messaging cannot acquire lifecycle authority.
+
+Reuse Application's existing interface projection, exact root recipient,
+external sender allocation and complete send rejection, plus the existing
+lifecycle shutdown Result. Axum0.8.9 supports state on each MethodRouter;
+its [Handler contract](https://docs.rs/axum/0.8.9/axum/handler/trait.Handler.html)
+and [state contract](https://docs.rs/axum/0.8.9/axum/extract/struct.State.html)
+justify a repeatable shutdown closure with Clone/Send/Sync/static storage.
+Those bounds belong only at router construction. The closure runs when the
+admin handler is polled, never while configuring routes. No new trait,
+wrapper, actor protocol, interpretation port, dependency or library API is
+selected. Both the ordinary lifecycle closure and the independently observed
+request-counting lifecycle closure perform real shutdown requests.
+
+Selected base is delivered main813c67dd/tree f7104748. Cargo.lock selects
+Behavior/Actors0.30.0, BehaviorMacros0.16.0, Address0.3.0,
+Communication0.1.7, Timers0.2.0, Tokio1.53.3 and Axum0.8.9. Observe and
+Entity stay native owners at that source. The selected Behavior instructions
+at628649da equal the completely read775-line owner instructions. Current
+interface/endpoint, admission, lifecycle, HTTP execution and test sources
+were inspected; no lower owner needs a change.
+
+Expected scope: seven existing Native paths: HTTP main/module, owning orders
+tests, current user-facing API guidance, this PRD, backlog status and its README
+delivery entry. Production Rust
+is expected at most30 net new lines, tests at most150, public types0/0.
+No ordinary example migration begins until the focused rejection and positive
+witness are established. The existing owning HTTP tests are part of that
+focused acceptance: adapt only their router/capability construction, preserving
+every original assertion and owned value. Other catalogue callers are outside
+this stage. The example's private structural alias is replaced by its
+existing message-only capability type; no support module earns a reduction.
+
+Pre-edit aggregate checkpoint: actor/application control states, terminal
+alternatives, interpreter branches and production modules remain unchanged.
+The HTTP route table remains POST orders plus DELETE shutdown. Its current
+values are the exact order recipient/allocator and the separately granted
+shutdown capability; neither is arrival history or another transition owner.
+The final checkpoint must measure both complete application source files,
+retained tests, stored capability sizes and the canonical spelling. Reject a
+callback used only as a placeholder, implicit disposal, changed request timing,
+lost original order or inference repaired by another actor alias/bound.
+Focused debug/release execution, original-source inversion, both test reviews
+and the applicable final repository gates remain required. The full
+DX01–DX28 and Entity acceptance stay open.
+
+The pinned1.99 pre-edit compile exits101 with exactly one E0061 at the old
+one-argument router: its ApplicationHandle input rejects the actual
+ActorInterface and separate lifecycle closure. All728 recorded inputs remain
+exact, including both HTTP production files and the runtime owners. The raw
+log SHA256 is `c67c54250ab51141d83368657c391e7c953edd9f07aa62d9490455b03b6afe99`;
+`http-capabilities-before-{command,result}.json` in the restart handoff retain
+the invocation, terminal status and source manifest. No runtime execution is
+credited to this intended compiler refusal. This closes the pre-edit gate;
+the candidate and its focused owning-test adaptations follow the law above.
+
+The first candidate compile exits101 with one E0283 at the separately generic
+admin handler. That function only forwards the already selected shutdown
+closure and maps its existing Result; it owns no independent contract. Remove
+the function and its repeated generic declaration. Axum's documented closure
+Handler captures the same repeatable capability and invokes it inside the
+async request body. This keeps the predeclared router bounds and exact request
+timing, without another type argument, bound, protocol or caller annotation.
+The failed raw log is retained as `http-capabilities-focused-debug.log`, SHA256
+`1b24b5351233fac6466a283069ec0ac25f430e3576e9e15f53fafdc707b56336`.
+No runtime execution is credited. The route table and actor control model
+remain unchanged; this removes one unnecessary private function.
+
+The closure-based candidate passes all six owning HTTP/order tests on pinned
+1.99 debug, including the new0/0/1/2 shutdown-call observations, admitted JSON,
+real order-book state, repeated shutdown refusal and complete joined native
+retirement. All five original cases retain their assertions. The positive raw
+log SHA256 is `71be4c530067c46b71853419628730608d9ae24b84c4898acda278137116eeea`.
+The focused regression now also reports the sizes of the existing handle,
+message interface and lifecycle values; these are layout observations, not a
+heap, allocation or performance claim. Optimized execution and final-source
+debug repetition must include that observation before ordinary main migration.
+
+Final focused source passes formatting and all six tests in both1.99 profiles.
+The observed value sizes are72bytes for ApplicationHandle and56bytes each for
+ActorInterface and ApplicationLifecycle. Router heap, allocations and speed
+are not inferred from those values. Receipts are
+`http-capabilities-focused-{final-debug,release}-result.json` in the handoff.
+
+Before the owning-source inversion, add exactly one real shutdown invocation
+at router construction, ahead of Router::new, and retain its admission Result
+in a local binding. The new test must execute and fail its first zero-request
+observation (actual1, expected0), not fail compilation. The independent original
+pure order transition must still pass. Run both selections in debug/release,
+then restore the entire original HTTP module byte-for-byte and rerun all six
+cases in both profiles. No expected value, assertion, wait or test registration
+changes. This falsifies premature admin invocation; it does not claim that the
+old application had this defect. Source review1 maps the complete HTTP trace
+and actual order/retirement to the law, including universal refusal, missing
+request, fabricated202 and lost original payload counterexamples. Review2 and
+the complete final checkpoint remain open until the inversion and restoration.
+
+Both exact construction-time inversions execute and fail the new counter
+observation at actual1/expected0; the independent original order transition
+passes in both profiles. Exact HTTP source restoration returns all six cases
+to green in both profiles. `http-capabilities-inversion-result.json` retains
+all six actual command outcomes and728 unchanged-input proofs.
+
+Source/oracle review2 rejects three expected-map constructions inside assertion
+macros. Move those constructions outside, compare the same maps, and explicitly
+drop them immediately afterward to preserve temporary lifetimes. Reversing only
+those three placements reproduces the entire preceding test source byte-for-byte;
+all original values and assertion counts survive. Current-source positive and
+inversion verification must cover this mechanical placement correction.
+The ordinary example main now uses only the proved interface/lifecycle
+projection and inferred closure. No new policy, generic argument or library
+interface is introduced by that caller migration.
+
+The current-source inversion and restoration pass again in both profiles,
+including all six positive cases and the compiled ordinary example. Strict
+Clippy rejects the new test at101 counted lines against its100-line limit.
+Remove only the temporary layout-reporting print and its import: the actual
+72/56/56-byte observations remain in the immutable focused logs, while every
+behavioral assertion and request remains unchanged. No lint exception or new
+test abstraction is introduced. Final focused execution and strict Clippy must
+cover that minimization before broader acceptance.
+
+The minimized source passes strict targeted Clippy with both required extra
+lints, formatting, all six tests in debug/release and the existing seven-fixture
+interface-authority compile suite. In particular, the message interface still
+cannot request lifecycle operations. The final suite's54 assertions are
+unchanged by removal of the layout print. Receipts are
+`http-capabilities-minimized-result.json`; prior intended compiler refusal,
+owning-source inversion and restoration keep their own exact source manifests.
+
+Both test reviews close: review1 maps route construction/POST/first DELETE/
+repeated DELETE to the independent0/0/1/2 request trace, exact admitted order,
+actual root state, normal termination and complete native retirement. Review2
+checks premature invocation (caught by the executed inversion), fabricated
+admission (rejected by the retained root order), universal refusal (rejected by
+the first202), universal success (rejected by the later503), lost payload
+(rejected by the unchanged allocation-identity case), and unperformed shutdown
+(cannot produce the awaited actual termination). Expected-map construction
+moves and temporary print removal preserve all behavioral oracles. No assertion,
+expected value, test registration or wait was weakened.
+
+Retained aggregate checkpoint: HTTP owns no actor control-state sum or
+subordinate state/result sum, before or after. Its route table remains two
+routes, and its two explicit Result decisions each retain two alternatives.
+The actor/application control sums, terminal alternatives, interpreter branches,
+production modules and public spellings have zero changes. The HTTP module
+changes52 to56 lines and four to three functions; main changes32 to36 lines
+and keeps one function. Complete production Rust is+28/-20/net8; tests are
++126/-6/net120; public types are0/0. The private alias still has one spelling,
+now naming the message capability rather than an installed event stack.
+Current values are only the existing recipient/allocator and the separately
+granted shutdown request. No arrival history, duplicated cause, semantic
+boolean, false cardinality, nested transition owner or positional user syntax
+is added. Behavior's Actions/lifecycle laws, the runtime capability ownership
+document and the current ordinary API guidance agree. Disposition: pass for
+this scoped representation; final repository/hosted gates and delivery remain
+open. Entity's Terminal/ChildFailures ceremony and all other unmet DX01–DX28
+criteria remain open.
 
 ### Supplied-work runners, before implementation (2026-11-16)
 

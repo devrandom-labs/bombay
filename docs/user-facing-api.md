@@ -820,13 +820,19 @@ concrete protocol space directly:
 
 ```text
 let outcome = Application::new(OrderBook::default().stop_on_shutdown())
-    .run_axum(address, order_http::router)
+    .run_axum(address, |application| {
+        let orders = application.interface(application.root().established_recipient());
+        let lifecycle = application.lifecycle();
+        order_http::router(orders, move || lifecycle.shutdown())
+    })
     .await;
 ```
 
-This is the ordinary Axum example boundary. A router that exports several
-protocols can deliberately project an
-`ActorInterface<Api>` and a separate lifecycle view from the same handle.
+This is the ordinary Axum example boundary. The order route receives a
+message-only `ActorInterface`; the admin route receives a separate shutdown
+closure. The HTTP module does not name the installed actor's composed event
+type. A router that exports several protocols can project a named
+`ActorInterface<Api>` from the same application.
 Advanced compositions whose
 intentional logical-address effects need more local protocols explicitly own
 the corresponding concrete actor spaces. Behavior's duplicate-preserving

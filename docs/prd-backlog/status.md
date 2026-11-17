@@ -1,11 +1,13 @@
 # Backlog status and dependencies
 
 R18's [withdrawal notification during finalization](../prds/static-remote-actors.md#withdrawal-notification-during-finalization--prerequisites-and-change-record-2026-11-17)
-has fresh selected-owner prerequisites verified on PR435's actual merge. A focused
-two-export decoder/withdrawal-observer panic regression is being prepared before
-any production design or API change. Execution, acceptance and delivery remain
-open; native close-timeout errors and full resource baselines are not inferred.
-Existing full requirement states and reciprocal dependency edges are unchanged.
+has an intended debug/optimized regression failure on unchanged production,
+with both original panic identities and pre-rescue finalization loss verified.
+The local branch integrates actual PR436/maincaf0; fresh integration outcomes
+remain separate. The proposed owning repair/caller migration awaits the required
+expanded-surface authorization. Fix acceptance/delivery, native close-timeout
+errors and full resource baselines remain open. Full requirement states and
+reciprocal dependency edges are unchanged.
 
 R18's [declared-prefix rollback](../prds/static-remote-actors.md#declared-prefix-rollback--delivery-2026-11-17)
 merged through PR435/2280a36a after all28 current native Nix owners, the actual
@@ -44,8 +46,8 @@ the release's caller matrices do not replace this branch's qualification.
 This bounded slice merged through PR432/7882c8d3 after three scoped reviews,
 all 28 Linux owners and all eight exact-head hosted checks passed. Reviewed,
 actual CI and merged trees match. The PRD records actual fuzz/artifact and Miri
-scope. Its clean 14.246 MiB worktree remains open in existing terminal shells;
-remove it after those handles release. Later R18 cuts/baselines/reconnect,
+scope. Its archived merged worktree was removed with three other obsolete
+trees after exact preservation and fresh idle-shell/job/liveness checks; Later R18 cuts/baselines/reconnect,
 AUTH1/NET1 and example error/cleanup distillation remain open; dependency edges
 and step order are unchanged. Coordinate before the next main advance.
 
@@ -800,7 +802,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#runtime-03-delivery-2026-11-16): runtime0.3.0, Engine0.3.0 and macros0.2.0 registry delivery and Bombay acknowledgment are verified. PR429/431 deliver canonical supplied-work runners, bound listener metadata and matching publication. [PR433](https://github.com/devrandom-labs/bombay/pull/433) removes unused check exports through pinned Crane while preserving actual cache providers and every gate; [frozen049 evidence](../prds/developer-experience.md#check-artifacts-before-implementation-2026-11-16) retains full local acceptance and the10.51GiB-to-zero storage measurement. PR432/main7882 adds one Node-owner test; integration requires fresh source-qualified gates. Historical watchdog causes and broader DX01–DX28 acceptance, costs and documentation remain open. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#runtime-03-delivery-2026-11-16): runtime0.3.0, Engine0.3.0 and macros0.2.0 registry delivery and Bombay acknowledgment are verified. PR429/431 deliver canonical supplied-work runners and bound listener metadata. [PR433](https://github.com/devrandom-labs/bombay/pull/433) merged as813c67dd after all28 local owners, actual flake, Nextest1026 and all eight hosted checks; unused check exports are disabled while actual providers and every gate remain. Original049/1025 and peer PR435/1028 evidence stay separate. [HTTP capability separation](../prds/developer-experience.md#http-capabilities-before-implementation-2026-11-17) is active with focused positive/inversion evidence; final gates and delivery remain. Entity's structural terminal types, historical watchdog causes and broader DX01–DX28 acceptance, costs and documentation remain open. |
 | NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |
