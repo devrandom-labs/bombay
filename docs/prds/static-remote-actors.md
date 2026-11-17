@@ -2,7 +2,7 @@
 
 ## Declared-prefix rollback — prerequisites and change record (2026-11-17)
 
-**State: active; focused tests and inversions pass; reviews, full gates and
+**State: active; focused tests, inversions and scoped reviews pass; full gates and
 delivery remain open.** Start from actual PR432 merge
 7882c8d3, with its delivery-only record c410fcc6. Full R18/AUTH1/NET1 remains open;
 reciprocal backlog dependencies are unchanged. This continues the declared-prefix
@@ -83,9 +83,12 @@ measures diagnostic owners 1→2→1→0. Assertions borrow the saved native res
 Every Cargo command uses the pinned Nix shell, locked remote feature, two Cargo
 jobs, no incremental cache and one owned target. The two owning cases each have
 456 filtered registrations; the public consumer has 58. These are selected
-cohorts, not full workspace or CI results. Raw commands, exact sources, patches,
+cohorts, not full workspace or CI results. Exact sources, patches, raw
 logs and result hashes are in this stage's common Git archive, including
 `borrowed-pair-result.json`, `controls/*-result.json` and `public-refusal-result.json`.
+The raw test logs retain actual names, profiles and toolchain; full historical
+test arguments are in the session command payloads, not a separate archive
+capture. The optimized Clippy command is explicitly archived.
 
 An initial retention edit hit the serving tail and survived both tests. It has
 no kill credit; its separate artifacts remain immutable. After exact restoration,
@@ -101,11 +104,31 @@ Source939cd7a5 adds a module-scope Weak import, inherent method items and unit
 semicolons; native call order, assertions and expected values remain unchanged.
 Fresh939 focused runs pass two cases in each profile; normal Clippy passes with
 both mandatory lints denied. The d08 inversion records retain their actual
-source identity; independent equivalence review remains required.
+source identity. Independent review confirms these mechanical changes preserve
+the same control sensitivity; no old execution is relabeled as source939.
 
-Candidate checkpoint against main7882c8d3: four paths including the new test file.
+Candidate53ab checkpoint against main7882c8d3: four paths including the new test file.
 Production +0/-0/net0; tests +568/-0/net568; public types +0/-0.
 Documentation +161/-10/net151; test/evidence growth, not production reduction.
+
+### Declared-prefix rollback — scoped review and gate candidate
+
+Root, contract and independent test reviews find no scoped ownership or
+minimization veto. The test review separately maps each law to observable
+results, then checks counterexamples, missing outcomes and vacuity. The shared
+trace retains both concrete tuple types without adding a production abstraction.
+All three source reviews confirm the d08→939 mechanical equivalence. A separate
+evidence audit verifies all 20 result-to-log hash bindings and keeps unreached
+assertions, the surviving wrong-site trial and source epochs distinct. Reports
+are `root-final-source-review.txt`, `final-contract-review.txt`,
+`final-test-review.txt` and `focused-evidence-review.txt` in the stage archive.
+
+Full workspace Nextest, all 28 native Nix owners, exact hosted checks and reviewed
+PR delivery remain required. Broader R18 resource/callback/reconnect requirements
+remain open. This review does not grant complete feature distillation.
+Gate-candidate checkpoint: four paths and no untracked project files;
+production +0/-0/net0; tests +568/-0/net568; public types +0/-0;
+documentation +185/-10/net175.
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 

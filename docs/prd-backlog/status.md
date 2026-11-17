@@ -5,7 +5,8 @@ has fresh selected-owner verification and two owning cases passing debug/optimiz
 execution on PR432's actual merge. Both tuple associations reject omitted early
 rollback and retained diagnostic ownership through intended source inversions;
 exact restored positives and the unchanged public Node refusal consumer pass.
-Reviews, minimization, full pinned-Nix gates and delivery remain open. These are
+Three scoped reviews and both test-review passes find no veto; full pinned-Nix
+gates and delivery remain open. These are
 finite declaration/diagnostic observations, not task/Session resource baselines.
 Full R18/AUTH1/NET1 and their reciprocal dependency edges remain unchanged.
 
