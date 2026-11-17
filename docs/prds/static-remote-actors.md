@@ -1,5 +1,112 @@
 # Static remote actors and typed admission
 
+## Declared-prefix rollback — prerequisites and change record (2026-11-17)
+
+**State: active; focused tests and inversions pass; reviews, full gates and
+delivery remain open.** Start from actual PR432 merge
+7882c8d3, with its delivery-only record c410fcc6. Full R18/AUTH1/NET1 remains open;
+reciprocal backlog dependencies are unchanged. This continues the declared-prefix
+cut before coexisting close failures, complete task/resource baselines or reconnect.
+
+Fresh lock/archive/VCS verification selects Behavior/Actors 0.30.0 at 628649da,
+BehaviorMacros 0.16.0 at 55dbac2d, Address 0.3.0 at 9f058dc0, Communication 0.1.7
+at 2d71c2f6, Timers 0.2.0 at 9369d1f6 and SDK 1.10.10 at c34eb350; Engine,
+Observe and Bombay remain workspace owners. Cargo.lock is c0a6f5a6 and flake.lock
+13ea9617; no patch, replacement or feature adoption is needed. The complete
+selected Behavior instructions and all six owners' source/API/tests/docs were
+reread. The fresh report is `contracts.txt` in Git's
+`session-archives/2026-11-17/binding-prefix/`. Behavior owns pure Actions, Actors
+shutdown policy, Address leases, Communication exact admission/drain, Observe
+affine completion and Timers branded scheduling. Bombay's existing Export tuple
+owns declaration rollback; Node owns later global withdrawal and Session close.
+No dependency contract remains unidentified.
+
+The gap is an independent observation of rollback **before** later cleanup.
+The existing public second-declaration refusal test preserves legal distinct
+targets, unused Work and actual Node/actor/native outcomes, but its final
+inspection can pass when Node's later withdrawal repairs omitted tuple rollback.
+Keep that consumer unchanged and reexecute it as the full-Node companion.
+
+Add one shared owning Export trace using real concrete nested tuples and the existing
+native Session: two successful declarations followed by an empty-key SDK
+constructor refusal. Before any rescue, extraction or Session close, retain
+actual current SessionLocal matching, passive withdrawal completion, original
+typed startup causes and diagnostic-allocation ownership. An all-valid tuple
+must match natively. Repeat three failed startups on the same Session and keys,
+then exercise the existing real Counter query path to prove healthy recovery.
+This direct declaration-owner test does not claim public target preflight,
+asynchronous SDK declaration failure, query-permit or whole-runtime baselines.
+Matching callbacks need not preserve a transient true event during Ready calls.
+Both `((A, B), F)` and `(A, (B, F))` are required: successful-product withdrawal
+and nested refusal propagation must each have a separately selected test case.
+Their shared native trace uses one private closed composition choice, with no
+new production type. The all-valid control also measures diagnostic ownership
+before declaration, while declared, after withdrawal and after owner extraction.
+
+The intended falsifier omits the real tuple's early left withdrawal. Capture the
+bad prefix while still live, then perform unconditional real rescue before law
+assertions. Its debug and optimized failures must be the intended prefix oracle,
+not a compiler error or watchdog. Restore exact production bytes, rerun both
+profiles, and verify repeated teardown cannot replace acquired completion.
+Separately retain the original diagnostic Arc at its owning native withdrawal
+to establish the intended count-baseline failure; an earlier matching failure
+does not credit an unreached count assertion.
+
+Expected paths: existing Export tests registration, new owning `startup.rs`,
+this PRD and backlog status. Expected production +0/-0/net0, public types +0/-0;
+test growth is measured after implementation. Temporary inversions alone touch
+the existing query.rs tuple/leaf withdrawal and one module-scope import.
+Reuse Export, Observe, native matching and
+the existing Counter/protocol/query helper; add no production hook, observer,
+actor contract, macro, visibility change or dependency. Aggregate states,
+production branches/modules and public spellings remain unchanged. Two test
+reviews, three scoped audits, pinned-Nix gates and reviewed PR delivery remain
+required. The pre-edit plan grants no broader acceptance; focused results follow.
+
+### Declared-prefix rollback — focused results
+
+Frozen test source `d08e6cbf` exercises `((A, B), F)` and `(A, (B, F))` as two
+separately selected cases. Each snapshots native matching, canonical completion,
+the original suffix error and diagnostic ownership before rescue, extraction or
+Session close. Three fresh failed tuples share one Session; actual Counter replies
+remain 1 then 2, followed by a checked native reply of 2. The all-valid control
+measures diagnostic owners 1→2→1→0. Assertions borrow the saved native results.
+
+| Actual command scope | Debug | Optimized | Qualified observation |
+| --- | --- | --- | --- |
+| Both owning cases, original production `bc8eda88` | 2 pass | 2 pass | Early native absence, retained completion/cause, finite diagnostic baseline and healthy recovery. |
+| Omit only tuple early withdrawal, `7176695b` | 2 intended failures | 2 intended failures | Saved matching fails at startup.rs528 after actual cleanup; later count/source assertions are unreached. |
+| Retain diagnostic Arc in actual leaf withdrawal, `afa75416` | 2 intended failures | 2 intended failures | Native matching remains functional; count assertion494 sees [2,2,2] versus measured [1,1,1]. Later business/prefix assertions are unreached. |
+| Exact `bc8eda88` restoration after each control | 2 pass each | 2 pass each | Both complete healthy/inverse/restored cycles pass on the frozen test source. |
+| Unchanged public second-declaration Node refusal | 1 pass | 1 pass | Separate legal targets, unused Work, original refusal and joined Node/actor/native custody remain verified. |
+
+Every Cargo command uses the pinned Nix shell, locked remote feature, two Cargo
+jobs, no incremental cache and one owned target. The two owning cases each have
+456 filtered registrations; the public consumer has 58. These are selected
+cohorts, not full workspace or CI results. Raw commands, exact sources, patches,
+logs and result hashes are in this stage's common Git archive, including
+`borrowed-pair-result.json`, `controls/*-result.json` and `public-refusal-result.json`.
+
+An initial retention edit hit the serving tail and survived both tests. It has
+no kill credit; its separate artifacts remain immutable. After exact restoration,
+the corrected edit was anchored to leaf withdrawal and produced the intended
+count failures above. All production bytes are restored. The diagnostic Arc is
+one allocation family, not the query permit or a task/Session/heap baseline;
+default native undeclare does not prove in-flight callback quiescence. The owning
+primitive and public consumer remain complementary tests, not a new combined
+three-target public Node trace. Full R18/AUTH1/NET1 remains active.
+
+Normal optimized whole-workspace Clippy required twelve mechanical corrections.
+Source939cd7a5 adds a module-scope Weak import, inherent method items and unit
+semicolons; native call order, assertions and expected values remain unchanged.
+Fresh939 focused runs pass two cases in each profile; normal Clippy passes with
+both mandatory lints denied. The d08 inversion records retain their actual
+source identity; independent equivalence review remains required.
+
+Candidate checkpoint against main7882c8d3: four paths including the new test file.
+Production +0/-0/net0; tests +568/-0/net568; public types +0/-0.
+Documentation +161/-10/net151; test/evidence growth, not production reduction.
+
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
 **State: merged (bounded whole Node-owner test slice).**
@@ -514,8 +621,8 @@ execution, full R18/AUTH1/NET1 completion or new publication is claimed.
 The final hosted audit has no scoped veto. Root read its complete report and
 rehashed all 518 indexed evidence files. Exact acceptance, checks, merge and
 tree receipts are `corrected-release/pr432-{acceptance,delivery}.json` in this
-stage's common Git session archive. The actual delivery notice is queued to
-DevX; frozen PR433 proofs remain separate. The 5.6509017944 GiB standalone cache
+stage's common Git session archive. DevX acknowledged the actual merge and
+reviewed tree; frozen PR433 proofs remain separate. The 5.6509017944 GiB standalone cache
 was already removed. The clean 14.246 MiB worktree remains temporarily retained
 because existing terminal shells 4827/5007 still use it; no active shell was
 terminated. Recheck these handles before removing that owned worktree.

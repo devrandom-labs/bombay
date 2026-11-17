@@ -1,5 +1,14 @@
 # Backlog status and dependencies
 
+R18's [declared-prefix rollback](../prds/static-remote-actors.md#declared-prefix-rollback--prerequisites-and-change-record-2026-11-17)
+has fresh selected-owner verification and two owning cases passing debug/optimized
+execution on PR432's actual merge. Both tuple associations reject omitted early
+rollback and retained diagnostic ownership through intended source inversions;
+exact restored positives and the unchanged public Node refusal consumer pass.
+Reviews, minimization, full pinned-Nix gates and delivery remain open. These are
+finite declaration/diagnostic observations, not task/Session resource baselines.
+Full R18/AUTH1/NET1 and their reciprocal dependency edges remain unchanged.
+
 R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--delivery-2026-11-17)
 passes all28 normal native Nix gates on frozen d0b36548 after integrating
 reviewed PR431/main9d34155c. Independent final review verifies exact source,
