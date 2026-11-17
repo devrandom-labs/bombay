@@ -3,8 +3,9 @@
 R18's [withdrawal notification during finalization](../prds/static-remote-actors.md#withdrawal-notification-during-finalization--prerequisites-and-change-record-2026-11-17)
 has an intended debug/optimized regression failure on unchanged production,
 with both original panic identities and pre-rescue finalization loss verified.
-The local branch integrates actual PR436/maincaf0; fresh integration outcomes
-remain separate. The proposed owning repair/caller migration awaits the required
+The local branch integrates actual PR436/maincaf0; fresh debug/optimized runs
+reproduce the same intended finalization failure and retain their own source
+attribution. The proposed owning repair/caller migration awaits the required
 expanded-surface authorization. Fix acceptance/delivery, native close-timeout
 errors and full resource baselines remain open. Full requirement states and
 reciprocal dependency edges are unchanged.
@@ -47,7 +48,7 @@ This bounded slice merged through PR432/7882c8d3 after three scoped reviews,
 all 28 Linux owners and all eight exact-head hosted checks passed. Reviewed,
 actual CI and merged trees match. The PRD records actual fuzz/artifact and Miri
 scope. Its archived merged worktree was removed with three other obsolete
-trees after exact preservation and fresh idle-shell/job/liveness checks; Later R18 cuts/baselines/reconnect,
+trees after exact preservation and fresh idle-shell/job/liveness checks. Later R18 cuts/baselines/reconnect,
 AUTH1/NET1 and example error/cleanup distillation remain open; dependency edges
 and step order are unchanged. Coordinate before the next main advance.
 

@@ -147,10 +147,26 @@ Node, Export, Observe, selected manifests/locks/instructions and the exact
 a5d71005 regression have no incoming byte change. Remaining root scope is the
 same four paths: focused test/registration and the two R18 records. Fresh
 selected-owner inspection and exact source comparisons are retained in the
-common Git remote-retirement/caf0-integration archive. The newly combined source
-requires its own debug/optimized regression outcomes before attribution; no
-whole-workspace/flake or completed repair is inferred. Production repair and
-the up-to40-file migration still require the outstanding scope authorization.
+common Git remote-retirement/caf0-integration archive.
+
+Fresh commands bind the signed frozen integrationcb72306b/tree d7f88fbd and
+unchanged testa5d71005. Debug and optimized each execute exactly one named case,
+with0passed/1intended failure/0ignored/458filtered, in0.08s and0.02s respectively.
+Both reach the primary oracle after the exact decoder461 and notification463
+identities, pending registration, one wake, canonical native withdrawal success,
+independent Application cleanup, actor retirement and finite rescue assertions.
+Saved pre-rescue observations are again outcome returned=false, acquired
+close=None and native Session closed=false. No timeout or compilation failure
+establishes these outcomes. Whole-workspace formatting also passes.
+
+This qualifies persistence of the same known defect after actual main integration,
+not a passing repair, full resource baseline, all28/whole-workspace/flake result,
+or transferred HTTP proof. These commands precede the delivery-only record
+successor; their source attribution remainscb72306b. Exact logs/commands, fresh
+prerequisite report and paired-result review remain in that integration archive.
+Production repair and the up-to40-file migration still require the outstanding
+scope authorization; successful-path second-cause/full-outcome assertions remain
+part of fix acceptance.
 
 The earlier queued merged-worktree cleanup is closed. Four obsolete trees
 (Node, prefix and the two DevX trees) were removed normally at19:10:54 UTC after
