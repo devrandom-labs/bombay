@@ -8,8 +8,13 @@ exact restored positives and the unchanged public Node refusal consumer pass.
 Three scoped reviews, both test-review passes and final minimization close this
 bounded slice. All 28 native Nix owners and the actual flake pass on frozen665;
 Nextest, optimized workspace and coverage each pass 1028 with six controlled child
-registrations. Selected Rust 1.96 gates pass; exact hosted checks and delivery
-remain open. These are
+registrations. Selected Rust 1.96 gates pass. Original1042 separately passes all28
+Linux owners and all eight hosted checks, with557 remote cases per profile and
+1028 cases each in ordinary workspace and coverage. Bounded fuzz passes; actual
+Miri skips and static-analysis/corpus-retention limits remain in the PRD.
+Main813c's accepted check-cache policy is integrated while its1026-case proof
+stays separate. Fresh combined-source qualification and PR435 delivery remain
+open. These are
 finite declaration/diagnostic observations, not task/Session resource baselines.
 Full R18/AUTH1/NET1 and their reciprocal dependency edges remain unchanged.
 
@@ -786,7 +791,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#current-delivery): runtime0.2.0, Engine0.3.0 and macros0.2.0 are published, with exact registry/tag/source proof, both supported-compiler caller matrices and an actual Bombay acknowledgment. Earlier delivery/failure receipts retain their source limits; historical watchdog causes remain unexplained. The next selected batch unifies supplied-work runner spelling for empty and nonempty Entity-family products while retaining their exact ownership. Broader DX01–DX28 acceptance, costs and documentation remain active. Main-push CI remains separate from the passing release-head gates. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#runtime-03-delivery-2026-11-16): runtime0.3.0, Engine0.3.0 and macros0.2.0 registry delivery and Bombay acknowledgment are verified. PR429/431 deliver canonical supplied-work runners, bound listener metadata and matching publication. [PR433](https://github.com/devrandom-labs/bombay/pull/433) removes unused check exports through pinned Crane while preserving actual cache providers and every gate; [frozen049 evidence](../prds/developer-experience.md#check-artifacts-before-implementation-2026-11-16) retains full local acceptance and the10.51GiB-to-zero storage measurement. PR432/main7882 adds one Node-owner test; integration requires fresh source-qualified gates. Historical watchdog causes and broader DX01–DX28 acceptance, costs and documentation remain open. |
 | NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |

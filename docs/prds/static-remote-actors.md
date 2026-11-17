@@ -2,9 +2,11 @@
 
 ## Declared-prefix rollback — prerequisites and change record (2026-11-17)
 
-**State: distilled (bounded declared-prefix test slice); focused PR, exact hosted
-checks and reviewed delivery remain open.** Start from actual PR432 merge
-7882c8d3, with its delivery-only record c410fcc6. Full R18/AUTH1/NET1 remains open;
+**State: distilled (bounded declared-prefix test slice); combined-source
+qualification and reviewed delivery remain open.** The original source starts
+from actual PR432 merge 7882c8d3, with its delivery-only record c410fcc6. Its
+hosted acceptance and the later PR433/main813c integration are recorded below.
+Full R18/AUTH1/NET1 remains open;
 reciprocal backlog dependencies are unchanged. This continues the declared-prefix
 cut before coexisting close failures, complete task/resource baselines or reconnect.
 
@@ -138,7 +140,7 @@ Frozen head `665de8b633b1fcdd30f36b3069c70d57823eff4a`, tree
 at 06:27:45 UTC. All 28 aarch64-darwin owners, successful terminal marks and
 registered output derivers reconcile to the selected source. The closed owner
 report was read completely; no local execution finding remains. Other systems
-were omitted by this native command; exact hosted qualification remains open.
+were omitted by this native command; the separate hosted acceptance follows.
 
 The separate Nextest, optimized workspace and coverage runs each pass 1028 cases
 with six parent-controlled child registrations. Their actual passing parents and
@@ -175,10 +177,81 @@ empty process-handle check, releasing 7.587547 GiB of allocated cache space.
 Current Rust, configuration and locks retain their qualified bytes; this final
 acceptance prose is a record-only successor to frozen665's Markdown inputs.
 
-Final checkpoint: four paths and no untracked files; production +0/-0/net0;
+Original1042 checkpoint: four paths and no untracked files; production +0/-0/net0;
 tests +568/-0/net568; public types +0/-0; documentation +238/-10/net228.
-PR/hosted checks/merge remain required. Full R18/AUTH1/NET1 and the remaining
+Hosted checks and delivery were outstanding at that checkpoint. Original hosted
+acceptance follows; combined-source qualification and merge remain required.
+Full R18/AUTH1/NET1 and the remaining
 resource, callback, coexisting-failure and reconnect obligations remain active.
+
+### Declared-prefix rollback — original hosted acceptance
+
+[PR435](https://github.com/devrandom-labs/bombay/pull/435)'s original head
+`1042a7ed3ecc322cb0d56da8ac5df9fb6f8c3e8c`, tree
+`c8df52749a25d34bda50706d017fbd4356e12000`, passes all eight exact-head checks in
+[run44034227619](https://github.com/devrandom-labs/bombay/actions/runs/44034227619).
+The actual checkout is abcfcc5b, whose tree matches that head and whose parents
+are main7882c8d3 and1042. This acceptance does not qualify later main813c.
+
+All28 x86_64-linux Nix owners pass. Ordinary optimized workspace and coverage
+each independently execute123 test binaries and pass1028/0/6, plus three
+separate benchmark smoke executions. The six ignored registrations are exercised
+by their verified passing subprocess parents. Both remote profiles pass557/0/0;
+both source939 prefix cases pass once in each profile and in coverage. Linux
+coverage passes Driver737/818, execution1006/1048, outcome95/97 and Observe505/526
+against the unchanged90/93/90/90-percent floors. Linux Observe505 and native504
+remain distinct observations. Rust1.96 passes114 selected minimum-compiler cases
+with one controlled child registration and four remote-surface cases plus twelve
+compile fixtures; these selected commands do not run the new prefix cases.
+
+Dedicated Incoming debug/release each complete180 finite orders and258 generated
+invocations, including two saved cases. Public Client debug/release each complete
+32 finite words and260 generated invocations, including four saved cases. Incoming
+uses the production interpreter with test-owned Request custody; Client uses real
+two-Node exchanges. Native TLS debug/release each pass32 configurations,80 child
+cases, one controller and five auxiliary cases. These remain their own bounded
+cohorts; no full AUTH1/NET1 or additional workspace count is inferred.
+
+Driver fuzz completes2048 inputs; each of four Observe targets completes1024.
+Fuzz uses its pinned nightly1.98 shell and independent lock scopes, not the
+ordinary root lock. Both Miri steps are actually skipped. All eight official ZIP
+digests and534 retained members match independently. Current Observe ops reports
+90 files/1412 bytes while its archive retains88/1381; the two-file/31-byte
+difference has unknown cause. All16 original seeds remain byte-exact. This does
+not prove complete runtime-corpus retention or explain earlier corpus gaps.
+CodeQL succeeds with seven unchanged extraction-error files and nine warnings;
+no complete extraction claim is made. Linux coverage JSON, individual Actor
+mutation logs and TLS test binaries are not independently downloaded; the
+owning guarded logs and in-job receipts retain their stated limits.
+
+The closed `hosted/final-hosted-execution-review.txt` has SHA256 c7678949;
+`hosted/final-required-evidence-index.json` has SHA2560743f336. Root read the
+entire report and physically rehashed all622 indexed files/61,849,467 bytes.
+`original-hosted-acceptance.json` and `hosted/root-final-evidence-rehash.json`
+record acceptance within those limits in this stage's Git archive. No old
+inversion is relabeled as freshly executed in hosted CI. PR435 remains open;
+neither merge nor complete R18 acceptance follows from this original run.
+
+### Declared-prefix rollback — main integration
+
+The next candidate includes actual main813c67dd, treef7104748, the normal PR433
+merge over7882c8d3. Its accepted Crane policy stops exporting unused check Cargo
+artifacts while retaining exports for cache providers and the default build.
+The two incoming DevX records are preserved. Cargo.lock, flake.lock, Cargo.toml
+and AGENTS.md are byte-identical between original1042 and813c; incoming main
+changes no Rust, dependency, API or selected owner contract. The fresh comparison
+is `integration-input-verification.json` in this stage's Git archive.
+
+Both source939 tests and production querybc8 retain their exact bytes, so the
+closed source audits and two test-review passes remain applicable. Original665
+native execution, original1042 hosted execution and PR433's1026-case proofs stay
+separate. The combined candidate requires fresh Nextest, all28 native Nix owners
+and exact hosted qualification before normal reviewed merge. Full R18 resource,
+coexisting-failure, callback and reconnect requirements remain active.
+
+Integrated checkpoint against main813c: four paths and no untracked project files;
+production +0/-0/net0; tests +568/-0/net568; public types +0/-0;
+documentation +316/-10/net306. No production code or public type is added.
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 

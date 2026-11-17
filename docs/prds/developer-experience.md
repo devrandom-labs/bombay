@@ -684,6 +684,101 @@ modules, control-state alternatives and transition branches have zero delta.
 All nine release paths are accounted for. Both author reviews pass this scoped
 correction; final clean-source full verification and delivery remain open.
 
+### Runtime 0.3 delivery (2026-11-16)
+
+Normal release [PR431](https://github.com/devrandom-labs/bombay/pull/431)
+merged as `9d34155cd787db45467b850ddac27b61408323ee`. Its delivered tree
+`091c38367cc7cb57abfe1137924cf788baf35e7c` exactly matches accepted head
+`b83b5d89`. All28 local owners, actual `nix flake check`, Nextest1025 and all
+eight exact-head hosted checks pass. Completed Linux workspace1025/protected132,
+schedule/TLS artifacts and bounded Driver/Observe fuzz evidence are audited.
+Miri was skipped; historical watchdog causes remain unproved.
+
+The normal Publish workflow43947612313 actually publishes runtime0.3.0.
+The [release](https://github.com/devrandom-labs/bombay/releases/tag/bombay-rs-v0.3.0),
+tag and package VCS identify b83b5d89. Official registry SHA256
+`aab3c7c135e8c0e98f4425488cd5153e58a42e77585bb10cb5df99a91fac65b6`
+matches both pinned1.99/1.96 verified archives and all545 extracted files.
+The complete original589-input caller matrices and five-input independent
+receiving callers per compiler therefore qualify the exact published bytes.
+No execution against removed build caches is claimed. Engine0.3.0 and macros0.2.0
+remain unchanged. The owning receipts are `runtime030-corrected-acceptance.json`,
+`-delivery.json` and `-publication-result.json` in the existing restart handoff.
+The existing Bombay session acknowledged the registry checksum, tag/package VCS,
+runner migrations and listener metadata limits. Its R18 qualification remains
+separate. The acknowledgment is retained in
+`runtime030-corrected-peer-publication-ack.json` in the existing handoff.
+The complete DX01–DX28 programme remains active.
+
+### Check artifacts, before implementation (2026-11-16)
+
+DX26 and the standing disk-space requirement expose recurring unused output:
+21 completed check owners export10.51GiB of full Cargo target archives, although
+no configured check consumes them. A22nd owner, protected Counter, enables the
+same export flag but produces no root target archive. These counts differ.
+`check-artifacts-before.json` preserves all28 evaluated owners and their exact
+build/check/install commands; `check-artifacts-pre-edit.json` records the
+negative check before configuration changes. This is resource policy, not an
+actor-model law or a change to an actor's state, effects or custody.
+
+Use the existing pinned Crane2c71e194 `doInstallCargoArtifacts` option to disable
+unused exports. Its `mkCargoDerivation` already creates the output directory;
+its install hook only exports when that option is enabled. `buildDepsOnly`
+explicitly enables exports for real cache providers. Keep those three providers
+and the workspace build export, which is also the default package. Preserve all
+build/check commands, required lint flags, features, profiles, fixtures, reports,
+compiler selections, source inputs and acceptance gates. Do not replace the
+hook, compress differently, remove checks or add a custom tool.
+
+Expected scope: three existing files, this PRD, the backlog status and flake.nix.
+The production Rust/test/public-type/state/module deltas are all zero. The flake
+adds the supported default and one explicit workspace-build override. Existing
+specialized report owners keep their outputs; their redundant local false
+settings can remain for this bounded change. Trive's shared Nix/direnv approach
+and CESR's existing Crane composition were inspected; the expected mnesis-bombay
+checkout is absent. Reuse Bombay's current workflow and pinned dependencies.
+
+Review1 must compare all28 original commands and each actual Cargo artifact
+provider, including the protected Counter's separate vendor and lock. Review2
+must reject missing checks, altered oracles/lints, an empty output mistaken for
+test execution, discarded reports, or a changed dependency cache. Retain actual
+full-gate execution and measure output sizes before accepting the change.
+No runtime allocation, speed or whole-programme completion claim follows from
+smaller persistent check outputs. Final verification and delivery remain open.
+
+The focused build passes the original formatting and no-default child owners;
+both outputs are empty. The complete original cohort remains one outer test and
+six compiler fixtures, seven registrations in total. Raw-log comparison retains
+every name, status and summary, including the existing exact progress-message
+normalization. All28 build/check/install commands and three actual cache provider
+paths remain exact; all three providers still enable exports. All seven optional
+package targets retain their commands, providers and export policies. Both author
+reviews pass this configuration comparison. Rust formatting and assertions are
+unchanged. Full final-source owner/flake, Nextest and hosted verification remain
+required. Receipts are `check-artifacts-{configuration-review,focused-result}.json`
+in the existing restart handoff.
+
+Frozen `049df227` subsequently passes all28 local owners, actual `nix flake check`
+and independent Nextest1025. The optimized workspace retains all123 harnesses,
+154 compiler fixtures, six parent-controlled registrations and three benchmark
+targets. Every original command and actual cache provider is conserved. The same
+21 completed outputs measure10.511GiB allocated before and zero artifact bytes
+after; the default build archive and substantive reports remain. This measures
+persistent output storage, not runtime memory or speed. The owning receipts are
+`check-artifacts-{full,nextest}-result.json`.
+
+PR432 merged as `7882c8d3`, with exactly reviewed tree `a80576e9`, before this
+separate integration. Its one additional whole-Node surrender test belongs to
+main; both earlier binding cases remain. The original049 checkout, all728 exact
+inputs, source archive and pending hosted run are preserved while the combined
+source is prepared elsewhere. Its1025-case proof does not certify the new1026-case
+cohort. Own scope remains three existing files. Relative to that main, Rust source,
+tests, public types, actor states, transition branches and modules have zero delta.
+The three actual providers, all28 commands, reports, features, profiles and
+compiler selections must remain exact. Fresh combined-source local, Nextest and
+hosted acceptance precede
+PR433 delivery; the complete DX01–DX28 programme stays active.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
