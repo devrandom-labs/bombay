@@ -2,9 +2,9 @@
 
 ## Declared-prefix rollback — prerequisites and change record (2026-11-17)
 
-**State: distilled (bounded declared-prefix test slice); combined-source
-qualification and reviewed delivery remain open.** The original source starts
-from actual PR432 merge 7882c8d3, with its delivery-only record c410fcc6. Its
+**State: merged (bounded declared-prefix test slice).**
+[Verified delivery](#declared-prefix-rollback--delivery-2026-11-17) records PR435.
+The original source starts from actual PR432 merge 7882c8d3, with its delivery-only record c410fcc6. Its
 hosted acceptance and the later PR433/main813c integration are recorded below.
 Full R18/AUTH1/NET1 remains open;
 reciprocal backlog dependencies are unchanged. This continues the declared-prefix
@@ -196,7 +196,7 @@ are main7882c8d3 and1042. This acceptance does not qualify later main813c.
 All28 x86_64-linux Nix owners pass. Ordinary optimized workspace and coverage
 each independently execute123 test binaries and pass1028/0/6, plus three
 separate benchmark smoke executions. The six ignored registrations are exercised
-by their verified passing subprocess parents. Both remote profiles pass557/0/0;
+by their verified passing subprocess parents. Both remote profiles pass 557/0/0;
 both source939 prefix cases pass once in each profile and in coverage. Linux
 coverage passes Driver737/818, execution1006/1048, outcome95/97 and Observe505/526
 against the unchanged90/93/90/90-percent floors. Linux Observe505 and native504
@@ -314,14 +314,59 @@ Cargo.lockc0a6f5a6 retain their exact identities. The local failed baseline,
 candidate positive, four isolated intended guard refusals, owner-only restoration,
 three scoped reviews and final product-policy result remain separate receipts.
 Other stable-version directions are configured symmetrically, not seven observed
-negative cases. Required fresh final-head hosted checks and normal reviewed
-delivery remain open; the old784 Deny failure is not relabeled as a success.
+negative cases. At this local checkpoint, fresh final-head hosted checks and
+normal reviewed delivery remained open; the delivery below closes those gates
+on abbf04d0. The old784 Deny failure is not relabeled as a success.
 Full R18/AUTH1/NET1 and the original PRD goal remain active.
 
 Retained checkpoint against main813c: five paths and no untracked project files;
 production Rust+0/-0/net0; tests+568/-0/net568; public types+0/-0;
 policy+10/-1/net9; documentation+392/-10/net382.
 This is an explicit policy addition, not production reduction or dependency repair.
+
+## Declared-prefix rollback — delivery (2026-11-17)
+
+This bounded slice merged normally through [PR435](https://github.com/devrandom-labs/bombay/pull/435)
+at 17:39:02 UTC as 2280a36ac12fa8b1174952ae85d8856610ea2b68.
+The actual merge tree cdbba7a76bc25790950dff473ad722a1e30f05eb exactly
+matches accepted signed head abbf04d0924c6674cc9f8665e3b7c8465da62f75;
+its parents are actual main813c67dd and that head. The earlier original1042
+and combined784 results remain separate historical epochs.
+
+All 28 current native Nix owners and the authoritative flake pass. All eight
+exact-head hosted checks pass, including all 28 Linux Nix owners. Current
+Nextest, optimized workspace and coverage each pass 1028; the same six controlled
+child registrations remain parent-owned. Nextest's independent inventory has
+1034 named registrations across 123 harnesses. Workspace and coverage each retain
+154 compile fixtures and three benchmark targets. Both remote profiles pass557
+cases, including both owning tuple cases and the unchanged public refusal case.
+All four coverage floors and selected Rust 1.96 gates pass. The minimum gates
+do not execute private tuple cases or establish a minimum-compiler TLS journey.
+
+Independent source/outcome reviews and root receipt checks close the scoped
+acceptance. Hosted Driver 2048 and four Observe 1024 campaigns pass; Miri is
+skipped. CodeQL's seven extraction-error files and the current waker corpus's
+one-entry/19-byte retention gap remain explicit limits. No complete extraction,
+lossless runtime-corpus custody, full R18 resource baseline or HTTP execution is
+claimed. The bounded maintenance exception preserves SDK/parser behavior and
+its recorded runtime risks; it is not a dependency repair or publication.
+
+Required evidence is retained under the common Git
+session-archives/2026-11-17/binding-prefix/integration/:
+policy-final-acceptance.json SHA256
+659e91785edba3bab7557c5670a17e648237a3a6c6d84d5e98a8aecf42d68fab
+and policy-delivery.json SHA256
+ec4f975c61b4c5282d41bc8d76617df06930404f258e720d12b7ece835c6c0a2.
+Closed native, hosted and Nextest indexes preserve their exact source and
+execution scopes. These results precede this delivery-only Markdown record;
+no new execution is inferred for the record commit.
+
+Final delivered delta against main813c: five paths; production Rust+0/-0/net0,
+tests+568/-0/net568, public types+0/-0, policy+10/-1/net9 and
+documentation+392/-10/net382. This successor changes only the PRD and status
+record. Full R18, R01–R25, AUTH1 and NET1 acceptance remains active; coexisting
+close failures, complete task/Session/query-permit/heap/callback baselines,
+reconnect and final application distillation retain their existing step order.
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
