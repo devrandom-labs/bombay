@@ -13,7 +13,11 @@ async fn main() {
     let address = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 3000);
     println!("orders: http://{address}/orders; shutdown: DELETE /admin/shutdown");
     let outcome = Application::new(order_book::OrderBook::default().stop_on_shutdown())
-        .run_axum(address, http::router)
+        .run_axum(address, |application| {
+            let orders = application.interface(application.root().established_recipient());
+            let lifecycle = application.lifecycle();
+            http::router(orders, move || lifecycle.shutdown())
+        })
         .await
         .unwrap_or_else(|_| panic!("the HTTP application starts"));
     let (serving, retirement) = outcome

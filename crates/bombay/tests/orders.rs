@@ -22,7 +22,112 @@ mod order_book {
         use bombay::behavior::BehaviorBase;
         use bombay::testing::InfallibleResultExt;
         use http_body_util::BodyExt;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicUsize, Ordering};
         use tower::ServiceExt;
+
+        #[test]
+        fn order_admission_and_shutdown_use_separate_capabilities() {
+            let shutdowns = Arc::new(AtomicUsize::new(0));
+            let observed = Arc::clone(&shutdowns);
+            let host = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("the caller owns its HTTP host");
+            let outcome = host
+                .block_on(
+                    Application::new(OrderBook::default().stop_on_shutdown()).run_with(
+                        |application| async move {
+                            let request = PlaceOrder {
+                                order_id: 53,
+                                customer_id: 11,
+                                sku: "HTTP-CAPABILITIES".into(),
+                                quantity: 3,
+                            };
+                            let body = serde_json::to_vec(&request).expect("request serializes");
+                            let orders =
+                                application.interface(application.root().established_recipient());
+                            let lifecycle = application.lifecycle();
+                            let requested = Arc::clone(&observed);
+                            let routes = router(orders, move || {
+                                requested.fetch_add(1, Ordering::SeqCst);
+                                lifecycle.shutdown()
+                            });
+                            assert_eq!(observed.load(Ordering::SeqCst), 0);
+
+                            let response = routes
+                                .clone()
+                                .oneshot(
+                                    Request::post("/orders")
+                                        .header(header::CONTENT_TYPE, "application/json")
+                                        .body(Body::from(body))
+                                        .expect("request builds"),
+                                )
+                                .await
+                                .expect("router is infallible");
+                            assert_eq!(response.status(), StatusCode::ACCEPTED);
+                            let response_body = response
+                                .into_body()
+                                .collect()
+                                .await
+                                .expect("response body collects")
+                                .to_bytes();
+                            let admitted: PlaceOrder = serde_json::from_slice(&response_body)
+                                .expect("admitted order deserializes");
+                            assert_eq!(admitted, request);
+                            assert_eq!(observed.load(Ordering::SeqCst), 0);
+                            tokio::task::yield_now().await;
+
+                            let response = routes
+                                .clone()
+                                .oneshot(
+                                    Request::delete("/admin/shutdown")
+                                        .body(Body::empty())
+                                        .expect("shutdown request builds"),
+                                )
+                                .await
+                                .expect("router is infallible");
+                            assert_eq!(response.status(), StatusCode::ACCEPTED);
+                            assert_eq!(observed.load(Ordering::SeqCst), 1);
+                            let termination = application.termination().await;
+                            assert_eq!(termination, Ok(Exit::Normal));
+
+                            let response = routes
+                                .oneshot(
+                                    Request::delete("/admin/shutdown")
+                                        .body(Body::empty())
+                                        .expect("repeated shutdown request builds"),
+                                )
+                                .await
+                                .expect("router is infallible");
+                            assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+                            assert_eq!(observed.load(Ordering::SeqCst), 2);
+                            request
+                        },
+                    ),
+                )
+                .unwrap_or_else(|_| panic!("the actual application starts"));
+            let (request, retirement) = outcome
+                .try_into_completed()
+                .unwrap_or_else(|_| panic!("HTTP capability work completes"));
+            assert_eq!(shutdowns.load(Ordering::SeqCst), 2);
+            assert!(retirement.cleanup().is_ok());
+            let (_, root) = retirement
+                .retirement()
+                .as_ref()
+                .expect("the original root is acquired");
+            let orders = &root
+                .behavior()
+                .expect("the actual order book is retained")
+                .base()
+                .orders;
+            let expected_orders = BTreeMap::from([(request.order_id, request)]);
+            assert_eq!(orders, &expected_orders);
+            drop(expected_orders);
+            let (_, _root_report, native, _, ()) = retirement.into_parts();
+            assert_application_stopped(native.expect("the original root joins"));
+        }
+
         #[test]
         fn order_route_admits_one_domain_command() {
             let request = PlaceOrder {
@@ -40,7 +145,10 @@ mod order_book {
                 .block_on(
                     Application::new(OrderBook::default().stop_on_shutdown()).run_with(
                         |application| async move {
-                            let response = router(application.clone())
+                            let orders =
+                                application.interface(application.root().established_recipient());
+                            let lifecycle = application.lifecycle();
+                            let response = router(orders, move || lifecycle.shutdown())
                                 .oneshot(
                                     Request::post("/orders")
                                         .header(header::CONTENT_TYPE, "application/json")
@@ -82,7 +190,9 @@ mod order_book {
                 .expect("the actual order book is retained")
                 .base()
                 .orders;
-            assert_eq!(orders, &BTreeMap::from([(request.order_id, request)]));
+            let expected_orders = BTreeMap::from([(request.order_id, request)]);
+            assert_eq!(orders, &expected_orders);
+            drop(expected_orders);
             let (_, _root_report, native, _, ()) = retirement.into_parts();
             assert_application_stopped(native.expect("the original root joins"));
         }
@@ -101,7 +211,9 @@ mod order_book {
                 .receive(MailAddr(1), OrderMessage::Place(order.clone()))
                 .infallible();
 
-            assert_eq!(orders.orders, BTreeMap::from([(41, order)]));
+            let expected_orders = BTreeMap::from([(41, order)]);
+            assert_eq!(orders.orders, expected_orders);
+            drop(expected_orders);
             assert!(matches!(actions.become_, Step::Continue));
         }
     }
@@ -147,7 +259,10 @@ mod http {
                         assert_eq!(stopped, Ok(()));
                         let termination = application.termination().await;
                         assert_eq!(termination, Ok(Exit::Normal));
-                        let routes = router(application);
+                        let orders =
+                            application.interface(application.root().established_recipient());
+                        let lifecycle = application.lifecycle();
+                        let routes = router(orders, move || lifecycle.shutdown());
                         let response = routes
                             .clone()
                             .oneshot(
@@ -205,7 +320,9 @@ mod http {
                             quantity: 3,
                         };
                         let allocation = order.sku.as_ptr();
-                        let rejected = place(&application, order).await;
+                        let orders =
+                            application.interface(application.root().established_recipient());
+                        let rejected = place(&orders, order).await;
                         let Err(original) = rejected else {
                             panic!("a closed actor must return the complete original order");
                         };
@@ -263,7 +380,10 @@ mod http {
                             ready
                                 .send(())
                                 .expect("the test server receiver remains live");
-                            router(application)
+                            let orders =
+                                application.interface(application.root().established_recipient());
+                            let lifecycle = application.lifecycle();
+                            router(orders, move || lifecycle.shutdown())
                         },
                     ),
                 );
