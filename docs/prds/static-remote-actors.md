@@ -2,8 +2,9 @@
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
-**State: distilled (bounded whole Node-owner test slice); reviewed PR delivery
-remains open.** Full R18 remains active.
+**State: merged (bounded whole Node-owner test slice).**
+[Verified delivery](#whole-node-owner-drop--delivery-2026-11-17) records PR432.
+Full R18 remains active.
 This stage starts from main
 `ae2d36cfa1832143438db0bb4ffdd61387844db5`, with the local PR430 delivery
 receipt committed as `b67b7d2a`. It continues the earlier R18 startup cut before
@@ -458,8 +459,9 @@ authority. The release receipt is
 `corrected-release/publication-receipt.json` in this stage's Git session archive.
 
 These final record edits leave Rust, configuration and locks unchanged; they
-are not retroactively included in d0b36548's Markdown inputs. The focused PR
-and its actual hosted checks/merge remain open. Full R18's later
+are not retroactively included in d0b36548's Markdown inputs. Hosted checks and
+merge were still open at that checkpoint; verified delivery is recorded below.
+Full R18's later
 startup/tuple rollback, coexisting close failures, resource baselines and
 reconnect, AUTH1/NET1 and example error/cleanup distillation remain open.
 
@@ -488,8 +490,38 @@ untracked project files: production+0/-0/net0, tests+112/-34/net78 and public
 API+0/-0 types. Documentation is +595/-23/net572. This is
 test/evidence growth, with no production reduction claimed. Only the two task
 records changed after frozen qualification; Rust, scripts, manifests, locks
-and build configuration retain their qualified bytes. Normal focused PR/hosted
-verification and reviewed merge are the next delivery steps.
+and build configuration retain their qualified bytes. The following delivery
+record closes this slice's hosted verification and reviewed merge.
+
+### Whole Node-owner drop — delivery (2026-11-17)
+
+[PR432](https://github.com/devrandom-labs/bombay/pull/432) merged normally as
+`7882c8d39dc6f82d3338899fac530259f16892b9` at 01:44:47 UTC after all eight
+checks passed on accepted head e68ba2f3. Its actual tree
+`a80576e9fc9a3fca1aef0b1d649644b9cdfe6d97` equals the reviewed head and
+actual CI checkout 8a7e7d96; parents are main 9d34155c and accepted e68.
+
+[Hosted Nix job133684646761](https://github.com/devrandom-labs/bombay/actions/runs/43977355341/job/133684646761)
+passes all 28 Linux owners, including the 1026/0/6 workspace and coverage cohorts.
+The six ignored child registrations retain their passing-parent scope. Driver
+fuzz completes 2048 runs and each of four Observe targets completes 1024; both
+official ZIPs, all 16 source seeds and the 119+345 corpus files are verified.
+Miri is actually skipped on this pull-request event. Hosted Actor inverse
+sublogs and full coverage JSON were not uploaded; owning-script/floor success
+is distinct from the directly preserved native artifacts. No private Node 1.96
+execution, full R18/AUTH1/NET1 completion or new publication is claimed.
+
+The final hosted audit has no scoped veto. Root read its complete report and
+rehashed all 518 indexed evidence files. Exact acceptance, checks, merge and
+tree receipts are `corrected-release/pr432-{acceptance,delivery}.json` in this
+stage's common Git session archive. The actual delivery notice is queued to
+DevX; frozen PR433 proofs remain separate. The 5.6509017944 GiB standalone cache
+was already removed. The clean 14.246 MiB worktree remains temporarily retained
+because existing terminal shells 4827/5007 still use it; no active shell was
+terminated. Recheck these handles before removing that owned worktree.
+
+Delivery-record checkpoint: two Markdown paths; production/tests +0/-0/net0,
+public types +0/-0; documentation +45/-10/net35. No untracked files.
 
 ## Pending Node binding — prerequisites and change record (2026-11-16)
 

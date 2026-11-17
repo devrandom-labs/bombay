@@ -1,6 +1,6 @@
 # Backlog status and dependencies
 
-R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--prerequisites-and-change-record-2026-11-16)
+R18's [whole Node-owner drop](../prds/static-remote-actors.md#whole-node-owner-drop--delivery-2026-11-17)
 passes all28 normal native Nix gates on frozen d0b36548 after integrating
 reviewed PR431/main9d34155c. Independent final review verifies exact source,
 derivers, isolated outcomes and controls. Optimized workspace cases pass1026/0;
@@ -14,8 +14,11 @@ the ordinary Entity main preserves its exact business and retirement outcomes.
 Required evidence is preserved and the completed standalone cache is removed.
 Runtime0.3 publication, tag/package VCS and checksum are verified in the PRD;
 the release's caller matrices do not replace this branch's qualification.
-This bounded slice is distilled after three scoped reviews, pending the focused
-PR, hosted checks and reviewed merge. Later R18 cuts/baselines/reconnect,
+This bounded slice merged through PR432/7882c8d3 after three scoped reviews,
+all 28 Linux owners and all eight exact-head hosted checks passed. Reviewed,
+actual CI and merged trees match. The PRD records actual fuzz/artifact and Miri
+scope. Its clean 14.246 MiB worktree remains open in existing terminal shells;
+remove it after those handles release. Later R18 cuts/baselines/reconnect,
 AUTH1/NET1 and example error/cleanup distillation remain open; dependency edges
 and step order are unchanged. Coordinate before the next main advance.
 
@@ -30,7 +33,7 @@ both profiles; original production source is restored. Workspace release passes
 retain their documented scope. Current fuzz artifact counts match their recorded
 outcomes, within the owning record's compiler/source limits. The clean merged
 worktree and branch are removed. Production/API/dependencies are unchanged.
-Whole Node-owner drop and R18's later cuts, resource baselines and reconnect,
+Full whole-Node resource coverage and R18's later cuts, resource baselines and reconnect,
 AUTH1/NET1 and final example distillation remain open. Existing dependency edges
 are unchanged; R18 remains active.
 
