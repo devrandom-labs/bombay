@@ -2,8 +2,8 @@
 
 ## Declared-prefix rollback — prerequisites and change record (2026-11-17)
 
-**State: active; focused tests, inversions and scoped reviews pass; full gates and
-delivery remain open.** Start from actual PR432 merge
+**State: distilled (bounded declared-prefix test slice); focused PR, exact hosted
+checks and reviewed delivery remain open.** Start from actual PR432 merge
 7882c8d3, with its delivery-only record c410fcc6. Full R18/AUTH1/NET1 remains open;
 reciprocal backlog dependencies are unchanged. This continues the declared-prefix
 cut before coexisting close failures, complete task/resource baselines or reconnect.
@@ -80,7 +80,7 @@ measures diagnostic owners 1→2→1→0. Assertions borrow the saved native res
 | Exact `bc8eda88` restoration after each control | 2 pass each | 2 pass each | Both complete healthy/inverse/restored cycles pass on the frozen test source. |
 | Unchanged public second-declaration Node refusal | 1 pass | 1 pass | Separate legal targets, unused Work, original refusal and joined Node/actor/native custody remain verified. |
 
-Every Cargo command uses the pinned Nix shell, locked remote feature, two Cargo
+Every focused test command uses the pinned Nix shell, locked remote feature, two Cargo
 jobs, no incremental cache and one owned target. The two owning cases each have
 456 filtered registrations; the public consumer has 58. These are selected
 cohorts, not full workspace or CI results. Exact sources, patches, raw
@@ -123,12 +123,62 @@ assertions, the surviving wrong-site trial and source epochs distinct. Reports
 are `root-final-source-review.txt`, `final-contract-review.txt`,
 `final-test-review.txt` and `focused-evidence-review.txt` in the stage archive.
 
-Full workspace Nextest, all 28 native Nix owners, exact hosted checks and reviewed
-PR delivery remain required. Broader R18 resource/callback/reconnect requirements
-remain open. This review does not grant complete feature distillation.
-Gate-candidate checkpoint: four paths and no untracked project files;
+At that checkpoint full workspace Nextest, all 28 native Nix owners, exact hosted
+checks and reviewed PR delivery remained required. Local qualification follows;
+broader R18 resource/callback/reconnect requirements remain open.
+Frozen665 gate-candidate checkpoint: four paths and no untracked project files;
 production +0/-0/net0; tests +568/-0/net568; public types +0/-0;
 documentation +185/-10/net175.
+
+### Declared-prefix rollback — local acceptance
+
+Frozen head `665de8b633b1fcdd30f36b3069c70d57823eff4a`, tree
+`a575dd2ebdd429c7a1f9f7b9b6cfe4577d0a1daf`, passes the actual
+`nix flake check --no-update-lock-file -L --max-jobs 1 --cores 2` with exit 0
+at 06:27:45 UTC. All 28 aarch64-darwin owners, successful terminal marks and
+registered output derivers reconcile to the selected source. The closed owner
+report was read completely; no local execution finding remains. Other systems
+were omitted by this native command; exact hosted qualification remains open.
+
+The separate Nextest, optimized workspace and coverage runs each pass 1028 cases
+with six parent-controlled child registrations. Their actual passing parents and
+named child guards are verified; these are distinct runs, not additive cases.
+Both remote profiles pass 557/0/0, including both source939 prefix cases and all
+six replay/protection guards. Coverage retains its full checked JSON losslessly
+and passes unchanged floors: Driver 737/818 at 90%, execution 1006/1048 at 93%,
+outcome 95/97 at 90% and Observe 504/526 at 90%. Source939 remains byte-exact;
+the d08 inversions retain their earlier execution identity.
+
+Rust 1.96 separately passes 114 selected minimum-compiler cases, with one
+parent-controlled child registration, and four remote-surface cases plus twelve
+compile fixtures. These selected commands do not execute the new prefix cases
+or establish full native MSRV qualification. The protected capsule's own lock
+is fd04bf45; its complete twelve-run matrix, both Clippys and formatting pass.
+Driver and actor-law evidence, bounded Loom outcomes, actual example mains and
+the Axum build-only limit retain their individual scopes in the closed report.
+
+Normal optimized workspace Clippy explicitly denies both required extra lints.
+The native formatting owner's literal command is `cargo fmt -- --check`; the
+additional pinned-shell `cargo fmt --all -- --check` also exits 0. The build
+owner runs `cargo build --release --workspace --all-targets` without a literal
+`--locked`; immutable lock/vendor inputs and actual command flags are recorded
+separately. No generic locked-command or unexecuted application claim is made.
+
+Final minimization closes this bounded slice after the three scoped source
+audits and both test-review passes. One private composition choice shares the
+real trace; existing owners express every law without a new production wrapper,
+observer or public surface. Source and evidence are preserved in
+`local-acceptance.json`, `root-final-minimization.txt`,
+`native-registry-reconciliation.json` and `native-owner-review/final-review.txt`
+in this stage's Git archive. The verified standalone cache was removed after an
+empty process-handle check, releasing 7.587547 GiB of allocated cache space.
+Current Rust, configuration and locks retain their qualified bytes; this final
+acceptance prose is a record-only successor to frozen665's Markdown inputs.
+
+Final checkpoint: four paths and no untracked files; production +0/-0/net0;
+tests +568/-0/net568; public types +0/-0; documentation +238/-10/net228.
+PR/hosted checks/merge remain required. Full R18/AUTH1/NET1 and the remaining
+resource, callback, coexisting-failure and reconnect obligations remain active.
 
 ## Whole Node-owner drop — prerequisites and change record (2026-11-16)
 
