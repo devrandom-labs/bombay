@@ -1054,11 +1054,15 @@ Primary sources are Cargo's [workspace-only update contract](https://doc.rust-la
 and Release-plz's [documented follow-up commit step](https://release-plz.dev/docs/github/output#example-commit-files-to-the-release-pr).
 The actual pinned actionb11437f8 installs CLI0.3.160 and exposes the PR branch.
 Its source has no extra-lock hook. Nixpkgs supplies0.3.159; no tool downgrade
-or new derivation is selected. Existing Bombay/CESR release workflows and
+or custom package derivation is selected. Existing Bombay/CESR release workflows and
 Trive's Nix execution pattern were inspected before selecting the extension.
 
-Expected retained scope is four existing paths including the three current
-HTTP delivery-record paths and `.github/workflows/release-pr.yml`. Add an
+Expected retained scope is five existing paths: the three current HTTP
+delivery-record paths, `.github/workflows/release-pr.yml` and `flake.nix`.
+The existing pinned toolchain and nixpkgs Git, GitHub CLI and jq packages form
+a standard `devShells.release` shell. This keeps recurring metadata operations
+inside Nix without installing the default shell's editor and analysis tools.
+No new package builder, script, dependency or release-plz version is added. Add an
 own-workflow trigger, expose the existing action's PR result, check out that
 branch through the existing authenticated checkout action, install the same
 Nix action already used by CI, and run the two existing consumer manifests
@@ -1091,6 +1095,48 @@ owner is introduced. Standard Cargo resolution and GitHub's existing commit
 product own those facts. The focused refusal, both consumer witnesses and
 final workflow/source review must close before retaining the implementation.
 The full DX01–DX28 programme and Entity work remain active.
+
+### Release consumer locks, local qualification (2026-11-17)
+
+The pre-edit Runtime witness at204 refuses locked metadata, then the supported
+consumer update changes only its path-package version0.3.0 to0.3.1 and locked
+metadata passes. A separate temporary Engine0.3.1 proposal makes both consumer
+locks refuse; updating each owning manifest repairs both. All registry package
+versions, checksums and dependency records remain equal in these witnesses.
+The frozen204 source's729 files were physically restored after the probes.
+These are Cargo metadata results, not runtime tests or release434 acceptance.
+
+The actual GitHub API accepts one two-file commit5985bbf6 with the exact
+expected tree22b5a11b and parent39316dd9. Replaying its old expected head is
+refused and leaves the branch unchanged. A fresh replay on the resulting
+source has zero changed paths, zero request bytes and no API commit. The
+separate original Runtime proposal produces one signed API commit7e998a3d,
+parent204, treebd111508, changing only transport-custody's lock. Exact request
+buffers, source hashes, original failures, results and a verified Git bundle
+are retained under `release-locks` in the existing restart handoff. These
+isolated probe branches never advance main, the release PR or publication.
+
+The retained workflow body equals the tested proposal byte for byte. Nix
+formatting, Actionlint1.7.12 and ShellCheck0.11.0 pass. The new release shell
+loads pinned Cargo1.99.0, Git2.54.0, GitHub CLI2.94.0 and jq1.8.1. Executing
+the exact workflow through that shell on the current0.3.0 source preserves all
+three locks and emits zero request bytes. The existing Release-plz action,
+App token, normal PR policy, cancellation policy and separate publisher remain
+the owners of their existing responsibilities. Both consumer locks and the
+observed revision/request are uploaded on an attempted update, including a
+refused API write; no locked check is relaxed.
+
+Author review one maps each original refusal, complete lock buffer, both real
+consumer manifests and API precondition to the stated law. Author review two
+checks the stale-head and empty-change counterexamples, registry conservation,
+source restoration, root-lock exclusion and unchanged publishing authority.
+Both close for the local workflow candidate; no independent review is claimed.
+The retained scope is five existing paths: workflow+70, Nix+9, and the three
+existing PRD/backlog record paths. Production Rust0, tests0, public types0;
+actor states, subordinate sums, transitions and modules remain unchanged.
+No new script or tool suite is retained. Final-source native/hosted gates,
+normal workflow PR delivery, the actual refreshed release proposal and package
+publication/consumer qualification remain open and separate.
 
 ### Supplied-work runners, before implementation (2026-11-16)
 

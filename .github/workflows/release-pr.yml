@@ -10,6 +10,9 @@ on:
       - "Cargo.toml"
       - "Cargo.lock"
       - "release-plz.toml"
+      - ".github/workflows/release-pr.yml"
+      - "docs/prds/static-remote-actors/transport-custody/Cargo.toml"
+      - "docs/prds/static-remote-actors/transport-custody/Cargo.lock"
 
 permissions: {}
 
@@ -59,9 +62,76 @@ jobs:
           printf 'is-release=%s\n' "$is_release" >> "$GITHUB_OUTPUT"
 
       - name: Create or update release PR
+        id: release-pr
         if: steps.release-commit.outputs.is-release != 'true'
         uses: release-plz/action@b11437f8c0e955c306676ceaf8ce8c54eba6004f # v0.5
         with:
           command: release-pr
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Checkout release proposal
+        if: steps.release-pr.outputs.prs_created == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ fromJSON(steps.release-pr.outputs.pr).head_branch }}
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        if: steps.release-pr.outputs.prs_created == 'true'
+        uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
+        with:
+          nix_conf: |
+            experimental-features = nix-command flakes
+            accept-flake-config = true
+
+      - name: Update consumer locks
+        id: consumer-locks
+        if: steps.release-pr.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_BRANCH: ${{ fromJSON(steps.release-pr.outputs.pr).head_branch }}
+        run: |
+          nix develop .#release --no-update-lock-file -c bash -euo pipefail <<'BASH'
+          release_head=$(git rev-parse HEAD)
+          printf '%s\n' "$release_head" > "$RUNNER_TEMP/consumer-revision.txt"
+          cargo update --workspace --manifest-path docs/prds/static-remote-actors/transport-custody/Cargo.toml
+          cargo update --workspace --manifest-path crates/bombay-engine/fuzz/Cargo.toml
+          git diff --name-only -z -- '*/Cargo.lock' > "$RUNNER_TEMP/consumer-locks.paths"
+          while IFS= read -r -d '' lockfile; do
+            jq -Rs --arg path "$lockfile" '{path: $path, contents: @base64}' "$lockfile"
+          done < "$RUNNER_TEMP/consumer-locks.paths" |
+            jq -s --arg repository "$GITHUB_REPOSITORY" --arg branch "$RELEASE_BRANCH" --arg head "$release_head" '
+              select(length > 0) |
+              {
+                query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
+                variables: {
+                  input: {
+                    branch: {repositoryNameWithOwner: $repository, branchName: $branch},
+                    expectedHeadOid: $head,
+                    message: {headline: "chore: update consumer locks"},
+                    fileChanges: {additions: .}
+                  }
+                }
+              }
+            ' > "$RUNNER_TEMP/consumer-commit.json"
+          if [[ -s "$RUNNER_TEMP/consumer-commit.json" ]]; then
+            gh api graphql --input "$RUNNER_TEMP/consumer-commit.json"
+          fi
+          BASH
+
+      - name: Preserve consumer lock inputs
+        if: always() && steps.consumer-locks.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-consumer-locks-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/consumer-revision.txt
+            ${{ runner.temp }}/consumer-locks.paths
+            ${{ runner.temp }}/consumer-commit.json
+            docs/prds/static-remote-actors/transport-custody/Cargo.lock
+            crates/bombay-engine/fuzz/Cargo.lock
+          if-no-files-found: error
+          retention-days: 14

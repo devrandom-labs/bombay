@@ -712,6 +712,15 @@
           '';
         };
 
+        devShells.release = pkgs.mkShell {
+          packages = [
+            toolchain
+            pkgs.git
+            pkgs.gh
+            pkgs.jq
+          ];
+        };
+
         # `nix develop .#miri` — the MIRI lane's toolchain, on demand.
         devShells.miri = pkgs.mkShell {
           packages = [ miriToolchain ];
