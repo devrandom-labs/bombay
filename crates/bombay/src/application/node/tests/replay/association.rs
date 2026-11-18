@@ -285,9 +285,9 @@ async fn cold_counter_request_keeps_its_own_reply_and_late_tail() {
             })
             .await
             .unwrap_or_else(|_| panic!("the actual Node enters its host"));
-        let (export, bound, closed, polling, disposal) = node
-            .into_parts()
-            .unwrap_or_else(|_| panic!("the original Node finalization is acquired"));
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+            node.into_parts()
+                .unwrap_or_else(|_| panic!("the original Node finalization is acquired"));
         let (work, report, native, notifications, ()) = outcome.into_parts();
         let (
             (
@@ -351,6 +351,7 @@ async fn cold_counter_request_keeps_its_own_reply_and_late_tail() {
         let claims = claims.borrow();
         assert!(cleanup.is_ok() && closed.is_ok() && session.is_closed());
         assert!(polling.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert_eq!(report.retirement(), RetirementAssessment::Established);
         assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());

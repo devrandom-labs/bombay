@@ -366,7 +366,7 @@ async fn held_receiver() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual receiving application executes"));
-    let (export, binding, closed, poll, disposal) = node
+    let (export, binding, closed, poll, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("receiver joins native cleanup before extraction"));
     let (work, report, native, notes, ()) = outcome.into_parts();
@@ -402,6 +402,7 @@ async fn held_receiver() {
         .expect("the original finite configuration remains owned");
     // All original provider/native/Work/Node resources are joined before oracles.
     assert!(cleanup.is_ok() && closed.is_ok() && poll.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(notes.termination.is_ok() && notes.retirement.is_ok());
     assert!(matches!(binding, Some(Ok(_))));
     assert!(matches!(declared, Some(Ok(()))) && matches!(withdrawn, Some(Ok(()))));
@@ -686,7 +687,7 @@ async fn waiting_caller() {
         }
     };
     let outcome = outcome.unwrap_or_else(|_| panic!("the actual no-Work caller executes"));
-    let (client, bound, closed, poll, disposal) = node
+    let (client, bound, closed, poll, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("caller joins every native owner before extraction"));
     let (work, report, native, notes, ()) = outcome.into_parts();
@@ -713,6 +714,7 @@ async fn waiting_caller() {
     // No semantic assertion happened before A's release.
     // These are the whole original Node/native/actor/Source owners, not a report callback.
     assert!(cleanup.is_ok() && closed.is_ok() && poll.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(notes.termination.is_ok() && notes.retirement.is_ok());
     assert!(matches!(bound, Some(Ok(_))));
     assert_eq!(report.retirement(), RetirementAssessment::Established);

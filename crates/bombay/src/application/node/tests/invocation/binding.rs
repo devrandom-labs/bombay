@@ -187,7 +187,7 @@ async fn borrowed_binding_wait_keeps_the_original_node_operation() {
         let _counter = completed_actor(root_origin, root);
         let notifications = notifications.expect("both original notification results remain");
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
-        let (export, bound, closed, polling, disposal) = extraction
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = extraction
             .unwrap_or_else(|_| panic!("joined Node execution retains its actual binding and close"));
         let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = export.into_parts();
         let bound = bound.expect("the original binder returned").expect("the original binder succeeded");
@@ -195,6 +195,7 @@ async fn borrowed_binding_wait_keeps_the_original_node_operation() {
         assert_eq!(target, origin);
         assert!(!initially_closed && connection.is_closed() && closed.is_ok());
         assert!(polling.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
         assert!(diagnostics.is_empty() && requests.is_empty());
     })).await.expect("failure-only watchdog; actual pending, actor and original outcomes prove the law");

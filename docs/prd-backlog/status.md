@@ -5,10 +5,43 @@ has an intended debug/optimized regression failure on unchanged production,
 with both original panic identities and pre-rescue finalization loss verified.
 The local branch integrates actual PR436/maincaf0; fresh debug/optimized runs
 reproduce the same intended finalization failure and retain their own source
-attribution. The proposed owning repair/caller migration awaits the required
-expanded-surface authorization. Fix acceptance/delivery, native close-timeout
-errors and full resource baselines remain open. Full requirement states and
-reciprocal dependency edges are unchanged.
+attribution. Joel approved the owning repair/caller migration within40 paths;
+its component debug/optimized positives and both intended source inversions with
+exact restored positives pass. The seven-value consuming API and49 consuming
+sites are source-migrated. Both public witnesses pass in both profiles; a disposal
+slot swap fails only the intended companion oracle, followed by exact restored
+passing runs. Three scoped audits and both test reviews pass within35 paths.
+The first730-input freeze passes Nextest and coverage1031/123, the same six
+controlled children,154 compile fixtures and all four unchanged coverage floors.
+The actual native flake exits1 after15 accepted owners: remote559 tests pass,
+then Clippy rejects four obsolete large_futures annotations with six diagnostics.
+Those four obsolete expectations are removed. Normal workspace Clippy then
+finds one additional obsolete expectation, a genuinely infallible test mapper
+with a fictional large error, and an empty-ledger assertion diagnostic. Selected
+corrections retain equality against the same empty collection. The Never
+attempt is compiler-rejected: the owning reply selector requires its original
+ReadRequest error. Restore that contract with the existing scoped large-error
+expectation; production/API/dependencies and expected runtime outcomes stay unchanged.
+Both corrected release-workspace and exact debug-remote Clippy configurations
+now pass with both required supplementary lints denied; current-test two-pass
+source review403a9533 proves unchanged custody/oracles. Runtime execution credits
+retain their original source epochs. Actual PR437/main56910d3c is locally integrated
+as signedd8542029, retaining all Rust/API/lock bytes and both status scopes.
+Fresh combined-source archive2dcd independently passes standalone Nextest and
+all28 native owners/the actual flake0. Current Nextest, optimized workspace and
+coverage each pass1031/123 with the same six controlled children; optimized and
+coverage reconcile154 compiler fixtures/three benchmark targets, and all four
+unchanged coverage floors pass. Selected Rust1.96 local/Axum114/28/138/one child
+and public remote4/12 pass within their stated caller scope. Native acceptance
+b2132925 binds every owner, raw log, registered output and all730 exact input
+bytes/modes; no old-source or peer1029 result is adopted. The scope stays35 of
+the approved40 paths, production+68/-12/net56, tests+712/-76/net636 and no added
+public nominal type; the five-to-seven-value consuming API remains breaking.
+The final two-file record update needs its own exact input/derivation comparison
+and any changed-owner outcomes before hosted/source/artifact acceptance and
+reviewed PR delivery. Native disposal/close-timeout errors, full resource
+baselines and complete R18 remain open. Full requirement states and reciprocal
+dependency edges are unchanged.
 
 R18's [declared-prefix rollback](../prds/static-remote-actors.md#declared-prefix-rollback--delivery-2026-11-17)
 merged through PR435/2280a36a after all28 current native Nix owners, the actual

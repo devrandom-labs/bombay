@@ -111,7 +111,13 @@ root error variant. Native Ok establishes undeclaration,
 not callback quiescence, resource reclamation or actor retirement. Foreign waker
 panics preserve acquired results and follow Node's existing panic/cleanup policy.
 Native request reception retains its own target/root retirement observations. Node
-extraction keeps separate original kernel poll and disposal panic payloads.
+extraction keeps separate original execution poll/disposal and final withdrawal
+poll/disposal panic payloads. Final withdrawal polling and producer disposal are
+caught independently before the actual Session close attempt, preserving the
+already acquired Application outcome. Consuming extraction transfers those four
+original causes after exports, binding and close in its seven-value product.
+An interrupted withdrawal is not retried and proves neither draining nor callback
+quiescence; actual close remains independent.
 Current permission loans span construction and the synchronous native attempt.
 Cached duplicates end the request loan before the independent reply check,
 allowing both policies to use the same nonreentrant authority owner.

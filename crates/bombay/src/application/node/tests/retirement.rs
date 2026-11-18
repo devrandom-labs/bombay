@@ -180,7 +180,7 @@ async fn replay_after_retirement() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual cold Node execution starts"));
-    let (export, binding, close, polling, disposal) = node
+    let (export, binding, close, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the actual Node finalization remains acquired"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -193,6 +193,7 @@ async fn replay_after_retirement() {
     let notifications = notifications.expect("both actual notifications are acquired");
     let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(binding, Some(Ok(_))));
     assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
     assert!(diagnostics.is_empty());
