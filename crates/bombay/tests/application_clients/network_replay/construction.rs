@@ -131,7 +131,7 @@ async fn recorded_counter_joined_node_issues_export() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Counter enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
     let diagnostic = format!("{export:?}");
@@ -154,6 +154,7 @@ async fn recorded_counter_joined_node_issues_export() {
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert_eq!(diagnostic, "Export { .. }");
     assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
     assert!(requests.is_empty() && diagnostics.is_empty());
@@ -263,7 +264,7 @@ async fn scheduled_counter_joined_node_issues_export() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Counter enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
     let diagnostic = format!("{export:?}");
@@ -286,6 +287,7 @@ async fn scheduled_counter_joined_node_issues_export() {
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert_eq!(diagnostic, "Export { .. }");
     assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
     assert!(requests.is_empty() && diagnostics.is_empty());
@@ -405,7 +407,7 @@ async fn recorded_ledger_public_node_issues_export() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Ledger enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
     let diagnostic = format!("{export:?}");
@@ -428,6 +430,7 @@ async fn recorded_ledger_public_node_issues_export() {
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert_eq!(diagnostic, "Export { .. }");
     assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
     assert!(requests.is_empty() && diagnostics.is_empty());
@@ -547,7 +550,7 @@ async fn scheduled_ledger_public_node_issues_export() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Ledger enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("joined Node finalization remains acquired"));
     let diagnostic = format!("{export:?}");
@@ -570,6 +573,7 @@ async fn scheduled_ledger_public_node_issues_export() {
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert_eq!(diagnostic, "Export { .. }");
     assert!(matches!(&declared, Some(Ok(()))) && matches!(&withdrawn, Some(Ok(()))));
     assert!(requests.is_empty() && diagnostics.is_empty());

@@ -331,7 +331,7 @@ async fn append_after_full(next_permission: Permission) {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Node execution starts"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the real Node acquired cleanup and close"));
     let (work, root_report, native, notifications, ()) = outcome.into_parts();
@@ -357,6 +357,7 @@ async fn append_after_full(next_permission: Permission) {
         ActorFailureAssessment::NoFailuresFound
     );
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(worker_entered.is_ok());
     let (announced, released) = worker.expect("the actual blocked worker joins");

@@ -387,10 +387,19 @@ async fn overlapping_counters() {
     let outcome = outcome.unwrap_or_else(|_| panic!("assigned Work enters the actual Node"));
     let other_outcome =
         other_outcome.unwrap_or_else(|_| panic!("other Work enters the actual Node"));
-    let (export, bound, closed, polling, disposal) = assigned
-        .into_parts()
-        .unwrap_or_else(|_| panic!("the assigned Node finalizes"));
-    let (other_export, other_bound, other_closed, other_polling, other_disposal) = other
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+        assigned
+            .into_parts()
+            .unwrap_or_else(|_| panic!("the assigned Node finalizes"));
+    let (
+        other_export,
+        other_bound,
+        other_closed,
+        other_polling,
+        other_disposal,
+        other_withdrawal_polling,
+        other_withdrawal_disposal,
+    ) = other
         .into_parts()
         .unwrap_or_else(|_| panic!("the other Node finalizes independently"));
     let (work, report, native, notes, ()) = outcome.into_parts();
@@ -507,6 +516,8 @@ async fn overlapping_counters() {
             && other_polling.is_none()
             && other_disposal.is_none()
     );
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
+    assert!(other_withdrawal_polling.is_none() && other_withdrawal_disposal.is_none());
     assert!(matches!(bound, Some(Ok(_))) && matches!(other_bound, Some(Ok(_))));
     assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
     assert!(matches!(other_startup, Some(Ok(()))) && matches!(other_withdrawal, Some(Ok(()))));

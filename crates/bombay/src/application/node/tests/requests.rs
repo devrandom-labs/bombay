@@ -959,7 +959,7 @@ async fn cold_pending_protection<Receipt>(
         )
     };
     let outcome = outcome.unwrap_or_else(|_| panic!("actual cold Work host entry"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("actual binding and Session close are retained"));
     let (work, report, native, notes, ()) = outcome.into_parts();
@@ -1022,6 +1022,7 @@ async fn cold_pending_protection<Receipt>(
         ActorFailureAssessment::NoFailuresFound
     );
     assert!(matches!(&bound, Some(Ok(_))) && polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(&startup, Some(Ok(()))) && matches!(&withdrawal, Some(Ok(()))));
     assert!(diagnostics.is_empty() && primed.is_ok() && advanced.is_ok() && stopped.is_ok());
     let second_native = rows
@@ -1203,10 +1204,6 @@ async fn cold_pending_protection<Receipt>(
 }
 
 #[test]
-#[expect(
-    clippy::large_futures,
-    reason = "poll the complete finite recorded provider trace with its concrete retained native outcomes"
-)]
 fn recorded_cold_protection_preserves_requests_and_replay() {
     Builder::new_multi_thread()
         .worker_threads(1)
@@ -1235,10 +1232,6 @@ fn recorded_cold_protection_preserves_requests_and_replay() {
 }
 
 #[test]
-#[expect(
-    clippy::large_futures,
-    reason = "poll the complete finite scheduled provider trace with its concrete retained native outcomes"
-)]
 fn scheduled_cold_protection_preserves_requests_and_replay() {
     Builder::new_multi_thread()
         .worker_threads(1)

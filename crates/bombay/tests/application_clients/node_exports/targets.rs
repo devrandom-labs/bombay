@@ -143,10 +143,17 @@ async fn refused(selection: Selection) {
             })
             .await
             .unwrap_or_else(|_| panic!("actual host accepts the cold Node operation"));
-        let ((first, second), bound, closed, polling, disposal) =
-            node.into_parts().unwrap_or_else(|_| {
-                panic!("actual startup refusal cleanup and native close are acquired")
-            });
+        let (
+            (first, second),
+            bound,
+            closed,
+            polling,
+            disposal,
+            withdrawal_polling,
+            withdrawal_disposal,
+        ) = node.into_parts().unwrap_or_else(|_| {
+            panic!("actual startup refusal cleanup and native close are acquired")
+        });
         let (work, root_report, native, notifications, ()) = outcome.into_parts();
         let (work, refusal) = match work {
             WorkOutcome::NotInvoked {
@@ -169,6 +176,8 @@ async fn refused(selection: Selection) {
             root_report,
             polling,
             disposal,
+            withdrawal_polling,
+            withdrawal_disposal,
             native,
             notifications,
             refusal,
@@ -205,6 +214,8 @@ async fn refused(selection: Selection) {
         root_report,
         polling,
         disposal,
+        withdrawal_polling,
+        withdrawal_disposal,
         native,
         notifications,
         refusal,
@@ -260,6 +271,7 @@ async fn refused(selection: Selection) {
         ActorFailureAssessment::NoFailuresFound
     );
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     notifications
         .termination
         .expect("Node termination publication");

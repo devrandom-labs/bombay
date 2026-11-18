@@ -326,7 +326,7 @@ async fn stashed_ledger_reads<Receipt>(
         })
         .await
         .unwrap_or_else(|_| panic!("the actual cold Ledger host starts"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the original cold Node finalizes"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -362,6 +362,7 @@ async fn stashed_ledger_reads<Receipt>(
     assert_report(retirement);
     assert_eq!(report, Some(retirement));
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(bound, Some(Ok(_))));
     assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
     assert!(diagnostics.is_empty() && appended.is_ok());

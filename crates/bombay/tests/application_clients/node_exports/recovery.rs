@@ -294,7 +294,7 @@ async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidReque
     };
     let ((outcome, publication), (peer, shutdown)) = tokio::join!(execution, exchange);
     let outcome = outcome.unwrap_or_else(|_| panic!("actual recovery Work runs"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("actual Node close and binding remain"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -335,6 +335,7 @@ async fn recovery(retained_requests: NonZeroUsize, invalid_request: InvalidReque
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert_eq!(origin.address(), target);
     assert!(admitted.is_ok() && tail.is_empty());
     let refused = peer
@@ -756,9 +757,9 @@ async fn issued_request_keys_survive_reused_refusal_capacity() {
             (streams, eof, refused, release, queries_published, shutdown, peer),
         ) = tokio::join!(execution, exchange);
         let outcome = outcome.unwrap_or_else(|_| panic!("actual same-Node Work remains owned"));
-        let (export, bound, closed, polling, disposal) = node
-            .into_parts()
-            .unwrap_or_else(|_| panic!("actual binding and Node close remain"));
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+            node.into_parts()
+                .unwrap_or_else(|_| panic!("actual binding and Node close remain"));
         let (work, report, native, notifications, ()) = outcome.into_parts();
         let (observed, cleanup) = work
             .try_into_completed()
@@ -804,6 +805,7 @@ async fn issued_request_keys_survive_reused_refusal_capacity() {
         assert_eq!(report.retirement(), RetirementAssessment::Established);
         assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         assert!(polling.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         let origin_address = origin.address();
         assert_eq!(origin_address, target);
         assert!(admitted.is_ok() && tail.is_empty());

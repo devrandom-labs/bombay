@@ -59,6 +59,8 @@ pub struct Node<
     closed: Option<Result<(), Box<dyn Error + Send + Sync>>>,
     poll_panic: Option<Panic>,
     disposal_panic: Option<Panic>,
+    withdrawal_poll_panic: Option<Panic>,
+    withdrawal_disposal_panic: Option<Panic>,
 }
 
 impl<Root, Spaces, Members, Families, Exports, BindingFn, BindResult> fmt::Debug
@@ -169,6 +171,8 @@ impl<Root, Spaces, Members, Families> Application<Root, Spaces, Members, Familie
                 closed: None,
                 poll_panic: None,
                 disposal_panic: None,
+                withdrawal_poll_panic: None,
+                withdrawal_disposal_panic: None,
             }),
             Err(cause) => Err((self, network, NodeStartupRefusal::Open { cause })),
         }
@@ -533,13 +537,21 @@ where
             closed: None,
             poll_panic: self.poll_panic,
             disposal_panic: self.disposal_panic,
+            withdrawal_poll_panic: self.withdrawal_poll_panic,
+            withdrawal_disposal_panic: self.withdrawal_disposal_panic,
         }
     }
 }
 impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
     Node<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>
 {
-    /// Consume exports, binding, post-join close and original kernel panic causes.
+    /// Consume exports, binding, post-join close and original panic causes.
+    ///
+    /// The seven values are exports, binding, close, execution poll panic,
+    /// execution disposal panic, withdrawal poll panic and withdrawal disposal
+    /// panic, in that order. Each panic payload transfers without replacement.
+    /// Withdrawal panic does not certify complete withdrawal or draining;
+    /// the actual Session close result remains an independent fact.
     /// Refuse with the same Node until joined execution acquired native close.
     /// A returned binding result survives disposal of its producer future,
     /// including when that disposal panics.
@@ -559,6 +571,8 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
             Result<(), Box<dyn Error + Send + Sync>>,
             Option<Panic>,
             Option<Panic>,
+            Option<Panic>,
+            Option<Panic>,
         ),
         Self,
     > {
@@ -569,8 +583,18 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
                 closed: Some(closed),
                 poll_panic,
                 disposal_panic,
+                withdrawal_poll_panic,
+                withdrawal_disposal_panic,
                 ..
-            } => Ok((exports, bound, closed, poll_panic, disposal_panic)),
+            } => Ok((
+                exports,
+                bound,
+                closed,
+                poll_panic,
+                disposal_panic,
+                withdrawal_poll_panic,
+                withdrawal_disposal_panic,
+            )),
             original => Err(original),
         }
     }
@@ -588,6 +612,24 @@ where
     Families: InstallEntityFamilies<Spaces> + Send,
     Spaces: RootRegistration<Root::Protocol> + Send + Sync + 'static,
 {
+    async fn retire(&mut self)
+    where
+        Actor: Behavior<Protocol = Root::Protocol, Ph = Never>,
+        Exports: ActorExports<Root::Protocol, Actor::Event, Families::Receptionists, Targets>,
+    {
+        let mut withdrawal = Box::pin(self.exports.withdraw());
+        self.withdrawal_poll_panic = poll_fn(|context| {
+            match catch_unwind(AssertUnwindSafe(|| withdrawal.as_mut().poll(context))) {
+                Ok(Poll::Pending) => Poll::Pending,
+                original => Poll::Ready(original),
+            }
+        })
+        .await
+        .err();
+        self.withdrawal_disposal_panic = catch_unwind(AssertUnwindSafe(|| drop(withdrawal))).err();
+        self.closed = Some(self.session.close().await);
+    }
+
     /// Run supplied caller-local work beside the Node-owned exports and join cleanup.
     ///
     /// # Errors
@@ -596,8 +638,8 @@ where
     /// Binding or declaration refusal remains in the joined outcome and receipts.
     ///
     /// # Panics
-    /// Native declaration withdrawal and Session close retain their SDK contracts.
-    /// Kernel poll and disposal panic causes remain stored in this Node.
+    /// Native Session close retains its SDK contract. Execution and withdrawal
+    /// poll/disposal panic causes remain separately stored in this Node.
     pub async fn run_with<Work, WorkFuture>(
         &mut self,
         work: Work,
@@ -762,8 +804,7 @@ where
         };
         match outcome {
             Ok(outcome) => {
-                self.exports.withdraw().await;
-                self.closed = Some(self.session.close().await);
+                self.retire().await;
                 Ok(outcome)
             }
             Err(cause) => Err(cause),
@@ -777,8 +818,8 @@ where
     /// Binding or declaration refusal remains in the joined outcome and receipts.
     ///
     /// # Panics
-    /// Native declaration withdrawal and Session close retain their SDK contracts.
-    /// Kernel poll and disposal panic causes remain stored in this Node.
+    /// Native Session close retains its SDK contract. Execution and withdrawal
+    /// poll/disposal panic causes remain separately stored in this Node.
     pub async fn run(
         &mut self,
     ) -> Result<
@@ -940,8 +981,7 @@ where
         };
         match outcome {
             Ok(outcome) => {
-                self.exports.withdraw().await;
-                self.closed = Some(self.session.close().await);
+                self.retire().await;
                 Ok(outcome)
             }
             Err(cause) => Err(cause),
