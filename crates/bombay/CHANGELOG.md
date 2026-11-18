@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.3.0...bombay-rs-v0.3.1) - 2026-11-18
+
+### Other
+
+- separate order and shutdown capabilities
+- *(remote)* cover declared-prefix rollback
+- *(remote)* adopt reviewed runtime correction
+
 ## [0.3.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.2.0...bombay-rs-v0.3.0) - 2026-11-16
 
 ### Added
