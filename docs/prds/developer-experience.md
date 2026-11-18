@@ -972,6 +972,172 @@ this scoped representation; final repository/hosted gates and delivery remain
 open. Entity's Terminal/ChildFailures ceremony and all other unmet DX01–DX28
 criteria remain open.
 
+### HTTP capability delivery (2026-11-17)
+
+[PR436](https://github.com/devrandom-labs/bombay/pull/436) merged normally at
+2026-11-17T20:57:24Z as `caf0b68199f185b7d35c9b41585e122a647ca0b6`.
+Its tree `9ef4486625bc80463c3dea6f6b70b1a616f4f85e` exactly equals accepted
+signed head `2af77356` and tested merge preview `ecc57e00`. Parents
+main `2280a36a` plus `2af77356` were verified through the official API and physical Git
+objects. Fresh before/after notices were sent to Bombay; the before notice
+received an explicit no-hold acknowledgment.
+
+All eight hosted checks passed at `2af77356`. CI44140166922/job134240479658
+completed successfully at 20:35:28 UTC. Its complete 25,535,360-byte raw log binds
+all 28 Linux checks to their declared derivation/output identities. The
+workspace and instrumented runs each preserve all 1029 named passes across 123
+harnesses, the same six controlled child skips, 154 compiler fixtures and
+three benchmark targets. All four coverage floors pass. Each remote profile
+preserves 557 passes and32 fixtures; the protected owner preserves its 12
+commands and 132 top-level executions and expected child controls. The 1.96
+selected contracts retain 28 harnesses/114 passes/138 fixtures, plus the
+separate remote 4-pass/12-fixture scope. These are the actual selected scopes,
+not a claim that every private Node path ran on the minimum compiler.
+
+The local 28-check/actual-flake and Nextest1029 executions remain frozen at `7e1c30e4`.
+PR head `2af77356` adopts those results only through byte-identical 729 source
+inputs and equal parsed 28 native derivation/output objects; tests were not
+rerun at `2af77356`. All three focused HTTP Rust files also match original `9b1b54b9` exactly,
+preserving its executed inversions and two author reviews. Original9b/1027,
+peerabbf/1028 and currentHTTP/1029 evidence remain distinct.
+
+All six schedule/TLS profile archives and their 64 files and 96 source rows are
+qualified. Driver2048 and four Observe1024 bounded ASan completions, every
+original seed and all 447 retained fuzz files are verified. Miri was skipped.
+CodeQL succeeds with the retained baseline gaps in seven extraction-error
+files/nine warning rows. The existing reviewed maintenance exception remains
+unchanged. Hosted coverage JSON, complete static coverage, Windows,
+exhaustiveness, comparative runtime costs and historical watchdog causes are
+not inferred from these results.
+
+The restart handoff retains `http-main-hosted/final-acceptance.json`, SHA256
+`21a8e704b476ae5373ebd9b4ee43d902b658b4a46aa38563fee6d94f9f21eabc`,
+and actual `http-main-delivery.json`, SHA256
+`e270c7b821ac2cb491b8d5da5e51ba423186887be9c78ea114ece9efdea41148`.
+Completed original/combined/main HTTP worktrees were normally removed after
+fresh liveness checks, all 728 original and 729-per-combined-checkout input/archive checks and raw-commit
+preservation. All branch refs remain. Their 42.91MiB allocated removal is
+28.59MiB net after retaining one active full-programme checkout. Losslessly
+archiving an unused older coverage report reclaims another 172.07MiB; its
+complete 193,533,177-byte restoration and SHA256 were verified. Detailed cleanup
+and retention receipts remain in the handoff. Required packages and current
+source/evidence are preserved. These are disk-space measurements; runtime
+memory and performance acceptance remain open.
+
+This delivers the bounded HTTP capability separation. No crate publication or
+full DX01–DX28 completion is claimed. Entity's structural Terminal/ChildFailures
+ceremony, remaining caller criteria, costs, documentation and unresolved
+historical watchdog causes remain active.
+
+### Release consumer locks, before implementation (2026-11-17)
+
+PR434 at frozen `2049988578b86ab3266ed358acfb22b9fd0b508a` changes only
+root Cargo.lock, the runtime manifest and its changelog on actual maincaf0.
+The runtime and root lock declare0.3.1, while the independent transport-custody
+lock still records that path package at0.3.0. Actual CI44175102853 Nix
+job134364260728 and both TLS jobs134364261253/134364261156 refuse that
+lock under unchanged `--locked`, before those protected test binaries run.
+Both official failed TLS archives preserve the same Cargo error. The complete
+source/job/artifact custody is `release434-original/diagnosis.json` in the
+restart handoff. The other five checks pass; no failed outcome is relabelled.
+
+Law: a release proposal must retain consistent Cargo resolution in every
+independent consumer of a changed path package. Cargo mandates that a locked
+command refuse stale resolution; updating all owned consumer locks in the
+release proposal is Bombay workflow policy. Preserve the independent transport
+and Engine fuzz workspaces, their feature isolation and all locked gates.
+The root workspace lock belongs to Release-plz. The two other tracked locks
+belong to transport-custody and Engine fuzz; each existing manifest owns its
+package graph. No duplicate version constant or merged workspace is selected.
+
+Primary sources are Cargo's [workspace-only update contract](https://doc.rust-lang.org/cargo/commands/cargo-update.html)
+and Release-plz's [documented follow-up commit step](https://release-plz.dev/docs/github/output#example-commit-files-to-the-release-pr).
+The actual pinned actionb11437f8 installs CLI0.3.160 and exposes the PR branch.
+Its source has no extra-lock hook. Nixpkgs supplies0.3.159; no tool downgrade
+or custom package derivation is selected. Existing Bombay/CESR release workflows and
+Trive's Nix execution pattern were inspected before selecting the extension.
+
+Expected retained scope is five existing paths: the three current HTTP
+delivery-record paths, `.github/workflows/release-pr.yml` and `flake.nix`.
+The existing pinned toolchain and nixpkgs Git, GitHub CLI and jq packages form
+a standard `devShells.release` shell. This keeps recurring metadata operations
+inside Nix without installing the default shell's editor and analysis tools.
+No new package builder, script, dependency or release-plz version is added. Add an
+own-workflow trigger, expose the existing action's PR result, check out that
+branch through the existing authenticated checkout action, install the same
+Nix action already used by CI, and run the two existing consumer manifests
+through pinned-Nix `cargo update --workspace`. Submit only changed nested
+lockfiles as one GitHub API commit with the observed branch head as a required
+precondition. A changed head must reject the write; an empty change set emits
+no commit. Preserve the current bot, release/publish split and permissions.
+Production Rust, public API/types, dependencies, actor states, interpreter
+branches and modules have zero expected delta. No project tool or test suite
+is added. Normal PR acceptance precedes refreshing the actual release proposal;
+its own source gates and published-package checks remain separate.
+
+Before editing the workflow, reproduce the stale lock with pinned-Nix Cargo
+metadata under `--locked` at204. Execute the intended Cargo update and prove
+locked metadata now contains the declared runtime version without changing
+registry package versions/checksums. Exercise the real Engine/fuzz consumer
+law with a temporary Engine version proposal as well; both independent locks
+must follow that real path package. Preserve and restore all temporary input
+bytes. The API witness must prove the complete lock payload, one atomic
+commit, stale-head refusal and an empty-change no-op. No metadata command is
+credited as runtime test execution. Existing owning debug/release, Nix and
+compiler/package gates remain intact.
+
+Pre-edit aggregate checkpoint: actor/application control sums0 changed,
+subordinate sums/results0 changed, Rust transition branches0 changed,
+production Rust lines0 changed, modules0 changed and public spellings0 changed.
+The current values are the proposed manifest versions, consumer-owned locks
+and observed release-branch head; no arrival history or nested transition
+owner is introduced. Standard Cargo resolution and GitHub's existing commit
+product own those facts. The focused refusal, both consumer witnesses and
+final workflow/source review must close before retaining the implementation.
+The full DX01–DX28 programme and Entity work remain active.
+
+### Release consumer locks, local qualification (2026-11-17)
+
+The pre-edit Runtime witness at204 refuses locked metadata, then the supported
+consumer update changes only its path-package version0.3.0 to0.3.1 and locked
+metadata passes. A separate temporary Engine0.3.1 proposal makes both consumer
+locks refuse; updating each owning manifest repairs both. All registry package
+versions, checksums and dependency records remain equal in these witnesses.
+The frozen204 source's729 files were physically restored after the probes.
+These are Cargo metadata results, not runtime tests or release434 acceptance.
+
+The actual GitHub API accepts one two-file commit5985bbf6 with the exact
+expected tree22b5a11b and parent39316dd9. Replaying its old expected head is
+refused and leaves the branch unchanged. A fresh replay on the resulting
+source has zero changed paths, zero request bytes and no API commit. The
+separate original Runtime proposal produces one signed API commit7e998a3d,
+parent204, treebd111508, changing only transport-custody's lock. Exact request
+buffers, source hashes, original failures, results and a verified Git bundle
+are retained under `release-locks` in the existing restart handoff. These
+isolated probe branches never advance main, the release PR or publication.
+
+The retained workflow body equals the tested proposal byte for byte. Nix
+formatting, Actionlint1.7.12 and ShellCheck0.11.0 pass. The new release shell
+loads pinned Cargo1.99.0, Git2.54.0, GitHub CLI2.94.0 and jq1.8.1. Executing
+the exact workflow through that shell on the current0.3.0 source preserves all
+three locks and emits zero request bytes. The existing Release-plz action,
+App token, normal PR policy, cancellation policy and separate publisher remain
+the owners of their existing responsibilities. Both consumer locks and the
+observed revision/request are uploaded on an attempted update, including a
+refused API write; no locked check is relaxed.
+
+Author review one maps each original refusal, complete lock buffer, both real
+consumer manifests and API precondition to the stated law. Author review two
+checks the stale-head and empty-change counterexamples, registry conservation,
+source restoration, root-lock exclusion and unchanged publishing authority.
+Both close for the local workflow candidate; no independent review is claimed.
+The retained scope is five existing paths: workflow+70, Nix+9, and the three
+existing PRD/backlog record paths. Production Rust0, tests0, public types0;
+actor states, subordinate sums, transitions and modules remain unchanged.
+No new script or tool suite is retained. Final-source native/hosted gates,
+normal workflow PR delivery, the actual refreshed release proposal and package
+publication/consumer qualification remain open and separate.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
