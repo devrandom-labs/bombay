@@ -1138,6 +1138,57 @@ No new script or tool suite is retained. Final-source native/hosted gates,
 normal workflow PR delivery, the actual refreshed release proposal and package
 publication/consumer qualification remain open and separate.
 
+### Release consumer lock delivery (2026-11-18)
+
+[PR437](https://github.com/devrandom-labs/bombay/pull/437) merged normally at
+2026-11-18T03:27:53Z as `56910d3c49e326871b4bf01639cd8a741ce03c1f`.
+Tree `4008324f0ffdfb44f98c0c9cef123b74af95f787` equals accepted signed
+`1c94ef33`; actual API and physical Git parents are main `caf0b681` plus
+`1c94ef33`. Fresh before/after notices were sent to Bombay, with a direct
+no-hold notice before merge. No bypass or branch deletion was used.
+
+All eight exact-head hosted checks and 28 detailed Linux scopes passed.
+All 28 native check owners and the actual flake invocation passed separately.
+A standalone pinned-Nix Nextest execution then passed all 1029 cases across
+123 binaries, reconciling every one of 1035 named registrations and the same
+six parent-controlled child skips. All 729 source inputs and executable hashes
+were rechecked. The initial inventory controller's metadata naming refusal
+remains recorded separately: compilation/list succeeded, and no tests ran
+before that refusal. Correcting the reader changed no source, fixture, ignore,
+assertion or gate. The first actual test execution passed without retries.
+
+The final full-diff law review and minimization pass retain the existing Cargo,
+Release-plz, Nix and GitHub API owners. Both author reviews close; no independent
+review is claimed. The five-path delta is workflow+70, Nix+9 and the three
+existing record paths; Rust, tests, public types, actor states, subordinate
+alternatives, transition branches and modules have zero delta. The observed
+proposal head and complete consumer locks remain the only required values;
+no duplicate resolver, project script, framework or semantic state is added.
+
+Native and Linux receipts retain their exact selected minimum-compiler,
+remote, protected-child, coverage, static-analysis and bounded fuzz scopes.
+Miri was skipped. No exhaustive or comparative-performance claim follows.
+Final acceptance is `release-locks/workflow-final-acceptance.json`, SHA256
+`3d247c737d2eb1d673f50f5fb2e2d4736a6200dd52e13e584737c2a9610d1d76`;
+actual delivery is `release-locks/workflow-delivery.json`, SHA256
+`f61817ea9dfef1baf049573a3e94f9a83ca9bdfdf20a7f0bad026b86964cc217`,
+in the restart handoff. Original scoped receipts and failed-reader records
+remain preserved.
+
+The completed owned Nextest target was removed after 4375 generated inputs
+were archived, extracted and rehashed, with two fresh empty recursive lsof
+checks. Net 6,048,976,896 allocated bytes (5.633548737 GiB) were reclaimed;
+source archives, release packages and required evidence remain. The active
+full-programme checkout is reused; peer unfinished work and cache are protected.
+The cleanup receipt is `release-locks/nextest-cache-cleanup.json`.
+
+This delivers the workflow repair, not Runtime0.3.1 publication. The actual
+release proposal refresh and its locked checks, package/compiler/consumer and
+registry delivery evidence remain separate and pending. Peer R18's breaking
+seven-value extractor and source-specific proofs are separate. The full
+DX01–DX28 goal and its unmet Entity, caller, cost and documentation criteria
+remain active.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
