@@ -103,7 +103,6 @@ where
     type Hosts = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -121,12 +120,7 @@ where
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<
-            Self::HydrationError,
-            Self::Behavior,
-            Self::Terminal,
-            Self::ChildFailures,
-        >,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }

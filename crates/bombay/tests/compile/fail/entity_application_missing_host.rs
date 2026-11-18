@@ -35,7 +35,6 @@ impl EntityDefinition for Accounts {
     type Hosts = MissingAccountSpace;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = ();
 
     async fn hydrate(
         &self,
@@ -48,7 +47,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal, Self::ChildFailures>,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
     }
 
@@ -60,7 +59,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: &EntityId<Self::Id>,
         _: ActivationId,
-        _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>, tokio::task::JoinError>,
+        _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Vec<Never>>, tokio::task::JoinError>,
         retirement_report: ActorRetirementReport,
     ) {
         // This compile-denial fixture executes no retirement consumer.

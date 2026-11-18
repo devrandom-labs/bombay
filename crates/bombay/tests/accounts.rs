@@ -72,7 +72,6 @@ impl EntityDefinition for Accounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -89,12 +88,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<
-            Self::HydrationError,
-            Self::Behavior,
-            Self::Terminal,
-            Self::ChildFailures,
-        >,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }

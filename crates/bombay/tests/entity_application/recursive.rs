@@ -77,7 +77,6 @@ type TreeActivationFailure = EntityActivationError<
     u64,
     <Trees as EntityDefinition>::Behavior,
     tree_application::TreeRetirements,
-    Vec<<tree_application::TreeRetirements as RetirementSchema>::Failure>,
 >;
 type TreeRetirementFacts = Arc<
     Mutex<
@@ -103,7 +102,6 @@ impl EntityDefinition for Trees {
     type Hosts = tree_application::Topology;
     type HydrationError = u64;
     type Terminal = tree_application::TreeRetirements;
-    type ChildFailures = Vec<<Self::Terminal as RetirementSchema>::Failure>;
     #[expect(
         clippy::unused_async_trait_impl,
         reason = "transfer the exact pre-owned tree only when hydration is polled"

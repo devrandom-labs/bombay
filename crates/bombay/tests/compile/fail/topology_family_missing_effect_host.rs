@@ -33,13 +33,12 @@ impl EntityDefinition for Auditors {
     type Hosts = audit_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     async fn hydrate(&self, _: EntityId<u64>) -> Result<Self::Behavior, Never> {
         Ok(Auditor.stop_on_shutdown())
     }
     fn activation_failed(&self, _: EntityId<u64>, _: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>) {
+        failure: EntityActivationError<Never, Self::Behavior, Never>) {
         drop(failure);
     }
     fn admission_refused(&self, _: EntityId<u64>, failure: AdmissionFailure<Delivery<Ledger>>) {

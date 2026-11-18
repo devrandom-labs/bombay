@@ -328,7 +328,7 @@ enum CounterFailure {
     Activation(
         EntityId<u64>,
         ActivationId,
-        EntityActivationError<Never, StopOnShutdown<Counter>, Never, Vec<Never>>,
+        EntityActivationError<Never, StopOnShutdown<Counter>, Never>,
     ),
     Admission(EntityId<u64>, AdmissionFailure<CounterCommand>),
     Forced(EntityId<u64>, ActivationId, DrainFailure),
@@ -345,7 +345,6 @@ impl EntityDefinition for Counters {
     type Hosts = counter_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     fn hydrate(&self, id: EntityId<u64>) -> impl Future<Output = Result<Self::Behavior, Never>> {
         ready(Ok(Counter {
@@ -359,7 +358,7 @@ impl EntityDefinition for Counters {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         self.failures
             .lock()

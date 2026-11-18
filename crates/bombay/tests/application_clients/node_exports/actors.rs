@@ -154,7 +154,7 @@ pub(super) enum CounterReport {
     Activation(
         EntityId<u64>,
         ActivationId,
-        EntityActivationError<Never, ManagedCounter, Never, Vec<Never>>,
+        EntityActivationError<Never, ManagedCounter, Never>,
     ),
     #[expect(
         dead_code,
@@ -187,7 +187,6 @@ impl EntityDefinition for Counters {
     type Hosts = topology::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -201,7 +200,7 @@ impl EntityDefinition for Counters {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, ManagedCounter, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, ManagedCounter, Never>,
     ) {
         self.reports
             .lock()

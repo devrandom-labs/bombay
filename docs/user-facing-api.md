@@ -202,9 +202,11 @@ and its definition. The complete declaration lives with its
 
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated
-`ProfileRetirements` as `Terminal` and `Vec<<Self::Terminal as RetirementSchema>::Failure>`
-as `ChildFailures`. Its existing hydration and consuming retirement callbacks
-retain those exact values. The [two-family journey](../crates/bombay/tests/entity_application.rs)
+`ProfileRetirements` as `Terminal`. Native child failures are derived as
+`Vec<<Self::Terminal as RetirementSchema>::Failure>`; definitions do not choose
+a second carrier. Its hydration and consuming retirement callbacks retain those
+exact values. `EntityActivationError<Hydration, Behavior, Terminal>` preserves
+the same native child-failure carrier in its launch alternative. The [two-family journey](../crates/bombay/tests/entity_application.rs)
 executes simultaneous hydration, refusals, reactivation and child retirement.
 Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
 supplies its real policy and owned definition.

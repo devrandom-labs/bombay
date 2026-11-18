@@ -132,7 +132,6 @@ impl EntityDefinition for Accounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -150,7 +149,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<u64>,
         _: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         drop(failure);
         panic!("no incarnation is requested by this startup controller");
@@ -1553,7 +1552,6 @@ impl EntityDefinition for RetiringAccounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     fn hydrate(
         &self,
@@ -1566,7 +1564,7 @@ impl EntityDefinition for RetiringAccounts {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         Accounts.activation_failed(id, activation, failure);
     }
@@ -1981,7 +1979,6 @@ impl EntityDefinition for AccountFamily {
     type Hosts = (ActorSpace<ReceivingAccount>, Runtime<AccountFactory>);
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     fn hydrate(
         &self,
@@ -1994,7 +1991,7 @@ impl EntityDefinition for AccountFamily {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         Accounts.activation_failed(id, activation, failure);
     }
@@ -2996,7 +2993,7 @@ struct LiveAccounts {
             Vec<(
                 EntityId<u64>,
                 ActivationId,
-                EntityActivationError<Never, StopOnShutdown<LiveAccount>, Never, Vec<Never>>,
+                EntityActivationError<Never, StopOnShutdown<LiveAccount>, Never>,
             )>,
         >,
     >,
@@ -3041,7 +3038,6 @@ impl EntityDefinition for LiveAccounts {
     type Hosts = live_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -3063,7 +3059,7 @@ impl EntityDefinition for LiveAccounts {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         self.activation_failures
             .lock()
@@ -4897,7 +4893,6 @@ mod family_cleanup {
         type Hosts = account_application::Topology;
         type HydrationError = ();
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
 
         async fn hydrate(&self, _: EntityId<u64>) -> Result<Self::Behavior, ()> {
             self.hydration_started.add_permits(1);
@@ -4916,7 +4911,7 @@ mod family_cleanup {
             &self,
             _: EntityId<u64>,
             _: ActivationId,
-            failure: EntityActivationError<(), Self::Behavior, Never, Vec<Never>>,
+            failure: EntityActivationError<(), Self::Behavior, Never>,
         ) {
             // This concrete definition explicitly consumes its callback result.
             // The witness claims no callback completeness or incarnation retirement.

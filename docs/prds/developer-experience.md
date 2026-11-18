@@ -1187,6 +1187,41 @@ publication below. Peer R18's breaking seven-value extractor and source-specific
 proofs remain separate. The full DX01–DX28 goal and its unmet Entity, caller,
 cost and documentation criteria remain active.
 
+### Entity child-failure ownership, before the regression (2026-11-18)
+
+DX03/17/22 remains open: ordinary Entity definitions still spell their native
+terminal and callback products. The first selected law removes one demonstrably
+false choice: native child bindings always retain
+`Vec<<Terminal as RetirementSchema>::Failure>`, for both empty and nonempty rows.
+`EntityDefinition::ChildFailures` duplicates that existing owner equation.
+The real Accounts example will first omit that associated choice; the prior
+trait must reject specifically for the missing item before production changes.
+All original callbacks, typed results, reports, actor values and output remain.
+
+This is a derived native ownership equation and application interface policy,
+not a new actor-model law. Registry Behavior/Actors0.30, macros0.16, Address0.3,
+Communication0.1.7 and Timers0.2 remain selected. Private Observe publication,
+`ChildBindings`/`RetireChildTasks`, native task retirement and the complete
+`ActorRetirement`/`Result` products remain authoritative. The owning source and
+actual no-child/nonempty implementations were inspected before this record.
+
+The candidate deletes the duplicate associated choice and generic in the native
+Entity/error port. `Terminal::Failure` retains the existing Send/static transport
+requirement. No public type, runtime branch, state, allocation, erased value,
+clone, lifecycle policy or fallback is added. Design edits are limited to the
+Entity definition/native binding, delivery bound, this real caller and this PRD;
+all further caller migration is a separately measured stage after focused proof.
+The full terminal/callback simplification target remains open. A new topology
+projection is unselected until application root/cold-member context is proved.
+
+The pre-edit checkpoint records the unchanged five-state EntitySlot sum,
+subordinate ownership alternatives and exact source measurements. Every retained
+runtime alternative keeps its original owned value; no arrival history, repeated
+cause, extra authority, false cardinality or structural caller input is added.
+The original source, dependency selection and checkpoint are in the existing
+restart handoff's `entity-interface-20261118T125006Z/provenance.json`. No production edit,
+compiler success, runtime execution or complete Entity repair is claimed here.
+
 ### Runtime 0.3.1 delivery (2026-11-18)
 
 [PR434](https://github.com/devrandom-labs/bombay/pull/434) merged normally as
@@ -4431,3 +4466,43 @@ SDK privacy, comparable memory/compile costs and final documentation acceptance
 remain in the owning checklist. Partial receipt counts, normal retirement and
 readiness notices do not establish complete affine custody or committed Ready.
 The programme is not complete merely because examples or selected checks pass.
+
+### Entity child-failure caller migration (2026-11-18)
+
+The focused owning change now passes its real Accounts and recursive native
+cases in both profiles. The populated child-constructor failure test preserves
+the original cause, complete sends and independent report; both loss inverses
+fail at the missing-row oracle and both exact-restored profiles pass. Author
+and independent source/execution reviews close this concrete native case.
+Evidence is `entity-interface-20261118T125006Z/nonempty-acceptance.json` in the
+existing handoff. General wrapper-order and minimum/full-source gates remain open.
+
+This separately measured stage removes only the proven duplicate associated
+choice and fourth activation-error argument from the remaining 12 Rust paths.
+Callbacks retain the same native retirement product; no body, effect, policy,
+public type, bound, allocation or state is added. Compile refusals must retain
+their original missing-host, role or effect-host reason. Current guidance and
+only actual diagnostic drift are updated with their owners. The concrete
+cumulative inventory is 28 paths including conditional compiler records;
+Joel's standing explicit auto-approval applies at the file-count checkpoint.
+The scope, pre-edit measurements and allowed equations are in `migration-plan.json`.
+Full terminal/callback simplification and final delivery remain open.
+
+The measured stage now passes author and independent review. Current Rust1.99
+executes26 Entity units in debug and75 affected caller cases in each profile;16 selected
+static refusals retain their original reasons. Only three actual compiler
+snapshots change (two source positions and one shorter native signature).
+Runtime outcomes retain sourcea003; final5a8 differs only in those stderr files.
+Rust1.96 independently passes26 Entity units in debug and8 selected leaf/recursive/configured
+caller cases per profile on5a8. The original-cause loss/restoration control is
+current-compiler evidence, not a minimum-compiler inverse claim.
+
+Against the pre-edit signed8ef source, production is+43/-43/net0; tests including
+compiler fixtures are+371/-101/net270, and the real example is+2/-3/net-1.
+No public nominal type is added. Entity's10 modules,192 match-arm tokens and
+all control-state sums remain unchanged. These source counts include comments
+and blanks where applicable; they do not replace ownership review. Exact
+measurements/reviews/raw results are in `migration-checkpoint.json`,
+`migration-current-acceptance.json` and `migration-minimum-acceptance.json` in
+the existing handoff. No full new-source Nix/Nextest/remote/hosted/PR delivery
+or complete Entity interface claim is made.

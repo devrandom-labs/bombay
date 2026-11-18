@@ -137,7 +137,7 @@ enum HydrationFailure {
 }
 
 type AccountActivationFailure =
-    EntityActivationError<HydrationFailure, StopOnShutdown<Account>, Never, Vec<Never>>;
+    EntityActivationError<HydrationFailure, StopOnShutdown<Account>, Never>;
 type AccountRetirement =
     Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
 type AccountActivationFacts =
@@ -183,7 +183,6 @@ impl EntityDefinition for Accounts {
     type Hosts = topology::Topology;
     type HydrationError = HydrationFailure;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     async fn hydrate(
         &self,
@@ -288,7 +287,6 @@ impl EntityDefinition for Profiles {
     type Hosts = topology::Topology;
     type HydrationError = Never;
     type Terminal = topology::ProfileRetirements;
-    type ChildFailures = Vec<<Self::Terminal as RetirementSchema>::Failure>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -302,12 +300,7 @@ impl EntityDefinition for Profiles {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<
-            Self::HydrationError,
-            Self::Behavior,
-            Self::Terminal,
-            Self::ChildFailures,
-        >,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
     }
 
@@ -320,7 +313,11 @@ impl EntityDefinition for Profiles {
         _: &EntityId<Self::Id>,
         _: ActivationId,
         retirement: Result<
-            ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
+            ActorRetirement<
+                Self::Behavior,
+                Self::Terminal,
+                Vec<<Self::Terminal as RetirementSchema>::Failure>,
+            >,
             tokio::task::JoinError,
         >,
         retirement_report: ActorRetirementReport,

@@ -1352,8 +1352,7 @@ mod tests {
 
     type BalanceRetirement =
         Result<ActorRetirement<StopOnShutdown<Balance>, Never, Vec<Never>>, tokio::task::JoinError>;
-    type BalanceStartupError =
-        EntityActivationError<Never, StopOnShutdown<Balance>, Never, Vec<Never>>;
+    type BalanceStartupError = EntityActivationError<Never, StopOnShutdown<Balance>, Never>;
 
     #[derive(Default)]
     struct Balances {
@@ -1380,7 +1379,6 @@ mod tests {
         type Hosts = ActorSpace<Balance>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
 
         #[expect(
             clippy::unused_async_trait_impl,

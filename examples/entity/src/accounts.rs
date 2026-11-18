@@ -21,7 +21,7 @@ pub(super) enum AccountReport {
     Startup {
         id: EntityId<u64>,
         attempt: ActivationId,
-        failure: EntityActivationError<Never, StopOnShutdown<Account>, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, StopOnShutdown<Account>, Never>,
     },
     Admission {
         id: EntityId<u64>,
@@ -50,7 +50,6 @@ impl EntityDefinition for Accounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -64,7 +63,7 @@ impl EntityDefinition for Accounts {
         &self,
         id: EntityId<u64>,
         attempt: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         self.reports
             .lock()

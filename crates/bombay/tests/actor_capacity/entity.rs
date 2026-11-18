@@ -25,12 +25,8 @@ type LibraryRetirement = ActorRetirement<
     catalogue::LibraryRetirements,
     Vec<<catalogue::LibraryRetirements as RetirementSchema>::Failure>,
 >;
-type LibraryStartup = EntityActivationError<
-    Never,
-    StopOnShutdown<Library>,
-    catalogue::LibraryRetirements,
-    Vec<<catalogue::LibraryRetirements as RetirementSchema>::Failure>,
->;
+type LibraryStartup =
+    EntityActivationError<Never, StopOnShutdown<Library>, catalogue::LibraryRetirements>;
 
 #[derive(Default)]
 struct Reports {
@@ -60,7 +56,6 @@ impl EntityDefinition for Catalogue {
     type Hosts = catalogue::Topology;
     type HydrationError = Never;
     type Terminal = catalogue::LibraryRetirements;
-    type ChildFailures = Vec<<Self::Terminal as RetirementSchema>::Failure>;
 
     #[expect(
         clippy::unused_async_trait_impl,
