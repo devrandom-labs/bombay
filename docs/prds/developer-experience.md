@@ -4646,3 +4646,39 @@ logs/required evidence remain. Actualmain has since advanced normally through
 PR438 to98885bd1/tree0b470fa2 (parents0350+9e0). Integration and combined-source
 qualification follow separately; peer proofs are not adopted. Full28/flake/
 Nextest/remote/hosted/delivery and fullDX01-DX28 completion remain open.
+
+### Integrated Entity qualification (2026-11-18)
+
+Signed99e4babb integrates actual main98885 without changing upstream Node
+ownership. Its731 exact inputs independently pass the authoritative28-owner
+native flake, standalone Nextest1032, optimized workspace1032 and coverage1032;
+each1032-case execution reconciles123 harnesses,1038 names and the same six
+declared child skips. Coverage retains154 compiler fixtures, three benchmark
+targets and all four existing owner floors. Both remote profiles separately
+pass559 named cases and32 fixtures. ActualRust/Cargo1.96 qualifies the selected
+local/Axum114-case and remote4-case matrices, not the private whole runtime.
+The existing strict optimized Clippy owner denies warnings and both required
+supplementary lints; API docs and formatting pass. Native acceptance5e55a08a
+and standalone48bdd184 bind the exact source and scoped owner receipts.
+
+After native completion,20 output paths were absent from the store. The27
+earlier physical NAR checks remain historical evidence; the last protected
+Counter output was recovered through a separate normal same-identity build0
+and physically checked. Its original and recovery logs each reconcile132
+selected executions across12 commands; expected child failures add no outer
+pass credit. No removal cause or fresh all28 physical rehash is claimed.
+
+Independent combined review accepts the retained model and caller conservation;
+its one API-inventory omission is corrected by listing the canonical retirement
+alias. Against main98885 the implementation has production+64/-61/net3 and
+tests+440/-221/net219, zero new nominal public types and one public alias.
+The final record and inventory edits change no Rust, manifest, lock or Nix
+configuration. Their final-source identity comparison and required checks,
+hosted acceptance and normal PR delivery remain open. Runtime0.3.1 excludes
+these source-breaking Entity changes. Full terminal/callback simplification,
+catalogue, costs, support, documentation and DX01-DX28 acceptance remain open.
+
+The completed standalone Cargo target was removed after exact input, executable
+identity and raw-log preservation plus fresh idle checks. Observed allocation
+reclaimed was7,234,252,800B (6.7374GiB), a cache measurement rather than a whole
+filesystem delta. Required source, packages, exports and evidence remain.
