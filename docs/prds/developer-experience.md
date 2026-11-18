@@ -4530,3 +4530,86 @@ retained for unfinished work. The original cache-tag refusal, confined dry runs
 and fresh liveness checks are preserved in the cleanup receipt. Full new-source
 28-owner/flake/Nextest/remote/hosted delivery and terminal/callback completion
 remain open.
+
+### Entity result ownership — reopened (2026-11-18)
+
+The definition-indexed native-result hypothesis is rejected. Its focused leaf,
+recursive and populated-cause tests passed on Rust1.99 and1.96 in both profiles;
+the original example trace and exact child-failure custody survived. Static
+negative/positive/restored controls also behaved as designed. Those results
+remain source-specific evidence, not whole-interface acceptance.
+
+The complete caller review found that `RetiringAccounts` and `AccountFamily`
+forward their original activation failures directly to `Accounts`. Their keys
+and payload types coincide; definition identity is not authority in this
+contract. Making `EntityActivationError<D>` nominally distinct breaks that
+existing composition. The new wrong-definition refusal enforced the invented
+restriction and could not justify it. Independent review confirms the veto.
+
+All eight changed Rust owner/caller/harness files are restored byte-exactly to
+signed67131997. The two rejected static fixture/snapshot files are removed from
+the checkout and preserved with all731 inputs in the exact source archive.
+The13-path mechanical candidate was never applied. No variant conversion,
+replacement callback, new bound or compatibility shim is retained.
+
+The [rejected-hypothesis record](developer-experience/DEAD_ENDS.md) contains the
+falsifier and reopening conditions. Detailed source/archive/raw/review receipts
+remain in the existing Entity handoff's `results` directory; the reopening
+receipt is2d3a831c. The earlier narrow design acceptance c2037873 is superseded
+for retention, while its actual execution outcomes remain unchanged.
+
+DX03/17/22/26 and the full programme remain active. The next hypothesis starts
+from retained6713 and must simplify native result spelling while preserving
+same-payload delegation, complete custody and all four callback contracts.
+No replacement production model, new publication or full-workspace acceptance
+is selected by this rejection.
+
+A subsequent consumer-only transparent activation-alias probe preserved type
+identity but refused with actual E0284 at an unchanged enum match: Rust could
+not infer its definition through associated projections. The caller was restored
+byte-exactly and its original check passed. No library edit was made. The alias
+spelling is rejected in `DEAD_ENDS.md`; a joined-retirement-result alias remains
+a separate research option, with actual equal-payload forwarding required before
+any public implementation.
+
+### Native Entity retirement spelling, before implementation (2026-11-18)
+
+The selected focused proposal adds only `EntityRetirement<D>` as a transparent
+name for the existing joined native result. The definition supplies actor and
+descendant metadata; equal-payload definitions retain the same result type.
+The original three-payload activation error and inferred variant matches stay
+unchanged. No wrapper, conversion, new bound or runtime branch is proposed.
+
+Before production, the two actual `RetiringAccounts`/`AccountFamily` retirement
+forwarders compile with that local result alias and their bodies unchanged;
+exact restoration and the original target also compile. The real Accounts
+caller then refuses the missing public name with soleE0432; exact restoration
+and original caller compile. A first probe accidentally used the alias in an
+unrelated nested namespace, failedE0425 and was restored; the corrected check
+narrows only those two real forwarders while compiling the whole target.
+All separate raw outcomes/source guards remain in the `retirements` handoff.
+
+The initial producer scope is the family result equation, its existing entity
+export and the real Accounts caller. Focused leaf/recursive/populated native
+runtime preservation and independent review precede a separately measured
+remaining result-spelling migration. The raw acquired retirement and generic
+host-independent storage remain distinct products. This is a derived native
+ownership equation and interface name, not an additional actor-model law.
+The full DevX goal and all final workspace/delivery gates remain open.
+
+Focused retention closes on source17dd44d0 (730 exact inputs): currentRust1.99
+and actualRust/Cargo1.96 each execute the two native-family/recursive cases,
+the populated original-child-cause case and original five-line public example
+in debug and optimized profiles. All12 invocations pass with exact names/trace;
+author and independent source/execution reviews close. The alias adds no nominal
+identity, runtime body/state/branch or callback;10modules/192match tokens stay
+unchanged, physical production4847->4853 and declaration tokens92->93 under the
+recorded identical regex. Raw Ledger custody and both forwarders remain intact.
+Acceptance64bec865 and archive393618c0 preserve the bounded exact-source proof.
+
+After preserving5086 generated inputs and fresh idle checks, normal Cargo
+package cleanup reclaimed234385408 allocated bytes (0.2182884216GiB); dependencies
+remain for unfinished work. The existing API guide now names the canonical
+joined result. Remaining result-spelling migration is a later measured stage;
+whole workspace/minimum workspace/Nix/Nextest/remote/hosted/delivery and the full
+DX01-DX28 goal remain open. No publication or main advance is claimed.

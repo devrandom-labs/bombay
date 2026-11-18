@@ -37,6 +37,22 @@ use super::{
     EntityRuntime, EntityShutdown, FamilyRetirement, Passivation, RetirementMode,
 };
 
+/// Complete result of joining one native Entity incarnation.
+///
+/// The definition supplies the actor and descendant payload types. Definitions
+/// with the same payload types share this existing result type; no wrapper or
+/// conversion is introduced. The original task join error and ordered child
+/// failures are retained. The independent [`ActorRetirementReport`] travels
+/// separately and does not replace this custody.
+pub type EntityRetirement<D> = Result<
+    ActorRetirement<
+        <D as EntityDefinition>::Behavior,
+        <D as EntityDefinition>::Terminal,
+        Vec<<<D as EntityDefinition>::Terminal as RetirementSchema>::Failure>,
+    >,
+    JoinError,
+>;
+
 /// One nominal, asynchronously hydrated native Entity family.
 pub trait EntityDefinition: Send + Sync + 'static {
     /// Stable domain identity stored by one Entity reference.
@@ -103,22 +119,11 @@ pub trait EntityDefinition: Send + Sync + 'static {
     /// Normal live retirement invokes this notification before later reactivation.
     /// Values consumed and destroyed inside a panicking callback are unavailable;
     /// outside keys, modes, prior results and original callback panics survive.
-    #[expect(
-        clippy::type_complexity,
-        reason = "the consuming notification retains behavior, terminal, child failures and raw actor join failure"
-    )]
     fn retired(
         &self,
         id: &EntityId<Self::Id>,
         activation: ActivationId,
-        retirement: Result<
-            ActorRetirement<
-                Self::Behavior,
-                Self::Terminal,
-                Vec<<Self::Terminal as RetirementSchema>::Failure>,
-            >,
-            JoinError,
-        >,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     );
 }

@@ -15,7 +15,8 @@ use bombay::behavior::{
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Refusal, RetirementMode,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown, Refusal,
+    RetirementMode,
 };
 use bombay::prelude::{Completion, Exit, StopOnShutdown};
 use bombay::{
@@ -30,7 +31,6 @@ use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
-use tokio::task::JoinError;
 
 struct Catalog;
 #[bombay::actor(message = Never)]
@@ -114,7 +114,7 @@ type LedgerRetirements = Arc<
         Vec<(
             EntityId<u64>,
             ActivationId,
-            Result<LedgerRetirement, JoinError>,
+            EntityRetirement<Ledgers>,
             ActorRetirementReport,
         )>,
     >,
@@ -182,7 +182,7 @@ impl EntityDefinition for Ledgers {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<LedgerRetirement, JoinError>,
+        retirement: EntityRetirement<Ledgers>,
         report: ActorRetirementReport,
     ) {
         self.retirements

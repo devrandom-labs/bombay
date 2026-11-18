@@ -6,12 +6,11 @@ use bombay::behavior::{
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, StopOnShutdown};
 use bombay::{
     ActorFailureAssessment, ActorRetirementReport, Application, MailAddr, RetirementAssessment,
-    RetirementSchema,
 };
 use core::num::NonZeroUsize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -68,11 +67,6 @@ impl Tree {
     }
 }
 
-type TreeRetirement = ActorRetirement<
-    <Trees as EntityDefinition>::Behavior,
-    tree_application::TreeRetirements,
-    Vec<<tree_application::TreeRetirements as RetirementSchema>::Failure>,
->;
 type TreeActivationFailure = EntityActivationError<
     u64,
     <Trees as EntityDefinition>::Behavior,
@@ -82,7 +76,7 @@ type TreeRetirementFacts = Arc<
     Mutex<
         Vec<(
             EntityId<u64>,
-            Result<TreeRetirement, tokio::task::JoinError>,
+            EntityRetirement<Trees>,
             ActorRetirementReport,
         )>,
     >,
@@ -141,7 +135,7 @@ impl EntityDefinition for Trees {
         &self,
         id: &EntityId<u64>,
         _: ActivationId,
-        retirement: Result<TreeRetirement, tokio::task::JoinError>,
+        retirement: EntityRetirement<Trees>,
         retirement_report: ActorRetirementReport,
     ) {
         self.retirements

@@ -14,11 +14,11 @@ use bombay::behavior::{
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, DrainStage,
     EntityActivationError, EntityAdmission, EntityCapacity, EntityDefinition, EntityId, EntityRef,
-    EntityShutdown, Passivation, Refusal,
+    EntityRetirement, EntityShutdown, Passivation, Refusal,
 };
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ActorRetirementReport, Application, MailAddr,
-    RetirementAssessment, RetirementSchema,
+    RetirementAssessment,
 };
 use bombay_engine::Completion;
 use tokio::runtime::Builder;
@@ -138,8 +138,6 @@ enum HydrationFailure {
 
 type AccountActivationFailure =
     EntityActivationError<HydrationFailure, StopOnShutdown<Account>, Never>;
-type AccountRetirement =
-    Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
 type AccountActivationFacts =
     Arc<Mutex<Vec<(EntityId<u64>, ActivationId, AccountActivationFailure)>>>;
 type ForcedRetirementFacts = Arc<Mutex<Vec<(EntityId<u64>, ActivationId, DrainFailure)>>>;
@@ -148,7 +146,7 @@ type AccountRetirementFacts = Arc<
         Vec<(
             EntityId<u64>,
             ActivationId,
-            AccountRetirement,
+            EntityRetirement<Accounts>,
             ActorRetirementReport,
         )>,
     >,
@@ -248,7 +246,7 @@ impl EntityDefinition for Accounts {
         &self,
         id: &EntityId<Self::Id>,
         activation: ActivationId,
-        retirement: AccountRetirement,
+        retirement: EntityRetirement<Accounts>,
         retirement_report: ActorRetirementReport,
     ) {
         self.retirements
@@ -259,15 +257,8 @@ impl EntityDefinition for Accounts {
     }
 }
 
-type ProfileRetirement = Result<
-    ActorRetirement<
-        <Profiles as EntityDefinition>::Behavior,
-        topology::ProfileRetirements,
-        Vec<<topology::ProfileRetirements as RetirementSchema>::Failure>,
-    >,
-    tokio::task::JoinError,
->;
-type ProfileRetirementFact = Arc<Mutex<Option<(ProfileRetirement, ActorRetirementReport)>>>;
+type ProfileRetirementFact =
+    Arc<Mutex<Option<(EntityRetirement<Profiles>, ActorRetirementReport)>>>;
 
 struct Profiles {
     retirement: ProfileRetirementFact,
@@ -312,14 +303,7 @@ impl EntityDefinition for Profiles {
         &self,
         _: &EntityId<Self::Id>,
         _: ActivationId,
-        retirement: Result<
-            ActorRetirement<
-                Self::Behavior,
-                Self::Terminal,
-                Vec<<Self::Terminal as RetirementSchema>::Failure>,
-            >,
-            tokio::task::JoinError,
-        >,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         *self

@@ -29,7 +29,7 @@ use tokio::task::JoinError;
 use bombay::actors::ActorExt;
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
+    EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityRetirement, EntityShutdown,
 };
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationBehavior,
@@ -1586,7 +1586,7 @@ impl EntityDefinition for RetiringAccounts {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         Accounts.retired(id, activation, retirement, retirement_report);
@@ -2013,7 +2013,7 @@ impl EntityDefinition for AccountFamily {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         report: ActorRetirementReport,
     ) {
         Accounts.retired(id, activation, retirement, report);
