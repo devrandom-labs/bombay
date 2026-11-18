@@ -2,13 +2,19 @@
 
 ## Withdrawal notification during finalization — prerequisites and change record (2026-11-17)
 
-**State: active (local repair qualified; final source and hosted delivery open).** The regression started
-on actual PR435 merge2280a36a plus delivery-only record95d2949e; the local branch
-now includes actual PR437/main56910d3c after PR436/maincaf0, qualified below.
-Exact Cargo.lockc0a6f5a6,
-flake.lock13ea9617 and the selected owner graph remain unchanged: Behavior/Actors
+**State: active (repair implemented; current-main qualification and PR delivery open).**
+This subsection tracks the bounded withdrawal-notification repair. Full R18,
+including cancellation, native close failures, resource baselines and reconnect,
+and full AUTH1/NET1 acceptance remain open.
+The regression started on actual PR435 merge2280a36a plus delivery-only
+record95d2949e. Source e960 includes actual PR437/main56910d3c after
+PR436/maincaf0 and is qualified below. The branch now also contains actual
+PR434/main0350b4fe, whose published Runtime0.3.1 excludes this seven-value repair.
+That integration requires its own source qualification. Current Cargo.lockaa7e46ea
+and unchanged flake.lock13ea9617 select the same primitive owners: Behavior/Actors
 0.30.0 at628649da, BehaviorMacros0.16.0 at55dbac2d, Address0.3.0 at9f058dc0,
-Communication0.1.7 at2d71c2f6, Timers0.2.0 at9369d1f6, workspace Observe/Engine
+Communication0.1.7 at2d71c2f6, Timers0.2.0 at9369d1f6, workspace Runtime0.3.1,
+Engine0.3.0/Observe
 and native SDK1.10.10 atc34eb350. Fresh archive/VCS/source/API/test/doc inspection
 and all775 selected Behavior instructions are recorded in the common Git
 session-archives/2026-11-17/remote-retirement/contracts.txt. No dependency,
@@ -538,6 +544,59 @@ normal reviewed PR delivery remain open. Genuinely induced disposal/close errors
 arbitrary cancellation, all request lanes/complete ledger proofs, callback
 quiescence, task/Session/heap baselines and reconnect remain separate obligations.
 Full R18/R01–R25/AUTH1/NET1 stays active.
+
+### Withdrawal notification — qualified source and Runtime0.3.1 integration (2026-11-18)
+
+Signed e960571d/tree7a3034e3, archive63dc56df, now closes all28 native owners
+and the actual authoritative flake0. Twenty-four unchanged derivation/output
+proofs are explicitly adopted after receipt, registration and physical NAR
+checks; the four changed owners have their own final-source outcomes. Driver
+checks retain eight laws,16 positives and eight named refusals, classified as
+five runtime, two repository-policy and one compiler-diagnostic mismatch.
+References retain all50 ordered controls across both locales. Actual optimized
+workspace and coverage each reconcile1031 passes/123 harnesses/1037 registrations,
+the same six controlled child entries,154 source-hashed compiler fixtures and
+three completed benchmark targets. All four unchanged coverage floors pass.
+The complete199,646,763-byte coverage JSON restores byte-for-byte from12,746,089
+compressed bytes, SHA2566c0257dd701e37925e3bcd68d2e7001483f2043cbd9b9f953f1d11ab3f2eb3a0.
+All730 input bytes/modes/names, signed HEAD and complete source archive remain
+unchanged after parent0. The234,870-byte parent log has SHA256
+c8a4ba3f653578fc711ea10c91348b3d5eb8f472da6715f0e9cd2f7f8015ee34.
+The common Git archive's `remote-retirement/fix/delivery/native-acceptance.json`
+has SHA256e3265332b466127223ed681b9c88246fbec8b45fa344a2e0410db3fe762c84bc.
+The actual fixture/progress interleaving is reconciled only in the reader;
+source, assertions and timeouts are unchanged. Both requested reboot
+interruptions remain separate from the successful final run. The2dcd standalone
+Nextest proof remains its original execution, not a new e960 execution.
+
+Actual PR434 merged normally as0350b4fec6005228f5a13124c97bce0660e54375,
+tree03738c6e, with parents5691+445. Registry/tag/package source445d9d2d publishes
+Runtime0.3.1; archive40d4c444 contains546 files and excludes this repair.
+Its compiler/consumer proofs remain the release owner's evidence. No API
+migration is required for that published patch release. The current Node
+seven-value API is still an unpublished breaking change.
+
+Local signed integrationd4158f31 has parents e960+actual0350. Its merge changes
+only Cargo.lock, the Runtime manifest/changelog and the transport-custody lock;
+all726 other inputs, including every Rust/test byte and Node8c77/notificationc8ad,
+are conserved. Fresh Nix TOML parsing proves that the selected graph changes
+only the workspace Runtime version0.3.0 to0.3.1. Cargo.lock now has SHA256
+aa7e46ead724135dd0c3ee8ca3b302bc95f752280a4c5eb59931f39c22edd255;
+all registry versions/checksums, root patches, toolchain and primitive ownership
+remain unchanged. The exact source/graph comparison is retained in
+`remote-retirement/fix/integration/source.json`. A pure-evaluation refusal during
+read-only inspection was resolved with Nix's supported impure file read;
+no lock, code, test or expected value changed for that reader correction.
+
+These two existing PRD/status edits prepare the integrated qualification.
+Fresh integrated Nix/Nextest, exact hosted/source/artifact acceptance and normal
+reviewed PR delivery remain open. Earlier source-scoped results are preserved,
+never relabeled as execution of the new version/record inputs. The owning repair,
+49 consuming calls, production+68/-12/net56, tests+712/-76/net636 and zero added
+public nominal types remain unchanged within35 of the approved40 paths.
+Native disposal/close failures, arbitrary cancellation, complete request custody,
+callback quiescence, task/Session/heap baselines and reconnect remain full R18
+obligations; full R01–R25/AUTH1/NET1 acceptance is not inferred.
 
 ### Withdrawal notification — actual PR436 integration (2026-11-17)
 
