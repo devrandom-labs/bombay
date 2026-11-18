@@ -1,21 +1,25 @@
 # Backlog status and dependencies
 
 R18's [withdrawal notification during finalization](../prds/static-remote-actors.md#withdrawal-notification-during-finalization--prerequisites-and-change-record-2026-11-17)
-is implemented locally. The repair preserves the original execution and
+merged through [PR438](https://github.com/devrandom-labs/bombay/pull/438) as
+98885bd1/tree0b470fa2, with API/physical Git parents0350+9e0c verified.
+The repair preserves the original execution and
 withdrawal panic causes and still attempts joined Node finalization. Its
 breaking five-to-seven-value consuming API covers49 calls; public witnesses,
 source inversions, three scoped audits and both test reviews retain their
-explicit source scopes in the PRD. Source e960 on main5691 passes all28
-native owners/the actual flake0; optimized and coverage each pass1031/123 with
-the same six controlled children,154 compiler fixtures and all four unchanged
-coverage floors.
+explicit source scopes in the PRD. Current integrated9e0c passes all28 native
+owners/the actual flake0, separate Nextest1031 and all eight hosted checks.
+Detailed Linux28 acceptance reconciles optimized/coverage1031/123/same6/
+154fixtures, all four reported floors, remote559/32 per profile and bounded
+Driver2048/four Observe1024/all16 original seeds. The eight official ZIPs contain
+520 verified files; explicit Linux NAR/JSON/negative-artifact/static/Miri limits
+remain in the owning records.
 
-The branch now also contains actual PR434/main0350, the published Runtime0.3.1
-base. The merge conserves every Rust/test byte and changes only four release
-paths; fresh graph inspection finds only the workspace Runtime version change.
-The combined source still needs its own Nix/Nextest qualification, exact hosted
-acceptance and reviewed PR delivery. The published0.3.1 package excludes this
-repair. Full R18 cancellation/native-close/resource/reconnect guarantees and
+The published Runtime0.3.1 base is included; its package excludes this breaking
+seven-value repair. CI succeeded before the repository merge; the final detailed
+Linux/source audit closed afterward. No own merge command or fresh premerge ACK
+is claimed retrospectively. Full R18 cancellation/native-close/resource/reconnect
+guarantees and
 full AUTH1/NET1 acceptance remain open. Requirement states, reciprocal dependency
 edges and the approved repair scope are unchanged.
 

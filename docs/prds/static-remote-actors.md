@@ -2,7 +2,7 @@
 
 ## Withdrawal notification during finalization — prerequisites and change record (2026-11-17)
 
-**State: active (repair implemented; current-main qualification and PR delivery open).**
+**State: merged (bounded repair only; full R18 remains active).**
 This subsection tracks the bounded withdrawal-notification repair. Full R18,
 including cancellation, native close failures, resource baselines and reconnect,
 and full AUTH1/NET1 acceptance remain open.
@@ -10,7 +10,8 @@ The regression started on actual PR435 merge2280a36a plus delivery-only
 record95d2949e. Source e960 includes actual PR437/main56910d3c after
 PR436/maincaf0 and is qualified below. The branch now also contains actual
 PR434/main0350b4fe, whose published Runtime0.3.1 excludes this seven-value repair.
-That integration requires its own source qualification. Current Cargo.lockaa7e46ea
+That integration's source qualification and PR438 delivery are recorded below.
+Cargo.lockaa7e46ea
 and unchanged flake.lock13ea9617 select the same primitive owners: Behavior/Actors
 0.30.0 at628649da, BehaviorMacros0.16.0 at55dbac2d, Address0.3.0 at9f058dc0,
 Communication0.1.7 at2d71c2f6, Timers0.2.0 at9369d1f6, workspace Runtime0.3.1,
@@ -21,10 +22,52 @@ session-archives/2026-11-17/remote-retirement/contracts.txt. No dependency,
 feature, interpreter or ownership prerequisite blocks this focused regression.
 Native close-timeout induction remains unverified and is not this test's law.
 
-The gap is composition of two actual notification/unwind causes. Observe retains
+### Withdrawal notification — delivery (2026-11-18)
+
+[PR438](https://github.com/devrandom-labs/bombay/pull/438) merged at
+2026-11-18T18:48:22Z as `98885bd1571863c67ec401954e5556048676d8d9`.
+Its tree `0b470fa2520484a2093ab19766fd7fad32fb272f` exactly equals accepted
+signed head9e0c; API and physical Git verify parents0350+9e0c. All eight
+exact-head hosted checks succeeded by18:18UTC. Independent current native28/
+actual flake0 and standalone Nextest1031/123/1037/same6 remain source-specific.
+Linux optimized and coverage each reconcile1031 passes/123 harnesses/same6
+controlled children/154 compiler fixtures/3 benchmark targets; all four
+reported coverage floors pass. Remote559/32 per profile, selected Rust1.96
+local114/28/138/same1child and remote4/12, protected Counter132 outer passes,
+Driver2048/four Observe1024 and all16 original fuzz seed bytes are verified.
+Eight official ZIPs contain520 verified files. Miri was skipped. Linux output
+NARs, coverage JSON and individual negative artifacts were not independently
+downloaded; CodeQL's seven error files/nine baseline warnings do not establish
+complete static coverage. The selected minimum callers do not prove private
+whole-runtime execution on1.96.
+
+Chronology is explicit: our18:47 guard saw OPEN/CLEAN; the repository account
+merged18:48:22 while the detailed Linux audit continued. A later premerge guard
+refused MERGED before any own merge command or fresh BEFORE/no-hold ACK.
+The final detailed audit closed after the merge and is not relabeled premerge.
+The API identifies the shared account, not a particular person or session.
+Future main advances retain the fresh BEFORE/actual ACK/AFTER requirement.
+Exact evidence is in the common Git remote-retirement archive under
+`fix/qualification/integration`: `final-acceptance.json` SHA3483446f,
+`delivery.json` SHA63729f33 and `hosted/linux-acceptance.json` SHA47ce1a34.
+
+The delivered35-of-approved40-path repair adds production+68/-12/net56,
+tests+712/-76/net636 and zero nominal public types. Its five-to-seven-value
+Node::into_parts change is breaking and remains unpublished; published
+Runtime0.3.1 excludes it. The merged checkout was normally removed after exact
+source/archive/commit/ref preservation and fresh liveness checks; one active
+continuation replaces it. Full R18 disposal/close faults, cancellation,
+complete request custody, callback quiescence, resource baselines, reconnect,
+application distillation and R01–R25/AUTH1/NET1 acceptance remain open.
+
+### Withdrawal notification — original regression and scope
+
+The original gap was composition of two actual notification/unwind causes.
+Observe retains
 its acquired result before notifying all registered waiters, then propagates the
-first wake panic. Node catches its execution poll/disposal causes and acquires
-Application receiving, but invokes final export withdrawal outside that catch
+first wake panic. Before the repair, Node caught its execution poll/disposal
+causes and acquired
+Application receiving, but invoked final export withdrawal outside that catch
 before acquiring Session close. Separate component tests do not establish that
 both original causes and the acquired outcome survive this finalization cut.
 
