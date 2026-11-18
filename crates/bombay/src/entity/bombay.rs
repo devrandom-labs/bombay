@@ -448,13 +448,14 @@ mod tests {
     use std::task::Wake;
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
-    use tokio::task::JoinError;
     use tokio::task::spawn_blocking;
 
     use crate::actors::ActorExt;
     use crate::application::ApplicationScope;
     use crate::entity::family::assert_activation_metrics;
-    use crate::entity::{AdmissionFailure, DrainFailure, DrainStage, EntityMetrics};
+    use crate::entity::{
+        AdmissionFailure, DrainFailure, DrainStage, EntityMetrics, EntityRetirement,
+    };
     use crate::launch::ActorSpace;
 
     #[derive(Default)]
@@ -540,15 +541,7 @@ mod tests {
             reason = "The runtime owner retains one whole native actor retirement without an extra wrapper."
         )]
         retired: Mutex<
-            Option<
-                oneshot::Sender<(
-                    Result<
-                        ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, Vec<Never>>,
-                        JoinError,
-                    >,
-                    ActorRetirementReport,
-                )>,
-            >,
+            Option<oneshot::Sender<(EntityRetirement<LedgerDefinition>, ActorRetirementReport)>>,
         >,
     }
 
@@ -589,7 +582,7 @@ mod tests {
             &self,
             id: &EntityId<u64>,
             activation: ActivationId,
-            retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+            retirement: EntityRetirement<Self>,
             retirement_report: ActorRetirementReport,
         ) {
             assert_eq!((*id).into_inner(), 73);
@@ -988,10 +981,7 @@ mod tests {
             Option<(
                 EntityId<u64>,
                 ActivationId,
-                Result<
-                    ActorRetirement<ShutdownConversionActor, Never, Vec<Never>>,
-                    tokio::task::JoinError,
-                >,
+                EntityRetirement<ShutdownConversionDefinition>,
                 ActorRetirementReport,
             )>,
         >,
@@ -1047,10 +1037,7 @@ mod tests {
             &self,
             id: &EntityId<u64>,
             activation: ActivationId,
-            retirement: Result<
-                ActorRetirement<Self::Behavior, Never, Vec<Never>>,
-                tokio::task::JoinError,
-            >,
+            retirement: EntityRetirement<Self>,
             retirement_report: ActorRetirementReport,
         ) {
             let prior = self
@@ -1447,10 +1434,7 @@ mod tests {
             &self,
             _: &EntityId<Self::Id>,
             _: ActivationId,
-            _: Result<
-                ActorRetirement<Self::Behavior, Self::Terminal, Vec<Never>>,
-                tokio::task::JoinError,
-            >,
+            _: EntityRetirement<Self>,
             _: ActorRetirementReport,
         ) {
             unreachable!("the join regression never retires an entity")

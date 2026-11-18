@@ -24,7 +24,6 @@ use bombay::behavior::{
 use bombay_engine::Completion;
 use tokio::runtime::{Builder, Handle, Id};
 use tokio::sync::oneshot::{self, error::RecvError};
-use tokio::task::JoinError;
 
 use bombay::actors::ActorExt;
 use bombay::entity::{
@@ -171,7 +170,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: &EntityId<u64>,
         _: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         // This startup-only controller expects no incarnation receipt.
@@ -3016,7 +3015,7 @@ struct LiveAccounts {
             Vec<(
                 EntityId<u64>,
                 ActivationId,
-                Result<ActorRetirement<StopOnShutdown<LiveAccount>, Never, Vec<Never>>, JoinError>,
+                EntityRetirement<LiveAccounts>,
                 ActorRetirementReport,
             )>,
         >,
@@ -3090,7 +3089,7 @@ impl EntityDefinition for LiveAccounts {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         self.retired
@@ -4799,7 +4798,8 @@ mod family_cleanup {
     };
     use bombay::entity::{
         ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-        EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
+        EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityRetirement,
+        EntityShutdown,
     };
     use bombay::{
         ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, Application,
@@ -4807,7 +4807,6 @@ mod family_cleanup {
     };
     use tokio::runtime::{Builder, Handle};
     use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
-    use tokio::task::JoinError;
 
     struct ReceivingAccount {
         original: Arc<Vec<u8>>,
@@ -4932,7 +4931,7 @@ mod family_cleanup {
             &self,
             _: &EntityId<u64>,
             _: ActivationId,
-            retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+            retirement: EntityRetirement<Self>,
             retirement_report: ActorRetirementReport,
         ) {
             // This cancellation witness explicitly discharges both acquired callback facts;

@@ -2,10 +2,10 @@ use bombay::actors::ActorExt;
 use bombay::behavior::{Actions, BehaviorActed, Delivery, Never, Protocol};
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement,
 };
 use bombay::prelude::StopOnShutdown;
-use bombay::{ActorRetirement, Application, MailAddr};
+use bombay::{Application, MailAddr};
 use core::num::NonZeroUsize;
 
 struct Root;
@@ -48,7 +48,7 @@ impl EntityDefinition for Auditors {
         drop(failure);
     }
     fn retired(&self, _: &EntityId<u64>, _: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, tokio::task::JoinError>,
+        retirement: EntityRetirement<Self>,
         retirement_report: bombay::ActorRetirementReport) {
         drop(retirement);
         // This compile-denial fixture executes no retirement consumer.

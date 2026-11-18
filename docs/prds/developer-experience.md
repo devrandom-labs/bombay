@@ -4613,3 +4613,36 @@ remain for unfinished work. The existing API guide now names the canonical
 joined result. Remaining result-spelling migration is a later measured stage;
 whole workspace/minimum workspace/Nix/Nextest/remote/hosted/delivery and the full
 DX01-DX28 goal remain open. No publication or main advance is claimed.
+
+### Retirement-result spelling migration (2026-11-18)
+
+After focused acceptance64bec865 and signed4767a250, a separate12-path inventory
+applies only the established joined-result spelling to native unit/caller records
+and three existing compile-denial fixtures. Activation-error spelling, callback
+bodies, all assertion operations and the intended invalid programs are conserved.
+Independent source review passes after three obsolete import removals. Source
+production prefixes are unchanged; only their test modules are migrated.
+The host-independent generic storage/helper alias and acquired raw Ledger result
+remain explicit exceptions. The nested family-cleanup module imports its own
+canonical result name; no new bound, conversion, wrapper, default or policy is
+introduced. Current source qualification follows on its own frozen inputs.
+The feature-gated Node exporter remains subject to actual remote/full gates;
+default-only caller results cannot qualify that source. Full delivery remains open.
+
+Mechanical retention is accepted84fa3da0. Source6ffd independently passes26
+Entity units,75debug/75optimized default callers,16unchanged compile denials,
+and actualRust/Cargo1.96 selected26units/8debug/8optimized native callers. The
+separate finalee6d epoch changes only three evidenced test-lint annotations;
+its actual standard native optimized workspace/all-target Clippy passes with
+warnings and both supplementary denies. Registeredderiver bdmqg822/outputz0c6,
+physical source/output NARs and all662selected source inputs are verified.
+Runtime outcomes stay source6ffd; no final-head or remote outcome is relabeled.
+Production prefixes and all bodies/assertions/activation types/raw carriers/
+generic storage are conserved; no public/state/branch/bound growth occurs.
+
+After preserving5119generated inputs and fresh idle checks, normal Cargo
+cleanup reclaimed869494784allocatedB (0.8097801208GiB). Exact source/packages/raw
+logs/required evidence remain. Actualmain has since advanced normally through
+PR438 to98885bd1/tree0b470fa2 (parents0350+9e0). Integration and combined-source
+qualification follow separately; peer proofs are not adopted. Full28/flake/
+Nextest/remote/hosted/delivery and fullDX01-DX28 completion remain open.

@@ -2,15 +2,14 @@ use super::{Archive, ArchiveReply, DocumentCommand, Library, LibraryCommand, Rec
 use bombay::behavior::{BehaviorBase, Never};
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement,
 };
 use bombay::prelude::*;
-use bombay::{ActorRetirementReport, ApplicationScope, MailboxCapacity, RetirementSchema};
+use bombay::{ActorRetirementReport, ApplicationScope, MailboxCapacity};
 use communication::TrySendError;
 use core::num::NonZeroUsize;
 use std::ptr;
 use std::sync::{Arc, Mutex, PoisonError};
-use tokio::task::JoinError;
 
 struct Entrance;
 
@@ -20,11 +19,6 @@ impl Entrance {}
 #[derive(Clone, Copy)]
 struct Libraries;
 
-type LibraryRetirement = ActorRetirement<
-    StopOnShutdown<Library>,
-    catalogue::LibraryRetirements,
-    Vec<<catalogue::LibraryRetirements as RetirementSchema>::Failure>,
->;
 type LibraryStartup =
     EntityActivationError<Never, StopOnShutdown<Library>, catalogue::LibraryRetirements>;
 
@@ -33,14 +27,10 @@ struct Reports {
     startups: Vec<(EntityId<u64>, ActivationId, LibraryStartup)>,
     admissions: Vec<(EntityId<u64>, AdmissionFailure<LibraryCommand>)>,
     drains: Vec<(EntityId<u64>, ActivationId, DrainFailure)>,
-    #[expect(
-        clippy::type_complexity,
-        reason = "each original retirement row retains identity, attempt, complete native custody and its independent assessment"
-    )]
     retirements: Vec<(
         EntityId<u64>,
         ActivationId,
-        Result<LibraryRetirement, JoinError>,
+        EntityRetirement<Catalogue>,
         ActorRetirementReport,
     )>,
 }
@@ -104,7 +94,7 @@ impl EntityDefinition for Catalogue {
         &self,
         id: &EntityId<u64>,
         attempt: ActivationId,
-        retirement: Result<LibraryRetirement, JoinError>,
+        retirement: EntityRetirement<Catalogue>,
         report: ActorRetirementReport,
     ) {
         self.reports

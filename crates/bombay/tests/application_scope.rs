@@ -27,7 +27,7 @@ use bombay::behavior::{
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown};
 use bombay::{Application, ApplicationScope, WorkOutcome};
@@ -137,7 +137,7 @@ where
         &self,
         _: &EntityId<Self::Id>,
         _: ActivationId,
-        retirement: AccountRetirement,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         self.retirements

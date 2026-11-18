@@ -918,22 +918,18 @@ mod tests {
     #[cfg(feature = "remote")]
     use std::ptr;
     use std::sync::{Arc, Mutex};
-    use tokio::task::JoinError;
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::application::{Application, ExternalActor, ExternalActorError};
     use crate::entity::{
         ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-        EntityCapacity, EntityDefinition, EntityId, EntityShutdown,
+        EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown,
     };
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::{
         ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ActorSpace, Completion,
         RetirementAssessment, ShutdownLedger,
     };
-
-    type AccountRetirement =
-        Result<ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>, JoinError>;
 
     enum AccountReport {
         ActivationFailed(
@@ -946,7 +942,7 @@ mod tests {
         Retired(
             EntityId<Box<[u64]>>,
             ActivationId,
-            AccountRetirement,
+            EntityRetirement<Accounts>,
             ActorRetirementReport,
         ),
     }
@@ -1011,7 +1007,7 @@ mod tests {
             &self,
             id: &EntityId<Self::Id>,
             activation: ActivationId,
-            retirement: AccountRetirement,
+            retirement: EntityRetirement<Accounts>,
             retirement_report: ActorRetirementReport,
         ) {
             self.reports
