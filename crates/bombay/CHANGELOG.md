@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.3.1...bombay-rs-v0.4.0) - 2026-11-18
+
+### Fixed
+
+- *(remote)* [**breaking**] preserve withdrawal panics through Node retirement
+
+### Other
+
+- integrate Runtime 0.3.1 release
+- *(remote)* integrate HTTP capability delivery
+- *(remote)* expose withdrawal finalization loss
+
 ## [0.3.1](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.3.0...bombay-rs-v0.3.1) - 2026-11-18
 
 ### Other
