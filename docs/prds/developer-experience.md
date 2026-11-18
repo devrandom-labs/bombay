@@ -1182,12 +1182,55 @@ source archives, release packages and required evidence remain. The active
 full-programme checkout is reused; peer unfinished work and cache are protected.
 The cleanup receipt is `release-locks/nextest-cache-cleanup.json`.
 
-This delivers the workflow repair, not Runtime0.3.1 publication. The actual
-release proposal refresh and its locked checks, package/compiler/consumer and
-registry delivery evidence remain separate and pending. Peer R18's breaking
-seven-value extractor and source-specific proofs are separate. The full
-DX01–DX28 goal and its unmet Entity, caller, cost and documentation criteria
-remain active.
+This delivered the workflow repair before the separately qualified Runtime0.3.1
+publication below. Peer R18's breaking seven-value extractor and source-specific
+proofs remain separate. The full DX01–DX28 goal and its unmet Entity, caller,
+cost and documentation criteria remain active.
+
+### Runtime 0.3.1 delivery (2026-11-18)
+
+[PR434](https://github.com/devrandom-labs/bombay/pull/434) merged normally as
+`0350b4fec6005228f5a13124c97bce0660e54375`, with physical/API parents main5691
+and release445d. Its tree03738 exactly equals the accepted source. All eight
+hosted checks, 28 native owners and actual flake invocation passed; standalone
+Nextest independently passed 1029 across 123 binaries/1035 named registrations,
+with the same six parent-controlled children. Earlier source epochs and peer
+R18's 1031 are not adopted.
+
+The normal [publisher](https://github.com/devrandom-labs/bombay/actions/runs/44301615774)
+succeeded; registry publication is 2026-11-18T12:12:42Z. The
+[release tag](https://github.com/devrandom-labs/bombay/releases/tag/bombay-rs-v0.3.1)
+and packaged VCS identify `445d9d2dee9c28cc1beed2b5d25747bbfd982579`, not the
+merge SHA. The annotated tag is unsigned; GitHub verifies the source commit.
+The downloaded 1,220,334-byte registry archive has SHA256
+`40d4c444d8e38ba867864dbeaa099e3c14ebfc09017b5131ae201599efccd960`.
+It is byte-identical to both actual Rust 1.99/1.96 package-verification archives.
+All 546 payload bytes/modes and the original 590 consumer inputs per compiler
+were rehashed after download. Both 16-group executed consumer matrices therefore
+qualify the exact published payload without a source substitution or test rerun.
+
+Each compiler's matrix retains 87 native tests plus one parent-controlled child and 16
+compiler fixtures per profile, eight withdrawal and 26 Entity tests per profile, four remote tests/12 fixtures,
+three renamed-crate tests, ten Runtime doctests, eight example builds and six finite local runs.
+Remote/HTTP examples are build-only in that matrix. The minimum probe adapts
+24 existing compiler-specific stderr files; canonical package and all Rust
+bodies remain unchanged. This is selected caller scope, not private whole-runtime
+minimum execution. Native/Linux bounded law, artifact and Miri limits remain
+in their original receipts. No normal production/API/dependency behavior changes
+from 0.3.0, required API migration or peer R18 repair is included. Engine 0.3.0,
+Bombay macros 0.2.0 and Behavior/Actors 0.30.0 remain unchanged.
+
+Evidence is in `release434-refreshed/{release-final-acceptance,release-main-delivery,release-publication-result}.json`
+in the restart handoff. Publication receipt SHA256 is
+`4ba42ae9cf39fdba733d65c47ac1b77cf34f924425dfc3d162b2558530d18043`.
+Official registry index/static archive, successful publisher log and actual tag
+establish publication; the optional crates.io API returned 403 and is uncredited.
+Fresh before/after notices were sent. Bombay acknowledged the merge and then
+verified the actual published archive/checksum, tag/VCS and source boundary.
+Its R18 repair stays separate, with both full goals active. Required inputs,
+packages and evidence remain; completed owned caches were removed. No new build
+cache was created for this publication audit. Full DX01–DX28 acceptance remains
+active, including Entity's terminal interface, comparable costs and documentation.
 
 ### Supplied-work runners, before implementation (2026-11-16)
 
