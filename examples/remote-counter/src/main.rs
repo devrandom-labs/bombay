@@ -126,6 +126,10 @@ enum Refusal {
     Poll { original: Box<dyn Any + Send> },
     #[error("counter execution disposal panicked")]
     Disposal { original: Box<dyn Any + Send> },
+    #[error("counter withdrawal polling panicked")]
+    WithdrawalPoll { original: Box<dyn Any + Send> },
+    #[error("counter withdrawal disposal panicked")]
+    WithdrawalDisposal { original: Box<dyn Any + Send> },
     #[error("counter cleanup did not establish successful retirement")]
     Retirement {
         report: Option<ActorRetirementReport>,
@@ -369,7 +373,7 @@ async fn serve(configuration: Configuration) -> Result<Outcome, Refusal> {
         NodeExecutionRefusal::SessionClosed { .. } => Refusal::SessionClosed,
         NodeExecutionRefusal::Host { cause, .. } => Refusal::Host { cause },
     })?;
-    let (_export, binding, closed, poll, disposal) =
+    let (_export, binding, closed, poll, disposal, withdrawal_poll, withdrawal_disposal) =
         node.into_parts().map_err(|_| Refusal::Handoff)?;
     binding.ok_or(Refusal::Binding)??;
     closed.map_err(|cause| Refusal::Close { cause })?;
@@ -378,6 +382,12 @@ async fn serve(configuration: Configuration) -> Result<Outcome, Refusal> {
     }
     if let Some(original) = disposal {
         return Err(Refusal::Disposal { original });
+    }
+    if let Some(original) = withdrawal_poll {
+        return Err(Refusal::WithdrawalPoll { original });
+    }
+    if let Some(original) = withdrawal_disposal {
+        return Err(Refusal::WithdrawalDisposal { original });
     }
     let report = outcome.root_report();
     if !outcome.cleanup().is_some_and(Result::is_ok)
@@ -526,7 +536,7 @@ async fn call(configuration: Configuration, wait: Duration) -> Result<Outcome, R
             NodeExecutionRefusal::SessionClosed { .. } => Refusal::SessionClosed,
             NodeExecutionRefusal::Host { cause, .. } => Refusal::Host { cause },
         })?;
-    let (_client, binding, closed, poll, disposal) =
+    let (_client, binding, closed, poll, disposal, withdrawal_poll, withdrawal_disposal) =
         node.into_parts().map_err(|_| Refusal::Handoff)?;
     binding.ok_or(Refusal::Binding)??;
     closed.map_err(|cause| Refusal::Close { cause })?;
@@ -535,6 +545,12 @@ async fn call(configuration: Configuration, wait: Duration) -> Result<Outcome, R
     }
     if let Some(original) = disposal {
         return Err(Refusal::Disposal { original });
+    }
+    if let Some(original) = withdrawal_poll {
+        return Err(Refusal::WithdrawalPoll { original });
+    }
+    if let Some(original) = withdrawal_disposal {
+        return Err(Refusal::WithdrawalDisposal { original });
     }
     let report = outcome.root_report();
     if !outcome.cleanup().is_some_and(Result::is_ok)

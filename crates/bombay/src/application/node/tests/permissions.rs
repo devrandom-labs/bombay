@@ -180,7 +180,7 @@ async fn borrowed_permission() {
         .await
         .unwrap_or_else(|_| panic!("the actual Counter Node enters its host"));
     drop(held);
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the actual Node finalization remains acquired"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -198,6 +198,7 @@ async fn borrowed_permission() {
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(bound, Some(Ok(_))));
     assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
     assert!(diagnostics.is_empty() && ending.is_err() && shutdown.is_ok() && session.is_closed());
@@ -521,7 +522,7 @@ async fn counter_permissions<Receipt>(
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Counter Node enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("actual Node finalization remains acquired"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -539,6 +540,7 @@ async fn counter_permissions<Receipt>(
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(polling.is_none() && disposal.is_none() && session.is_closed());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(
         matches!(bound, Some(Ok(_)))
             && matches!(startup, Some(Ok(())))
@@ -937,7 +939,7 @@ async fn ledger_permissions<Receipt>(
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Ledger Node enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("actual Node finalization remains acquired"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -955,6 +957,7 @@ async fn ledger_permissions<Receipt>(
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(polling.is_none() && disposal.is_none() && session.is_closed());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(
         matches!(bound, Some(Ok(_)))
             && matches!(startup, Some(Ok(())))

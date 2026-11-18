@@ -731,7 +731,15 @@ async fn refused(stage: RefusalStage) {
     };
     let ((outcome, publication), (peer, stopped)) = tokio::join!(execution, exchange);
     let outcome = outcome.unwrap_or_else(|_| panic!("actual public execution was issued"));
-    let ((counter, ledger), bound, closed, polling, kernel_disposal) = node
+    let (
+        (counter, ledger),
+        bound,
+        closed,
+        polling,
+        kernel_disposal,
+        withdrawal_polling,
+        withdrawal_disposal,
+    ) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("actual issued refusal cleanup and close were acquired"));
     let (work, root_report, native, notifications, (family, ())) = outcome.into_parts();
@@ -742,6 +750,7 @@ async fn refused(stage: RefusalStage) {
         ActorFailureAssessment::NoFailuresFound
     );
     assert!(polling.is_none() && kernel_disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     let (_, native) = native.expect("actual root with every descendant original");
     let notifications = notifications.expect("both actual original notifications");
     let (_, family) = family.expect("actual nonempty family cleanup result");

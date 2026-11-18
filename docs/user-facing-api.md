@@ -604,9 +604,12 @@ callback. Existing actor behaviors and their `ActorExt` policies stay unchanged.
 Run an attached node with `run_with` for supplied caller work or `run` for genuine
 work absence. The node owns declaration startup, receiving, withdrawal, joined
 Application/family cleanup and connection close. Optional `node.into_parts()`
-returns exports, the original binding result, actual close result and separate
-kernel poll/disposal panic payloads only after joined execution has acquired
-close and a binding result; otherwise it returns the same Node.
+returns seven values in order: exports, the original binding result, actual close
+result, execution poll/disposal panic payloads and withdrawal poll/disposal panic
+payloads. This deliberately replaces its former five-value tuple. It transfers
+each acquired cause only after joined execution has acquired close and a binding
+result; otherwise it returns the same Node. A withdrawal panic does not prove
+complete withdrawal or draining, even when the independent close succeeds.
 Cached replies remain available after target retirement while supplied Work
 continues. The existing Application cleanup signal ends declaration serving;
 each new native operation still observes its target's actual retirement.

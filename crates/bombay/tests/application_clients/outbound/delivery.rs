@@ -362,9 +362,10 @@ async fn read() {
     let (counter_outcome, outgoing) = tokio::join!(receiver.run(), outgoing);
     let counter_outcome =
         counter_outcome.unwrap_or_else(|_| panic!("the receiver runs with genuine Work absence"));
-    let (export, bound, closed, polling, disposal) = receiver
-        .into_parts()
-        .unwrap_or_else(|_| panic!("all receiver originals and native close acquired"));
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+        receiver
+            .into_parts()
+            .unwrap_or_else(|_| panic!("all receiver originals and native close acquired"));
     let (work, report, native, notifications, ()) = counter_outcome.into_parts();
     let (_absence, cleanup) = work
         .try_into_completed()
@@ -391,6 +392,7 @@ async fn read() {
     assert_eq!(local_original.as_ref(), [127, 131]);
     assert_eq!(local_original.as_ptr(), local_allocation);
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     notifications
         .termination
         .expect("receiver termination published");
@@ -409,7 +411,15 @@ async fn read() {
     assert!(diagnostics.is_empty());
     {
         let (_, _, _, source_address, caller_outcome, terminal) = outgoing;
-        let (whole_client, bound, caller_closed, polling, disposal) = terminal;
+        let (
+            whole_client,
+            bound,
+            caller_closed,
+            polling,
+            disposal,
+            withdrawal_polling,
+            withdrawal_disposal,
+        ) = terminal;
         let (work, report, native, notifications, ()) = caller_outcome.into_parts();
         let (_absence, cleanup) = work
             .try_into_completed()
@@ -433,6 +443,7 @@ async fn read() {
             .expect("Reader joined retirement published");
         assert!(cleanup.is_ok() && caller_closed.is_ok());
         assert!(polling.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert_eq!(report.retirement(), RetirementAssessment::Established);
         assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         assert_ne!(source_address, reader_address);

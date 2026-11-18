@@ -179,7 +179,7 @@ async fn held_increment_reply_is_withdrawn_after_independent_processing() {
         })
         .await
         .unwrap_or_else(|_| panic!("the actual Node execution starts"));
-    let (export, binding, closed, poll, disposal) = node
+    let (export, binding, closed, poll, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("joined execution returns its owning Export"));
     let (work, report, native, notes, ()) = outcome.into_parts();
@@ -244,6 +244,7 @@ async fn held_increment_reply_is_withdrawn_after_independent_processing() {
     assert!(notes.termination.is_ok() && notes.retirement.is_ok());
     assert!(matches!(binding, Some(Ok(_))));
     assert!(poll.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(declared, Some(Ok(()))) && matches!(withdrawn, Some(Ok(()))));
     assert!(diagnostics.is_empty());
     assert_eq!(report.retirement(), RetirementAssessment::Established);
@@ -590,7 +591,7 @@ async fn stop_proof_preserves_the_counter_and_original_request() {
         })
         .await
         .unwrap_or_else(|_| panic!("the public Node executes"));
-    let (export, binding, closed, poll, disposal) = node
+    let (export, binding, closed, poll, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("joined Node returns its owning Export"));
     let (work, report, native, notes, ()) = outcome.into_parts();
@@ -620,6 +621,7 @@ async fn stop_proof_preserves_the_counter_and_original_request() {
     assert!(notes.termination.is_ok() && notes.retirement.is_ok());
     assert!(matches!(binding, Some(Ok(_))));
     assert!(poll.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(declared, Some(Ok(()))) && matches!(withdrawn, Some(Ok(()))));
     assert!(diagnostics.is_empty());
     assert_eq!(report.retirement(), RetirementAssessment::Established);

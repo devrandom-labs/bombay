@@ -490,7 +490,7 @@ queued_queries: maximum, retained_queries: maximum,
         assert_eq!(ptr::from_ref(recovered.0.as_ref()), output_allocation);
         assert_eq!(*recovered.0, 239);
         assert_eq!(recovered.2, retired);
-        let (export, bound, closed, polling, disposal) = match node.into_parts() {
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = match node.into_parts() {
             Ok(originals) => originals,
             Err(node) => {
                 let closed = node.closed.as_ref().expect("the refused extraction still owns close");
@@ -507,6 +507,7 @@ queued_queries: maximum, retained_queries: maximum,
         assert!(ptr::eq(refusal, ptr::from_ref(&original_refusal)));
         assert_eq!(refusal.as_ref(), [223, 227]);
         assert!(closed.is_ok() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert_eq!(polling.is_some(), expected_panic.is_some());
         let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = export.into_parts();
         assert!(startup.is_none() && withdrawal.is_none());
@@ -629,7 +630,7 @@ queued_queries: maximum, retained_queries: maximum,
         assert_eq!(panic.as_slice(), [241, 251]);
         assert!(node.disposal_panic.is_none());
         assert_eq!((verified.get(), protected.get(), constructions.get()), (0, 0, 0));
-        let (export, bound, closed, polling, disposal) = match node.into_parts() {
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = match node.into_parts() {
             Ok(originals) => originals,
             Err(node) => {
                 let closed = node.closed.as_ref().expect("refused extraction still owns native close");
@@ -646,6 +647,7 @@ queued_queries: maximum, retained_queries: maximum,
         assert_eq!(&target, expected_target);
         assert_eq!(target, root_target);
         assert!(closed.is_ok() && polling.is_some() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) = export.into_parts();
         assert!(startup.is_none() && withdrawal.is_none());
         assert!(diagnostics.is_empty() && requests.is_empty());

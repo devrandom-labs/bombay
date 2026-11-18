@@ -277,7 +277,7 @@ async fn constructor_refusal() {
     let (outcome, (withdrawal, retirement, publications, admission, original, peer_closed)) =
         tokio::join!(execution, exchange);
     let outcome = outcome.unwrap_or_else(|_| panic!("actual absent-Work execution issued"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("issued cleanup acquired"));
     let (work, root_report, native, notifications, ()) = outcome.into_parts();
@@ -307,6 +307,7 @@ async fn constructor_refusal() {
         ActorFailureAssessment::NoFailuresFound
     );
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     declared
         .expect("actual declaration issued")
         .expect("actual declaration succeeded");
@@ -610,7 +611,7 @@ async fn cold_declarations_preserve_native_constructor_refusals() {
                 })
                 .await
                 .unwrap_or_else(|_| panic!("the actual refusal host accepts execution"));
-            let (export, bound, closed, polling, disposal) = node
+            let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
                 .into_parts()
                 .unwrap_or_else(|_| panic!("startup always acquires withdrawal and native close"));
             let (inputs, declarations, startup, withdrawal, diagnostics, requests) =
@@ -629,6 +630,8 @@ async fn cold_declarations_preserve_native_constructor_refusals() {
                 closed,
                 polling,
                 disposal,
+                withdrawal_polling,
+                withdrawal_disposal,
                 work,
                 report,
                 native,
@@ -656,6 +659,8 @@ async fn cold_declarations_preserve_native_constructor_refusals() {
                 closed,
                 polling,
                 disposal,
+                withdrawal_polling,
+                withdrawal_disposal,
                 work,
                 report,
                 native,
@@ -673,6 +678,7 @@ async fn cold_declarations_preserve_native_constructor_refusals() {
             assert_eq!(target, expected.0);
             assert!(matches!(&expected.1, Ok(address) if *address == origin.address()));
             assert!(polling.is_none() && disposal.is_none());
+            assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
             assert!(matches!(
                 &work,
                 WorkOutcome::NotInvoked {

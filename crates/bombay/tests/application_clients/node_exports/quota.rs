@@ -179,7 +179,7 @@ async fn complete(policy: VerificationPolicy) {
     };
     let ((outcome, publication), (peer, shutdown, target)) = tokio::join!(execution, exchange);
     let outcome = outcome.unwrap_or_else(|_| panic!("actual quota execution is issued"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("actual quota cleanup and network close complete"));
     let (work, root_report, native, notifications, ()) = outcome.into_parts();
@@ -190,6 +190,7 @@ async fn complete(policy: VerificationPolicy) {
         ActorFailureAssessment::NoFailuresFound
     );
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     let (absence, cleanup) = work
         .try_into_completed()
         .unwrap_or_else(|_| panic!("the quota execution retains genuine Work absence"));

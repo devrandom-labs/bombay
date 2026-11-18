@@ -136,10 +136,6 @@ fn caller_actions_preserve_submitted_and_processed_correlations() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[expect(
-    clippy::large_futures,
-    reason = "the bounded two-Node trace retains concrete native originals without another allocation or erased future"
-)]
 async fn overlapping_processed_increments_reuse_the_original_admission() {
     let deliveries = [Delivery::Fresh(24), Delivery::Repeat];
     tokio::time::timeout(Duration::from_secs(15), increments(&deliveries))
@@ -835,10 +831,26 @@ async fn increments(deliveries: &[Delivery]) {
     println!("Client Node runs returned: {deliveries:?}");
     let incoming = incoming.unwrap_or_else(|_| panic!("actual receiving Node host entry"));
     let outgoing = outgoing.unwrap_or_else(|_| panic!("actual caller Node host entry"));
-    let (export, receiver_bound, receiver_closed, receiver_poll, receiver_drop) = receiver
+    let (
+        export,
+        receiver_bound,
+        receiver_closed,
+        receiver_poll,
+        receiver_drop,
+        receiver_withdrawal_polling,
+        receiver_withdrawal_disposal,
+    ) = receiver
         .into_parts()
         .unwrap_or_else(|_| panic!("receiving Node owns actual withdrawal and close"));
-    let (client, caller_bound, caller_closed, caller_poll, caller_drop) = caller
+    let (
+        client,
+        caller_bound,
+        caller_closed,
+        caller_poll,
+        caller_drop,
+        caller_withdrawal_polling,
+        caller_withdrawal_disposal,
+    ) = caller
         .into_parts()
         .unwrap_or_else(|_| panic!("caller Node owns actual withdrawal and close"));
     let (incoming_work, incoming_report, incoming_native, incoming_notes, ()) =
@@ -919,6 +931,8 @@ async fn increments(deliveries: &[Delivery]) {
             && caller_poll.is_none()
             && caller_drop.is_none()
     );
+    assert!(receiver_withdrawal_polling.is_none() && receiver_withdrawal_disposal.is_none());
+    assert!(caller_withdrawal_polling.is_none() && caller_withdrawal_disposal.is_none());
     assert!(first.is_ok() && read_admission.is_ok());
     assert_eq!(submissions.len(), deliveries.len());
     assert!(submissions.iter().all(Result::is_ok));

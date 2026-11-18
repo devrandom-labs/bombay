@@ -197,7 +197,7 @@ async fn registered_originals() {
     };
     let ((outcome, publication), exchange) = tokio::join!(execution, exchange);
     let outcome = outcome.unwrap_or_else(|_| panic!("actual Ledger Work is invoked"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the actual Node finalizes"));
     let (work, report, native, notes, ()) = outcome.into_parts();
@@ -411,4 +411,5 @@ async fn registered_originals() {
         .expect("actual withdrawal attempted")
         .expect("actual withdrawal succeeded");
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
 }

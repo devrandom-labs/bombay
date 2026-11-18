@@ -522,10 +522,17 @@ async fn complete(presence: Presence, pending: ProviderStage) {
     };
     let (execution, (peer, absent_shutdown)) = tokio::join!(running, exchange);
     // No explicit drop, native close, undeclaration or borrow-ending scope.
-    let ((counter, ledger), binding_result, closed, polling, disposal) =
-        node.into_parts().unwrap_or_else(|_| {
-            panic!("actual joined Node has transferred its application and binder")
-        });
+    let (
+        (counter, ledger),
+        binding_result,
+        closed,
+        polling,
+        disposal,
+        withdrawal_polling,
+        withdrawal_disposal,
+    ) = node.into_parts().unwrap_or_else(|_| {
+        panic!("actual joined Node has transferred its application and binder")
+    });
     let (work, supplied_shutdown, cleanup, root_report, native, notifications, (family, ())) =
         execution;
     let (origin, native) = native.expect("original joined root and descendant reports");
@@ -550,6 +557,7 @@ async fn complete(presence: Presence, pending: ProviderStage) {
         ActorFailureAssessment::NoFailuresFound
     );
     assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     let (counter_target, ledger_target) = binding_result
         .expect("actual binding was acquired")
         .expect("actual binding succeeds");

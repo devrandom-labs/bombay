@@ -251,7 +251,7 @@ async fn requested_export_withdraws_without_stopping_its_sibling() {
                 first_matching, sibling_matching, first_inspection, sibling_inspection,
             )
         }).await.unwrap_or_else(|_| panic!("the public Node execution starts"));
-        let ((first, second), binding_result, closed, polling, disposal) = node.into_parts()
+        let ((first, second), binding_result, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node.into_parts()
             .unwrap_or_else(|_| panic!("the Node retains its actual joined finalization"));
         let (work, report, native, notifications, ()) = outcome.into_parts();
         let (observations, cleanup) = work.try_into_completed()
@@ -281,6 +281,7 @@ async fn requested_export_withdraws_without_stopping_its_sibling() {
         assert!(creation_admission.is_ok() && shutdown.is_ok());
         assert!(matches!(binding_result, Some(Ok(_))));
         assert!(polling.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert_ne!(actors.message.counter.recipient(), actors.message.sibling.recipient());
         assert!(first_admission.is_ok() && sibling_admission.is_ok());
         assert!(first_inspection.is_ok() && sibling_inspection.is_ok());

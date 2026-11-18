@@ -435,7 +435,7 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
             let (observations, cleanup) = work
                 .try_into_completed()
                 .unwrap_or_else(|_| panic!("actual Work and cleanup results are acquired"));
-            let (export, bound, closed, polling, disposal) = node
+            let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
                 .into_parts()
                 .unwrap_or_else(|_| panic!("actual Node finalization is acquired"));
             let caller_closed = caller.close().await;
@@ -483,6 +483,7 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
             assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
             assert!(notes.termination.is_ok() && notes.retirement.is_ok());
             assert!(polling.is_none() && disposal.is_none() && matches!(bound, Some(Ok(_))));
+            assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
             assert!(ingress.is_empty() && admitted.is_ok() && shutdown.is_ok() && tail.is_none());
             assert!(matched.matching() && health_matched.matching() && disconnected);
             assert_ne!(runtime, caller_id);

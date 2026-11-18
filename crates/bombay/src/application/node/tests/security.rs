@@ -315,9 +315,9 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
         let (origin, native) = native.expect("the actual native root joined");
         let notes = notes.expect("both actual notifications are acquired");
         let report = report.expect("the independent runtime report is retained");
-        let (export, bound, closed, polling, disposal) = node
-            .into_parts()
-            .unwrap_or_else(|_| panic!("actual Node close and binding are acquired"));
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+            node.into_parts()
+                .unwrap_or_else(|_| panic!("actual Node close and binding are acquired"));
         let (_inputs, _declarations, startup, withdrawal, ingress, rows) = export.into_parts();
         let rows: [_; 2] = rows
             .try_into()
@@ -359,6 +359,7 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
         assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         assert!(notes.termination.is_ok() && notes.retirement.is_ok());
         assert!(polling.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert_eq!(bound, target);
         assert!(ingress.is_empty());
         assert!(admitted.is_ok() && incremented.is_ok() && shutdown.is_ok());

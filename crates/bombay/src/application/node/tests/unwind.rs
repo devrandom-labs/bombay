@@ -208,7 +208,7 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
             finalized.is_ok(),
             "the Node must preserve its finalization facts after a decoder unwind"
         );
-        let (export, bound, closed, polling, disposal) =
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
             finalized.unwrap_or_else(|_| panic!("the Node acquired its actual post-join close"));
         let Ok(Poll::Ready(Ok(outcome))) = caught else {
             panic!("the actual Node operation must return its acquired outcome");
@@ -260,6 +260,7 @@ async fn decoder_unwind_preserves_joined_node_finalization() {
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
         assert!(matches!(&bound, Some(Ok(_))) && closed.is_ok());
         assert!(external_close.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert_eq!(ptr::from_ref(polling.as_ref()), allocation);
         assert_eq!(**polling, 307);
         assert_eq!(origin.address().0, claims.actor_generation);
@@ -641,7 +642,15 @@ fn retry_permission_unwind_preserves_the_second_native_full() {
                 while let Some(original) = ordinary.receive().await {
                     ordinary_tail.push(original);
                 }
-                let (export, bound, closed, polling, disposal) = finalized
+                let (
+                    export,
+                    bound,
+                    closed,
+                    polling,
+                    disposal,
+                    withdrawal_polling,
+                    withdrawal_disposal,
+                ) = finalized
                     .unwrap_or_else(|_| panic!("the Node acquires cleanup and actual close"));
                 let Ok(Poll::Ready(Ok(outcome))) = caught else {
                     panic!("the actual Node retains the guard panic and returns its outcome");
@@ -694,6 +703,7 @@ fn retry_permission_unwind_preserves_the_second_native_full() {
                 assert!(joined.is_ok() && disposed.is_ok());
                 assert!(matches!(work, WorkOutcome::Interrupted { cleanup: Ok(()) }));
                 assert!(external_close.is_none() && disposal.is_none());
+                assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
                 assert!(matches!(bound, Some(Ok(_))) && closed.is_ok() && session.is_closed());
                 assert_eq!(root_report, Some(retirement));
                 assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
@@ -1023,7 +1033,7 @@ async fn discharged_refusal_panic_preserves_joined_node_finalization() {
             finalized.is_ok(),
             "ordinary refusal Drop must stay inside Node's caught poll"
         );
-        let (export, bound, closed, polling, disposal) =
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
             finalized.unwrap_or_else(|_| panic!("the actual Node retained close and binding"));
         let Ok(Poll::Ready(Ok(outcome))) = caught else {
             panic!(
@@ -1058,6 +1068,7 @@ async fn discharged_refusal_panic_preserves_joined_node_finalization() {
         assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
         assert!(matches!(bound, Some(Ok(_))) && closed.is_ok());
         assert!(external_close.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
         assert_eq!(ptr::from_ref(polling).cast::<()>(), allocation);
         assert_eq!(*polling, 443);
         assert_eq!(origin.address().0, actual.actor_generation);

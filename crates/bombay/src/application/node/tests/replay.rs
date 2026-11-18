@@ -405,7 +405,6 @@ fn assert_verification<Receipt>(verification: Option<&Result<Receipt, Verificati
 #[expect(
     clippy::too_many_lines,
     clippy::await_holding_refcell_ref,
-    clippy::large_futures,
     reason = "the finite concrete Counter trace retains all outcomes and borrows immutable registered fixtures during verification without boxing the producer"
 )]
 async fn read_counter<Receipt>(
@@ -549,7 +548,7 @@ async fn read_counter<Receipt>(
         })
         .await
         .unwrap_or_else(|_| panic!("the receiving Counter Node enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the actual Counter Node finalizes"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -562,6 +561,7 @@ async fn read_counter<Receipt>(
     assert_report(retirement);
     assert_eq!(report, Some(retirement));
     assert!(primed.is_ok() && shutdown.is_ok() && polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(bound, Some(Ok(_))));
     assert_exchange(&exchange, &1, CounterOperation::Read, identity, proof);
     assert!(exchange.first_retirement.is_none());
@@ -646,7 +646,6 @@ async fn read_counter<Receipt>(
 #[expect(
     clippy::too_many_lines,
     clippy::await_holding_refcell_ref,
-    clippy::large_futures,
     reason = "the finite concrete Ledger trace retains append, read and retirement originals and borrows immutable registered fixtures during verification without boxing the producer"
 )]
 async fn read_ledger<Receipt>(
@@ -805,7 +804,7 @@ async fn read_ledger<Receipt>(
         })
         .await
         .unwrap_or_else(|_| panic!("the receiving Ledger Node enters its host"));
-    let (export, bound, closed, polling, disposal) = node
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
         .into_parts()
         .unwrap_or_else(|_| panic!("the actual Ledger Node finalizes"));
     let (work, report, native, notifications, ()) = outcome.into_parts();
@@ -821,6 +820,7 @@ async fn read_ledger<Receipt>(
     assert_report(retirement);
     assert_eq!(report, Some(retirement));
     assert!(primed.is_ok() && polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(matches!(bound, Some(Ok(_))));
     assert_exchange(
         &exchange,
