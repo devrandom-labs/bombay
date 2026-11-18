@@ -4506,3 +4506,27 @@ measurements/reviews/raw results are in `migration-checkpoint.json`,
 `migration-current-acceptance.json` and `migration-minimum-acceptance.json` in
 the existing handoff. No full new-source Nix/Nextest/remote/hosted/PR delivery
 or complete Entity interface claim is made.
+
+### Entity empty-value diagnostics (2026-11-18)
+
+The standard native optimized workspace/all-target Clippy check found two
+`assert_is_empty` diagnostics in the new populated failure test. Only those
+assertions now compare against an empty collection, preserving the oracle and
+printing actual values on failure. No type, bound, production or policy changes.
+Corrected source5d2 passes the actual registered strict Clippy owner with warnings
+and both required supplementary denies; its output/source NAR and662 source
+files are independently rehashed. Fresh current-compiler healthy/loss/restored
+cases pass0/fail101/pass0 in both profiles at the intended original-row oracle;
+restored binaries match healthy bytes. Rust1.96 independently passes the corrected
+named case in both profiles. Author and independent source/execution reviews
+close this correction; all older proofs retain their original source identities.
+
+Receipts are `empty-assertion-acceptance.json` and
+`empty-assertion-clippy-acceptance.json` in the existing handoff. After preserving
+4864 generated inputs, exact source, packages and required evidence, normal
+Cargo cleanup removed completed Runtime/Entity-example package artifacts in both
+profiles: net897441792 allocated bytes (0.8358078003 GiB), with dependencies
+retained for unfinished work. The original cache-tag refusal, confined dry runs
+and fresh liveness checks are preserved in the cleanup receipt. Full new-source
+28-owner/flake/Nextest/remote/hosted delivery and terminal/callback completion
+remain open.

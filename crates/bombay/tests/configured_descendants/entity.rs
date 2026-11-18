@@ -948,7 +948,7 @@ async fn child_constructor_failure_retains_its_original_cause() {
         custody.control.as_slice(),
         [EventLayer::Owned(ShutdownRequested)]
     ));
-    assert!(custody.user.is_empty());
+    assert_eq!(custody.user, []);
     assert!(custody.descendants.is_empty());
     assert!(custody.additional_failures.is_empty());
     assert!(custody.capability_failures.is_empty());
@@ -967,7 +967,7 @@ async fn child_constructor_failure_retains_its_original_cause() {
             owned: NoSends,
             inner: ledger_sends,
         } = row.sends;
-        assert!(ledger_sends.ready.is_empty());
+        assert_eq!(ledger_sends.ready, []);
         for file in ledger_sends.files {
             let SettledItem::Attempted(ItemSettlement::Accepted(file)) = file else {
                 panic!("the original parent File result remains acquired");
