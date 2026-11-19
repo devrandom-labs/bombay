@@ -10,12 +10,12 @@ use bombay::behavior::{
     InitializationTurn, ItemSettlement, MessageProtocol, Never, Protocol, SettledItem, Step,
 };
 use bombay::entity::{
-    ActivationId, AdmissionFailure, DrainFailure, EntityActivationError, EntityDefinition, EntityId,
+    ActivationId, AdmissionFailure, DrainFailure, EntityActivationError, EntityDefinition,
+    EntityId, EntityRetirement,
 };
 use bombay::prelude::StopOnShutdown;
-use bombay::{ActorRetirement, ActorRetirementReport, MailAddr};
+use bombay::{ActorRetirementReport, MailAddr};
 use std::sync::{Arc, Mutex};
-use tokio::task::JoinError;
 
 pub(super) type ManagedCounter = StopOnShutdown<Counter>;
 type Children = ChildChoice<ManagedCounter, ChildChoice<MailLedger, Never>>;
@@ -154,7 +154,7 @@ pub(super) enum CounterReport {
     Activation(
         EntityId<u64>,
         ActivationId,
-        EntityActivationError<Never, ManagedCounter, Never, Vec<Never>>,
+        EntityActivationError<Never, ManagedCounter, Never>,
     ),
     #[expect(
         dead_code,
@@ -169,7 +169,7 @@ pub(super) enum CounterReport {
     Retired(
         EntityId<u64>,
         ActivationId,
-        Result<ActorRetirement<ManagedCounter, Never, Vec<Never>>, JoinError>,
+        EntityRetirement<Counters>,
         ActorRetirementReport,
     ),
 }
@@ -187,7 +187,6 @@ impl EntityDefinition for Counters {
     type Hosts = topology::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -201,7 +200,7 @@ impl EntityDefinition for Counters {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, ManagedCounter, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, ManagedCounter, Never>,
     ) {
         self.reports
             .lock()
@@ -232,7 +231,7 @@ impl EntityDefinition for Counters {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<ManagedCounter, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Counters>,
         report: ActorRetirementReport,
     ) {
         self.reports

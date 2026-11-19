@@ -37,6 +37,22 @@ use super::{
     EntityRuntime, EntityShutdown, FamilyRetirement, Passivation, RetirementMode,
 };
 
+/// Complete result of joining one native Entity incarnation.
+///
+/// The definition supplies the actor and descendant payload types. Definitions
+/// with the same payload types share this existing result type; no wrapper or
+/// conversion is introduced. The original task join error and ordered child
+/// failures are retained. The independent [`ActorRetirementReport`] travels
+/// separately and does not replace this custody.
+pub type EntityRetirement<D> = Result<
+    ActorRetirement<
+        <D as EntityDefinition>::Behavior,
+        <D as EntityDefinition>::Terminal,
+        Vec<<<D as EntityDefinition>::Terminal as RetirementSchema>::Failure>,
+    >,
+    JoinError,
+>;
+
 /// One nominal, asynchronously hydrated native Entity family.
 pub trait EntityDefinition: Send + Sync + 'static {
     /// Stable domain identity stored by one Entity reference.
@@ -63,9 +79,8 @@ pub trait EntityDefinition: Send + Sync + 'static {
     /// Exact failure returned while reconstructing domain state.
     type HydrationError: Send + 'static;
     /// Application terminal sum used by children of the incarnation.
-    type Terminal: RetirementSchema + Send + 'static;
-    /// Exact associated failure product from this behavior's child binding owner.
-    type ChildFailures: Send + 'static;
+    /// Native child bindings retain its failures in an ordered owned vector.
+    type Terminal: RetirementSchema<Failure: Send + 'static> + Send + 'static;
 
     /// Reconstruct the authored actor state before it becomes routable.
     fn hydrate(
@@ -78,12 +93,7 @@ pub trait EntityDefinition: Send + Sync + 'static {
         &self,
         id: EntityId<Self::Id>,
         activation: ActivationId,
-        failure: EntityActivationError<
-            Self::HydrationError,
-            Self::Behavior,
-            Self::Terminal,
-            Self::ChildFailures,
-        >,
+        failure: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     );
 
     /// Consume one exact actor-originated admission refusal.
@@ -109,18 +119,11 @@ pub trait EntityDefinition: Send + Sync + 'static {
     /// Normal live retirement invokes this notification before later reactivation.
     /// Values consumed and destroyed inside a panicking callback are unavailable;
     /// outside keys, modes, prior results and original callback panics survive.
-    #[expect(
-        clippy::type_complexity,
-        reason = "the consuming notification retains behavior, terminal, child failures and raw actor join failure"
-    )]
     fn retired(
         &self,
         id: &EntityId<Self::Id>,
         activation: ActivationId,
-        retirement: Result<
-            ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
-            JoinError,
-        >,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     );
 }
@@ -218,9 +221,10 @@ impl EntityCapacity {
     clippy::large_enum_variant,
     reason = "launch refusal retains the original unboxed actor retirement; adding a Box would add an allocation and disposal owner to the actual failure"
 )]
-pub enum EntityActivationError<Hydration, B, Terminal, ChildFailures>
+pub enum EntityActivationError<Hydration, B, Terminal>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Terminal: RetirementSchema,
 {
     /// The explicit active-or-activating family bound was full.
     ResidentCapacity,
@@ -233,18 +237,20 @@ where
     },
     /// Actor launch failed with exact native state and its acquired notification.
     Launch {
-        retirement: ActorRetirement<B, Terminal, ChildFailures>,
+        retirement: ActorRetirement<B, Terminal, Vec<Terminal::Failure>>,
         retirement_report: ActorRetirementReport,
         termination_notification: Result<(), RetirementNotificationError>,
     },
 }
 
-impl<Hydration, B, Terminal, ChildFailures>
-    EntityActivationError<Hydration, B, Terminal, ChildFailures>
+impl<Hydration, B, Terminal> EntityActivationError<Hydration, B, Terminal>
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>,
+    Terminal: RetirementSchema,
 {
-    pub(crate) fn from_launch(failure: SpawnError<B, (Vec<Terminal>, ChildFailures)>) -> Self {
+    pub(crate) fn from_launch(
+        failure: SpawnError<B, (Vec<Terminal>, Vec<Terminal::Failure>)>,
+    ) -> Self {
         match failure.into_retirement() {
             Ok((retirement, retirement_report, termination_notification)) => Self::Launch {
                 retirement,
@@ -377,7 +383,7 @@ where
 {
     fn from_runtime(runtime: &InstalledRuntimeFor<D>, definition: Arc<D>) -> Self
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
         Self {
             receptionist: runtime.receptionist(),
@@ -399,7 +405,7 @@ where
         id: &D::Id,
     ) -> Result<RetirementMode, EntityRetirementError>
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
         self.receptionist
             .retire_entity(&EntityId::new(id.clone()))
@@ -408,7 +414,7 @@ where
 
     pub(crate) fn passivate(&self, id: &D::Id) -> Passivation
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
         self.receptionist.passivate(&EntityId::new(id.clone()))
     }
@@ -451,7 +457,7 @@ where
         command: BehaviorMessage<D::Behavior>,
     ) -> Result<(), AdmissionFailure<BehaviorMessage<D::Behavior>>>
     where
-        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+        D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     {
         self.entities
             .receptionist
@@ -534,7 +540,7 @@ where
 impl<D> EntityAdmission<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     pub(crate) async fn interpret(input: &mut Option<Self>, origin: MailAddr) {
         let Some(admission) = input.as_ref() else {
@@ -594,7 +600,7 @@ where
     Hosts: Send + Sync + 'static,
     Role: Clone + Send + 'static,
     D: EntityDefinition<Hosts = Hosts>,
-    Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     Tail: EntityApplicationFamilies<Hosts>,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);
@@ -656,7 +662,7 @@ where
 pub(crate) struct InstalledEntityFamily<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     runtime: InstalledRuntimeFor<D>,
     entities: Entities<D>,
@@ -666,7 +672,7 @@ where
 impl<D> InstalledEntityFamily<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     async fn shutdown(
         &self,
@@ -714,7 +720,7 @@ where
     Hosts: Send + Sync + 'static,
     Role: Clone + Send + 'static,
     D: EntityDefinition<Hosts = Hosts>,
-    Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     Tail: InstallEntityFamilies<Hosts>,
 {
     type Installed = (Role, InstalledEntityFamily<D>, Tail::Installed);
@@ -786,7 +792,7 @@ impl<Role, D, Tail> InstalledEntityFamilies for (Role, InstalledEntityFamily<D>,
 where
     Role: Clone + Send + 'static,
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     Tail: InstalledEntityFamilies + Send,
 {
     type Receptionists = (Role, Entities<D>, Tail::Receptionists);

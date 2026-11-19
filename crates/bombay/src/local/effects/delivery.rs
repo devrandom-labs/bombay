@@ -781,7 +781,7 @@ impl<C, N, P, Bindings, Origins, D, Path, Services>
 where
     C: Behavior<Protocol: Protocol<Addr = MailAddr>>,
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
     Self: Send,
 {
     #[expect(

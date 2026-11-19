@@ -18,8 +18,8 @@ help: the following other types implement trait `ExternalTarget`
   | / impl<D> ExternalTarget for EntityRef<D>
   | | where
   | |     D: EntityDefinition,
-  | |     D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
-  | |___________________________________________________________________________^ `EntityRef<D>`
+  | |     D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
+  | |_________________________________________________________^ `EntityRef<D>`
 note: required by a bound in `ApplicationHandle::<P, Event, Families>::sender_to`
  --> src/application/interface.rs
   |

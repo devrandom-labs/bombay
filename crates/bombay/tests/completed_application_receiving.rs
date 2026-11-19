@@ -24,12 +24,11 @@ use bombay::behavior::{
 use bombay_engine::Completion;
 use tokio::runtime::{Builder, Handle, Id};
 use tokio::sync::oneshot::{self, error::RecvError};
-use tokio::task::JoinError;
 
 use bombay::actors::ActorExt;
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
+    EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityRetirement, EntityShutdown,
 };
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationBehavior,
@@ -132,7 +131,6 @@ impl EntityDefinition for Accounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -150,7 +148,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<u64>,
         _: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         drop(failure);
         panic!("no incarnation is requested by this startup controller");
@@ -172,7 +170,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: &EntityId<u64>,
         _: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         // This startup-only controller expects no incarnation receipt.
@@ -1553,7 +1551,6 @@ impl EntityDefinition for RetiringAccounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     fn hydrate(
         &self,
@@ -1566,7 +1563,7 @@ impl EntityDefinition for RetiringAccounts {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         Accounts.activation_failed(id, activation, failure);
     }
@@ -1588,7 +1585,7 @@ impl EntityDefinition for RetiringAccounts {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         Accounts.retired(id, activation, retirement, retirement_report);
@@ -1981,7 +1978,6 @@ impl EntityDefinition for AccountFamily {
     type Hosts = (ActorSpace<ReceivingAccount>, Runtime<AccountFactory>);
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     fn hydrate(
         &self,
@@ -1994,7 +1990,7 @@ impl EntityDefinition for AccountFamily {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         Accounts.activation_failed(id, activation, failure);
     }
@@ -2016,7 +2012,7 @@ impl EntityDefinition for AccountFamily {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         report: ActorRetirementReport,
     ) {
         Accounts.retired(id, activation, retirement, report);
@@ -2996,7 +2992,7 @@ struct LiveAccounts {
             Vec<(
                 EntityId<u64>,
                 ActivationId,
-                EntityActivationError<Never, StopOnShutdown<LiveAccount>, Never, Vec<Never>>,
+                EntityActivationError<Never, StopOnShutdown<LiveAccount>, Never>,
             )>,
         >,
     >,
@@ -3019,7 +3015,7 @@ struct LiveAccounts {
             Vec<(
                 EntityId<u64>,
                 ActivationId,
-                Result<ActorRetirement<StopOnShutdown<LiveAccount>, Never, Vec<Never>>, JoinError>,
+                EntityRetirement<LiveAccounts>,
                 ActorRetirementReport,
             )>,
         >,
@@ -3041,7 +3037,6 @@ impl EntityDefinition for LiveAccounts {
     type Hosts = live_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -3063,7 +3058,7 @@ impl EntityDefinition for LiveAccounts {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         self.activation_failures
             .lock()
@@ -3094,7 +3089,7 @@ impl EntityDefinition for LiveAccounts {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         self.retired
@@ -4803,7 +4798,8 @@ mod family_cleanup {
     };
     use bombay::entity::{
         ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-        EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityShutdown,
+        EntityCapacity, EntityDefinition, EntityId, EntityMetrics, EntityRetirement,
+        EntityShutdown,
     };
     use bombay::{
         ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, Application,
@@ -4811,7 +4807,6 @@ mod family_cleanup {
     };
     use tokio::runtime::{Builder, Handle};
     use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
-    use tokio::task::JoinError;
 
     struct ReceivingAccount {
         original: Arc<Vec<u8>>,
@@ -4897,7 +4892,6 @@ mod family_cleanup {
         type Hosts = account_application::Topology;
         type HydrationError = ();
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
 
         async fn hydrate(&self, _: EntityId<u64>) -> Result<Self::Behavior, ()> {
             self.hydration_started.add_permits(1);
@@ -4916,7 +4910,7 @@ mod family_cleanup {
             &self,
             _: EntityId<u64>,
             _: ActivationId,
-            failure: EntityActivationError<(), Self::Behavior, Never, Vec<Never>>,
+            failure: EntityActivationError<(), Self::Behavior, Never>,
         ) {
             // This concrete definition explicitly consumes its callback result.
             // The witness claims no callback completeness or incarnation retirement.
@@ -4937,7 +4931,7 @@ mod family_cleanup {
             &self,
             _: &EntityId<u64>,
             _: ActivationId,
-            retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+            retirement: EntityRetirement<Self>,
             retirement_report: ActorRetirementReport,
         ) {
             // This cancellation witness explicitly discharges both acquired callback facts;

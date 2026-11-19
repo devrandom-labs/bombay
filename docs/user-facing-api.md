@@ -200,11 +200,23 @@ Entity families are independent hydrated roots in that same declaration. Its
 and its definition. The complete declaration lives with its
 [two-family journey](../crates/bombay/tests/entity_application.rs).
 
+The Entity spelling below is unreleased. Published Runtime0.4.0 still requires
+the independent `ChildFailures` declaration and fourth activation-error type
+parameter; the source branch supplies the derived failures and
+`EntityRetirement<D>` described here.
+
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated
-`ProfileRetirements` as `Terminal` and `Vec<<Self::Terminal as RetirementSchema>::Failure>`
-as `ChildFailures`. Its existing hydration and consuming retirement callbacks
-retain those exact values. The [two-family journey](../crates/bombay/tests/entity_application.rs)
+`ProfileRetirements` as `Terminal`. Native child failures are derived as
+`Vec<<Self::Terminal as RetirementSchema>::Failure>`; definitions do not choose
+a second carrier. Its hydration and consuming retirement callbacks retain those
+exact values. `EntityRetirement<MyDefinition>` names the complete native joined
+result, including its original task join error; the runtime report remains
+separate. Definitions with the same payload types share that result type, so
+existing retirement delegation needs no conversion. The raw acquired
+`ActorRetirement` is a different product and stays distinct.
+`EntityActivationError<Hydration, Behavior, Terminal>` preserves
+the same native child-failure carrier in its launch alternative. The [two-family journey](../crates/bombay/tests/entity_application.rs)
 executes simultaneous hydration, refusals, reactivation and child retirement.
 Declaring a family class starts no task; `.entity_family(role, definition, directory, capacity)`
 supplies its real policy and owned definition.

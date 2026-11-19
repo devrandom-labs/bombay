@@ -27,7 +27,7 @@ use bombay::behavior::{
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Passivation,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown, Passivation,
 };
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown};
 use bombay::{Application, ApplicationScope, WorkOutcome};
@@ -103,7 +103,6 @@ where
     type Hosts = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -121,12 +120,7 @@ where
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<
-            Self::HydrationError,
-            Self::Behavior,
-            Self::Terminal,
-            Self::ChildFailures,
-        >,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }
@@ -143,7 +137,7 @@ where
         &self,
         _: &EntityId<Self::Id>,
         _: ActivationId,
-        retirement: AccountRetirement,
+        retirement: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         self.retirements

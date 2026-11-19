@@ -25,8 +25,8 @@ use bombay::behavior::{
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityRetirementError, EntityRetirementFailure,
-    EntityShutdown, RetirementMode,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityRetirementError,
+    EntityRetirementFailure, EntityShutdown, RetirementMode,
 };
 use bombay::prelude::{ActorRetirement, Completion, MailAddr, RootOrigin, StopOnShutdown};
 use bombay::{ActorFailureAssessment, ActorRetirementReport, Application, RetirementAssessment};
@@ -46,9 +46,6 @@ mod account {
 
 use account::{Account, AccountCommand};
 
-type AccountRetirement =
-    Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
-
 enum RetirementDelivery {
     Stored,
     Held {
@@ -62,7 +59,11 @@ struct Accounts {
     initial_balance: u64,
     delivery: RetirementDelivery,
     retired: Arc<Semaphore>,
-    retirements: Arc<Mutex<Vec<(AccountRetirement, ActorRetirementReport)>>>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "shared test observation retains every joined native result and its independent runtime assessment"
+    )]
+    retirements: Arc<Mutex<Vec<(EntityRetirement<Accounts>, ActorRetirementReport)>>>,
     unexpected_facts: Arc<AtomicUsize>,
 }
 
@@ -72,7 +73,6 @@ impl EntityDefinition for Accounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -89,12 +89,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<
-            Self::HydrationError,
-            Self::Behavior,
-            Self::Terminal,
-            Self::ChildFailures,
-        >,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
         self.unexpected_facts.fetch_add(1, Ordering::Relaxed);
     }
@@ -111,7 +106,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: &EntityId<Self::Id>,
         _: ActivationId,
-        retirement: AccountRetirement,
+        retirement: EntityRetirement<Accounts>,
         retirement_report: ActorRetirementReport,
     ) {
         self.retirements
@@ -317,7 +312,9 @@ where
     clippy::too_many_lines,
     reason = "one complete fenced-retirement trace preserves both phase-specific custody oracles"
 )]
-fn assert_retirements(retirements: &Mutex<Vec<(AccountRetirement, ActorRetirementReport)>>) {
+fn assert_retirements(
+    retirements: &Mutex<Vec<(EntityRetirement<Accounts>, ActorRetirementReport)>>,
+) {
     let retirements = retirements.lock().unwrap_or_else(PoisonError::into_inner);
     assert_eq!(retirements.len(), 2);
     let balances = retirements

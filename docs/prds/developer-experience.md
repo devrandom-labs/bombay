@@ -1138,6 +1138,135 @@ No new script or tool suite is retained. Final-source native/hosted gates,
 normal workflow PR delivery, the actual refreshed release proposal and package
 publication/consumer qualification remain open and separate.
 
+### Release consumer lock delivery (2026-11-18)
+
+[PR437](https://github.com/devrandom-labs/bombay/pull/437) merged normally at
+2026-11-18T03:27:53Z as `56910d3c49e326871b4bf01639cd8a741ce03c1f`.
+Tree `4008324f0ffdfb44f98c0c9cef123b74af95f787` equals accepted signed
+`1c94ef33`; actual API and physical Git parents are main `caf0b681` plus
+`1c94ef33`. Fresh before/after notices were sent to Bombay, with a direct
+no-hold notice before merge. No bypass or branch deletion was used.
+
+All eight exact-head hosted checks and 28 detailed Linux scopes passed.
+All 28 native check owners and the actual flake invocation passed separately.
+A standalone pinned-Nix Nextest execution then passed all 1029 cases across
+123 binaries, reconciling every one of 1035 named registrations and the same
+six parent-controlled child skips. All 729 source inputs and executable hashes
+were rechecked. The initial inventory controller's metadata naming refusal
+remains recorded separately: compilation/list succeeded, and no tests ran
+before that refusal. Correcting the reader changed no source, fixture, ignore,
+assertion or gate. The first actual test execution passed without retries.
+
+The final full-diff law review and minimization pass retain the existing Cargo,
+Release-plz, Nix and GitHub API owners. Both author reviews close; no independent
+review is claimed. The five-path delta is workflow+70, Nix+9 and the three
+existing record paths; Rust, tests, public types, actor states, subordinate
+alternatives, transition branches and modules have zero delta. The observed
+proposal head and complete consumer locks remain the only required values;
+no duplicate resolver, project script, framework or semantic state is added.
+
+Native and Linux receipts retain their exact selected minimum-compiler,
+remote, protected-child, coverage, static-analysis and bounded fuzz scopes.
+Miri was skipped. No exhaustive or comparative-performance claim follows.
+Final acceptance is `release-locks/workflow-final-acceptance.json`, SHA256
+`3d247c737d2eb1d673f50f5fb2e2d4736a6200dd52e13e584737c2a9610d1d76`;
+actual delivery is `release-locks/workflow-delivery.json`, SHA256
+`f61817ea9dfef1baf049573a3e94f9a83ca9bdfdf20a7f0bad026b86964cc217`,
+in the restart handoff. Original scoped receipts and failed-reader records
+remain preserved.
+
+The completed owned Nextest target was removed after 4375 generated inputs
+were archived, extracted and rehashed, with two fresh empty recursive lsof
+checks. Net 6,048,976,896 allocated bytes (5.633548737 GiB) were reclaimed;
+source archives, release packages and required evidence remain. The active
+full-programme checkout is reused; peer unfinished work and cache are protected.
+The cleanup receipt is `release-locks/nextest-cache-cleanup.json`.
+
+This delivered the workflow repair before the separately qualified Runtime0.3.1
+publication below. Peer R18's breaking seven-value extractor and source-specific
+proofs remain separate. The full DX01–DX28 goal and its unmet Entity, caller,
+cost and documentation criteria remain active.
+
+### Entity child-failure ownership, before the regression (2026-11-18)
+
+DX03/17/22 remains open: ordinary Entity definitions still spell their native
+terminal and callback products. The first selected law removes one demonstrably
+false choice: native child bindings always retain
+`Vec<<Terminal as RetirementSchema>::Failure>`, for both empty and nonempty rows.
+`EntityDefinition::ChildFailures` duplicates that existing owner equation.
+The real Accounts example will first omit that associated choice; the prior
+trait must reject specifically for the missing item before production changes.
+All original callbacks, typed results, reports, actor values and output remain.
+
+This is a derived native ownership equation and application interface policy,
+not a new actor-model law. Registry Behavior/Actors0.30, macros0.16, Address0.3,
+Communication0.1.7 and Timers0.2 remain selected. Private Observe publication,
+`ChildBindings`/`RetireChildTasks`, native task retirement and the complete
+`ActorRetirement`/`Result` products remain authoritative. The owning source and
+actual no-child/nonempty implementations were inspected before this record.
+
+The candidate deletes the duplicate associated choice and generic in the native
+Entity/error port. `Terminal::Failure` retains the existing Send/static transport
+requirement. No public type, runtime branch, state, allocation, erased value,
+clone, lifecycle policy or fallback is added. Design edits are limited to the
+Entity definition/native binding, delivery bound, this real caller and this PRD;
+all further caller migration is a separately measured stage after focused proof.
+The full terminal/callback simplification target remains open. A new topology
+projection is unselected until application root/cold-member context is proved.
+
+The pre-edit checkpoint records the unchanged five-state EntitySlot sum,
+subordinate ownership alternatives and exact source measurements. Every retained
+runtime alternative keeps its original owned value; no arrival history, repeated
+cause, extra authority, false cardinality or structural caller input is added.
+The original source, dependency selection and checkpoint are in the existing
+restart handoff's `entity-interface-20261118T125006Z/provenance.json`. No production edit,
+compiler success, runtime execution or complete Entity repair is claimed here.
+
+### Runtime 0.3.1 delivery (2026-11-18)
+
+[PR434](https://github.com/devrandom-labs/bombay/pull/434) merged normally as
+`0350b4fec6005228f5a13124c97bce0660e54375`, with physical/API parents main5691
+and release445d. Its tree03738 exactly equals the accepted source. All eight
+hosted checks, 28 native owners and actual flake invocation passed; standalone
+Nextest independently passed 1029 across 123 binaries/1035 named registrations,
+with the same six parent-controlled children. Earlier source epochs and peer
+R18's 1031 are not adopted.
+
+The normal [publisher](https://github.com/devrandom-labs/bombay/actions/runs/44301615774)
+succeeded; registry publication is 2026-11-18T12:12:42Z. The
+[release tag](https://github.com/devrandom-labs/bombay/releases/tag/bombay-rs-v0.3.1)
+and packaged VCS identify `445d9d2dee9c28cc1beed2b5d25747bbfd982579`, not the
+merge SHA. The annotated tag is unsigned; GitHub verifies the source commit.
+The downloaded 1,220,334-byte registry archive has SHA256
+`40d4c444d8e38ba867864dbeaa099e3c14ebfc09017b5131ae201599efccd960`.
+It is byte-identical to both actual Rust 1.99/1.96 package-verification archives.
+All 546 payload bytes/modes and the original 590 consumer inputs per compiler
+were rehashed after download. Both 16-group executed consumer matrices therefore
+qualify the exact published payload without a source substitution or test rerun.
+
+Each compiler's matrix retains 87 native tests plus one parent-controlled child and 16
+compiler fixtures per profile, eight withdrawal and 26 Entity tests per profile, four remote tests/12 fixtures,
+three renamed-crate tests, ten Runtime doctests, eight example builds and six finite local runs.
+Remote/HTTP examples are build-only in that matrix. The minimum probe adapts
+24 existing compiler-specific stderr files; canonical package and all Rust
+bodies remain unchanged. This is selected caller scope, not private whole-runtime
+minimum execution. Native/Linux bounded law, artifact and Miri limits remain
+in their original receipts. No normal production/API/dependency behavior changes
+from 0.3.0, required API migration or peer R18 repair is included. Engine 0.3.0,
+Bombay macros 0.2.0 and Behavior/Actors 0.30.0 remain unchanged.
+
+Evidence is in `release434-refreshed/{release-final-acceptance,release-main-delivery,release-publication-result}.json`
+in the restart handoff. Publication receipt SHA256 is
+`4ba42ae9cf39fdba733d65c47ac1b77cf34f924425dfc3d162b2558530d18043`.
+Official registry index/static archive, successful publisher log and actual tag
+establish publication; the optional crates.io API returned 403 and is uncredited.
+Fresh before/after notices were sent. Bombay acknowledged the merge and then
+verified the actual published archive/checksum, tag/VCS and source boundary.
+Its R18 repair stays separate, with both full goals active. Required inputs,
+packages and evidence remain; completed owned caches were removed. No new build
+cache was created for this publication audit. Full DX01–DX28 acceptance remains
+active, including Entity's terminal interface, comparable costs and documentation.
+
 ### Supplied-work runners, before implementation (2026-11-16)
 
 Implementation and required delivery checks: [PR429](https://github.com/devrandom-labs/bombay/pull/429).
@@ -4337,3 +4466,257 @@ SDK privacy, comparable memory/compile costs and final documentation acceptance
 remain in the owning checklist. Partial receipt counts, normal retirement and
 readiness notices do not establish complete affine custody or committed Ready.
 The programme is not complete merely because examples or selected checks pass.
+
+### Entity child-failure caller migration (2026-11-18)
+
+The focused owning change now passes its real Accounts and recursive native
+cases in both profiles. The populated child-constructor failure test preserves
+the original cause, complete sends and independent report; both loss inverses
+fail at the missing-row oracle and both exact-restored profiles pass. Author
+and independent source/execution reviews close this concrete native case.
+Evidence is `entity-interface-20261118T125006Z/nonempty-acceptance.json` in the
+existing handoff. General wrapper-order and minimum/full-source gates remain open.
+
+This separately measured stage removes only the proven duplicate associated
+choice and fourth activation-error argument from the remaining 12 Rust paths.
+Callbacks retain the same native retirement product; no body, effect, policy,
+public type, bound, allocation or state is added. Compile refusals must retain
+their original missing-host, role or effect-host reason. Current guidance and
+only actual diagnostic drift are updated with their owners. The concrete
+cumulative inventory is 28 paths including conditional compiler records;
+Joel's standing explicit auto-approval applies at the file-count checkpoint.
+The scope, pre-edit measurements and allowed equations are in `migration-plan.json`.
+Full terminal/callback simplification and final delivery remain open.
+
+The measured stage now passes author and independent review. Current Rust1.99
+executes26 Entity units in debug and75 affected caller cases in each profile;16 selected
+static refusals retain their original reasons. Only three actual compiler
+snapshots change (two source positions and one shorter native signature).
+Runtime outcomes retain sourcea003; final5a8 differs only in those stderr files.
+Rust1.96 independently passes26 Entity units in debug and8 selected leaf/recursive/configured
+caller cases per profile on5a8. The original-cause loss/restoration control is
+current-compiler evidence, not a minimum-compiler inverse claim.
+
+Against the pre-edit signed8ef source, production is+43/-43/net0; tests including
+compiler fixtures are+371/-101/net270, and the real example is+2/-3/net-1.
+No public nominal type is added. Entity's10 modules,192 match-arm tokens and
+all control-state sums remain unchanged. These source counts include comments
+and blanks where applicable; they do not replace ownership review. Exact
+measurements/reviews/raw results are in `migration-checkpoint.json`,
+`migration-current-acceptance.json` and `migration-minimum-acceptance.json` in
+the existing handoff. No full new-source Nix/Nextest/remote/hosted/PR delivery
+or complete Entity interface claim is made.
+
+### Entity empty-value diagnostics (2026-11-18)
+
+The standard native optimized workspace/all-target Clippy check found two
+`assert_is_empty` diagnostics in the new populated failure test. Only those
+assertions now compare against an empty collection, preserving the oracle and
+printing actual values on failure. No type, bound, production or policy changes.
+Corrected source5d2 passes the actual registered strict Clippy owner with warnings
+and both required supplementary denies; its output/source NAR and662 source
+files are independently rehashed. Fresh current-compiler healthy/loss/restored
+cases pass0/fail101/pass0 in both profiles at the intended original-row oracle;
+restored binaries match healthy bytes. Rust1.96 independently passes the corrected
+named case in both profiles. Author and independent source/execution reviews
+close this correction; all older proofs retain their original source identities.
+
+Receipts are `empty-assertion-acceptance.json` and
+`empty-assertion-clippy-acceptance.json` in the existing handoff. After preserving
+4864 generated inputs, exact source, packages and required evidence, normal
+Cargo cleanup removed completed Runtime/Entity-example package artifacts in both
+profiles: net897441792 allocated bytes (0.8358078003 GiB), with dependencies
+retained for unfinished work. The original cache-tag refusal, confined dry runs
+and fresh liveness checks are preserved in the cleanup receipt. Full new-source
+28-owner/flake/Nextest/remote/hosted delivery and terminal/callback completion
+remain open.
+
+### Entity result ownership — reopened (2026-11-18)
+
+The definition-indexed native-result hypothesis is rejected. Its focused leaf,
+recursive and populated-cause tests passed on Rust1.99 and1.96 in both profiles;
+the original example trace and exact child-failure custody survived. Static
+negative/positive/restored controls also behaved as designed. Those results
+remain source-specific evidence, not whole-interface acceptance.
+
+The complete caller review found that `RetiringAccounts` and `AccountFamily`
+forward their original activation failures directly to `Accounts`. Their keys
+and payload types coincide; definition identity is not authority in this
+contract. Making `EntityActivationError<D>` nominally distinct breaks that
+existing composition. The new wrong-definition refusal enforced the invented
+restriction and could not justify it. Independent review confirms the veto.
+
+All eight changed Rust owner/caller/harness files are restored byte-exactly to
+signed67131997. The two rejected static fixture/snapshot files are removed from
+the checkout and preserved with all731 inputs in the exact source archive.
+The13-path mechanical candidate was never applied. No variant conversion,
+replacement callback, new bound or compatibility shim is retained.
+
+The [rejected-hypothesis record](developer-experience/DEAD_ENDS.md) contains the
+falsifier and reopening conditions. Detailed source/archive/raw/review receipts
+remain in the existing Entity handoff's `results` directory; the reopening
+receipt is2d3a831c. The earlier narrow design acceptance c2037873 is superseded
+for retention, while its actual execution outcomes remain unchanged.
+
+DX03/17/22/26 and the full programme remain active. The next hypothesis starts
+from retained6713 and must simplify native result spelling while preserving
+same-payload delegation, complete custody and all four callback contracts.
+No replacement production model, new publication or full-workspace acceptance
+is selected by this rejection.
+
+A subsequent consumer-only transparent activation-alias probe preserved type
+identity but refused with actual E0284 at an unchanged enum match: Rust could
+not infer its definition through associated projections. The caller was restored
+byte-exactly and its original check passed. No library edit was made. The alias
+spelling is rejected in `DEAD_ENDS.md`; a joined-retirement-result alias remains
+a separate research option, with actual equal-payload forwarding required before
+any public implementation.
+
+### Native Entity retirement spelling, before implementation (2026-11-18)
+
+The selected focused proposal adds only `EntityRetirement<D>` as a transparent
+name for the existing joined native result. The definition supplies actor and
+descendant metadata; equal-payload definitions retain the same result type.
+The original three-payload activation error and inferred variant matches stay
+unchanged. No wrapper, conversion, new bound or runtime branch is proposed.
+
+Before production, the two actual `RetiringAccounts`/`AccountFamily` retirement
+forwarders compile with that local result alias and their bodies unchanged;
+exact restoration and the original target also compile. The real Accounts
+caller then refuses the missing public name with soleE0432; exact restoration
+and original caller compile. A first probe accidentally used the alias in an
+unrelated nested namespace, failedE0425 and was restored; the corrected check
+narrows only those two real forwarders while compiling the whole target.
+All separate raw outcomes/source guards remain in the `retirements` handoff.
+
+The initial producer scope is the family result equation, its existing entity
+export and the real Accounts caller. Focused leaf/recursive/populated native
+runtime preservation and independent review precede a separately measured
+remaining result-spelling migration. The raw acquired retirement and generic
+host-independent storage remain distinct products. This is a derived native
+ownership equation and interface name, not an additional actor-model law.
+The full DevX goal and all final workspace/delivery gates remain open.
+
+Focused retention closes on source17dd44d0 (730 exact inputs): currentRust1.99
+and actualRust/Cargo1.96 each execute the two native-family/recursive cases,
+the populated original-child-cause case and original five-line public example
+in debug and optimized profiles. All12 invocations pass with exact names/trace;
+author and independent source/execution reviews close. The alias adds no nominal
+identity, runtime body/state/branch or callback;10modules/192match tokens stay
+unchanged, physical production4847->4853 and declaration tokens92->93 under the
+recorded identical regex. Raw Ledger custody and both forwarders remain intact.
+Acceptance64bec865 and archive393618c0 preserve the bounded exact-source proof.
+
+After preserving5086 generated inputs and fresh idle checks, normal Cargo
+package cleanup reclaimed234385408 allocated bytes (0.2182884216GiB); dependencies
+remain for unfinished work. The existing API guide now names the canonical
+joined result. Remaining result-spelling migration is a later measured stage;
+whole workspace/minimum workspace/Nix/Nextest/remote/hosted/delivery and the full
+DX01-DX28 goal remain open. No publication or main advance is claimed.
+
+### Retirement-result spelling migration (2026-11-18)
+
+After focused acceptance64bec865 and signed4767a250, a separate12-path inventory
+applies only the established joined-result spelling to native unit/caller records
+and three existing compile-denial fixtures. Activation-error spelling, callback
+bodies, all assertion operations and the intended invalid programs are conserved.
+Independent source review passes after three obsolete import removals. Source
+production prefixes are unchanged; only their test modules are migrated.
+The host-independent generic storage/helper alias and acquired raw Ledger result
+remain explicit exceptions. The nested family-cleanup module imports its own
+canonical result name; no new bound, conversion, wrapper, default or policy is
+introduced. Current source qualification follows on its own frozen inputs.
+The feature-gated Node exporter remains subject to actual remote/full gates;
+default-only caller results cannot qualify that source. Full delivery remains open.
+
+Mechanical retention is accepted84fa3da0. Source6ffd independently passes26
+Entity units,75debug/75optimized default callers,16unchanged compile denials,
+and actualRust/Cargo1.96 selected26units/8debug/8optimized native callers. The
+separate finalee6d epoch changes only three evidenced test-lint annotations;
+its actual standard native optimized workspace/all-target Clippy passes with
+warnings and both supplementary denies. Registeredderiver bdmqg822/outputz0c6,
+physical source/output NARs and all662selected source inputs are verified.
+Runtime outcomes stay source6ffd; no final-head or remote outcome is relabeled.
+Production prefixes and all bodies/assertions/activation types/raw carriers/
+generic storage are conserved; no public/state/branch/bound growth occurs.
+
+After preserving5119generated inputs and fresh idle checks, normal Cargo
+cleanup reclaimed869494784allocatedB (0.8097801208GiB). Exact source/packages/raw
+logs/required evidence remain. Actualmain has since advanced normally through
+PR438 to98885bd1/tree0b470fa2 (parents0350+9e0). Integration and combined-source
+qualification follow separately; peer proofs are not adopted. Full28/flake/
+Nextest/remote/hosted/delivery and fullDX01-DX28 completion remain open.
+
+### Integrated Entity qualification (2026-11-18)
+
+Signed99e4babb integrates actual main98885 without changing upstream Node
+ownership. Its731 exact inputs independently pass the authoritative28-owner
+native flake, standalone Nextest1032, optimized workspace1032 and coverage1032;
+each1032-case execution reconciles123 harnesses,1038 names and the same six
+declared child skips. Coverage retains154 compiler fixtures, three benchmark
+targets and all four existing owner floors. Both remote profiles separately
+pass559 named cases and32 fixtures. ActualRust/Cargo1.96 qualifies the selected
+local/Axum114-case and remote4-case matrices, not the private whole runtime.
+The existing strict optimized Clippy owner denies warnings and both required
+supplementary lints; API docs and formatting pass. Native acceptance5e55a08a
+and standalone48bdd184 bind the exact source and scoped owner receipts.
+
+After native completion,20 output paths were absent from the store. The27
+earlier physical NAR checks remain historical evidence; the last protected
+Counter output was recovered through a separate normal same-identity build0
+and physically checked. Its original and recovery logs each reconcile132
+selected executions across12 commands; expected child failures add no outer
+pass credit. No removal cause or fresh all28 physical rehash is claimed.
+
+Independent combined review accepts the retained model and caller conservation;
+its one API-inventory omission is corrected by listing the canonical retirement
+alias. Against main98885 the implementation has production+64/-61/net3 and
+tests+440/-221/net219, zero new nominal public types and one public alias.
+The final record and inventory edits change no Rust, manifest, lock or Nix
+configuration. Their final-source identity comparison and required checks,
+hosted acceptance and normal PR delivery remain open. Runtime0.3.1 excludes
+these source-breaking Entity changes. Full terminal/callback simplification,
+catalogue, costs, support, documentation and DX01-DX28 acceptance remain open.
+
+The completed standalone Cargo target was removed after exact input, executable
+identity and raw-log preservation plus fresh idle checks. Observed allocation
+reclaimed was7,234,252,800B (6.7374GiB), a cache measurement rather than a whole
+filesystem delta. Required source, packages, exports and evidence remain.
+
+### Runtime0.4.0 integration for Entity (2026-11-19)
+
+The frozen signed ac55eceb source731/14ac17e1 closes all28 native owners and
+actual authoritative flake0 at0ff35f23. Nine unchanged identities were explicitly
+adopted after source/output verification;19 outputs have actual new or recovered
+executions. All28 physical NARs, derivers, raw logs and scoped receipts were
+rechecked. Its independent optimized workspace and coverage executions each
+reconcile1032/123/1038/same6/154fixtures/3bench targets. Its standalone run exits0
+with1031 ordinary PASS and one distinct successful LEAK under the existing
+Nextest policy, plus six skips. The complete names, source and executable hashes
+are reconciled at078fcf22; the pipe-closure cause and resource quiescence remain
+unproved. No test, timeout or policy was changed or rerun to repair the reader.
+After9849 generated inputs were archived and verified, fresh unused-path checks
+permitted removal of its owned cache, reclaiming5993082880 allocatedB (5.5815GiB).
+Cargo refused the missing cache marker; independently verified filesystem removal
+is recorded separately and is not described as Cargo success.
+
+A fresh delivery guard found [PR439](https://github.com/devrandom-labs/bombay/pull/439)
+already merged at22:33:50UTC as030767c0/tree7b2c32cc. The remote-main refresh was
+missed before the final ac55 qualification, so that accepted epoch remains
+source-specific. Runtime0.4.0 was published at22:34:48UTC: the official1225732B
+archive SHA25654863a6d,547 payload files,415 Rust files, original manifest,
+VCS71bca53e and official tag target agree. Its owning Node8c77 contains the
+seven-value extraction including both withdrawal panic values. It excludes this
+Entity candidate and the peer's newer close repair; no old consumer/compiler
+matrix or peer proof is adopted for the publication.
+
+Signed local7638cf6d integrates actual030 into the existing Entity branch with
+exact parentsac55+030 and no conflict. The four upstream paths change only the
+Runtime package version0.3.1→0.4.0, its two locks and changelog. All Rust/test
+bodies, AGENTS, Nix configuration and toolchain selections, and external SDK
+entries are unchanged by that integration. The actual combined source requires its own frozen-input
+qualification and normal hosted/PR delivery before completion. The current
+publication, source archives, old acceptance and integration records remain
+separate in the existing DevX handoff under retirements/{final-source,main030}.
+Full terminal/callback simplification, catalogue, comparable costs, support,
+documentation and DX01–DX28 acceptance remain open.
