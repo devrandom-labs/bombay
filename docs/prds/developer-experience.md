@@ -4720,3 +4720,37 @@ publication, source archives, old acceptance and integration records remain
 separate in the existing DevX handoff under retirements/{final-source,main030}.
 Full terminal/callback simplification, catalogue, comparable costs, support,
 documentation and DX01–DX28 acceptance remain open.
+
+### Entity interface delivery (2026-11-19)
+
+[PR440](https://github.com/devrandom-labs/bombay/pull/440) merged normally at
+09:44:52UTC as `07f233e3fface45cebdd182596433abb51cbb0ee`, with exact parents
+`030767c0` and signed `cf913ad0`. Its tree `650681ab` equals the accepted head
+and hosted preview. All eight hosted checks and all28 scoped Linux owners pass;
+native28/actual flake0 and the separate standalone1032 ordinary PASS/zero LEAK/
+same six child skips retain their independent executions. All123 executables,
+1038 registrations and731 source inputs reconcile. The earlier ac55 successful
+LEAK remains a separate observation, not an ordinary pass or quiescence proof.
+
+Bounded fuzzing completes Driver2048 and four Observe1024 runs; all16 original
+seeds, eight official artifact ZIP digests and529 payload files are verified.
+Miri was skipped. Linux log acceptance does not claim independently downloaded
+NARs, coverage JSON or hidden ActorExecution negative artifacts. CodeQL's seven
+error files/nine warnings and selected minimum-compiler limits remain explicit.
+The handoff's `retirements/main030/final-acceptance.json` (84d310b7) closed before
+the actual fresh peer no-hold acknowledgment and immediate merge guards;
+`delivery.json` (b2c0c233) records actual Git/API delivery and the AFTER notice.
+
+The retained interface derives native child failures from Terminal and uses the
+transparent complete `EntityRetirement<D>` result. Original activation-error
+inference, same-payload forwarding and all four callback contracts survive.
+Runtime0.4.0's published archive excludes this source-breaking Entity change;
+no publication follows from this merge. Full terminal/callback simplification,
+catalogue, comparable costs, support, documentation and DX01–DX28 remain open.
+
+The completed Cargo cache was removed after9850 generated inputs and executable/
+source evidence were preserved, reclaiming6013476864 allocated bytes. The merged
+checkout was normally removed after exact source/archive/ignored-file/history
+preservation and fresh unused-path checks. One source-only continuation remains
+for this active programme, so that worktree replacement claims no material net
+disk saving. Required packages, exports, branch and evidence remain preserved.
