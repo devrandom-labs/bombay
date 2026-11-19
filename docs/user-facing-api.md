@@ -200,10 +200,9 @@ Entity families are independent hydrated roots in that same declaration. Its
 and its definition. The complete declaration lives with its
 [two-family journey](../crates/bombay/tests/entity_application.rs).
 
-The Entity spelling below is unreleased. Published Runtime0.4.0 still requires
-the independent `ChildFailures` declaration and fourth activation-error type
-parameter; the source branch supplies the derived failures and
-`EntityRetirement<D>` described here.
+Runtime0.5.0 publishes the Entity spelling below, including derived child
+failures and `EntityRetirement<D>`. Runtime0.4.0 requires the independent
+`ChildFailures` declaration and fourth activation-error type parameter.
 
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated
@@ -590,8 +589,9 @@ The latter establishes no joined native cleanup. This source-breaking error is
 Send but may be !Sync because the original payload need not be Sync; forward or
 match it directly instead of requiring a Sync error box. Abort, construction/
 disposal panics and whole-operation cancellation remain outside this poll catch.
-Published Runtime0.4.0 already has the seven-value extraction below, but retains
-the native-only close error; this typed close-error change is beyond that release.
+Runtime0.5.0 publishes this close-error contract and the seven-value extraction
+below. Runtime0.4.0 has the same extraction positions with a native-only close
+error.
 For independently driven basic transport operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
@@ -1102,6 +1102,8 @@ exact variant does not remove the logical host bound. Exact-only external
 customer seams should instantiate templates with
 `EstablishedRecipient<P>`.
 
+The exact directory replies below belong to the repository's unreleased
+Core/Actors0.31 adoption. Published Runtime0.5.0 selects Core/Actors0.30.
 Dynamic service directories select exact management replies automatically with
 Actors0.31: keep `directory::new(config)` and pass `client.recipient()` directly.
 The application topology lists the actual root/proxy/worker only; it does not

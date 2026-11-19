@@ -4989,3 +4989,36 @@ must cover the retained mixed child-input law, Driver owner inventory, strict
 lint/format policy, selected minimum compiler and all repository/hosted gates.
 Receipts in the existing handoff bind their exact source and commands; focused
 eligibility results do not certify the later migration or another source.
+
+#### Integration with the Runtime0.5 release
+
+Actual main advanced as PR442 merge6d0c5fae on2026-11-19T20:30:45Z. Its four
+paths change only Runtime's own version, two lock entries and its changelog.
+Local signed mergee7d4f425 integrates that actual main without conflict; every
+Rust, test, example, API contract and external dependency selection is unchanged
+from the retained Core0.31 adoption. The cumulative own budget remains17 existing
+paths, Runtime production Rust+0/-0 and owned public types+0/-0.
+
+The official registry index and actual Runtime0.5 archive independently establish
+publication20:31:36Z, checksum0fd41cf6, VCS940f77eb and the accepted main tree.
+All415 packaged Rust files match Git. This release includes the Entity and typed
+Node-close contracts while selecting Core/Actors0.30. It excludes the local
+Core0.31 adoption. This is source/package custody, not a publication action or
+adoption of another session's compiler or runtime results.
+
+Original signed1a9dcab qualification remains on Runtime0.4/basefeae. Nine scoped
+owners were accepted, including optimized remote562/12harnesses/32fixtures with
+six separate guard echoes, and the finite Counter value1 journey. Thirteen
+registered outputs, exact731 inputs/archive/bundle/ref, source and Cargo input
+roots and the complete parent raw are retained. Only the verified owning Nix
+client received SIGINT after the upstream change was inspected. Its command
+exit1 records controlled interruption, not an inferred semantic failure or a
+passing all28/flake/Nextest result. Peer jobs and inputs were untouched.
+
+Runtime's self version and locks belong to every check's source inputs. The
+integrated0.5 source therefore requires fresh all28/actual-flake qualification,
+the selected1.96 native case in both profiles, then a separate guarded workspace
+Nextest run and exact hosted/normal delivery. Old results keep their original
+source and command scopes; no old outcomes are adopted for this new source.
+The existing two-family model and original39+2 caller assertions are unchanged;
+this metadata integration introduces no new semantic experiment or machinery.
