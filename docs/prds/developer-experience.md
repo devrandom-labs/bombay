@@ -4754,3 +4754,56 @@ checkout was normally removed after exact source/archive/ignored-file/history
 preservation and fresh unused-path checks. One source-only continuation remains
 for this active programme, so that worktree replacement claims no material net
 disk saving. Required packages, exports, branch and evidence remain preserved.
+
+### Application-owned Entity hosting, before the observation (2026-11-19)
+
+DX02/03/17/22 assign concrete topology to each Application. The current
+`EntityDefinition::Hosts` instead fixes one host product in the domain
+definition, and `Application::entity_family` requires exact equality with it.
+First test whether the unchanged real Accounts definition can attach to two
+otherwise valid declarations: its existing empty Root, and the existing Account
+as another application's root. Both use the same leaf actor/`Never` descendant
+equation. This tests application composition policy, not a new actor-model law.
+
+Fresh verification on actualmain07f233e3/local signed delivery-record successor
+e87d0bc6 checks the selected registry archives, every extracted payload and VCS:
+Behavior/Actors0.30.0 at628649da, Macros0.16.0 at55dbac2d, Address0.3.0 at9f058dc0,
+Communication0.1.7 at2d71c2f6 and Timers0.2.0 at9369d1f6. There is no dependency
+patch. Private Observe and native Entity/Application/child-binding owners remain
+unchanged. The exact selected Behavior instructions and current owner APIs,
+leaf Accounts, recursive Trees and actual topology family generation are read;
+archive hashes and source measurements are in the existing handoff's
+`context/{selected-archives,prerecord,before-source}.json`.
+
+The bounded experiment changes only the public example temporarily: original
+check0, second declared-root construction check0, attachment refusal specifically
+at the Hosts equality, then byte-exact restoration/check0. It executes no actor
+and selects no replacement public interface. In particular a leaf result cannot
+prove one canonical Terminal per definition, recursive/multiple-role closure,
+same-payload forwarding after a change, or callback simplification. Those remain
+model prerequisites before production; no catalogue migration is selected.
+
+The ten Entity modules retain the same slot/task/control sums and all owned
+leases, generations, reservations, publications and results. The prerecord
+measures5129 physical production-prefix lines,192 match-arm tokens and126 public
+declarations with an explicit source-only method; these are diagnostics, not AST
+or semantic proof. All values and branches must remain byte-exact after this
+observation. Production/API delta0, one temporary example path plus these records;
+one serial pinned-Nix Cargo check controller/jobs1 owns a new context target.
+Full semantic design, wider gates and the full programme remain open.
+
+The exact sequence completes at10:16:08UTC: original0, second-root construction0,
+attachment101 with soleE0271 (`Accounts::Hosts` must equal the second Topology),
+and exact restored0. The diagnostic names the real bound at Application's
+`entity_family`; all731 bytes/modes/membership and all ten Entity modules are
+restored. Independent source and execution reviews pass. This establishes the
+attachment restriction only: construction checks no runtime execution bounds,
+and zero actors ran. No replacement model or production edit is accepted.
+The exact archive, four raw results and reviews are in `context/acceptance.json`.
+Its completed target is removed after98 generated inputs were preserved,
+reclaiming73048064 allocated bytes. Cargo clean refused its missing cache tag;
+normal pinned filesystem removal followed independent path/inode/full-file and
+unused-path checks, without fabricating a marker. Any retained host change must
+first preserve full runtime/callback custody in two actual Applications and
+resolve recursive/role-specific terminal ownership; adding host parameters to
+ordinary references is not accepted merely to repair compiler errors.
