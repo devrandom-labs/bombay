@@ -2,9 +2,47 @@
 
 ## Session close — current main qualification (2026-11-19)
 
-**State: active (original source qualified; actual-main integration gates open).**
-Actual main is PR440 merge07f233e3/tree650681ab, with physical/API parents
-030767c0+cf913 verified after the fresh09:42 no-hold acknowledgment. It is now
+**Delivery: merged for close-future polling only. Full R18 remains active.**
+[PR441](https://github.com/devrandom-labs/bombay/pull/441) merged normally at
+2026-11-19T18:07:26Z as `feae6524f897e4dd7e072d2336bb849f258af028`.
+Its tree `8d1aa1ec9b0637c762a6e3e27f1d678f62d6d52d` exactly equals accepted
+signed `609eebac`; API and physical Git confirm parents07f233e3+609eebac.
+The fresh BEFORE notice, actual DevX no-hold acknowledgment and immediate
+head/base/rules/check/review guards preceded the normal merge; no bypass.
+
+Accepted source26ce/731 inputs passes all28 native owners and authoritative
+flake0, all8 exact-head hosted contexts and28 bounded Linux log scopes.
+Independent standalone Nextest reconciles1035 ordinary passes/123 binaries/
+1041 registrations/the same6 controlled skips/zeroLEAK. Native and Linux
+coverage and optimized workspace executions independently reconcile1035 passes,
+123 harnesses,154 fixtures and3 benchmark invocations. Linux remote D/R each
+reconcile562 passes/12 harnesses/32 fixtures/six separate guard echoes;
+selected Rust1.96 local114/138 fixtures and remote4/12 pass. Eight official
+ZIP digests,526 payload files and16 original seed bytes are verified;
+Driver2048 and four Observe1024 bounded campaigns complete, Miri is skipped.
+Native physical evidence is separate from Linux logs: no Linux NAR, coverage
+JSON, export or hidden ActorExecution negative payload was downloaded. CodeQL,
+selected-caller and finite-campaign limits remain in the exact receipts.
+The original inode-only auxiliary-binary wrapper refusal remains preserved;
+actual test command0 and independent unchanged-content acceptance are distinct.
+No test, expected value, timeout, retry policy or CI job was changed or rerun
+for a reader correction.
+
+Common Git `close/qualification/integration-main440/final-acceptance.json`
+SHA7351f794 and `delivery.json` SHA2d1d5730 bind the complete scope and chronology.
+The old merged checkout was normally removed after exact731-input archive/raw
+commit/ref/bundle preservation, two audited idle-shell hangup exits and fresh
+empty liveness checks. One clean source-only continuation remains on actual
+feae6524; no material net checkout saving is claimed. The separate completed
+Cargo cache removal reclaimed7.12249GiB after3087 input files were preserved.
+This delivery is unreleased: last verified Runtime0.4.0 excludes both this
+close-error repair and PR440's Entity interface. No dependency adoption,
+publication or full R18/AUTH1/NET1 completion follows from this merge.
+
+The qualification and pre-edit records below retain their original source and
+time. Their pending gates describe those checkpoints, not current delivery.
+Qualification started from PR440 merge07f233e3/tree650681ab, with physical/API
+parents030767c0+cf913 verified after the fresh09:42 no-hold acknowledgment. It was
 merged locally for separate qualification. Entity's native child failures are
 derived as `Vec<Terminal::Failure>`; transparent `EntityRetirement<D>` names
 the existing complete joined result, while activation errors retain their three
@@ -32,9 +70,9 @@ audit. CodeQL and finite-campaign limits remain explicit. Common Git evidence:
 `close/qualification/original-final-acceptance.json` SHAda2e98d5,
 `hosted/linux-acceptance.json` SHAd74858c0 and fuzz receiptSHAae85bfec. All730
 original bytes/modes, source archive, signed raw commit/ref/bundle and required
-payloads remain preserved. The local main07f integration has no credited
-combined-source execution yet; its inventory/native/hosted/delivery gates are
-open. Original ac046 and upstream cf913 results are not combined outcomes.
+payloads remain preserved. The main07f integration's fresh combined-source gates
+and PR441 delivery are closed above. Original ac046 and upstream cf913 results remain separate;
+they were not adopted as combined outcomes.
 
 The earlier f040 native28/flake0 and standalone1034 results used main98885;
 they remain proofs for that source, not acceptance of actual release main.
@@ -67,8 +105,8 @@ cumulative36-of-approved40 surface. The combined snapshot has731 inputs; PR440's
 28 upstream paths are already delivered and recorded separately from this diff.
 There are no untracked source files. This is added failure preservation, not a
 production code reduction. Original ac046 qualification is closed as above;
-actual-main combined-source gates and reviewed PR441 delivery remain open. Native
-close error/timeout induction, construction/disposal/cancellation, SDK task
+actual-main combined-source gates and reviewed PR441 delivery are closed above.
+Native close error/timeout induction, construction/disposal/cancellation, SDK task
 joining, quiescence/resources, reconnect and full R18/AUTH1/NET1 remain unproved.
 The full PRD scope, dependency edges and step order are unchanged.
 

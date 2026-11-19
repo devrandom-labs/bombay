@@ -1,8 +1,11 @@
 # Backlog status and dependencies
 
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
-is active on actual main07f233e3, the normal PR440 merge now integrated locally
-for fresh qualification. Its transparent Entity retirement result and derived
+merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as
+feae6524 at2026-11-19T18:07:26Z, tree8d1aa1ec equal to accepted609e. API and
+physical Git parents07f233e3+609eebac match; fresh no-hold acknowledgment and
+immediate normal guards preceded merge. Full R18 remains active. PR440's
+transparent Entity retirement result and derived
 native failures are imported without a dependency/SDK or Node-law change.
 Published Runtime0.4.0 contains Node7 but excludes the current close-error repair.
 The bounded repair preserves the acquired real Counter/Application outcome and
@@ -23,9 +26,16 @@ contracts remain unchanged. Original signedac046/base030 qualification is closed
 native28/flake0, standalone1034 ordinaryPASS/zeroLEAK/same6, all8 hosted and28
 bounded Linux scopes,8 officialZIPs/506 payload files and16 original seed bytes.
 Original source/ref/bundle/evidence remain preserved; those outcomes and peer
-cf913 outcomes are not combined-source proof. Fresh main07f integration gates
-and reviewed PR441 delivery remain open, with Linux hidden-artifact/NAR,
-CodeQL and finite-campaign limits retained in the owning PRD.
+cf913 outcomes are not combined-source proof. Fresh combined731-source
+native28/flake0, all8 hosted/scopedLinux28 and
+separate Nextest1035/123binaries/1041names/same6/zeroLEAK now pass. Coverage and
+optimized workspace independently reconcile1035/123/154fixtures/3bench targets.
+All8 official ZIPs/526 payload files/16original seeds and bounded Driver2048/
+fourObserve1024 are verified; Miri is skipped. Linux hidden-artifact/NAR/JSON,
+CodeQL and selected-minimum/finite-campaign limits remain in the owning PRD.
+Acceptance7351f794 and delivery2d1d5730 bind source, checks, reviews and merge.
+The old merged worktree was preserved and normally removed; one clean source-only
+continuation remains. The earlier7.12249GiB Cargo cache removal is not counted again.
 Native close errors/timeouts, disposal/cancellation, SDK joining, resource/
 reconnect guarantees, full R18 and full AUTH1/NET1 remain open.
 
