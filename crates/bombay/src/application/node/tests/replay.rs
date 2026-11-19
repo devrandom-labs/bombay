@@ -6,8 +6,8 @@ use bombay::behavior::{BehaviorBase, Never, User};
 use bombay::lifecycle::{TaskResult, TaskState};
 use bombay::prelude::{Application, MailAddr};
 use bombay::remote::{
-    Attempt, Export, ExportLimits, IngressError, Metadata, RefusalRetention, json, reply,
-    try_retain, verify,
+    Attempt, Export, ExportLimits, IngressError, Metadata, NodeCloseError, RefusalRetention, json,
+    reply, try_retain, verify,
 };
 use bombay::{
     ActorNotificationReceipts, ActorRetirement, ActorRetirementReport, ApplicationCleanupError,
@@ -71,7 +71,7 @@ struct ReadExchange<Operation, Receipt, Value> {
         oneshot::error::RecvError,
     >,
     notifications: Result<ActorNotificationReceipts, oneshot::error::RecvError>,
-    closed: Result<(), ZenohError>,
+    closed: Result<(), NodeCloseError>,
 }
 
 #[expect(

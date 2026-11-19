@@ -576,6 +576,14 @@ return caller-local, non-`Send` values. The joined result is the ordinary
 `ApplicationOutcome`, including independent native retirement and both
 notification results. For the basic transport owner, finish receiving before
 `node.close().await`, retaining the independent close result.
+Close now returns `Result<(), remote::NodeCloseError>`: `Native` owns the exact
+returned SDK error, while `PollPanic` owns the original polling unwind payload.
+The latter establishes no joined native cleanup. This source-breaking error is
+Send but may be !Sync because the original payload need not be Sync; forward or
+match it directly instead of requiring a Sync error box. Abort, construction/
+disposal panics and whole-operation cancellation remain outside this poll catch.
+Published Runtime0.4.0 already has the seven-value extraction below, but retains
+the native-only close error; this typed close-error change is beyond that release.
 For independently driven basic transport operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
@@ -609,12 +617,15 @@ callback. Existing actor behaviors and their `ActorExt` policies stay unchanged.
 Run an attached node with `run_with` for supplied caller work or `run` for genuine
 work absence. The node owns declaration startup, receiving, withdrawal, joined
 Application/family cleanup and connection close. Optional `node.into_parts()`
-returns seven values in order: exports, the original binding result, actual close
-result, execution poll/disposal panic payloads and withdrawal poll/disposal panic
+returns seven values in order: exports, the original binding result, close
+disposition, execution poll/disposal panic payloads and withdrawal poll/disposal panic
 payloads. This deliberately replaces its former five-value tuple. It transfers
 each acquired cause only after joined execution has acquired close and a binding
 result; otherwise it returns the same Node. A withdrawal panic does not prove
 complete withdrawal or draining, even when the independent close succeeds.
+A close-poll panic returns through `NodeCloseError::PollPanic` in that third
+position while the already acquired complete Application outcome still returns
+from run. It is distinct from a returned native close error or successful join.
 Cached replies remain available after target retirement while supplied Work
 continues. The existing Application cleanup signal ends declaration serving;
 each new native operation still observes its target's actual retirement.
