@@ -1,29 +1,414 @@
 //! A decoder unwind must not preempt the existing Node's joined finalization.
 use super::protocol::{
-    Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadRequest, ReadRequestRef,
-    VerificationError, configuration, current_scope, limits, metadata, recorded,
+    Binding, CounterOperation, EndpointRole, ProtectedMessage, ProviderProfile, Purpose,
+    ReadReplyRef, ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope,
+    limits, metadata, recorded,
 };
-use super::{Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger};
+use super::{Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger, completed_actor};
 use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::application::{Application, ApplicationClient, MailboxCapacity};
-use crate::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, reply, submission};
+use crate::remote::{
+    Attempt, Export, ExportLimits, Metadata, NodeCloseError, RefusalRetention, reply, submission,
+};
 use crate::{ActorRetirement, MailAddr, TrySendError, WorkOutcome};
 use behavior::{EstablishedRecipient, Never, User};
-use core::future::{pending, poll_fn, ready};
+use core::future::{IntoFuture, pending, poll_fn, ready};
 use core::task::Poll;
+use futures_util::FutureExt;
 use std::cell::{Cell, Ref, RefCell};
+use std::error::Error;
+use std::io;
 use std::mem;
 use std::num::NonZeroUsize;
 use std::panic::{AssertUnwindSafe, catch_unwind, panic_any, resume_unwind};
 use std::ptr;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
+use zenoh::bytes::ZBytes;
 use zenoh::query::ConsolidationMode;
-use zenoh::sample::Locality;
+use zenoh::sample::{Locality, Sample};
+
+enum SubscriptionRetirement {
+    Clean,
+    Panic(Box<u64>),
+}
+
+struct Subscription {
+    received: Arc<Mutex<Vec<ZBytes>>>,
+    disposed: Arc<AtomicUsize>,
+    retirement: Arc<Mutex<SubscriptionRetirement>>,
+}
+
+impl Subscription {
+    fn receive(&self, sample: &Sample) {
+        self.received.lock().unwrap().push(sample.payload().clone());
+    }
+}
+
+impl Drop for Subscription {
+    fn drop(&mut self) {
+        self.disposed.fetch_add(1, Ordering::SeqCst);
+        let retirement = mem::replace(
+            &mut *self.retirement.lock().unwrap(),
+            SubscriptionRetirement::Clean,
+        );
+        match retirement {
+            SubscriptionRetirement::Clean => {}
+            SubscriptionRetirement::Panic(original) => panic_any(original),
+        }
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn subscription_disposal_panics_in_actual_session_close() {
+    timeout(Duration::from_secs(40), async {
+        for disposition in [
+            SubscriptionRetirement::Clean,
+            SubscriptionRetirement::Panic(Box::new(509)),
+        ] {
+            let expected = match &disposition {
+                SubscriptionRetirement::Clean => None,
+                SubscriptionRetirement::Panic(original) => Some(ptr::from_ref(original.as_ref())),
+            };
+            let received = Arc::new(Mutex::new(Vec::new()));
+            let disposed = Arc::new(AtomicUsize::new(0));
+            let retirement = Arc::new(Mutex::new(SubscriptionRetirement::Clean));
+            let config = configuration("tls/localhost:0", &EndpointRole::Receiver)
+                .to_configuration()
+                .unwrap();
+            let session = zenoh::open(config).await.unwrap();
+            let subscription = Subscription {
+                received: Arc::clone(&received),
+                disposed: Arc::clone(&disposed),
+                retirement: Arc::clone(&retirement),
+            };
+            session
+                .declare_subscriber("bombay/close/disposal")
+                .allowed_origin(Locality::SessionLocal)
+                .callback(move |sample| subscription.receive(&sample))
+                .background()
+                .await
+                .unwrap();
+            session
+                .put("bombay/close/disposal", vec![17_u8])
+                .allowed_destination(Locality::SessionLocal)
+                .await
+                .unwrap();
+            let delivered = received.lock().unwrap().pop();
+            let remaining = received.lock().unwrap().len();
+            let before_close = disposed.load(Ordering::SeqCst);
+            let delivered = delivered.expect("the actual local callback received the sample");
+            assert_eq!(delivered.to_bytes().as_ref(), &[17]);
+            assert_eq!(remaining, 0);
+            assert_eq!(before_close, 0);
+
+            // Arm only after setup; an earlier setup assertion cannot double-panic
+            // while disposing a live native Session.
+            *retirement.lock().unwrap() = disposition;
+            let acquired = AssertUnwindSafe(session.close().into_future())
+                .catch_unwind()
+                .await;
+            let closed_before_repeat = session.is_closed();
+            let first_disposals = disposed.load(Ordering::SeqCst);
+            // A repeated close can find primitives already absent. It is not a
+            // substitute for the interrupted first close's task-join result.
+            let repeated = session.close().await;
+            let final_disposals = disposed.load(Ordering::SeqCst);
+            drop(session);
+
+            assert!(closed_before_repeat);
+            assert!(repeated.is_ok());
+            assert_eq!(first_disposals, 1);
+            assert_eq!(final_disposals, 1);
+            match (expected, acquired) {
+                (None, Ok(result)) => assert!(result.is_ok()),
+                (Some(allocation), Err(original)) => {
+                    let original = original
+                        .downcast::<Box<u64>>()
+                        .unwrap_or_else(|_| panic!("the exact callback disposal cause returns"));
+                    assert_eq!(ptr::from_ref(original.as_ref().as_ref()), allocation);
+                    assert_eq!(**original, 509);
+                }
+                _ => panic!("the real close must preserve its selected callback disposition"),
+            }
+        }
+    })
+    .await
+    .expect("the native callback disposal controls complete");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one real close cut compares healthy and panic custody after useful Counter work and joined actor retirement"
+)]
+async fn session_close_panic_preserves_acquired_application_outcome() {
+    timeout(Duration::from_secs(40), async {
+        for disposition in [
+            SubscriptionRetirement::Clean,
+            SubscriptionRetirement::Panic(Box::new(521)),
+        ] {
+            let expected = match &disposition {
+                SubscriptionRetirement::Clean => None,
+                SubscriptionRetirement::Panic(original) => Some(ptr::from_ref(original.as_ref())),
+            };
+            let registered: [ProtectedMessage; 0] = [];
+            let binding = Binding {
+                deployment: "close-outcome",
+                caller: "caller",
+                controller: "owner",
+                actor: "counter",
+                host: "receiver",
+                protocol: "counter",
+                target_assignment: "root",
+                logical_session: 523,
+            };
+            let verify = async |bytes: &[u8], proof: &[u8]| {
+                recorded::verify::<CounterOperation>(
+                    &ProtectedMessage {
+                        protected: bytes.into(),
+                        proof: proof.into(),
+                    },
+                    &registered,
+                    binding,
+                )
+                .await
+            };
+            let protect = async |_: &[u8], _: &recorded::Receipt<CounterOperation>| {
+                Err::<Box<[u8]>, _>(VerificationError::Invalid)
+            };
+            let current =
+                |receipt: &recorded::Receipt<CounterOperation>, runtime: &str, target: MailAddr| {
+                    let scope = recorded::projection(receipt);
+                    if scope.kind == Purpose::Request
+                        && scope.bombay.runtime_generation.as_ref() == runtime
+                        && scope.bombay.actor_generation == target.0
+                        && recorded::identity(receipt).0 == &binding
+                    {
+                        Ok(())
+                    } else {
+                        Err(VerificationError::Invalid)
+                    }
+                };
+            let maximum = NonZeroUsize::new(2).unwrap();
+            let export = Export::new(
+                "bombay/close/outcome",
+                ExportLimits {
+                    refusals: RefusalRetention::Retain,
+                    queued_queries: maximum,
+                    retained_queries: maximum,
+                    retained_requests: maximum,
+                    diagnostics: maximum,
+                },
+                limits(),
+                |bytes: &[u8]| {
+                    serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)
+                        .map(|request| request.operation)
+                },
+                reply(
+                    |CounterOperation::Read| {
+                        Ok::<_, CounterOperation>(|reply_to: EstablishedRecipient<CounterValue>| {
+                            CounterMessage::Read(reply_to)
+                        })
+                    },
+                    |receipt: &recorded::Receipt<CounterOperation>, original: &User<MailAddr, u64>| {
+                        let scope = recorded::projection(receipt);
+                        serde_json::to_vec(&ReadReplyRef {
+                            bombay: &scope.bombay,
+                            kind: Purpose::ReadReply,
+                            operation: &scope.operation,
+                            value: &original.message,
+                        })
+                        .map(Vec::into_boxed_slice)
+                    },
+                ),
+                &verify,
+                &protect,
+                |left, right| recorded::identity(left) == recorded::identity(right),
+                &current,
+                &current,
+            );
+            let node = Application::new(Counter::new().stop_on_shutdown())
+                .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+                .await
+                .unwrap_or_else(|_| panic!("the real Counter Node opens before the close cut"));
+            let session = node.session.clone();
+            let received = Arc::new(Mutex::new(Vec::new()));
+            let disposed = Arc::new(AtomicUsize::new(0));
+            let retirement = Arc::new(Mutex::new(SubscriptionRetirement::Clean));
+            let subscription = Subscription {
+                received: Arc::clone(&received),
+                disposed: Arc::clone(&disposed),
+                retirement: Arc::clone(&retirement),
+            };
+            session
+                .declare_subscriber("bombay/close/counter")
+                .allowed_origin(Locality::SessionLocal)
+                .callback(move |sample| subscription.receive(&sample))
+                .background()
+                .await
+                .unwrap();
+            session
+                .put("bombay/close/counter", vec![19_u8])
+                .allowed_destination(Locality::SessionLocal)
+                .await
+                .unwrap();
+            let delivered = received.lock().unwrap().pop().unwrap();
+            let remaining = received.lock().unwrap().len();
+            let before_close = disposed.load(Ordering::SeqCst);
+            assert_eq!(delivered.to_bytes().as_ref(), &[19]);
+            assert_eq!(remaining, 0);
+            assert_eq!(before_close, 0);
+
+            let bound_address = Cell::new(None);
+            let bound_address_ref = &bound_address;
+            let mut node = node.exports(export, async move |application| {
+                let target = application.root().established_recipient();
+                let address = application
+                    .actor_address(&target)
+                    .expect("the real binding target belongs to this Application");
+                bound_address_ref.set(Some(address));
+                Ok::<_, Never>(target)
+            });
+            let observed_value = Cell::new(None);
+            let observed_value_ref = &observed_value;
+            let calls = Cell::new(0);
+            let calls_ref = &calls;
+            let output = Box::new(541_u64);
+            let output_allocation = ptr::from_ref(output.as_ref());
+            let acquired = AssertUnwindSafe(node.run_with(async move |application| {
+                calls_ref.set(calls_ref.get() + 1);
+                let mut values = application.client::<CounterValue>().unwrap();
+                let increment = values.send(CounterMessage::Increment).await;
+                let read = values.send(CounterMessage::Read(values.recipient())).await;
+                let original = values.receive().await;
+                if let Some(original) = original.as_ref() {
+                    observed_value_ref.set(Some((original.from, original.message)));
+                }
+                let shutdown = application.shutdown();
+                let joined = application.retirement().await;
+                // No assertions or awaited work follow arming. Native final close,
+                // after Application receiving, owns the callback's actual disposal.
+                *retirement.lock().unwrap() = disposition;
+                (output, increment, read, original, shutdown, joined)
+            }))
+            .catch_unwind()
+            .await;
+            let acquired_close = node.closed.as_ref().map(Result::is_ok);
+            let closed_before_rescue = session.is_closed();
+            let first_disposals = disposed.load(Ordering::SeqCst);
+            // This is only best-effort cleanup. It cannot supply the interrupted
+            // first close's result or establish that its SDK tasks joined.
+            let rescued = session.close().await;
+            let final_disposals = disposed.load(Ordering::SeqCst);
+            let originals = match node.into_parts() {
+                Ok(originals) => Some(originals),
+                Err(node) => {
+                    drop(node);
+                    None
+                }
+            };
+            drop(session);
+
+            assert!(rescued.is_ok());
+            assert!(closed_before_rescue);
+            assert_eq!(first_disposals, 1);
+            assert_eq!(final_disposals, 1);
+            assert_eq!(calls.get(), 1);
+            let origin = bound_address.get().expect("actual binding recorded the root");
+            assert_eq!(observed_value.get(), Some((origin, 1)));
+            let outcome = match acquired {
+                Ok(outcome) => Some(outcome.unwrap_or_else(|_| panic!("the actual run was issued"))),
+                Err(original) => {
+                    let original = original
+                        .downcast::<Box<u64>>()
+                        .unwrap_or_else(|_| panic!("only the actual callback disposal cause escapes"));
+                    assert_eq!(Some(ptr::from_ref(original.as_ref().as_ref())), expected);
+                    assert_eq!(**original, 521);
+                    None
+                }
+            };
+            eprintln!(
+                "close cut: outcome={}, node_close={acquired_close:?}, native_closed={closed_before_rescue}, extraction={}",
+                outcome.is_some(), originals.is_some()
+            );
+            assert!(
+                outcome.is_some(),
+                "Node must return its acquired Application outcome after native close panics"
+            );
+            let (work, report, native, notifications, ()) = outcome.unwrap().into_parts();
+            let (output, cleanup) = work
+                .try_into_completed()
+                .unwrap_or_else(|_| panic!("actual completed Counter Work remains owned"));
+            let (output, increment, read, original, shutdown, joined) = output;
+            assert_eq!(ptr::from_ref(output.as_ref()), output_allocation);
+            assert_eq!(*output, 541);
+            assert!(increment.is_ok() && read.is_ok() && shutdown.is_ok() && cleanup.is_ok());
+            let original = original.expect("the actual original Counter reply returns");
+            assert_eq!((original.from, original.message), (origin, 1));
+            assert_eq!(report, Some(joined));
+            let (root, native) = native.expect("the complete native root remains");
+            assert_eq!(root.address(), origin);
+            let _counter = completed_actor(root, native);
+            let notifications = notifications.expect("both original notification results remain");
+            assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+            let (export, binding, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+                originals.expect("the actual completed Node remains extractable");
+            assert!(binding.as_ref().is_some_and(Result::is_ok));
+            match (expected, closed) {
+                (None, Ok(())) => {}
+                (Some(allocation), Err(NodeCloseError::PollPanic { original })) => {
+                    let original = original
+                        .downcast::<Box<u64>>()
+                        .unwrap_or_else(|_| panic!("Node retains the actual callback disposal type"));
+                    assert_eq!(ptr::from_ref(original.as_ref().as_ref()), allocation);
+                    assert_eq!(**original, 521);
+                }
+                _ => panic!("Node must retain the exact close disposition and original cause"),
+            }
+            assert!(polling.is_none() && disposal.is_none());
+            assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
+            let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) =
+                export.into_parts();
+            assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+            assert!(diagnostics.is_empty() && requests.is_empty());
+        }
+    })
+    .await
+    .expect("the real Node close controls complete before the failure-only watchdog");
+}
+
+#[test]
+fn close_error_keeps_native_original_and_source() {
+    // A representation companion, not an induced native close failure.
+    let original = Box::new(io::Error::other("original native close cause"));
+    let allocation = ptr::from_ref(original.as_ref());
+    let closed = NodeCloseError::Native { cause: original };
+    let source = closed
+        .source()
+        .and_then(|source| source.downcast_ref::<io::Error>())
+        .expect("the original native error remains the standard source");
+    assert_eq!(ptr::from_ref(source), allocation);
+    assert_eq!(format!("{closed:?}"), "Native { .. }");
+    assert_eq!(
+        closed.to_string(),
+        "the native Session close returned an error"
+    );
+    let NodeCloseError::Native { cause } = closed else {
+        panic!("the native error is not classified as a polling panic");
+    };
+    let original = cause
+        .downcast::<io::Error>()
+        .expect("the same native error transfers out once");
+    assert_eq!(ptr::from_ref(original.as_ref()), allocation);
+    assert_eq!(original.to_string(), "original native close cause");
+}
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[expect(

@@ -3,8 +3,8 @@ use bombay::actors::ActorExt;
 use bombay::behavior::User;
 use bombay::prelude::*;
 use bombay::remote::{
-    Client, ClientLimits, Export, ExportLimits, NodeExecutionRefusal, NodeStartupRefusal,
-    RefusalRetention, json, reply, stop,
+    Client, ClientLimits, Export, ExportLimits, NodeCloseError, NodeExecutionRefusal,
+    NodeStartupRefusal, RefusalRetention, json, reply, stop,
 };
 use bombay::{
     ActorFailureAssessment, ActorRetirementReport, ApplicationScope, RetirementAssessment,
@@ -12,7 +12,6 @@ use bombay::{
 use std::any::Any;
 use std::cell::RefCell;
 use std::env;
-use std::error::Error as StdError;
 use std::ffi::OsString;
 use std::fmt;
 use std::num::{NonZeroU64, NonZeroUsize, ParseIntError};
@@ -117,10 +116,10 @@ enum Refusal {
     Handoff,
     #[error("counter binding result is absent")]
     Binding,
-    #[error("counter native close failed")]
+    #[error("counter close failed")]
     Close {
         #[source]
-        cause: Box<dyn StdError + Send + Sync>,
+        cause: NodeCloseError,
     },
     #[error("counter execution polling panicked")]
     Poll { original: Box<dyn Any + Send> },

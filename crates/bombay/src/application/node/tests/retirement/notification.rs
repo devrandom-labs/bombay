@@ -391,7 +391,7 @@ async fn decoder_and_withdrawal_notification_panics_keep_joined_node_finalizatio
         let retired = retirement.take().expect("binding retained independent retirement").await;
         let acquired_close = node.closed.as_ref().map(|closed| match closed {
             Ok(()) => Ok(()),
-            Err(cause) => Err(ptr::from_ref(cause.as_ref())),
+            Err(cause) => Err(ptr::from_ref(cause)),
         });
         let closed_before_rescue = session.is_closed();
         let rescue = if acquired_close.is_none() { Some(node.close().await) } else { None };

@@ -25,4 +25,4 @@ pub use network::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout}
 pub use startup::NodeStartupRefusal;
 pub use verification::verify;
 
-pub use crate::application::node::{Node, NodeExecutionRefusal};
+pub use crate::application::node::{Node, NodeCloseError, NodeExecutionRefusal};
