@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.4.0...bombay-rs-v0.5.0) - 2026-11-19
+
+### Fixed
+
+- *(remote)* [**breaking**] preserve close-poll causes and outcomes
+
+### Other
+
+- *(remote)* integrate Entity retirement interface
+
 ## [0.4.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.3.1...bombay-rs-v0.4.0) - 2026-11-18
 
 ### Fixed
