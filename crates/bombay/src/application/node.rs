@@ -20,9 +20,10 @@ use behavior::{
     ChildOccurrenceProduct, ClassifySettlement, Never, Protocol,
 };
 use core::fmt;
-use core::future::{Future, Ready, poll_fn};
+use core::future::{Future, IntoFuture, Ready, poll_fn};
 use core::pin::pin;
 use core::task::Poll;
+use futures_util::FutureExt;
 use std::any::Any;
 use std::error::Error;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -35,6 +36,46 @@ type Panic = Box<dyn Any + Send>;
 enum Binding<Call, Receipt> {
     Uninvoked(Call),
     Invoked(Option<Receipt>),
+}
+
+/// An actual native close error or the original unwind from polling close.
+///
+/// A polling panic leaves native task joining unestablished. Its payload transfers
+/// without replacement; it may be Send without being Sync. Neither diagnostics
+/// nor the standard error source inspect that panic payload.
+pub enum NodeCloseError {
+    /// The native close operation returned its original error.
+    Native { cause: Box<dyn Error + Send + Sync> },
+    /// Polling native close unwound with this original payload.
+    PollPanic { original: Panic },
+}
+
+impl fmt::Display for NodeCloseError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let message = match self {
+            Self::Native { .. } => "the native Session close returned an error",
+            Self::PollPanic { .. } => "polling the native Session close panicked",
+        };
+        formatter.write_str(message)
+    }
+}
+
+impl Error for NodeCloseError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::Native { cause } => Some(cause.as_ref()),
+            Self::PollPanic { .. } => None,
+        }
+    }
+}
+
+impl fmt::Debug for NodeCloseError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Native { .. } => formatter.debug_struct("Native").finish_non_exhaustive(),
+            Self::PollPanic { .. } => formatter.debug_struct("PollPanic").finish_non_exhaustive(),
+        }
+    }
 }
 
 /// One finalized ordinary Application and its fresh owned native Session.
@@ -56,7 +97,7 @@ pub struct Node<
     session: Session,
     exports: Exports,
     binding: Option<Binding<BindingFn, BindResult>>,
-    closed: Option<Result<(), Box<dyn Error + Send + Sync>>>,
+    closed: Option<Result<(), NodeCloseError>>,
     poll_panic: Option<Panic>,
     disposal_panic: Option<Panic>,
     withdrawal_poll_panic: Option<Panic>,
@@ -236,14 +277,19 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, BindResult>
     /// receiving futures retain their Node borrow until their owners leave scope.
     /// Closing after surrendering an operation does not prove joined retirement.
     ///
-    /// # Panics
-    /// Retains the native SDK's host requirements. Open checks a multithreaded
-    /// Tokio host, but does not bind later work or close to that same host.
-    ///
     /// # Errors
-    /// Preserves the SDK's original close error; this operation is not actor admission.
-    pub async fn close(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
-        self.session.close().await
+    /// Returns the SDK's original error or the original close-poll panic payload.
+    /// A polling panic does not establish native task joining. This acquires only
+    /// polling unwinds, not construction/disposal panics or cancellation. Explicit
+    /// close returns its receipt directly; finalization retains its own receipt.
+    pub async fn close(&mut self) -> Result<(), NodeCloseError> {
+        match AssertUnwindSafe(self.session.close().into_future())
+            .catch_unwind()
+            .await
+        {
+            Ok(result) => result.map_err(|cause| NodeCloseError::Native { cause }),
+            Err(original) => Err(NodeCloseError::PollPanic { original }),
+        }
     }
 }
 
@@ -545,14 +591,16 @@ where
 impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
     Node<Root, Spaces, Members, Families, Exports, BindingFn, Result<Targets, BindError>>
 {
-    /// Consume exports, binding, post-join close and original panic causes.
+    /// Consume exports, binding, close disposition and original panic causes.
     ///
     /// The seven values are exports, binding, close, execution poll panic,
     /// execution disposal panic, withdrawal poll panic and withdrawal disposal
     /// panic, in that order. Each panic payload transfers without replacement.
     /// Withdrawal panic does not certify complete withdrawal or draining;
-    /// the actual Session close result remains an independent fact.
-    /// Refuse with the same Node until joined execution acquired native close.
+    /// the close disposition remains an independent fact. Native results and
+    /// interrupted close polling are distinct; a polling panic does not certify
+    /// joined native close. Refuse with the same Node until joined Application
+    /// execution acquired a close disposition.
     /// A returned binding result survives disposal of its producer future,
     /// including when that disposal panics.
     ///
@@ -568,7 +616,7 @@ impl<Root, Spaces, Members, Families, Exports, BindingFn, Targets, BindError>
         (
             Exports,
             Option<Result<Targets, BindError>>,
-            Result<(), Box<dyn Error + Send + Sync>>,
+            Result<(), NodeCloseError>,
             Option<Panic>,
             Option<Panic>,
             Option<Panic>,
@@ -627,7 +675,7 @@ where
         .await
         .err();
         self.withdrawal_disposal_panic = catch_unwind(AssertUnwindSafe(|| drop(withdrawal))).err();
-        self.closed = Some(self.session.close().await);
+        self.closed = Some(self.close().await);
     }
 
     /// Run supplied caller-local work beside the Node-owned exports and join cleanup.
@@ -638,8 +686,12 @@ where
     /// Binding or declaration refusal remains in the joined outcome and receipts.
     ///
     /// # Panics
-    /// Native Session close retains its SDK contract. Execution and withdrawal
-    /// poll/disposal panic causes remain separately stored in this Node.
+    /// Retains existing application setup and native construction/disposal contracts.
+    /// Execution and withdrawal poll/disposal panic causes remain separately
+    /// stored in this Node. Close polling preserves its original cause in
+    /// `NodeCloseError`; a close panic does not erase the acquired Application
+    /// outcome or certify joined native close. Other native construction/disposal
+    /// panics and whole-operation cancellation retain their existing contracts.
     pub async fn run_with<Work, WorkFuture>(
         &mut self,
         work: Work,
@@ -818,8 +870,12 @@ where
     /// Binding or declaration refusal remains in the joined outcome and receipts.
     ///
     /// # Panics
-    /// Native Session close retains its SDK contract. Execution and withdrawal
-    /// poll/disposal panic causes remain separately stored in this Node.
+    /// Retains existing application setup and native construction/disposal contracts.
+    /// Execution and withdrawal poll/disposal panic causes remain separately
+    /// stored in this Node. Close polling preserves its original cause in
+    /// `NodeCloseError`; a close panic does not erase the acquired Application
+    /// outcome or certify joined native close. Other native construction/disposal
+    /// panics and whole-operation cancellation retain their existing contracts.
     pub async fn run(
         &mut self,
     ) -> Result<

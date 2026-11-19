@@ -118,6 +118,12 @@ already acquired Application outcome. Consuming extraction transfers those four
 original causes after exports, binding and close in its seven-value product.
 An interrupted withdrawal is not retried and proves neither draining nor callback
 quiescence; actual close remains independent.
+Node's one explicit close operation also serves finalization. Its returned
+`NodeCloseError` distinguishes the SDK's original native Error from the original
+close-poll panic payload without new lifecycle state. The latter may be !Sync
+and establishes no joined native close; the acquired Application outcome and
+the seven-position extraction survive it. This bounded polling policy does not
+acquire construction/disposal/abort causes or certify cancellation cleanup.
 Current permission loans span construction and the synchronous native attempt.
 Cached duplicates end the request loan before the independent reply check,
 allowing both policies to use the same nonreentrant authority owner.

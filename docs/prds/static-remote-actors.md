@@ -1,5 +1,316 @@
 # Static remote actors and typed admission
 
+## Session close — current main qualification (2026-11-19)
+
+**State: active (focused and scoped review closure; wider delivery open).**
+Actual main is release merge030767c0, locally integrated as signed4ef56745.
+Its four upstream changes are the Runtime manifest/changelog and two owning
+locks; only Bombay's own version changes from0.3.1 to0.4.0. All selected
+dependency versions, features, archives/VCS identities, Behavior instructions
+and SDK contracts remain unchanged and were rechecked before qualification.
+Published Runtime0.4.0 is independently verified against registry, archive,
+VCS/tag and owning Node8c77. It contains the seven-value extraction delivered
+by PR438, not this Nodef78 close-error repair or the unmerged Entity candidate.
+Five-value0.3.1 callers must retain the two additional withdrawal-panic values.
+
+The earlier f040 native28/flake0 and standalone1034 results used main98885;
+they remain proofs for that source, not acceptance of actual release main.
+Three scoped code audits found one test-only ownership issue: the binding
+assertion consumed its non-Copy receipt. It now borrows through
+`binding.as_ref().is_some_and(Result::is_ok)`, preserving the same Some(Ok)
+oracle and leaving destruction outside the assertion. Both source-review
+perspectives verify this sole test change; no expected value, runtime operation,
+watchdog, production body, public type or dependency changed because of it.
+
+On actual-main source12ce7b39, all six unwind and both original notification
+cases pass in debug and optimized builds (receipt bce74988). Fresh source
+controls then establish both independent laws: bare SDK await loses the acquired
+Application outcome; dropping the caught panic preserves that outcome but loses
+its original close cause. Each inverse fails exactly one intended case with462
+filtered and zero ignored in both profiles. Exact restoration then passes that
+same complete-custody case in both profiles after each inverse. All eight
+commands, distinct oracles/cuts, raw logs, two single-edit transformations,
+730 restored bytes/modes/membership and final executables reconcile. Author and
+independent execution reviews close this evidence (result7c8b141a); earlier
+mutable executable hashes remain capture-time facts. Evidence is in common Git
+`close/assertion/integration`, including `controls`. No mutant remains.
+
+The production model remains one flat NodeCloseError, one reused close policy,
+no new runtime field and the same seven extraction positions. Its Send panic
+payload has no Sync promise; this is a source-breaking change beyond published
+0.4.0. Complete production is+79/-24/net55, tests+395/-10/net385, public nominal
+types+1/-0 and runtime fields+0/-0. All eleven working paths remain within the
+cumulative36-of-approved40 surface. This is added failure preservation, not a
+production code reduction. Current native28/authoritative flake, independent
+Nextest, exact hosted acceptance and reviewed PR delivery remain open. Native
+close error/timeout induction, construction/disposal/cancellation, SDK task
+joining, quiescence/resources, reconnect and full R18/AUTH1/NET1 remain unproved.
+The full PRD scope, dependency edges and step order are unchanged.
+
+### Generated imports — pre-edit conformance record
+
+Final expansion inspection finds that the selected thiserror-impl2.0.20 emits
+an inline `use` in the source-bearing enum's `Error::source` implementation
+(expand.rs266–270). The selected archive and exact source bytes match the lock.
+NodeCloseError's Native source selects this branch, violating AGENTS' explicit
+generated-body import rule. Independent review confirms the defect and corrects
+the earlier approval. This is a source-conformance finding, not a new runtime law.
+
+Reuse the existing `remote::json::Error` pattern: keep the exact two flat variants,
+owned payloads and redacted Debug; replace only derive/error/source attributes
+with module-scope Display/Error implementations. Messages stay byte-identical;
+Native returns its original borrowed source and PollPanic returns no source.
+Expected production is approximately+20/-4/net16 beyond the current patch,
+touching only Node.rs plus these PRD/status records. Public types/runtime fields/
+extraction positions add0; no new dependency, policy, wrapper or legacy-error
+migration is selected. Reuse the existing representation and real Node tests,
+paired profiles and original-source controls. Preserve f78's executions as their
+own source; refresh verification after correction. Wider gates remain blocked
+until this final finding is resolved. Evidence: common Git `close/hygiene`.
+
+The retained correction measures+20/-7/net13 relative to f78. It changes only
+the error declaration's derivation and standard trait implementations; all Node
+state, lifecycle operations, extraction, test bodies and caller code remain
+byte-identical. The complete patch remains eleven tracked paths/no untracked
+paths, production+79/-24/net55, tests+395/-10/net385, public types+1/-0 and
+runtime fields+0/-0. Pinned formatting and independent source/policy review pass.
+Fresh source25d9a844/Node81d702ad then passes six unwind and two original
+notification cases in both profiles, with exact names, raw logs and all730 input
+bytes/modes/membership reconciled (receipt3050526f). This includes native source
+identity, redacted diagnostics and real Node panic/outcome custody. The selected
+old derive's generated import is rejected statically by its exact owner source.
+
+Independent evidence review confirms no new runtime mutation campaign is needed
+for this trait-only correction: all Node operations, mutation sites, tests,
+oracles, values and watchdogs are byte-identical. The eight actual source12ce
+inverse/restored runs remain source12ce causal evidence; they are not claimed
+as source25 executions. A change to close polling/finalization, classification,
+outcome transfer or those oracles would require fresh runtime counterexamples.
+Current native/Nextest/hosted delivery gates remain open. No old compiler,
+runtime or publication proof is relabeled to this corrected implementation.
+
+## Node outcome during Session close — regression record (2026-11-18)
+
+This is the historical regression/pre-edit record; current qualification and
+source boundaries are stated above.
+
+**State: active (paired defect established; bounded repair selected).**
+The actual SDK component below passes healthy/panic controls in debug and
+optimized profiles. Independent source and execution review closes only native
+close-poll reachability, not Node result conservation or joined SDK cleanup.
+The next law is that a bound Node must conserve its already acquired complete
+Application outcome when a live Session-owned callback raises its original
+disposal cause during final close. The original regression source acquired
+receiving and family results before awaiting that close without a catch. No
+repair was selected before the real failure was established.
+
+Reuse the exact selected owners, nine verified archives and unchanged lock/
+features from `close/contracts.json`, the real Counter/stop-on-shutdown actor,
+one actual Export with its existing explicit deny-unregistered provider, and
+the accepted native background subscription fixture. Binding supplies the real
+Counter target. Work increments and reads that actor, requests shutdown, awaits
+its independent retirement report and returns its original move-only allocation.
+Arm callback disposal only after those operations finish. Use healthy and panic
+controls; acquire an escaping cause outside the Node run and perform best-effort
+close before final assertions. A later empty SDK close is never credited as
+Node's first close result or as interrupted task joining. Inspect complete Work,
+native custody, notifications, binding and Export receipts on the healthy path.
+The old-source primary oracle is return of the acquired Application outcome,
+not is_closed, elapsed time, an assertion inside Work or an invented close Err.
+
+Expected surface remains the same three existing approved paths: Node's unwind
+tests and these PRD/status records, all inside the cumulative35-of40 surface.
+Production+0/-0/net0; additional tests approximately+230; public types+0/-0.
+No new production hook, actor, wrapper, port, type erasure, SDK feature or
+dependency is added. Require both source reviews and actual debug/optimized
+old-source failures at the intended oracle. Any retained repair must first
+record its own model/change scope and strengthen successful-path exact cause
+custody; an implementation that merely swallows a panic is not accepted by
+this initial regression. Full R18/AUTH1/NET1 and resource/reconnect work remain
+open; current startup and withdrawal laws are not relabeled close proofs.
+
+### Session close — paired failure and pre-edit repair record
+
+Source223207b7 executes the intended old-source failure in both profiles:
+debug0.06s and optimized0.02s, each one failed case/461 filtered. Healthy control
+returns the complete original outcome and extraction with an actual successful
+close. Fault control acquires the exact Box521 type/allocation/value outside
+Node, after actual Counter reply1 and retirement; Node returns no outcome or
+close receipt, although native is_closed is true. Best-effort cleanup precedes
+the intended acquired-outcome assertion and supplies no interrupted task-join
+proof. Initial c572 compilation rejected only the observation's Result/Option
+mismatch; no tests ran then. Independent paired execution review reconciles all
+730 bytes/modes and both raw logs. Input-list digest223207b7 is distinct from
+the source.json artifact digest109958e9. Evidence: common Git `close/node`.
+
+Before production edits, select one flat `remote::NodeCloseError` with Native
+(the original returned SDK Error Box) and PollPanic (the original Send panic
+payload). It replaces only the error position in Node's existing optional close
+receipt and seven-value extraction. The explicit close operation catches the
+selected SDK future's polling unwind, and finalization reuses that same operation.
+Native success/error and interrupted polling remain distinct; PollPanic never
+certifies joined SDK close. No runtime field, new lifecycle phase or second
+close path is introduced. The SDK future owns a WeakSession while Node retains
+the strong Session; its disposal is not another Session Drop. General close-
+future disposal/cancellation, native errors/timeouts and joining remain open.
+
+This error owns the newly proved disjoint close failure, maps one actual poll
+cut into a returned cause, and replaces the uncaught await which erased the
+real Counter outcome. The existing native-only Error Box cannot express an
+original Any payload truthfully. Discarding the panic loses custody; disguising
+it as a native Error misclassifies its provenance; a nested Result obscures the
+two named alternatives; additional optional panic fields would add state and
+change extraction arity unnecessarily. Existing thiserror supplies Error/Display;
+Debug remains payload-safe. No generic wrapper, interpreter, task, hook, clone,
+SDK feature or dependency is added. Public errors remain Send; the preserved
+panic may be !Sync, so this source-breaking error is not promised Sync. It is
+excluded from published Runtime0.3.1. Independent pre-edit model review accepts
+this bounded choice and its explicit limits; Rust's official
+[Error guidelines](https://rust-lang.github.io/api-guidelines/interoperability.html#c-good-err)
+and [catch_unwind original-payload contract](https://doc.rust-lang.org/std/panic/fn.catch_unwind.html)
+were checked.
+
+Expected production surface: existing Node.rs, its remote re-export and ordinary
+Counter's typed Close cause, approximately+70/-10/net60; tests approximately
++25/-3 beyond the initial regression, plus the existing replay observation's
+error type. Public nominal types+1/-0; runtime fields+0/-0. Existing PRD/status
+and three current API/ownership guides change with the contract. Only remote/
+mod.rs adds a path to the approved cumulative surface: expected36 of40. Measure
+the complete tracked/untracked result before acceptance. No later cleanup or
+broader redesign belongs in this repair.
+
+The first repair compilation29c65 refused only one old notification diagnostic
+which called Box::as_ref on the new typed error. No tests ran and optimized
+follow-up was refused. Its diagnostic pointer now observes the NodeCloseError
+object directly; all prior Some(Ok), outcome, exact-panic and before-rescue
+assertions remain unchanged. Independent review preserves the old law; include
+that notification case in focused debug/optimized verification. Production87c026c3
+is unchanged by this test-only migration, inside the same36-of40 surface.
+
+Successful-path acceptance additionally matches the stored PollPanic's exact
+Box521 allocation/value and rejects any external unwind. Restore bare native
+await as the owning loss inverse; suppress the acquired panic as the independent
+custody inverse; each must fail its intended oracle in both profiles and restore
+exactly. A companion native-error identity check may inspect the variant but
+cannot claim native error induction. Complete current/minimum/hosted and scoped
+minimization gates follow focused regressions; this record grants no full R18,
+AUTH1/NET1, task/Session resource, quiescence or reconnect acceptance.
+
+### Session close — focused current-compiler closure
+
+Frozen730-input source674e84b4/production87c026c3 passes all six owning unwind
+cases and both original withdrawal-notification cases in debug and optimized
+profiles, with zero ignores. Both source-review perspectives and independent
+execution review close the complete healthy outcome, original Box521 type/
+allocation/value in NodeCloseError::PollPanic, native custody, notifications and
+binding/Export receipts. The native-error companion proves original Error Box
+and standard-source identity only; it does not induce a native SDK error.
+
+Both owning source controls have actual paired evidence: bypassed close catch
+fails at acquired-outcome loss; discarded panic custody still returns the outcome
+but fails at the separate close-disposition oracle. Each inverse fails one named
+case with462 filtered and no ignores in both profiles. Exact source restoration
+then passes that same complete-custody case in both profiles, after each inverse.
+All eight control commands, raw logs, phase source transformations and final
+730 bytes/modes reconcile; final restoration completed21:16:08UTC. Independent
+aggregate review closes the controls. All control processes are terminal and
+the healthy Node87 is restored. Evidence: common Git `close/repair`, including
+`focused-acceptance.json`; initial compilation/reader refusals remain separate.
+
+The records-only continuation below retains that exact execution identity; no
+new run is claimed from changing these PRD/status records. Production/public
+types remain+64/-26/net38 and+1/-0; no runtime field or extraction position was
+added. Minimum compiler, ordinary caller/example compilation, mandatory strict
+Clippy, full current native/Nextest/hosted checks and final minimization/delivery
+remain open. Native close error/timeout induction, future disposal/cancellation,
+joined SDK cleanup, resource baselines, full R18/AUTH1/NET1 and reconnect remain
+unproved. No PR, merge or publication is claimed.
+
+The first ordinary owning Clippy gate on record-successor f7cadea1 failed at
+two missing #Panics headings and an unnecessary by-value test Sample parameter;
+it supplies no passing gate. Restore the setup/construction/disposal headings
+without changing production logic, and borrow the actual callback Sample only
+during observation. The retained ZBytes still shares the SDK payload; no clone
+of payload bytes, callback lifetime, assertion, value or timeout changes. All
+earlier674 runtime/control results retain their exact original source scope.
+On corrected730-input sourcee96ab540/Nodef78d901f, ordinary owning Clippy passes
+with warnings and both mandatory extra denies; its actual lowered command,
+663 filtered source files, output and deriver reconcile (receipt b6b72ab3).
+Fresh six unwind plus two notification cases pass in both profiles. Both
+source inversions and actual restored positives are repeated on this corrected
+source in both profiles, with exact original521 custody and all730 bytes/modes
+restored; final completion22:26:24UTC. Independent paired/control review closes
+this focused evidence (receipt4e876579). Earlier674 evidence is not relabeled
+as a new execution. No assertion, expected value or watchdog was weakened.
+
+The standard minimum-remote owner also passes on actual Rust1.96/ac68 and
+Cargo1.96/30a34: four public caller cases, twelve compiler fixtures and the exact
+existing26-path snapshot patch reconcile with the physical663-file source,
+output and deriver (receipt e736241a). This compiles the all-feature library but
+does not establish private whole-runtime minimum execution or native close-fault
+runtime execution on1.96. Full native28/authoritative flake, independent Nextest,
+hosted/source acceptance and final distillation/delivery remain open.
+
+Current measured production is+66/-24/net42, tests+395/-10/net385, public types
++1/-0 and runtime fields+0/-0; extraction retains seven positions. All11 current
+working paths remain inside the cumulative36-of-approved40 surface. Completed
+owned package artifacts are cleaned after exact generated-input/raw/source/
+executable-hash preservation and fresh liveness checks; unfinished dependencies
+and all required evidence remain reserved. Subsequent PRD/status-only records
+retain the exact e96 execution identity; no new run or full-goal acceptance is
+claimed from those record changes.
+
+## Session callback disposal — prerequisites and probe (2026-11-18)
+
+**Historical component plan; bounded native reachability is now verified.**
+The full R18 law requires acquired outcomes and coexisting causes to survive
+each Session/declaration retirement boundary. PR438 does not establish a real
+Session-close panic, error or timeout. On actual main98885 plus delivery-record
+commit2c2474a6, the original Node bound run awaited native close directly after
+its caught withdrawal operation. The first step was to establish whether an actual selected SDK
+close can raise an original callback-disposal cause; do not invent a close
+error or select a new Node result model from a compiler diagnostic.
+
+Fresh lock/VCS/archive checks select Behavior/Actors0.30.0 at628649da,
+BehaviorMacros0.16.0 at55dbac2d, Address0.3.0 at9f058dc0,
+Communication0.1.7 at2d71c2f6, Timers0.2.0 at9369d1f6 and private Observe in
+workspace Runtime0.3.1/Engine0.3.0. SDK1.10.10 atc34eb350, Tokio1.53.3 and
+rustix1.1.6 remain unchanged; all nine cached registry archives match the lock.
+The exact Behavior instructions and relevant primitive APIs/tests/docs,
+Driver law/strategy, capability/module ownership and R18 acceptance were read.
+Evidence: common Git remote-retirement archive `close/contracts.json`.
+No patch/dependency/feature change is selected.
+
+The SDK's supported background subscriber returns unit and leaves callback
+custody in the Session. Its close operation takes callback containers, drops
+them outside the state lock, then awaits task termination. A captured Drop
+panic can therefore be a real close-poll cause; source inspection alone does
+not prove execution. Use an actual local publication to establish that the
+registered callback is live. Arm its typed disposal cause only after that
+setup succeeds, then independently acquire healthy close or the original
+panic allocation. Repeat close only as best-effort cleanup/no-repeat evidence;
+is_closed or a later empty close does not prove that the interrupted first
+close joined all SDK tasks. Keep default timeout and unselected internal APIs
+separate.
+
+Initial scope is the existing Node unwind test owner and these existing
+PRD/status records, already inside the approved repair's35-of40-path surface.
+Production+0/-0/net0; tests approximately+130 including imports; public types
++0/-0. Reuse the selected native subscriber/Session, Network configuration and
+standard panic acquisition. A test-only closed clean/panic choice owns the
+one original cause; no new actor state, event lane, interpreter, public
+wrapper, failure port or production hook is added. Node aggregate states,
+branches, modules and public spellings remain unchanged. Test observations
+own shared SDK byte buffers and disposal counts, without arrival-history
+state or a nested lifecycle authority.
+
+Require both test reviews and focused debug/optimized execution. This component
+probe supplies no Node outcome-conservation or full R18 credit. Only after
+reachability is established may the next smallest real Application/Node
+regression test whether its already acquired work/native outcomes survive the
+close cut. That later defect/model and focused repair evidence are recorded
+above; this component's original scope does not gain those later results.
+
 ## Withdrawal notification during finalization — prerequisites and change record (2026-11-17)
 
 **State: merged (bounded repair only; full R18 remains active).**

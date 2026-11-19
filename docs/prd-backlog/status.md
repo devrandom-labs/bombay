@@ -1,5 +1,27 @@
 # Backlog status and dependencies
 
+R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
+is active on actual release main030767c0, locally integrated as4ef56745.
+Published Runtime0.4.0 contains Node7 but excludes the current close-error repair.
+The bounded repair preserves the acquired real Counter/Application outcome and
+exact native/poll-panic originals through one typed NodeCloseError and one reused
+close policy, without new lifecycle state or extraction position. Three scoped
+audits resolved the sole consuming-assertion issue by borrowing the binding.
+Final expansion inspection also found a generated inline import in the new
+thiserror source implementation. The bounded correction reuses the repository's
+manual Display/Error pattern with identical variants, payloads and messages;
+its source/policy review and fresh source25d9/Node81d eight cases per profile
+now pass. Source12ce's causal inverse/restoration evidence retains its own
+identity; unchanged Node operations/tests are not relabeled as new executions.
+Fresh current-main8-case debug/optimized runs and both actual loss/custody
+inverse/restoration pairs pass author and independent review on source12ce.
+Earlier f040 native28/standalone1034 proofs remain on their original98885 base;
+they are not current-main acceptance. Selected dependency/archive/feature
+contracts remain unchanged after the self-version update. Current native28,
+independent Nextest, hosted acceptance and reviewed delivery remain open.
+Native close errors/timeouts, disposal/cancellation, SDK joining, resource/
+reconnect guarantees, full R18 and full AUTH1/NET1 remain open.
+
 R18's [withdrawal notification during finalization](../prds/static-remote-actors.md#withdrawal-notification-during-finalization--prerequisites-and-change-record-2026-11-17)
 merged through [PR438](https://github.com/devrandom-labs/bombay/pull/438) as
 98885bd1/tree0b470fa2, with API/physical Git parents0350+9e0c verified.
@@ -15,8 +37,11 @@ Driver2048/four Observe1024/all16 original seeds. The eight official ZIPs contai
 520 verified files; explicit Linux NAR/JSON/negative-artifact/static/Miri limits
 remain in the owning records.
 
-The published Runtime0.3.1 base is included; its package excludes this breaking
-seven-value repair. CI succeeded before the repository merge; the final detailed
+Published Runtime0.4.0 now includes this seven-value repair: its archive/VCS/tag
+and owning Node8c77 match the accepted source. Runtime0.3.1 remains the former
+five-value API. The later close-error and Entity candidates are excluded from
+0.4.0; no compiler/consumer qualification is adopted from its publication notice.
+CI succeeded before the repository merge; the final detailed
 Linux/source audit closed afterward. No own merge command or fresh premerge ACK
 is claimed retrospectively. Full R18 cancellation/native-close/resource/reconnect
 guarantees and
