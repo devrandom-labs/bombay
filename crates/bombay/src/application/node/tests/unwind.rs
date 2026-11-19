@@ -31,8 +31,110 @@ use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 use zenoh::bytes::ZBytes;
-use zenoh::query::ConsolidationMode;
+use zenoh::handlers::CallbackDrop;
+use zenoh::query::{ConsolidationMode, Reply};
 use zenoh::sample::{Locality, Sample};
+
+enum QueryCompletion {
+    BeforeClose,
+    AfterTimeout,
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn session_close_returns_native_timeout_while_query_callback_is_held() {
+    for completion in [QueryCompletion::BeforeClose, QueryCompletion::AfterTimeout] {
+        timeout(Duration::from_secs(40), async {
+            let config = configuration("tls/localhost:0", &EndpointRole::Receiver)
+                .to_configuration()
+                .unwrap();
+            let session = zenoh::open(config).await.unwrap();
+            let queryable = session
+                .declare_queryable("bombay/close/query-timeout")
+                .allowed_origin(Locality::SessionLocal)
+                .await
+                .unwrap();
+            // Disconnect on controller cancellation before native owners drop.
+            let (release, continuation) = mpsc::channel::<()>();
+            let continuation = Mutex::new(continuation);
+            let (entered, callback_entry) = oneshot::channel();
+            let entered = Mutex::new(Some(entered));
+            let (destroyed, callback_destruction) = oneshot::channel();
+            let mut destroyed = Some(destroyed);
+            session
+                .get("bombay/close/query-timeout")
+                .allowed_destination(Locality::SessionLocal)
+                .consolidation(ConsolidationMode::None)
+                .with(CallbackDrop {
+                    callback: move |original: Reply| {
+                        let announcement = entered.lock().unwrap().take();
+                        match announcement {
+                            Some(announcement) => match announcement.send(original) {
+                                Ok(()) => match continuation.lock().unwrap().recv() {
+                                    Ok(()) | Err(_) => {}
+                                },
+                                Err(original) => drop(original),
+                            },
+                            None => drop(original),
+                        }
+                    },
+                    drop: move || {
+                        if let Some(publication) = destroyed.take() {
+                            match publication.send(()) {
+                                Ok(()) | Err(()) => {}
+                            }
+                        }
+                    },
+                })
+                .await
+                .unwrap();
+            let query = queryable.recv_async().await.unwrap();
+            let original = callback_entry
+                .await
+                .expect("the actual tracked query-timeout callback entered");
+            let (closed, released, destroyed) = match &completion {
+                QueryCompletion::BeforeClose => {
+                    let released = release.send(());
+                    let destroyed = callback_destruction.await;
+                    let closed = AssertUnwindSafe(session.close().into_future())
+                        .catch_unwind()
+                        .await;
+                    (closed, released, destroyed)
+                }
+                QueryCompletion::AfterTimeout => {
+                    let closed = AssertUnwindSafe(session.close().into_future())
+                        .catch_unwind()
+                        .await;
+                    let released = release.send(());
+                    let destroyed = callback_destruction.await;
+                    (closed, released, destroyed)
+                }
+            };
+            // This notifier follows callback return, but precedes field/task
+            // destruction. A repeated close does not prove the first joined.
+            drop(query);
+            drop(queryable);
+            let repeated = session.close().await;
+            drop(session);
+
+            assert!(released.is_ok());
+            assert!(destroyed.is_ok());
+            assert!(repeated.is_ok());
+            match original.result() {
+                Err(cause) => assert_eq!(cause.payload().to_bytes().as_ref(), b"Timeout"),
+                Ok(_) => panic!("the retained native reply must come from query timeout"),
+            }
+            match (completion, closed) {
+                (QueryCompletion::BeforeClose, Ok(Ok(()))) => {}
+                (QueryCompletion::AfterTimeout, Ok(Err(cause))) => {
+                    assert!(cause.to_string().starts_with("close operation timed out!"));
+                }
+                _ => panic!("actual native close must retain its selected callback completion"),
+            }
+        })
+        .await
+        .expect("the native close controls finish within the existing watchdog");
+    }
+}
 
 enum SubscriptionRetirement {
     Clean,

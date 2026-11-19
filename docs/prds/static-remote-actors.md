@@ -153,6 +153,86 @@ Original ac046 native/Nextest/hosted gates subsequently closed with their exact
 source scopes above. Actual-main integration and delivery remain open. No old
 compiler, runtime or publication proof is relabeled as combined execution.
 
+## Native close timeout — prerequisites and probe (2026-11-19)
+
+**State: active; native component qualified, real Node outcome proof pending.**
+Continue R18 after PR441's delivered polling-panic preservation. The next
+independent fact is a genuine SDK close error, currently covered only by a
+synthetic native-error carrier test. Selected close returns unit internally;
+its ordinary error is the existing ten-second deadline. Transport sub-errors
+are discharged by the SDK and cannot be invented as Node error cases.
+
+Fresh lock/archive/source checks on clean43240610/mainfeae select
+Behavior/Actors0.30.0 at628649da and complete775-line instructions,
+Macros0.16.0, Address0.3.0, Communication0.1.7, Timers0.2.0, private Observe,
+SDK1.10.10 atc34eb350, Tokio1.53.3 and rustix1.1.6; no patch/feature/adoption.
+The selected primitive, Entity, Node, native callback/task and Driver owners,
+APIs, tests and normative R18 row were inspected. Common Git `after-close`
+receipts locked-contracts2adb3852, owner-contracts798c5779,
+sdk-contracts46f46c37 and remaining-acceptance2f6db1e1 retain the exact map,
+source identities and remaining gaps. Core0.31 remains outside this selection.
+
+**Frozen pre-edit plan:** establish native reachability using a real session-local Queryable/Get,
+retained Query and the actual Session-tracked query-timeout callback. The
+callback hands out its original native Reply before a releasable test gate.
+Observe that entry before closing. A healthy control completes the callback
+before close; an adverse control holds it until the unchanged native ten-second
+close deadline returns its actual error. Keep default query timing and callback
+wait policy; hidden timeout/background-close setters require unselected internal
+features and are excluded. Release the gate unconditionally, observe callback
+exit and dispose owned query/declaration/session before assertions. An aborted
+controller must disconnect the gate before native owner destruction. The
+existing forty-second fixture watchdog applies independently to each control.
+
+This is a native component probe, not a new actor-model law or a Node fix.
+Compare complete actual reply, close/panic and cleanup observations. Healthy
+close must succeed; the held control must return the real SDK timeout, not an
+outer watchdog or fabricated error. Only after this route executes may a real
+Counter/Application test check coexisting outcome and native cause, with its
+own source inversion. Repeated close success and is_closed cannot certify
+joining after the interrupted first close. TaskTracker waiting is distinct from
+JoinError custody; complete task/declaration baselines and reconnect stay open.
+
+Pre-edit scope: existing Node unwind test and these existing PRD/status paths;
+production+0/-0/net0, tests approximately+120, public types+0/-0. Reuse selected
+native operations and existing test channels; no runtime state, wrapper, SDK
+feature, actor protocol or interpreter is added. Node's nine fields and
+seven-position extraction are unchanged. One private two-choice test input may
+name when the native callback completes; no semantic boolean or second runtime
+transition authority. All paths remain within the approved cumulative36-of40.
+Both test reviews and focused debug/optimized controls precede acceptance; no
+current execution, failure or cleanup baseline is inferred from source.
+
+### Native timeout — focused component result
+
+The exact native component now passes in Rust1.99 debug and optimized builds:
+one named case per profile,463 filtered,zero ignored, with two semantic
+controls inside that case. Both controls retain the actual Query and original
+Timeout Reply before close. The healthy control observes callback return and
+SDK CallbackDrop destruction beginning before successful close. The held control
+returns the actual default-ten-second SDK close error, independently of the
+outer fixture watchdog; polling does not panic. Both release the gate and
+finish their explicit cleanup before assertions. The notifier does not certify
+complete field/task destruction, and repeated close success is not joining proof.
+
+Author and independent plan/source/counterexample reviews, pinned formatting,
+all four compile/execution commands, both physical executable hashes and all731
+source bytes/modes reconcile. The tested source is e81480a6/test6e7bb7fc;
+these later result records do not relabel that execution. Actual `/tmp` and
+`/private/tmp` spelling caused one independent reader refusal; exact Cargo/runtime
+spelling plus physical bytes/size/mode resolved it without rerunning Rust.
+Common Git `after-close/native-timeout/acceptance.json` SHAe237ee58 and
+execution audit4db50917 retain the complete limits, raw results and source archive.
+
+All component controllers are complete and retired. Normal default and release
+Bombay-package cleanup followed1,991 generated-input preservation and repeated
+empty liveness checks, reclaiming512,315,392B net. Approximately1.62GiB of
+unfinished dependency artifacts remains for the next genuine Node regression.
+There is no production or public API change. Actual Application outcome plus
+native cause, owning-source inversions, full gates and reviewed delivery of
+this new test remain pending; SDK task/resource/reconnect and full R18/AUTH1/NET1
+remain open. No new Node model is selected from this component result.
+
 ## Node outcome during Session close — regression record (2026-11-18)
 
 This is the historical regression/pre-edit record; current qualification and

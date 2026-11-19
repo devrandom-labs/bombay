@@ -39,6 +39,17 @@ continuation remains. The earlier7.12249GiB Cargo cache removal is not counted a
 Native close errors/timeouts, disposal/cancellation, SDK joining, resource/
 reconnect guarantees, full R18 and full AUTH1/NET1 remain open.
 
+The next [native close-timeout component](../prds/static-remote-actors.md#native-close-timeout--prerequisites-and-probe-2026-11-19)
+has fresh locked-owner verification on mainfeae. Its real SDK component now
+passes one named case/two semantic controls per current debug/optimized profile:
+healthy close succeeds; the held actual query-timeout callback yields the
+unchanged native ten-second close error. Source/binary/raw bindings and both
+reviews close at e237ee58, without SDK joining or Node-outcome credit. Completed
+package cleanup reclaimed0.47713GiB net after1,991 generated inputs; unfinished
+dependency artifacts remain for the genuine Node proof. No Node repair, SDK
+feature or dependency change is selected; whole-operation withdrawal surrender
+remains a separate pending cut.
+
 R18's [withdrawal notification during finalization](../prds/static-remote-actors.md#withdrawal-notification-during-finalization--prerequisites-and-change-record-2026-11-17)
 merged through [PR438](https://github.com/devrandom-labs/bombay/pull/438) as
 98885bd1/tree0b470fa2, with API/physical Git parents0350+9e0c verified.
