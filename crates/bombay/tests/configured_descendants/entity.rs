@@ -8,19 +8,22 @@ use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
 use bombay::behavior::{
     Actions, BehaviorActed, BehaviorBase, ChildCreationOutcome, ClassifySettlement, CreateChild,
-    CreationKind, CreationSequence, CreationSettlement, Creations, EstablishedDelivery,
-    EstablishedRecipient, EventLayer, InterpretationProgress, InterpreterRequests, ItemSettlement,
-    Never, NoSends, SettledItem, SettlementStatus, Step,
+    CreationKind, CreationRejection, CreationSequence, CreationSettlement, Creations,
+    EstablishedDelivery, EstablishedRecipient, EventLayer, InterpretationProgress,
+    InterpreterRequests, ItemSettlement, Never, NoSends, SendLayer, SettledItem, SettlementStatus,
+    Step,
 };
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId, EntityShutdown, Refusal, RetirementMode,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown, Refusal,
+    RetirementMode,
 };
 use bombay::prelude::{Completion, Exit, StopOnShutdown};
 use bombay::{
-    ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationScope,
+    ActorFailureAssessment, ActorRetirement, ActorRetirementReport, ApplicationScope, ChildFailure,
     InterpreterFactory, MailAddr, RetirementAssessment, RetirementSchema,
 };
+use bombay_engine::DriverError;
 use core::num::NonZeroUsize;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::panic::resume_unwind;
@@ -28,7 +31,6 @@ use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
-use tokio::task::JoinError;
 
 struct Catalog;
 #[bombay::actor(message = Never)]
@@ -105,18 +107,14 @@ type LedgerRetirement = ActorRetirement<
     library::LedgersRetirements,
     Vec<<library::LedgersRetirements as RetirementSchema>::Failure>,
 >;
-type LedgerFailure = EntityActivationError<
-    u64,
-    StopOnShutdown<Ledger>,
-    library::LedgersRetirements,
-    Vec<<library::LedgersRetirements as RetirementSchema>::Failure>,
->;
+type LedgerFailure =
+    EntityActivationError<u64, StopOnShutdown<Ledger>, library::LedgersRetirements>;
 type LedgerRetirements = Arc<
     Mutex<
         Vec<(
             EntityId<u64>,
             ActivationId,
-            Result<LedgerRetirement, JoinError>,
+            EntityRetirement<Ledgers>,
             ActorRetirementReport,
         )>,
     >,
@@ -139,7 +137,6 @@ impl EntityDefinition for Ledgers {
     type Hosts = library::Topology;
     type HydrationError = u64;
     type Terminal = library::LedgersRetirements;
-    type ChildFailures = Vec<<Self::Terminal as RetirementSchema>::Failure>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -185,7 +182,7 @@ impl EntityDefinition for Ledgers {
         &self,
         id: &EntityId<u64>,
         activation: ActivationId,
-        retirement: Result<LedgerRetirement, JoinError>,
+        retirement: EntityRetirement<Ledgers>,
         report: ActorRetirementReport,
     ) {
         self.retirements
@@ -752,4 +749,321 @@ fn inspect_ledger(
         assert!(fresh);
         retirement = *child;
     }
+}
+
+#[tokio::test(flavor = "current_thread")]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one real Entity retirement retains original constructor failure, issued child identity and independent successful effects"
+)]
+async fn child_constructor_failure_retains_its_original_cause() {
+    let scope = ApplicationScope::new();
+    let mut replies = scope
+        .external::<DocumentReady>()
+        .expect("the original caller owns its reply recipient");
+    let ready = replies.recipient();
+    let original = Box::<[u8]>::from([181]);
+    let original_pointer = original.as_ptr() as usize;
+    let child_original = Box::<[u8]>::from([191]);
+    let child_pointer = child_original.as_ptr() as usize;
+    let cause = Box::new([239, 241]);
+    let cause_pointer = ptr::from_ref(cause.as_ref()).cast::<()>() as usize;
+    let child_file = file_request();
+    let child_path_pointer = child_file.path.as_os_str().as_encoded_bytes().as_ptr() as usize;
+    let expected_child_path = child_file.path.clone();
+    let retirements = Arc::new(Mutex::new(Vec::new()));
+    let failures = Arc::new(Mutex::new(Vec::new()));
+    let refusals = Arc::new(Mutex::new(Vec::new()));
+    let drains = Arc::new(Mutex::new(Vec::new()));
+    let definition = Ledgers {
+        roots: Mutex::new(BTreeMap::from([(
+            1,
+            Ledger {
+                original,
+                file: Some(file_request()),
+                document: Some(
+                    Document {
+                        original: child_original,
+                        file: Some(child_file),
+                        next: None,
+                        ready: ready.clone(),
+                    }
+                    .stop_on_shutdown(),
+                ),
+                ready: ready.clone(),
+                commands: vec![],
+            },
+        )])),
+        retirements: Arc::clone(&retirements),
+        failures: Arc::clone(&failures),
+        refusals: Arc::clone(&refusals),
+        drains: Arc::clone(&drains),
+    };
+    let attempts = Arc::new(AtomicUsize::new(0));
+    let constructions = Arc::new(AtomicUsize::new(0));
+    let visits = Arc::new(Mutex::new(BTreeMap::new()));
+    let application = scope
+        .with_topology(
+            Catalog.stop_on_shutdown(),
+            library::Topology::new(LedgerConfig {
+                files: Config {
+                    label: Box::from(*b"documents"),
+                    constructions: Arc::clone(&constructions),
+                    visits: Arc::clone(&visits),
+                },
+                attempts: Arc::clone(&attempts),
+                constructors: Mutex::new(VecDeque::from([Ok(()), Ok(()), Err(cause)])),
+            }),
+        )
+        .entity_family(
+            LedgersRole,
+            definition,
+            DirectoryConfig::default(),
+            EntityCapacity::new(NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(2).unwrap()),
+        );
+    let command = Box::<[u8]>::from([223, 227]);
+    let command_pointer = command.as_ptr() as usize;
+    let (work, root_report, root, notifications, (family, ())) = application
+        .run_with(|application| async move {
+            let caller = application
+                .sender_to(application.entities(LedgersRole).entity(1))
+                .unwrap_or_else(|_| panic!("the original Entity reference is established"));
+            caller
+                .send(command)
+                .await
+                .expect("the surviving Ledger admits its original command");
+            let mut reports = BTreeMap::new();
+            for _ in 0..2 {
+                let report = tokio::time::timeout(Duration::from_secs(5), replies.receive())
+                    .await
+                    .expect("the parent startup and command replies arrive")
+                    .expect("the original reply recipient remains open");
+                let previous = reports.insert(report.message, report.from);
+                assert!(previous.is_none());
+            }
+            let mode = application
+                .retire_entity(LedgersRole, &1)
+                .await
+                .expect("the exact incarnation and its notification have retired");
+            assert_eq!(mode, RetirementMode::Graceful);
+            let shutdown = application.shutdown();
+            assert_eq!(shutdown, Ok(()));
+            let termination = application.termination().await;
+            assert_eq!(termination, Ok(Exit::Normal));
+            (reports, replies)
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the configured application enters its current-thread host"))
+        .into_parts();
+    let ((reports, mut replies), cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the parent work survives its child's constructor failure"));
+    cleanup.expect("the original application cleanup completed");
+    replies.close_admission();
+    let extra = replies.receive().await;
+    assert!(extra.is_none());
+    let root_report = root_report.expect("the independent root report is acquired");
+    assert_eq!(root_report.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        root_report.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    let (origin, root) = root.expect("the independent application root retirement");
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert_eq!(root.completion(), Some(&Completion::Stopped));
+    let notifications = notifications.expect("the original root notification results");
+    notifications
+        .termination
+        .expect("root termination publication");
+    notifications
+        .retirement
+        .expect("root retirement publication");
+    let (LedgersRole, family) = family.expect("the original family result is acquired");
+    let (shutdown, metrics, disposal) = family.into_parts();
+    assert!(disposal.is_none());
+    assert!(matches!(
+        shutdown,
+        EntityShutdown::Settled { represented: 0, .. }
+    ));
+    assert_eq!(metrics.activations, 1);
+    assert_eq!(metrics.launch_failures, 0);
+    assert_eq!(metrics.residents, 0);
+    assert_eq!(attempts.load(Ordering::SeqCst), 3);
+    assert_eq!(constructions.load(Ordering::SeqCst), 2);
+    assert!(
+        failures
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_empty()
+    );
+    assert!(
+        refusals
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_empty()
+    );
+    assert!(
+        drains
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .is_empty()
+    );
+    let mut retirements = retirements.lock().unwrap_or_else(PoisonError::into_inner);
+    let (id, _, retirement, report) = retirements.pop().expect("the actual Ledger retirement");
+    assert_eq!(id, EntityId::new(1));
+    assert!(retirements.is_empty());
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+    let ActorRetirement::Retained {
+        custody,
+        outcome:
+            RetirementOutcome::OwnerCancelled {
+                settlements,
+                interpretation,
+                source,
+            },
+    } = retirement.expect("the original native Entity task result")
+    else {
+        panic!("the current-thread Entity owner retains its cancelled actor and complete inputs");
+    };
+    assert!(interpretation.is_none());
+    assert!(source.is_none());
+    let ledger = custody.behavior.base();
+    assert_eq!(ledger.original.as_ptr() as usize, original_pointer);
+    assert_eq!(&*ledger.original, &[181]);
+    assert_eq!(ledger.commands.len(), 1);
+    assert_eq!(ledger.commands[0].as_ptr() as usize, command_pointer);
+    assert_eq!(&*ledger.commands[0], &[223, 227]);
+    assert_eq!(&ledger.ready, &ready);
+    assert!(ledger.file.is_none());
+    assert!(ledger.document.is_none());
+    assert_eq!(reports.len(), 2);
+    assert_eq!(reports.get(&181), reports.get(&223));
+    assert!(reports.contains_key(&181));
+    assert_eq!(
+        visits.lock().unwrap_or_else(PoisonError::into_inner).len(),
+        1
+    );
+    assert!(matches!(
+        custody.control.as_slice(),
+        [EventLayer::Owned(ShutdownRequested)]
+    ));
+    assert_eq!(custody.user, []);
+    assert!(custody.descendants.is_empty());
+    assert!(custody.additional_failures.is_empty());
+    assert!(custody.capability_failures.is_empty());
+    assert!(custody.retirement_failures.is_empty());
+    assert!(custody.received_interpretation.is_none());
+    assert!(custody.received_source.is_none());
+    assert!(custody.source_index.is_none());
+    assert!(custody.acquired_ingress.is_none());
+    assert!(custody.terminal_report.is_none());
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert_eq!(settlements.settlement_status(), SettlementStatus::Accepted);
+    let mut rejected = None;
+    let mut files = 0;
+    for row in settlements {
+        let SendLayer {
+            owned: NoSends,
+            inner: ledger_sends,
+        } = row.sends;
+        assert_eq!(ledger_sends.ready, []);
+        for file in ledger_sends.files {
+            let SettledItem::Attempted(ItemSettlement::Accepted(file)) = file else {
+                panic!("the original parent File result remains acquired");
+            };
+            inspect_file(file);
+            files += 1;
+        }
+        let CreationSettlement::Settled(children) = row.creations.into_settlement() else {
+            panic!("the actual creation lane has its complete typed settlement");
+        };
+        for child in children {
+            let SettledItem::Attempted(ItemSettlement::Accepted(
+                ChildCreationOutcome::HostRejected {
+                    creation,
+                    initialization,
+                    reason,
+                },
+            )) = child
+            else {
+                panic!(
+                    "the original uninstalled Document and its pure startup actions are returned"
+                );
+            };
+            assert!(rejected.is_none());
+            rejected = Some((creation, initialization, reason));
+        }
+    }
+    assert_eq!(files, 1);
+    let (creation, initialization, reason) = rejected.expect("exactly one actual rejected child");
+    assert_eq!(reason, CreationRejection::EnvironmentFailed);
+    let (creation, route) = creation.into_parts();
+    let (creation_id, child, kind) = creation.into_parts();
+    assert_eq!(kind, CreationKind::Birth);
+    assert_eq!(child.base().original.as_ptr() as usize, child_pointer);
+    assert_eq!(&*child.base().original, &[191]);
+    assert!(matches!(initialization.become_, Step::Continue));
+    assert!(initialization.creates.is_empty());
+    let SendLayer {
+        owned: NoSends,
+        inner: document_sends,
+    } = initialization.sends;
+    let mut files = document_sends.files.into_iter();
+    let file = files
+        .next()
+        .expect("the unattempted child File request remains original");
+    let extra_file = files.next();
+    assert!(extra_file.is_none());
+    assert_eq!(file.path, expected_child_path);
+    assert_eq!(
+        file.path.as_os_str().as_encoded_bytes().as_ptr() as usize,
+        child_path_pointer
+    );
+    assert!(matches!(file.access, FileAccess::Ready));
+    let mut notices = document_sends.ready.into_iter();
+    let notice = notices
+        .next()
+        .expect("the unattempted child ready send remains original");
+    let extra_notice = notices.next();
+    assert!(extra_notice.is_none());
+    assert_eq!(notice.to, ready);
+    assert_eq!(notice.message, 191);
+    let mut child_failures = custody.child_failures.into_iter();
+    let Some(ChildFailure::StartupRetirementFailed {
+        origin,
+        primary_failure,
+        additional_failures,
+        terminal_report,
+        retirement_failures,
+        termination_notification,
+        retirement_report,
+    }) = child_failures.next()
+    else {
+        panic!("the original child failure row survives the Entity retirement carrier");
+    };
+    let extra_failure = child_failures.next();
+    assert!(extra_failure.is_none());
+    assert_eq!(origin.creation_id(), creation_id);
+    assert_eq!(origin.creation_kind(), kind);
+    assert_eq!(origin.nonce(), route);
+    let Some(DriverError::ActivationPanicked(payload)) = primary_failure else {
+        panic!("the original child constructor panic retains its native phase");
+    };
+    assert_eq!(
+        ptr::from_ref(payload.as_ref()).cast::<()>() as usize,
+        cause_pointer
+    );
+    assert!(additional_failures.is_empty());
+    assert!(terminal_report.is_none());
+    assert!(retirement_failures.is_empty());
+    termination_notification.expect("the actual child termination notification");
+    assert_eq!(
+        retirement_report.retirement(),
+        RetirementAssessment::Established
+    );
+    assert_eq!(
+        retirement_report.failures(),
+        ActorFailureAssessment::FailuresFound
+    );
 }

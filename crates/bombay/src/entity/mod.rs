@@ -23,7 +23,8 @@ pub use directory::{
 };
 pub use family::{
     Entities, EntityActivationError, EntityAdmission, EntityApplicationFamilies, EntityCapacity,
-    EntityDefinition, EntityFamilyAt, EntityMetrics, EntityRef, EntityRetirementFailure,
+    EntityDefinition, EntityFamilyAt, EntityMetrics, EntityRef, EntityRetirement,
+    EntityRetirementFailure,
 };
 pub(crate) use family::{InstallEntityFamilies, InstalledEntityFamilies};
 pub(crate) use lifecycle::SlotEffect;

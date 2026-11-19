@@ -2,10 +2,10 @@ use bombay::{actors::ActorExt, prelude::StopOnShutdown};
 use bombay::behavior::{Actions, BehaviorActed, Never};
 use bombay::entity::{
     ActivationId, AdmissionFailure, DrainFailure, Entities, EntityActivationError,
-    EntityDefinition, EntityId,
+    EntityDefinition, EntityId, EntityRetirement,
 };
 use bombay::ActorRetirementReport;
-use bombay::{ActorRetirement, ActorSpace, ActorSpaces, ApplicationHandle};
+use bombay::{ActorSpace, ActorSpaces, ApplicationHandle};
 
 struct Root;
 
@@ -51,7 +51,6 @@ impl EntityDefinition for Accounts {
     type Hosts = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = ();
 
     async fn hydrate(
         &self,
@@ -64,7 +63,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal, Self::ChildFailures>,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
     }
 
@@ -76,7 +75,7 @@ impl EntityDefinition for Accounts {
         &self,
         _: &EntityId<Self::Id>,
         _: ActivationId,
-        _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>, tokio::task::JoinError>,
+        _: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         // This compile-denial fixture executes no retirement consumer.
@@ -90,7 +89,6 @@ impl EntityDefinition for Profiles {
     type Hosts = Spaces;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = ();
 
     async fn hydrate(
         &self,
@@ -103,7 +101,7 @@ impl EntityDefinition for Profiles {
         &self,
         _: EntityId<Self::Id>,
         _: ActivationId,
-        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal, Self::ChildFailures>,
+        _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
     ) {
     }
 
@@ -115,7 +113,7 @@ impl EntityDefinition for Profiles {
         &self,
         _: &EntityId<Self::Id>,
         _: ActivationId,
-        _: Result<ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>, tokio::task::JoinError>,
+        _: EntityRetirement<Self>,
         retirement_report: ActorRetirementReport,
     ) {
         // This compile-denial fixture executes no retirement consumer.

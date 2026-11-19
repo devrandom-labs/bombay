@@ -2,16 +2,39 @@
 
 ## Session close — current main qualification (2026-11-19)
 
-**State: active (focused and scoped review closure; wider delivery open).**
-Actual main is release merge030767c0, locally integrated as signed4ef56745.
-Its four upstream changes are the Runtime manifest/changelog and two owning
-locks; only Bombay's own version changes from0.3.1 to0.4.0. All selected
-dependency versions, features, archives/VCS identities, Behavior instructions
-and SDK contracts remain unchanged and were rechecked before qualification.
+**State: active (original source qualified; actual-main integration gates open).**
+Actual main is PR440 merge07f233e3/tree650681ab, with physical/API parents
+030767c0+cf913 verified after the fresh09:42 no-hold acknowledgment. It is now
+merged locally for separate qualification. Entity's native child failures are
+derived as `Vec<Terminal::Failure>`; transparent `EntityRetirement<D>` names
+the existing complete joined result, while activation errors retain their three
+payload parameters and lawful cross-definition forwarding. No wrapper or new
+runtime state is imported. Cargo.lock, root manifest, Nix inputs, Deny policy,
+workflow and AGENTS bytes are unchanged. The exact locked dependency versions,
+features, archive/VCS identities, Behavior instructions and SDK remain selected;
+the touched Entity host/interpreter/callback contracts were freshly inspected.
 Published Runtime0.4.0 is independently verified against registry, archive,
 VCS/tag and owning Node8c77. It contains the seven-value extraction delivered
-by PR438, not this Nodef78 close-error repair or the unmerged Entity candidate.
+by PR438, not this Node81d close-error repair or the merged, unreleased Entity
+interface. No dependency/SDK migration or publication is selected here.
 Five-value0.3.1 callers must retain the two additional withdrawal-panic values.
+
+Original signedac046/tree55aae54c on release main030 is separately closed:
+native28/authoritative flake0, standalone1034 ordinaryPASS/zeroLEAK/same6,
+all8 hosted checks and28 bounded Linux owner scopes. Linux optimized/coverage
+each reconcile1034/123harnesses/1040names/same6/154fixtures/3bench invocations;
+remote D/R each562/12/32/six guard echoes. All8 official ZIP digests/506 payload
+files,16 original seed bytes, Driver2048 and four Observe1024 completions pass;
+Miri was skipped. Linux NAR/coverageJSON/HTML/build exports and hidden
+ActorExecution negative artifacts were not independently downloaded; its Linux
+controller/9visible-positive scope remains distinct from the native23-artifact
+audit. CodeQL and finite-campaign limits remain explicit. Common Git evidence:
+`close/qualification/original-final-acceptance.json` SHAda2e98d5,
+`hosted/linux-acceptance.json` SHAd74858c0 and fuzz receiptSHAae85bfec. All730
+original bytes/modes, source archive, signed raw commit/ref/bundle and required
+payloads remain preserved. The local main07f integration has no credited
+combined-source execution yet; its inventory/native/hosted/delivery gates are
+open. Original ac046 and upstream cf913 results are not combined outcomes.
 
 The earlier f040 native28/flake0 and standalone1034 results used main98885;
 they remain proofs for that source, not acceptance of actual release main.
@@ -39,10 +62,12 @@ The production model remains one flat NodeCloseError, one reused close policy,
 no new runtime field and the same seven extraction positions. Its Send panic
 payload has no Sync promise; this is a source-breaking change beyond published
 0.4.0. Complete production is+79/-24/net55, tests+395/-10/net385, public nominal
-types+1/-0 and runtime fields+0/-0. All eleven working paths remain within the
-cumulative36-of-approved40 surface. This is added failure preservation, not a
-production code reduction. Current native28/authoritative flake, independent
-Nextest, exact hosted acceptance and reviewed PR delivery remain open. Native
+types+1/-0 and runtime fields+0/-0. All eleven submission paths remain within the
+cumulative36-of-approved40 surface. The combined snapshot has731 inputs; PR440's
+28 upstream paths are already delivered and recorded separately from this diff.
+There are no untracked source files. This is added failure preservation, not a
+production code reduction. Original ac046 qualification is closed as above;
+actual-main combined-source gates and reviewed PR441 delivery remain open. Native
 close error/timeout induction, construction/disposal/cancellation, SDK task
 joining, quiescence/resources, reconnect and full R18/AUTH1/NET1 remain unproved.
 The full PRD scope, dependency edges and step order are unchanged.
@@ -86,8 +111,9 @@ oracles, values and watchdogs are byte-identical. The eight actual source12ce
 inverse/restored runs remain source12ce causal evidence; they are not claimed
 as source25 executions. A change to close polling/finalization, classification,
 outcome transfer or those oracles would require fresh runtime counterexamples.
-Current native/Nextest/hosted delivery gates remain open. No old compiler,
-runtime or publication proof is relabeled to this corrected implementation.
+Original ac046 native/Nextest/hosted gates subsequently closed with their exact
+source scopes above. Actual-main integration and delivery remain open. No old
+compiler, runtime or publication proof is relabeled as combined execution.
 
 ## Node outcome during Session close — regression record (2026-11-18)
 

@@ -46,15 +46,17 @@ type NativeEntityCapabilities<B, N, Terminal> = NativeCapabilities<
 >;
 type NativeEntityInterpreter<B, N, Terminal> =
     ActionInterpreter<NativeEntityCapabilities<B, N, Terminal>>;
-type NativeEntityActor<B, Terminal, ChildFailures> = OwnedActor<B, (Vec<Terminal>, ChildFailures)>;
+type NativeEntityActor<B, Terminal> =
+    OwnedActor<B, (Vec<Terminal>, Vec<<Terminal as RetirementSchema>::Failure>)>;
 
 #[diagnostic::on_unimplemented(
     message = "the application host product cannot execute Entity behavior `{B}`",
     label = "missing a required actor host or typed effect interpreter"
 )]
-pub(crate) trait NativeEntityHost<B, Terminal, ChildFailures>: Send + Sync + Sized
+pub(crate) trait NativeEntityHost<B, Terminal>: Send + Sync + Sized
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never> + BehaviorBase,
+    Terminal: RetirementSchema,
 {
     #[expect(
         clippy::type_complexity,
@@ -68,13 +70,13 @@ where
         mailbox_capacity: MailboxCapacity,
     ) -> impl Future<
         Output = Result<
-            NativeEntityActor<B, Terminal, ChildFailures>,
-            SpawnError<B, (Vec<Terminal>, ChildFailures)>,
+            NativeEntityActor<B, Terminal>,
+            SpawnError<B, (Vec<Terminal>, Vec<Terminal::Failure>)>,
         >,
     > + Send;
 }
 
-impl<B, N, Terminal, ChildFailures> NativeEntityHost<B, Terminal, ChildFailures> for N
+impl<B, N, Terminal> NativeEntityHost<B, Terminal> for N
 where
     B: BehaviorSettlements<Protocol: Protocol<Addr = MailAddr>, Ph = Never>
         + BehaviorBase
@@ -93,14 +95,14 @@ where
     N: Hosts<B::Protocol> + NativeHost + Send + Sync + 'static,
     N::Runtime: NativeConstruction,
     ChildBindings<B, Terminal, StructuralOrigins<<B as BehaviorBase>::Base>>: ChildBindingsIn<B, Arc<N>>
-        + RetireChildTasks<Root = Terminal, Failures = ChildFailures>
+        + RetireChildTasks<Root = Terminal, Failures = Vec<Terminal::Failure>>
         + Send
         + 'static,
     NativeEntityInterpreter<B, N, Terminal>:
-        CommitActions<B, Retired = (Vec<Terminal>, ChildFailures)> + Send + 'static,
+        CommitActions<B, Retired = (Vec<Terminal>, Vec<Terminal::Failure>)> + Send + 'static,
     ActionSettlementOf<B>: ClassifySettlement + Send + 'static,
     Terminal: RetirementSchema + Send + 'static,
-    ChildFailures: Send + 'static,
+    Terminal::Failure: Send + 'static,
 {
     async fn launch_entity(
         self: Arc<Self>,
@@ -109,8 +111,8 @@ where
         behavior: B,
         mailbox_capacity: MailboxCapacity,
     ) -> Result<
-        NativeEntityActor<B, Terminal, ChildFailures>,
-        SpawnError<B, (Vec<Terminal>, ChildFailures)>,
+        NativeEntityActor<B, Terminal>,
+        SpawnError<B, (Vec<Terminal>, Vec<Terminal::Failure>)>,
     > {
         let addresses = <N as Hosts<B::Protocol>>::space(&self).clone();
         spawn_owned_entity_with(
@@ -166,7 +168,7 @@ pub(crate) struct NativeEntityLease<D>
 where
     D: EntityDefinition,
 {
-    actor: NativeEntityActor<D::Behavior, D::Terminal, D::ChildFailures>,
+    actor: NativeEntityActor<D::Behavior, D::Terminal>,
     resident: OwnedSemaphorePermit,
 }
 
@@ -229,13 +231,12 @@ where
 impl<D> LocalEntityRuntime<D::Id, BehaviorMessage<D::Behavior>> for BombayEntityRuntime<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     type Origin = MailAddr;
     type Endpoint = ActorRef<<D::Behavior as Behavior>::Protocol>;
     type Lease = NativeEntityLease<D>;
-    type ActivationError =
-        EntityActivationError<D::HydrationError, D::Behavior, D::Terminal, D::ChildFailures>;
+    type ActivationError = EntityActivationError<D::HydrationError, D::Behavior, D::Terminal>;
     type Task = tokio::task::JoinHandle<()>;
     type TaskFailure = tokio::task::JoinError;
     type RetirementFailure = EntityRetirementFailure;
@@ -447,13 +448,14 @@ mod tests {
     use std::task::Wake;
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
-    use tokio::task::JoinError;
     use tokio::task::spawn_blocking;
 
     use crate::actors::ActorExt;
     use crate::application::ApplicationScope;
     use crate::entity::family::assert_activation_metrics;
-    use crate::entity::{AdmissionFailure, DrainFailure, DrainStage, EntityMetrics};
+    use crate::entity::{
+        AdmissionFailure, DrainFailure, DrainStage, EntityMetrics, EntityRetirement,
+    };
     use crate::launch::ActorSpace;
 
     #[derive(Default)]
@@ -539,15 +541,7 @@ mod tests {
             reason = "The runtime owner retains one whole native actor retirement without an extra wrapper."
         )]
         retired: Mutex<
-            Option<
-                oneshot::Sender<(
-                    Result<
-                        ActorRetirement<StopOnShutdown<DeliveryLedger>, Never, Vec<Never>>,
-                        JoinError,
-                    >,
-                    ActorRetirementReport,
-                )>,
-            >,
+            Option<oneshot::Sender<(EntityRetirement<LedgerDefinition>, ActorRetirementReport)>>,
         >,
     }
 
@@ -557,7 +551,6 @@ mod tests {
         type Hosts = ActorSpace<DeliveryLedger>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
 
         #[expect(
             clippy::unused_async_trait_impl,
@@ -572,7 +565,7 @@ mod tests {
             &self,
             _: EntityId<u64>,
             _: ActivationId,
-            _: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+            _: EntityActivationError<Never, Self::Behavior, Never>,
         ) {
             panic!("the native ledger activation must succeed")
         }
@@ -589,7 +582,7 @@ mod tests {
             &self,
             id: &EntityId<u64>,
             activation: ActivationId,
-            retirement: Result<ActorRetirement<Self::Behavior, Never, Vec<Never>>, JoinError>,
+            retirement: EntityRetirement<Self>,
             retirement_report: ActorRetirementReport,
         ) {
             assert_eq!((*id).into_inner(), 73);
@@ -988,10 +981,7 @@ mod tests {
             Option<(
                 EntityId<u64>,
                 ActivationId,
-                Result<
-                    ActorRetirement<ShutdownConversionActor, Never, Vec<Never>>,
-                    tokio::task::JoinError,
-                >,
+                EntityRetirement<ShutdownConversionDefinition>,
                 ActorRetirementReport,
             )>,
         >,
@@ -1003,7 +993,6 @@ mod tests {
         type Hosts = ActorSpace<ShutdownConversionActor>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
         fn hydrate(
             &self,
             _: EntityId<u64>,
@@ -1015,7 +1004,7 @@ mod tests {
             &self,
             _: EntityId<u64>,
             _: ActivationId,
-            _: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+            _: EntityActivationError<Never, Self::Behavior, Never>,
         ) {
             panic!("the real native activation must succeed");
         }
@@ -1048,10 +1037,7 @@ mod tests {
             &self,
             id: &EntityId<u64>,
             activation: ActivationId,
-            retirement: Result<
-                ActorRetirement<Self::Behavior, Never, Vec<Never>>,
-                tokio::task::JoinError,
-            >,
+            retirement: EntityRetirement<Self>,
             retirement_report: ActorRetirementReport,
         ) {
             let prior = self
@@ -1411,7 +1397,6 @@ mod tests {
         type Hosts = ActorSpace<JoinedActor>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
 
         #[expect(
             clippy::unused_async_trait_impl,
@@ -1428,12 +1413,7 @@ mod tests {
             &self,
             _: EntityId<Self::Id>,
             _: ActivationId,
-            _: EntityActivationError<
-                Self::HydrationError,
-                Self::Behavior,
-                Self::Terminal,
-                Self::ChildFailures,
-            >,
+            _: EntityActivationError<Self::HydrationError, Self::Behavior, Self::Terminal>,
         ) {
             unreachable!("the join regression never activates an entity")
         }
@@ -1454,10 +1434,7 @@ mod tests {
             &self,
             _: &EntityId<Self::Id>,
             _: ActivationId,
-            _: Result<
-                ActorRetirement<Self::Behavior, Self::Terminal, Self::ChildFailures>,
-                tokio::task::JoinError,
-            >,
+            _: EntityRetirement<Self>,
             _: ActorRetirementReport,
         ) {
             unreachable!("the join regression never retires an entity")

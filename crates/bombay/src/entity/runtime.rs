@@ -1315,6 +1315,7 @@ mod tests {
     use super::{
         Activated, EntityRetirementError, EntityRuntime, FenceFailure, LocalEntityRuntime,
     };
+    use crate::ActorRetirementReport;
     use crate::MailboxCapacity;
     use crate::actors::ActorExt;
     use crate::address::{ApplicationAddresses, MailAddr};
@@ -1323,10 +1324,10 @@ mod tests {
     use crate::entity::family::EntityMetricState;
     use crate::entity::{
         ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-        EntityCapacity, EntityDefinition, EntityId, EntityShutdown, RetirementMode,
+        EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown,
+        RetirementMode,
     };
     use crate::launch::ActorSpace;
-    use crate::{ActorRetirement, ActorRetirementReport};
     use behavior::{Actions, BehaviorActed, MessageProtocol, Never};
     use behavior_actors::StopOnShutdown;
     use core::future::{Future, poll_fn};
@@ -1350,10 +1351,7 @@ mod tests {
         }
     }
 
-    type BalanceRetirement =
-        Result<ActorRetirement<StopOnShutdown<Balance>, Never, Vec<Never>>, tokio::task::JoinError>;
-    type BalanceStartupError =
-        EntityActivationError<Never, StopOnShutdown<Balance>, Never, Vec<Never>>;
+    type BalanceStartupError = EntityActivationError<Never, StopOnShutdown<Balance>, Never>;
 
     #[derive(Default)]
     struct Balances {
@@ -1368,7 +1366,7 @@ mod tests {
             Vec<(
                 EntityId<u64>,
                 ActivationId,
-                BalanceRetirement,
+                EntityRetirement<Balances>,
                 ActorRetirementReport,
             )>,
         >,
@@ -1380,7 +1378,6 @@ mod tests {
         type Hosts = ActorSpace<Balance>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
 
         #[expect(
             clippy::unused_async_trait_impl,
@@ -1425,7 +1422,7 @@ mod tests {
             &self,
             id: &EntityId<u64>,
             activation: ActivationId,
-            retirement: BalanceRetirement,
+            retirement: EntityRetirement<Balances>,
             report: ActorRetirementReport,
         ) {
             self.retired

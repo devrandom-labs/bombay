@@ -5,15 +5,13 @@ use bombay::ActorRetirementReport;
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Never};
 use bombay::entity::{
-    ActivationId, AdmissionFailure, DrainFailure, EntityActivationError, EntityDefinition, EntityId,
+    ActivationId, AdmissionFailure, DrainFailure, EntityActivationError, EntityDefinition,
+    EntityId, EntityRetirement,
 };
-use bombay::prelude::{ActorRetirement, StopOnShutdown};
+use bombay::prelude::StopOnShutdown;
 
 use super::account::{Account, AccountCommand};
 use super::account_application;
-
-type AccountRetirement =
-    Result<ActorRetirement<StopOnShutdown<Account>, Never, Vec<Never>>, tokio::task::JoinError>;
 
 // The definition retains every original callback payload for application reporting.
 // These records contain data; Application remains the lifecycle authority.
@@ -21,7 +19,7 @@ pub(super) enum AccountReport {
     Startup {
         id: EntityId<u64>,
         attempt: ActivationId,
-        failure: EntityActivationError<Never, StopOnShutdown<Account>, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, StopOnShutdown<Account>, Never>,
     },
     Admission {
         id: EntityId<u64>,
@@ -35,7 +33,7 @@ pub(super) enum AccountReport {
     Retirement {
         id: EntityId<u64>,
         attempt: ActivationId,
-        result: AccountRetirement,
+        result: EntityRetirement<Accounts>,
         report: ActorRetirementReport,
     },
 }
@@ -50,7 +48,6 @@ impl EntityDefinition for Accounts {
     type Hosts = account_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     #[expect(
         clippy::unused_async_trait_impl,
@@ -64,7 +61,7 @@ impl EntityDefinition for Accounts {
         &self,
         id: EntityId<u64>,
         attempt: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         self.reports
             .lock()
@@ -98,7 +95,7 @@ impl EntityDefinition for Accounts {
         &self,
         id: &EntityId<u64>,
         attempt: ActivationId,
-        result: AccountRetirement,
+        result: EntityRetirement<Accounts>,
         report: ActorRetirementReport,
     ) {
         self.reports

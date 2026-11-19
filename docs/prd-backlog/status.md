@@ -1,7 +1,9 @@
 # Backlog status and dependencies
 
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
-is active on actual release main030767c0, locally integrated as4ef56745.
+is active on actual main07f233e3, the normal PR440 merge now integrated locally
+for fresh qualification. Its transparent Entity retirement result and derived
+native failures are imported without a dependency/SDK or Node-law change.
 Published Runtime0.4.0 contains Node7 but excludes the current close-error repair.
 The bounded repair preserves the acquired real Counter/Application outcome and
 exact native/poll-panic originals through one typed NodeCloseError and one reused
@@ -17,8 +19,13 @@ Fresh current-main8-case debug/optimized runs and both actual loss/custody
 inverse/restoration pairs pass author and independent review on source12ce.
 Earlier f040 native28/standalone1034 proofs remain on their original98885 base;
 they are not current-main acceptance. Selected dependency/archive/feature
-contracts remain unchanged after the self-version update. Current native28,
-independent Nextest, hosted acceptance and reviewed delivery remain open.
+contracts remain unchanged. Original signedac046/base030 qualification is closed:
+native28/flake0, standalone1034 ordinaryPASS/zeroLEAK/same6, all8 hosted and28
+bounded Linux scopes,8 officialZIPs/506 payload files and16 original seed bytes.
+Original source/ref/bundle/evidence remain preserved; those outcomes and peer
+cf913 outcomes are not combined-source proof. Fresh main07f integration gates
+and reviewed PR441 delivery remain open, with Linux hidden-artifact/NAR,
+CodeQL and finite-campaign limits retained in the owning PRD.
 Native close errors/timeouts, disposal/cancellation, SDK joining, resource/
 reconnect guarantees, full R18 and full AUTH1/NET1 remain open.
 
@@ -841,7 +848,7 @@ delivery; AUTH1 and NET1 keep their implementation statuses below.
 | ID | Status | Blocked by | Unblocks | Required outcome and evidence |
 | --- | --- | --- | --- | --- |
 | EXEC1 | merged (historical record) | — | — | [Recorded delivery](https://github.com/devrandom-labs/bombay/blob/c3afb3011090ac4c9112fd39e4a76980db856df0/docs/prds/execution-ownership.md#277-actual-reviewed-delivery) cites PR326 and commit `81256c8e00b580f37f4a1036ac28ec53b1ea948b`. [Preservation contract](../prds/execution-ownership.md) retains the eight gates and current source witnesses. Historical pass marks do not certify this checkout. |
-| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#runtime-03-delivery-2026-11-16): runtime0.3.0, Engine0.3.0 and macros0.2.0 registry delivery and Bombay acknowledgment are verified. PR429/431 deliver canonical supplied-work runners and bound listener metadata. [PR433](https://github.com/devrandom-labs/bombay/pull/433) merged as813c67dd after all28 local owners, actual flake, Nextest1026 and all eight hosted checks; unused check exports are disabled while actual providers and every gate remain. Original049/1025 and peer PR435/1028 evidence stay separate. [HTTP capability separation](../prds/developer-experience.md#http-capability-delivery-2026-11-17) merged through [PR436](https://github.com/devrandom-labs/bombay/pull/436)/caf0b681 after all eight hosted checks,28 qualified native/Linux owners and exact1029-case source/cohort acceptance; original proof epochs stay separate. Release434's stale consumer lock is reproduced; the locally qualified release-workflow repair still needs final gates, delivery and separate publication proof. Entity's structural terminal types, historical watchdog causes and broader DX01–DX28 acceptance, costs and documentation remain open. |
+| DX1 | active | — | — | [Developer experience](../prds/developer-experience.md#runtime040-integration-for-entity-2026-11-19): observed Runtime0.4.0 publication/tag/source custody is verified and actual PR439/main030767c0 is integrated locally. Its Node extraction has seven values; the Entity candidate remains unreleased. Frozen ac55 local native28/flake0 and standalone1031PASS+1successfulLEAK/same6 are accepted only for that source, with the closure observation retained. Combined0.4 source qualification and hosted/normal PR delivery remain open. Earlier release/compiler/consumer and HTTP/runner/cache delivery receipts stay in the owning PRD with their original source limits. Full terminal/callback/catalogue/cost/support/documentation criteria, historical watchdog causes and DX01–DX28 completion remain open. |
 | NET1 | blocked | AUTH1; external: verified protocol/security and aggregate resource contracts | PLACE1, DIST1, SELO1 | [Static remote actor PRD](../prds/static-remote-actors.md#current-delivery--2026-11-11): Node-owned inbound Export/outbound Client and the separate-process Counter are delivered. R01/R10/R17 have complete scoped records. PR411/412 deliver the fixed incoming schedule and native access/grant crossing; complete R24/R07, other incomplete rows, independent network simulation/replay, combined campaigns and final distillation remain open. Historical prerequisite receipts retain their source epochs. Choices use delegated recommended selections. |
 | AUTH1 | candidate | — | NET1, PLACE1, DIST1, SELO1 | [Admission scope and gates](../prds/static-remote-actors.md): deterministic accepted, denied, stale and unavailable admission; provider substitution through a typed contract before downstream Selo integration. The user selected one coherent permission/time check and capacity-nonwaiting mailbox attempt, with permission updates excluded and fresh revalidation on retries. Local Application composition, exclusive coordination and controlled-time admission are proved. Production clock/provider freshness, configured assignment binding and a conservative provider/command/error reservation profile remain prerequisites. |
 | PLACE1 | blocked | NET1, AUTH1, MNE1; external: authoritative placement/fencing contract | DIST1 | [Placement](identity-and-placement.md): competing activation and partition recovery deny a stale owner's durable effects. Static routing in NET1 does not wait for this automatic-placement milestone. |

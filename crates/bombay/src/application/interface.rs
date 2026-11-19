@@ -274,7 +274,6 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
             NativeEntityHost<
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Behavior,
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Terminal,
-                <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::ChildFailures,
             >,
 {
         self.entities(role).retire_entity(id).await
@@ -297,7 +296,6 @@ impl<P: Protocol, Event, Families> ApplicationHandle<P, Event, Families> {
             NativeEntityHost<
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Behavior,
                 <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::Terminal,
-                <<Families as EntityFamilyAt<Role, Position>>::Definition as EntityDefinition>::ChildFailures,
             >,
 {
         self.entities(role).passivate(id)
@@ -604,7 +602,7 @@ impl<D> target_sealed::Sealed for EntityRef<D> where D: EntityDefinition {}
 impl<D> ExternalTarget for EntityRef<D>
 where
     D: EntityDefinition,
-    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal, D::ChildFailures>,
+    D::Hosts: NativeEntityHost<D::Behavior, D::Terminal>,
 {
     type Message = behavior::BehaviorMessage<D::Behavior>;
     type Error = AdmissionFailure<Self::Message>;
@@ -920,13 +918,12 @@ mod tests {
     #[cfg(feature = "remote")]
     use std::ptr;
     use std::sync::{Arc, Mutex};
-    use tokio::task::JoinError;
 
     use crate::address::{ApplicationAddresses, MailAddr};
     use crate::application::{Application, ExternalActor, ExternalActorError};
     use crate::entity::{
         ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-        EntityCapacity, EntityDefinition, EntityId, EntityShutdown,
+        EntityCapacity, EntityDefinition, EntityId, EntityRetirement, EntityShutdown,
     };
     use crate::local::endpoint::ExtractLocalEndpoint;
     use crate::{
@@ -934,21 +931,18 @@ mod tests {
         RetirementAssessment, ShutdownLedger,
     };
 
-    type AccountRetirement =
-        Result<ActorRetirement<StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>, JoinError>;
-
     enum AccountReport {
         ActivationFailed(
             EntityId<Box<[u64]>>,
             ActivationId,
-            EntityActivationError<Never, StopOnShutdown<ShutdownLedger>, Never, Vec<Never>>,
+            EntityActivationError<Never, StopOnShutdown<ShutdownLedger>, Never>,
         ),
         AdmissionRefused(EntityId<Box<[u64]>>, AdmissionFailure<Vec<u64>>),
         ForcedRetirement(EntityId<Box<[u64]>>, ActivationId, DrainFailure),
         Retired(
             EntityId<Box<[u64]>>,
             ActivationId,
-            AccountRetirement,
+            EntityRetirement<Accounts>,
             ActorRetirementReport,
         ),
     }
@@ -966,7 +960,6 @@ mod tests {
         type Hosts = ActorSpace<ShutdownLedger>;
         type HydrationError = Never;
         type Terminal = Never;
-        type ChildFailures = Vec<Never>;
 
         #[expect(
             clippy::unused_async_trait_impl,
@@ -984,7 +977,7 @@ mod tests {
             &self,
             id: EntityId<Self::Id>,
             activation: ActivationId,
-            failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+            failure: EntityActivationError<Never, Self::Behavior, Never>,
         ) {
             self.reports
                 .lock()
@@ -1014,7 +1007,7 @@ mod tests {
             &self,
             id: &EntityId<Self::Id>,
             activation: ActivationId,
-            retirement: AccountRetirement,
+            retirement: EntityRetirement<Accounts>,
             retirement_report: ActorRetirementReport,
         ) {
             self.reports

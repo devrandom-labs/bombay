@@ -6,7 +6,7 @@ use bombay::RetirementOutcome;
 use bombay::WorkOutcome;
 use bombay::entity::{
     ActivationId, AdmissionFailure, DirectoryConfig, DrainFailure, EntityActivationError,
-    EntityCapacity, EntityDefinition, EntityId,
+    EntityCapacity, EntityDefinition, EntityId, EntityRetirement,
 };
 use bombay::{ActorRetirement, ActorRetirementReport};
 use core::future::{Future, ready};
@@ -21,7 +21,6 @@ use std::sync::{Arc, Mutex, PoisonError};
 #[cfg(feature = "axum")]
 use std::time::Duration;
 use tokio::runtime::Builder;
-use tokio::task::JoinError;
 
 use bombay::behavior::{BehaviorBase, MessageProtocol};
 use bombay::prelude::*;
@@ -313,9 +312,6 @@ bombay::topology! {
     }
 }
 
-type CounterRetirement =
-    Result<ActorRetirement<StopOnShutdown<Counter>, Never, Vec<Never>>, JoinError>;
-
 #[expect(
     dead_code,
     reason = "failure callbacks retain complete typed originals; the healthy Entity journey expects no failures"
@@ -328,7 +324,7 @@ enum CounterFailure {
     Activation(
         EntityId<u64>,
         ActivationId,
-        EntityActivationError<Never, StopOnShutdown<Counter>, Never, Vec<Never>>,
+        EntityActivationError<Never, StopOnShutdown<Counter>, Never>,
     ),
     Admission(EntityId<u64>, AdmissionFailure<CounterCommand>),
     Forced(EntityId<u64>, ActivationId, DrainFailure),
@@ -336,7 +332,11 @@ enum CounterFailure {
 
 struct Counters {
     failures: Arc<Mutex<Vec<CounterFailure>>>,
-    retirements: Arc<Mutex<Vec<(CounterRetirement, ActorRetirementReport)>>>,
+    #[expect(
+        clippy::type_complexity,
+        reason = "shared test observation retains every joined native result and its independent runtime assessment"
+    )]
+    retirements: Arc<Mutex<Vec<(EntityRetirement<Counters>, ActorRetirementReport)>>>,
 }
 
 impl EntityDefinition for Counters {
@@ -345,7 +345,6 @@ impl EntityDefinition for Counters {
     type Hosts = counter_application::Topology;
     type HydrationError = Never;
     type Terminal = Never;
-    type ChildFailures = Vec<Never>;
 
     fn hydrate(&self, id: EntityId<u64>) -> impl Future<Output = Result<Self::Behavior, Never>> {
         ready(Ok(Counter {
@@ -359,7 +358,7 @@ impl EntityDefinition for Counters {
         &self,
         id: EntityId<u64>,
         activation: ActivationId,
-        failure: EntityActivationError<Never, Self::Behavior, Never, Vec<Never>>,
+        failure: EntityActivationError<Never, Self::Behavior, Never>,
     ) {
         self.failures
             .lock()
@@ -390,7 +389,7 @@ impl EntityDefinition for Counters {
         &self,
         _: &EntityId<u64>,
         _: ActivationId,
-        retirement: CounterRetirement,
+        retirement: EntityRetirement<Counters>,
         report: ActorRetirementReport,
     ) {
         self.retirements
