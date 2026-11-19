@@ -200,6 +200,11 @@ Entity families are independent hydrated roots in that same declaration. Its
 and its definition. The complete declaration lives with its
 [two-family journey](../crates/bombay/tests/entity_application.rs).
 
+The Entity spelling below is unreleased. Published Runtime0.4.0 still requires
+the independent `ChildFailures` declaration and fourth activation-error type
+parameter; the source branch supplies the derived failures and
+`EntityRetirement<D>` described here.
+
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated
 `ProfileRetirements` as `Terminal`. Native child failures are derived as

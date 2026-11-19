@@ -4682,3 +4682,41 @@ The completed standalone Cargo target was removed after exact input, executable
 identity and raw-log preservation plus fresh idle checks. Observed allocation
 reclaimed was7,234,252,800B (6.7374GiB), a cache measurement rather than a whole
 filesystem delta. Required source, packages, exports and evidence remain.
+
+### Runtime0.4.0 integration for Entity (2026-11-19)
+
+The frozen signed ac55eceb source731/14ac17e1 closes all28 native owners and
+actual authoritative flake0 at0ff35f23. Nine unchanged identities were explicitly
+adopted after source/output verification;19 outputs have actual new or recovered
+executions. All28 physical NARs, derivers, raw logs and scoped receipts were
+rechecked. Its independent optimized workspace and coverage executions each
+reconcile1032/123/1038/same6/154fixtures/3bench targets. Its standalone run exits0
+with1031 ordinary PASS and one distinct successful LEAK under the existing
+Nextest policy, plus six skips. The complete names, source and executable hashes
+are reconciled at078fcf22; the pipe-closure cause and resource quiescence remain
+unproved. No test, timeout or policy was changed or rerun to repair the reader.
+After9849 generated inputs were archived and verified, fresh unused-path checks
+permitted removal of its owned cache, reclaiming5993082880 allocatedB (5.5815GiB).
+Cargo refused the missing cache marker; independently verified filesystem removal
+is recorded separately and is not described as Cargo success.
+
+A fresh delivery guard found [PR439](https://github.com/devrandom-labs/bombay/pull/439)
+already merged at22:33:50UTC as030767c0/tree7b2c32cc. The remote-main refresh was
+missed before the final ac55 qualification, so that accepted epoch remains
+source-specific. Runtime0.4.0 was published at22:34:48UTC: the official1225732B
+archive SHA25654863a6d,547 payload files,415 Rust files, original manifest,
+VCS71bca53e and official tag target agree. Its owning Node8c77 contains the
+seven-value extraction including both withdrawal panic values. It excludes this
+Entity candidate and the peer's newer close repair; no old consumer/compiler
+matrix or peer proof is adopted for the publication.
+
+Signed local7638cf6d integrates actual030 into the existing Entity branch with
+exact parentsac55+030 and no conflict. The four upstream paths change only the
+Runtime package version0.3.1→0.4.0, its two locks and changelog. All Rust/test
+bodies, AGENTS, Nix configuration and toolchain selections, and external SDK
+entries are unchanged by that integration. The actual combined source requires its own frozen-input
+qualification and normal hosted/PR delivery before completion. The current
+publication, source archives, old acceptance and integration records remain
+separate in the existing DevX handoff under retirements/{final-source,main030}.
+Full terminal/callback simplification, catalogue, comparable costs, support,
+documentation and DX01–DX28 acceptance remain open.
