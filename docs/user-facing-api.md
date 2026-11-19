@@ -307,32 +307,40 @@ assembly uses the generated topology above. A manual namespace that executes
 native actors also implements `NativeHost`, returning its selected `Runtime`
 by reference. Pure hosting metadata does not require that execution capability.
 
-## Application interpreters
+## Application services
 
 For application effects such as opening a file, keep the request in an explicit
 `Actions` lane. Its `ExternalRequest::Interpreter` names the concrete interpreter
 that owns the operation; its existing `ActionItem` and `InterpretItem` contracts
 retain the original request, acquired reply and complete rejection.
 
-A leaf application selects a constructor with
+A leaf application selects service setup with
 `Application::new(actor).with_interpreter(factory)`. A function or closure can
-supply the constructor; named configuration implements `InterpreterFactory`.
+create each actor's services; named settings implement `InterpreterFactory`.
 For a child graph, add `interpreter: Config;` to the existing `topology!`
-declaration and pass the configuration to `Topology::new(config)`. Root, fresh
+declaration and pass the settings to `Topology::new(config)`. Root, fresh
 children, cold actors and Entity actors each receive their own interpreter.
-Their concrete service may be non-`Sync`; the shared constructor is `Send + Sync`.
+Their concrete service may be non-`Sync`; its shared setup is `Send + Sync`.
 `Runtime` selects these native capabilities and construction, not an executor.
 
-Construction happens after successful pure initialization, before address
+Application retains the topology and handles its sharing. Service setup borrows
+the retained settings through `InterpreterFactory::create(&self)`. Ordinary
+application code does not build an Arc, Runtime or custom native host to obtain
+this behavior. This is internal borrowing of settings supplied to Application;
+it does not promise that arbitrary caller-local references can enter actor tasks.
+The [public API audit](public-api-audit.md#ordinary-application-review-2026-11-19)
+records the remaining consistency and lifetime questions.
+
+Service setup happens after successful pure initialization, before address
 commitment and initialization effects. Dropping and recreating a pending native
 activation preserves its original interpreter and initialization actions.
 Ordinary applications retain their standard capabilities without supplying a
-constructor. Even when the declared interpreter is `()`, custom requests require
-an explicit constructor; absence grants no custom interpretation capability.
+setup function. Even when the declared interpreter is `()`, custom requests
+require explicit service setup; absence grants no custom interpretation capability.
 
 The [file/environment journeys](../crates/bombay/tests/application_services.rs),
 [configured descendants](../crates/bombay/tests/configured_descendants.rs) and
-[constructor failure tests](../crates/bombay/tests/interpreter_startup.rs) execute
+[service startup failure tests](../crates/bombay/tests/interpreter_startup.rs) execute
 this path with complete rejection and retirement. The
 [unit interpreter tests](../crates/bombay/tests/interpreter_selection.rs) prove
 that explicit unit services can perform real IO while missing or wrongly owned

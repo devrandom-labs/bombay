@@ -28,6 +28,39 @@ opaque runtime port; callers inspect typed variants or consume the value
 instead of relying on a lossy rendering. No error or terminal payload is
 erased merely to implement a formatting trait.
 
+## Ordinary application review (2026-11-19)
+
+The type inventory below is not acceptance of the ordinary developer experience.
+Before another DevX change, trace a complete application through its domain
+modules, adapters, generated and manual forms, execution and failure receiving.
+Identify the existing owner and the code being reused or removed before adding
+an interface. Review the real user example before production implementation;
+an advanced native fixture does not substitute for that example.
+
+| Journey | Existing owner and remaining user-facing gap |
+|---|---|
+| Settings and actor services | Generated topology already retains its selected `Runtime<Config>` and Application shares the topology internally. `with_interpreter(factory)` and `Topology::new(config)` retain supplied settings and borrow them during service setup. Ordinary examples must use those owners without manual Arc or native-host assembly. Consistent setup across application forms remains open; caller-local borrowed settings require a separate lifetime law. |
+| Root, fresh/cold/recursive children and Entity families | Application, the topology generator and existing native interpreters already own setup and cleanup. Settings must reach each path through those owners. `EntityDefinition::Hosts` still fixes the whole topology, and its receptionist retains the concrete runtime port. Moving the same choice onto a global role or erasing it does not solve that coupling. |
+| Work, clients, HTTP, templates and policies | Reuse Application's execution/receiving, typed clients, `ActorInterface`, Axum integration and Behavior Actors composition. Domain messages, supervision, capacities, shutdown and authorization are meaningful choices. Mailboxes, tasks, leases, runtime sharing and interpretation routing belong with their existing owners. |
+| Remote serving and calls | Network endpoints, credentials, identity binding, protocol codecs and current-permission checks remain explicit application policy. Node owns Session/declaration/withdrawal/close mechanics. The current remote example still assembles Client/Export policies and extracts seven positional values; this does not establish the finished ordinary surface. |
+
+Node retains independent binding, close, execution and withdrawal causes.
+The example then chooses its first error with `?` and ordered branches. That
+presentation is distinct from Node's complete custody; simplifying the example
+must not silently merge or discard coexisting causes in the runtime contract.
+
+The eight example entry points and their domain/adapter modules are the current
+source-review inventory, not a full usability or execution proof. A new settings
+model must establish honest lifetimes through spawned execution, lazy Entity
+hydration, startup refusal, cancellation and joined retirement. No replacement
+settings model is accepted by this review.
+
+Internal borrowing of already-retained settings is not a promise that arbitrary
+caller-local references can enter spawned tasks. Do not invent a new settings
+holder merely to hide Arc, or make cross-application sharing an extra user
+requirement. First use the existing application owner and state the lifetime
+needed by the actual application example.
+
 The root entry checks are owned by the [application topology](../examples/application-topology/src/main.rs),
 [counter](../examples/counter/src/main.rs), [Axum](../examples/axum/src/main.rs),
 [supervision](../examples/supervision/src/main.rs), and
@@ -39,8 +72,8 @@ positive and negative boundaries. These references identify the owning checks;
 the combined integration still requires its final full verification. The
 [outgoing public consumers](../crates/bombay/tests/application_clients/outbound.rs)
 exercise actual Node-owned reads and provider disposal. The separate
-[remote Counter](../examples/remote-counter/README.md) demonstrates ordinary
-composition with an explicit finite test identity; the full multi-node
+[remote Counter](../examples/remote-counter/README.md) demonstrates the current
+application composition with an explicit finite test identity; the full multi-node
 contract remains pending. The subsequent
 merged opt-in `remote` feature provides `remote::verify`: one ordinary function over
 a borrowed request, a caller-owned standard result slot and a concrete provider

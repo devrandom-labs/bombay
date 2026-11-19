@@ -4807,3 +4807,75 @@ unused-path checks, without fabricating a marker. Any retained host change must
 first preserve full runtime/callback custody in two actual Applications and
 resolve recursive/role-specific terminal ownership; adding host parameters to
 ordinary references is not accepted merely to repair compiler errors.
+
+### Shared native construction, before the regression (2026-11-19)
+
+The application-bound family proposal is reopened in `DEAD_ENDS.md`: global
+role metadata fails inferred-root contexts, and two independently destructible
+components need a disposal law. No proposed family type, callback sum or caller
+migration is implemented. The retained Entity representation stays unchanged.
+
+One lower-order ownership prerequisite is independently useful for DX15/17 and
+future host projection. `InterpreterFactory::create(&self)` already borrows its
+constructor and returns separately owned actor services. An `Arc<Runtime<F>>`
+must borrow that same constructor through the existing `NativeHost` port, without
+requiring `F: Clone`, `F::Interpreter: Sync`, a shared service instance or a shared
+root namespace. Factory disposal follows its actual last owner. This is a derived
+native ownership law; guarded startup, D-INIT-1 and D-RETIRE-1 stay unchanged.
+
+Before production, a focused public native-port fixture uses two real file/
+environment request contexts and a non-Clone factory with Cell-backed services.
+An owned `Runtime<F>` control must pass; replacing only its constructor ownership
+with the actual shared form must expose the old unsupported construction bound.
+Exact restored owned control must pass again. Both test reviews check complete
+accepted/refused request custody, original OS errors, unique service instances,
+one construction per actor and exactly one final factory disposal. Pure actor
+initialization still emits typed Actions and performs no I/O.
+
+Only after that refusal is established, the proposed production change moves the
+existing idempotent factory call behind private `NativeConstruction::start_services`,
+adds borrowing through standard Arc and generalizes the existing optional-service
+startup/request bounds. The unconditional unit-service path remains unchanged;
+no NativeHost bound is added to plain native fixtures. No new public type, factory
+clone, service Sync bound, runtime state, task, queue, dependency or authoring
+surface is proposed. Expected production scope is the existing services owner,
+under50 net lines; focused tests and these records are separate. Original startup,
+cancellation and retirement owners must pass debug/optimized before broader gates.
+This prerequisite does not retain a public Entity-context or notification model.
+
+Disposition after actual execution and Joel's public-interface review: **reopen**.
+The manual Arc/native-host example exposed runtime details instead of providing
+ordinary application settings. Users define their settings once and supply them
+through the application interface; Bombay must own sharing and actor service
+setup. The borrowed-settings case needs an explicit, truthful lifetime law.
+The existing generated topology and Application already retain/share settings;
+the new proposal must reuse those owners rather than make users reproduce them.
+
+The experiment's two focused native cases passed debug/optimized, and the five
+original debug owners passed17 selections with their isolated child/static
+controls kept separate. Review found repeated startup eagerly accessed the host;
+two new private tests failed at the intended2-versus1 lookup oracle in both
+profiles. No guard correction, full batch, new PR or publication followed.
+All732 inputs/modes and execution evidence are archived, the services owner is
+restored exactly and the new tests are removed from the checkout. See the
+`Manual settings sharing` dead end. The next design starts with real public
+application examples and audits settings, startup, actor creation, topology and
+Entity setup together. This remains part of the existing full DevX programme.
+
+The whole-journey source review includes all eight example applications and their
+21 domain/adapter files, together with application execution, native services,
+topology generation, Entity installation/routing, HTTP and remote adapters.
+Independent review closes the three initial omissions: supporting modules,
+endpoint/identity/Client/Export assembly, and the distinction between Node's
+complete custody and the example's first-error presentation. The existing
+`public-api-audit.md` records the source gaps; this is no usability or runtime
+completion claim. The recent representation changes also receive a bounded
+wrapper review, without declaring every historical public layer necessary.
+
+Use the existing normal configuration path before adding an abstraction:
+`Application::with_topology(root, archive::Topology::new(config))` already retains
+the configuration and borrows it internally. The manual-Arc fixture was not
+needed to demonstrate that path. Automatic internal borrowing, borrowing an
+arbitrary caller-local value, and sharing one configuration between independent
+applications are distinct claims; do not turn the latter two into unrequested
+prerequisites or add a holder that merely renames Arc.
