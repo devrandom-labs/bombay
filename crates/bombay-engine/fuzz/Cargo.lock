@@ -10,9 +10,9 @@ checksum = "c3d036a3c4ab069c7b410a2ce876bd74808d2d0888a82667669f8e783a898bf1"
 
 [[package]]
 name = "bombay-behavior"
-version = "0.30.0"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a053cef32c83bfd0df2fb146d2163a9d78a5e71534febfbd5601087040776b27"
+checksum = "d5a7b5f0aa1ae32dd152c53977d9a60522159dd33f3c7536da3d96f998c1b9bb"
 dependencies = [
  "bombay-behavior-macros",
  "thiserror",

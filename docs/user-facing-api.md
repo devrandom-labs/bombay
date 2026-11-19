@@ -1102,6 +1102,18 @@ exact variant does not remove the logical host bound. Exact-only external
 customer seams should instantiate templates with
 `EstablishedRecipient<P>`.
 
+Dynamic service directories select exact management replies automatically with
+Actors0.31: keep `directory::new(config)` and pass `client.recipient()` directly.
+The application topology lists the actual root/proxy/worker only; it does not
+need five unused reply hosts. Select `.logical_replies()` only when commands
+actually use logical reply names. Their existing host requirements remain.
+Explicit advanced `DynamicSupervisor`, `DynamicCommand` and
+`DynamicSupervisorEvent` annotations name the existing `ExactReplies` or
+`MixedReplies` family; ordinary construction infers it. Lifecycle and diagnostics
+retain their separate configured routes. The complete real client/custody
+journey is in `crates/bombay/tests/application_scope_birth.rs`; it uses the same
+Application-owned settings and clients, without a new wrapper or runtime port.
+
 The intended ordinary public surface is:
 
 - inherent async `Application::run`, `run_with`, feature-gated `run_axum`,

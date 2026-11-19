@@ -212,6 +212,18 @@ The Entity root and advanced directory are compiled by the
 [Entity error tests](../crates/bombay/tests/entity_errors.rs), and
 [Entity compile fixtures](../crates/bombay/tests/compile/pass/entity_public_surface.rs).
 
+## Exact service-directory replies
+
+The selected Actors0.31 directory defaults to its existing exact-reply family.
+`directory::new(config)` and `reply_to: client.recipient()` use the already owned
+external endpoint; five irrelevant logical hosts and six identity conversions
+are removed from the real native client journey. Explicit `.logical_replies()`
+retains actual logical routing and host requirements. The native generic
+established-delivery interpreter already owns admission and exact rejection.
+No Runtime-owned type, callback, wrapper, service or policy is added. Explicit
+advanced type annotations select the existing reply family. Current source
+verification and remaining whole-programme interface gaps retain their limits.
+
 ## Entity and advanced directory
 
 `EntitySlot::decide` exposes transition evidence to an advanced caller, but

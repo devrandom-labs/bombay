@@ -4879,3 +4879,113 @@ needed to demonstrate that path. Automatic internal borrowing, borrowing an
 arbitrary caller-local value, and sharing one configuration between independent
 applications are distinct claims; do not turn the latter two into unrequested
 prerequisites or add a holder that merely renames Arc.
+
+### Exact service replies: Core0.31 adoption (2026-11-19)
+
+The exact-reply policy is published in Behavior/Actors0.31.0 through normal
+Core PR124/125 delivery and actual registry/archive/tag verification. Macros0.16
+is unchanged. On fresh Runtime main `feae6524`, integrated locally as signed
+`772edfc6`, Runtime still selects Core/Actors0.30 at `628649da`. All six registry
+owners, their archive checksums/VCS and the selected775-line Behavior instructions
+are freshly verified; current1.99/Cargo1.99 metadata is locked and has no patch.
+Observe, Entity, Driver and the newly delivered Node repair retain their native
+owners. No earlier Runtime/peer qualification is transferred to this new epoch.
+
+The law is Bombay routing policy: an already established external management
+reply must use its exact recipient without requiring five logical hosts.
+Ordinary code keeps `directory::new(config)`, passes `client.recipient()` directly,
+and declares only the real root/proxy/worker topology. Logical users select the
+existing `.logical_replies()` family. This adds no actor-model guarantee, native
+adapter, configuration holder, shared factory, wrapper, public type or runtime flag.
+
+Before dependency edits, reuse the existing application-scope native regression
+with its five irrelevant hosts and six reply conversions removed. Preserve all39
+original assertion lines, including both Box allocations/values41 and99, duplicate
+refusal/reuse, cancellation, two stops, lifecycle and joined custody. Two additional
+root-report assertions observe existing results. Core0.30 must first refuse this
+syntax for the intended static reply/host reason; zero tests execute in that red
+check. Fresh debug/optimized native execution on the registry0.31 graph follows.
+The four actual management paths do not claim a native Replace execution; owning
+Core pure transitions and the generic typed send interpreter retain that contract.
+
+The complete inventory finds two Rust directory consumers: this public native
+case and the existing child-input custody test's explicit `LedgerSupervisor`
+alias. The latter will append existing `MixedReplies`, preserving its original
+logical/mixed type and all test bodies. No new semantic surface may arise from
+compiler errors. Mechanical migration starts only after the focused law passes.
+
+Expected cumulative scope is17 existing paths: the five retained documentation
+paths; root manifest/lock; Engine fuzz manifest/lock; transport-custody lock; the
+two Rust directory consumers; Driver law-manifest test; both current Driver JSON
+selections; Driver strategy and capability-interface guidance. Production Rust
++0/-0, public types+0/-0, no new module or control state. This concrete budget
+crosses15 and uses Joel's standing explicit instruction, “auto approve everything
+from now on, no need to ask me.” It does not authorize compiler-created wrappers
+or a runtime redesign. Record any unexpected scope before further edits.
+
+Keep all24 historical Driver evidence revisions unchanged; update only current
+selected version/source and the directory family spelling. Preserve unrelated
+SDK/package versions and inspect resolver-edge differences before acceptance.
+Current docs must distinguish exact defaults from explicit logical routing.
+The aggregate checkpoint delegates unchanged state/custody to existing owners;
+there is no new state sum, cause label, lifecycle engine or authority.
+
+Fresh all28 native owners/actual flake, separate named Nextest, selected compiler,
+remote/corpus/coverage/hosted gates and normal reviewed PR delivery remain open.
+Permanent Runtime adoption or publication is not established by Core publication
+or an older source's passing probe. Exact inputs, law/test reviews and results
+remain in the existing DevX handoff under `context/dynamic-replies/runtime-adoption`.
+
+#### Focused exact-reply adoption and mechanical boundary
+
+On current-main integration772edfc6, Core0.30 actually refuses the reviewed
+native syntax with10 missing-host E0277 diagnostics and6 direct-recipient E0308
+diagnostics, all at the original named case. No tests execute. Its exact731
+pre-regression inputs/modes are restored before dependency changes.
+Supported Cargo then updates only Core and Actors0.30 to actual registry0.31;
+all other package versions/origins remain. Cargo selects four existing
+Windows-only references from windows-sys0.52 to0.61, which all four manifests
+allow. The complete402-package graph/features equals the independently reviewed
+0.31 registry probe; those Windows edges and two feature unions are explicit,
+not a Windows execution guarantee. No SDK update or package patch is selected.
+
+The unchanged39 original assertions and two joined root-report assertions pass
+one actual native case in debug and optimized on this new integrated source.
+Both executable hashes and all731 source bytes/modes are independently checked;
+the old refusal, restoration and new results close review7acd452c with no veto.
+This qualifies four actual management-command kinds and the original ownership
+journey, not native Replace, remote execution, whole Runtime/MSRV or delivery.
+
+Mechanical migration may now apply only the published spelling: append existing
+MixedReplies to the old advanced child-input test type, refresh the two existing
+secondary locks and Engine fuzz selection, and bind current Driver inventory/
+version checks to verified Core source3a4e1eeb. All24 historical law-evidence
+revisions,46 template entries and19 request/source families remain; only the
+selected directory event gains its existing reply-family parameter. Ordinary
+client guidance describes exact defaults versus explicit logical replies.
+There is no new Runtime production branch, state, type, trait, method or wrapper.
+Fresh current-source broad/minimum/hosted qualification and normal delivery stay
+open; no earlier source's outcomes are relabeled.
+
+#### Retained Core0.31 caller composition
+
+The retained workspace now selects registry Core/Actors0.31 with Macro0.16.
+Engine fuzz and transport-custody locks select the same verified Core owners;
+their supported Cargo updates preserve every unrelated package version, origin
+and checksum. Their locked graphs and the ordinary workspace are checked
+separately. The root's four allowed Windows-only edge moves remain explicit.
+
+The existing advanced child-input test names MixedReplies, keeping its former
+logical/mixed protocol and all executable statements. The ordinary application
+case has no fake reply hosts or reply conversions. Runtime production bodies,
+control states, modules and owned public types remain unchanged. Current Driver
+selection records name3a4e1eeb; all24 historical law-evidence records,45 unrelated
+template records and19 capability records are retained byte-for-byte as values.
+
+The cumulative submission remains17 existing files including the five earlier
+owned documentation paths. No new source file, public wrapper, configuration
+holder, runtime service or authoring syntax is selected. Current-source proof
+must cover the retained mixed child-input law, Driver owner inventory, strict
+lint/format policy, selected minimum compiler and all repository/hosted gates.
+Receipts in the existing handoff bind their exact source and commands; focused
+eligibility results do not certify the later migration or another source.

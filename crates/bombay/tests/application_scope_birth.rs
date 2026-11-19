@@ -11,11 +11,13 @@ use bombay::lifecycle::ActorDrainPolicy;
 use bombay::prelude::{ActorRetirement, Completion, Exit, MailAddr, StopOnShutdown};
 use bombay::supervisor::directory::{
     self, CancelAuthority, CancellationReceipt, DynamicCommand, DynamicLifecycle, DynamicStatus,
-    EntryCapacity, EntryRetirement, QueryReply, ReplaceRejection, StartRejection, StopRejection,
-    UnexpectedExit, WorkerChangeReceipt, WorkerChangeRejection,
+    EntryCapacity, EntryRetirement, QueryReply, StartRejection, StopRejection, UnexpectedExit,
+    WorkerChangeReceipt, WorkerChangeRejection,
 };
 use bombay::worker::{ImmediateStartup, StartupLimit, WorkerSubmission};
-use bombay::{ActorNotificationReceipts, ApplicationScope};
+use bombay::{
+    ActorFailureAssessment, ActorNotificationReceipts, ApplicationScope, RetirementAssessment,
+};
 use std::collections::BTreeMap;
 use std::ptr;
 use tokio::runtime::Builder;
@@ -51,13 +53,6 @@ type Starts = MessageProtocol<
         WorkerChangeRejection<String, ManagedWorker, ImmediateStartup, StartRejection>,
     >,
 >;
-type Replacements = MessageProtocol<
-    MailAddr,
-    Result<
-        WorkerChangeReceipt<String>,
-        WorkerChangeRejection<String, ManagedWorker, ImmediateStartup, ReplaceRejection>,
-    >,
->;
 type Stops = MessageProtocol<MailAddr, Result<String, StopRejection<String>>>;
 type Queries = MessageProtocol<MailAddr, QueryReply<String, Worker>>;
 type Cancellations =
@@ -68,13 +63,6 @@ bombay::topology! {
         root { Proxy => proxy; }
         proxy { Worker => worker; }
         worker {}
-        hosts {
-            starts: Starts;
-            replacements: Replacements;
-            stops: Stops;
-            queries: Queries;
-            cancellations: Cancellations;
-        }
     }
 }
 
@@ -105,7 +93,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
         .enable_all()
         .build()
         .expect("caller host");
-    let (outcome, _root_report, native, notifications, ()) = host
+    let (outcome, root_report, native, notifications, ()) = host
         .block_on(
             scope
                 .with_topology(root, service_application::Topology::new())
@@ -121,7 +109,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                                 }
                                 .stop_on_shutdown(),
                             ),
-                            reply_to: starts.recipient().into(),
+                            reply_to: starts.recipient(),
                         })
                         .await
                         .expect("start admitted by mailbox");
@@ -152,7 +140,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                     queries
                         .send(DynamicCommand::Query {
                             key: String::from("search"),
-                            reply_to: queries.recipient().into(),
+                            reply_to: queries.recipient(),
                         })
                         .await
                         .expect("query admitted");
@@ -189,7 +177,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                                 }
                                 .stop_on_shutdown(),
                             ),
-                            reply_to: starts.recipient().into(),
+                            reply_to: starts.recipient(),
                         })
                         .await
                         .expect("duplicate command admitted");
@@ -212,7 +200,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                         .send(DynamicCommand::Start {
                             key: String::from("recovered"),
                             submission,
-                            reply_to: starts.recipient().into(),
+                            reply_to: starts.recipient(),
                         })
                         .await
                         .expect("original rejected submission readmitted");
@@ -259,7 +247,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                     cancellations
                         .send(DynamicCommand::Cancel {
                             authority: receipt.cancel,
-                            reply_to: cancellations.recipient().into(),
+                            reply_to: cancellations.recipient(),
                         })
                         .await
                         .expect("cancellation query admitted");
@@ -282,7 +270,7 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
                         stops
                             .send(DynamicCommand::Stop {
                                 key: String::from(service),
-                                reply_to: stops.recipient().into(),
+                                reply_to: stops.recipient(),
                             })
                             .await
                             .expect("stop admitted");
@@ -317,6 +305,9 @@ fn dynamic_service_retains_early_lifecycle_and_exact_rejection_and_retirement() 
             panic!("application starts");
         })
         .into_parts();
+    let report = root_report.expect("the joined dynamic root published its report");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     let (_work, cleanup) = outcome.try_into_completed().unwrap_or_else(|original| {
         drop(original);
         panic!("work and independent cleanup retained");
