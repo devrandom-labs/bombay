@@ -2,10 +2,11 @@
 
 Remote Actors current2026-11-20: actual0.6 verifier-capacity, configured
 compatibility and held-startup Stop witnesses have scoped six-run independent
-reviews6345/6141/bf68. Full R05/R09/R11 and AUTH1/NET1 remain open. The next
-already-charged permissions owner implements the reviewed two-edge bounded
-delegation policy; production/API/dependencies0. Source-qualified evidence and
-remaining obligations live in the PRD; all dependency edges stay unchanged.
+reviews6345/6141/bf68. Bounded delegation healthy/inverse/restored D/R and
+independent reviewd2e53 now pass. R09 local semantic acceptance465654d1 closes
+for declared profiles, pending current-source CI/reviewed merge; Discharge
+recovery differs from exhausted Retain custody. Full R05/R11 and AUTH1/NET1
+remain open; production/API/dependencies0 and dependency edges stay unchanged.
 
 Remote Actors actual-main integration2026-11-20: local scoped checkpoint59550a1b
 preserves its0.5 proofs; actualPR444/maind98 metadata is imported separately,

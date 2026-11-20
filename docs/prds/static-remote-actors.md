@@ -98,6 +98,15 @@ Production: +0/-0/net0. Tests: +2869/-9/net2860. Public API: +0/-0.
 This adds verification capability; it is not source reduction or full feature
 delivery. Exact path deltas are retained in scoped-final-change-record.json.
 
+R09 local semantic acceptance now passes for the declared deterministic
+compositions, independently reviewed in r09-local-acceptance-composition.json
+(465654d1). This composes the actual live capacity/recovery and bounded grant
+proofs with fixed input/parser/trust-source bounds and cache0. Invalid-pressure
+recovery uses Discharge; exhausted Retain history deliberately refuses new
+work and has no unpromised liveness guarantee. R08's independent-provider
+algorithm obligations remain separate. Current-source combined CI and reviewed
+merge are still required; this does not mark R09/NET1 merged.
+
 Cumulative scope remains40-of-explicitly-approved40, including restored owner
 cuts; no refund. Any41st path requires its explicit checkpoint. Full combined
 gates, final minimization, exact-head review/CI and recorded merge remain
