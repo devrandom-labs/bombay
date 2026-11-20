@@ -4720,3 +4720,347 @@ publication, source archives, old acceptance and integration records remain
 separate in the existing DevX handoff under retirements/{final-source,main030}.
 Full terminal/callback simplification, catalogue, comparable costs, support,
 documentation and DX01–DX28 acceptance remain open.
+
+### Entity interface delivery (2026-11-19)
+
+[PR440](https://github.com/devrandom-labs/bombay/pull/440) merged normally at
+09:44:52UTC as `07f233e3fface45cebdd182596433abb51cbb0ee`, with exact parents
+`030767c0` and signed `cf913ad0`. Its tree `650681ab` equals the accepted head
+and hosted preview. All eight hosted checks and all28 scoped Linux owners pass;
+native28/actual flake0 and the separate standalone1032 ordinary PASS/zero LEAK/
+same six child skips retain their independent executions. All123 executables,
+1038 registrations and731 source inputs reconcile. The earlier ac55 successful
+LEAK remains a separate observation, not an ordinary pass or quiescence proof.
+
+Bounded fuzzing completes Driver2048 and four Observe1024 runs; all16 original
+seeds, eight official artifact ZIP digests and529 payload files are verified.
+Miri was skipped. Linux log acceptance does not claim independently downloaded
+NARs, coverage JSON or hidden ActorExecution negative artifacts. CodeQL's seven
+error files/nine warnings and selected minimum-compiler limits remain explicit.
+The handoff's `retirements/main030/final-acceptance.json` (84d310b7) closed before
+the actual fresh peer no-hold acknowledgment and immediate merge guards;
+`delivery.json` (b2c0c233) records actual Git/API delivery and the AFTER notice.
+
+The retained interface derives native child failures from Terminal and uses the
+transparent complete `EntityRetirement<D>` result. Original activation-error
+inference, same-payload forwarding and all four callback contracts survive.
+Runtime0.4.0's published archive excludes this source-breaking Entity change;
+no publication follows from this merge. Full terminal/callback simplification,
+catalogue, comparable costs, support, documentation and DX01–DX28 remain open.
+
+The completed Cargo cache was removed after9850 generated inputs and executable/
+source evidence were preserved, reclaiming6013476864 allocated bytes. The merged
+checkout was normally removed after exact source/archive/ignored-file/history
+preservation and fresh unused-path checks. One source-only continuation remains
+for this active programme, so that worktree replacement claims no material net
+disk saving. Required packages, exports, branch and evidence remain preserved.
+
+### Application-owned Entity hosting, before the observation (2026-11-19)
+
+DX02/03/17/22 assign concrete topology to each Application. The current
+`EntityDefinition::Hosts` instead fixes one host product in the domain
+definition, and `Application::entity_family` requires exact equality with it.
+First test whether the unchanged real Accounts definition can attach to two
+otherwise valid declarations: its existing empty Root, and the existing Account
+as another application's root. Both use the same leaf actor/`Never` descendant
+equation. This tests application composition policy, not a new actor-model law.
+
+Fresh verification on actualmain07f233e3/local signed delivery-record successor
+e87d0bc6 checks the selected registry archives, every extracted payload and VCS:
+Behavior/Actors0.30.0 at628649da, Macros0.16.0 at55dbac2d, Address0.3.0 at9f058dc0,
+Communication0.1.7 at2d71c2f6 and Timers0.2.0 at9369d1f6. There is no dependency
+patch. Private Observe and native Entity/Application/child-binding owners remain
+unchanged. The exact selected Behavior instructions and current owner APIs,
+leaf Accounts, recursive Trees and actual topology family generation are read;
+archive hashes and source measurements are in the existing handoff's
+`context/{selected-archives,prerecord,before-source}.json`.
+
+The bounded experiment changes only the public example temporarily: original
+check0, second declared-root construction check0, attachment refusal specifically
+at the Hosts equality, then byte-exact restoration/check0. It executes no actor
+and selects no replacement public interface. In particular a leaf result cannot
+prove one canonical Terminal per definition, recursive/multiple-role closure,
+same-payload forwarding after a change, or callback simplification. Those remain
+model prerequisites before production; no catalogue migration is selected.
+
+The ten Entity modules retain the same slot/task/control sums and all owned
+leases, generations, reservations, publications and results. The prerecord
+measures5129 physical production-prefix lines,192 match-arm tokens and126 public
+declarations with an explicit source-only method; these are diagnostics, not AST
+or semantic proof. All values and branches must remain byte-exact after this
+observation. Production/API delta0, one temporary example path plus these records;
+one serial pinned-Nix Cargo check controller/jobs1 owns a new context target.
+Full semantic design, wider gates and the full programme remain open.
+
+The exact sequence completes at10:16:08UTC: original0, second-root construction0,
+attachment101 with soleE0271 (`Accounts::Hosts` must equal the second Topology),
+and exact restored0. The diagnostic names the real bound at Application's
+`entity_family`; all731 bytes/modes/membership and all ten Entity modules are
+restored. Independent source and execution reviews pass. This establishes the
+attachment restriction only: construction checks no runtime execution bounds,
+and zero actors ran. No replacement model or production edit is accepted.
+The exact archive, four raw results and reviews are in `context/acceptance.json`.
+Its completed target is removed after98 generated inputs were preserved,
+reclaiming73048064 allocated bytes. Cargo clean refused its missing cache tag;
+normal pinned filesystem removal followed independent path/inode/full-file and
+unused-path checks, without fabricating a marker. Any retained host change must
+first preserve full runtime/callback custody in two actual Applications and
+resolve recursive/role-specific terminal ownership; adding host parameters to
+ordinary references is not accepted merely to repair compiler errors.
+
+### Shared native construction, before the regression (2026-11-19)
+
+The application-bound family proposal is reopened in `DEAD_ENDS.md`: global
+role metadata fails inferred-root contexts, and two independently destructible
+components need a disposal law. No proposed family type, callback sum or caller
+migration is implemented. The retained Entity representation stays unchanged.
+
+One lower-order ownership prerequisite is independently useful for DX15/17 and
+future host projection. `InterpreterFactory::create(&self)` already borrows its
+constructor and returns separately owned actor services. An `Arc<Runtime<F>>`
+must borrow that same constructor through the existing `NativeHost` port, without
+requiring `F: Clone`, `F::Interpreter: Sync`, a shared service instance or a shared
+root namespace. Factory disposal follows its actual last owner. This is a derived
+native ownership law; guarded startup, D-INIT-1 and D-RETIRE-1 stay unchanged.
+
+Before production, a focused public native-port fixture uses two real file/
+environment request contexts and a non-Clone factory with Cell-backed services.
+An owned `Runtime<F>` control must pass; replacing only its constructor ownership
+with the actual shared form must expose the old unsupported construction bound.
+Exact restored owned control must pass again. Both test reviews check complete
+accepted/refused request custody, original OS errors, unique service instances,
+one construction per actor and exactly one final factory disposal. Pure actor
+initialization still emits typed Actions and performs no I/O.
+
+Only after that refusal is established, the proposed production change moves the
+existing idempotent factory call behind private `NativeConstruction::start_services`,
+adds borrowing through standard Arc and generalizes the existing optional-service
+startup/request bounds. The unconditional unit-service path remains unchanged;
+no NativeHost bound is added to plain native fixtures. No new public type, factory
+clone, service Sync bound, runtime state, task, queue, dependency or authoring
+surface is proposed. Expected production scope is the existing services owner,
+under50 net lines; focused tests and these records are separate. Original startup,
+cancellation and retirement owners must pass debug/optimized before broader gates.
+This prerequisite does not retain a public Entity-context or notification model.
+
+Disposition after actual execution and Joel's public-interface review: **reopen**.
+The manual Arc/native-host example exposed runtime details instead of providing
+ordinary application settings. Users define their settings once and supply them
+through the application interface; Bombay must own sharing and actor service
+setup. The borrowed-settings case needs an explicit, truthful lifetime law.
+The existing generated topology and Application already retain/share settings;
+the new proposal must reuse those owners rather than make users reproduce them.
+
+The experiment's two focused native cases passed debug/optimized, and the five
+original debug owners passed17 selections with their isolated child/static
+controls kept separate. Review found repeated startup eagerly accessed the host;
+two new private tests failed at the intended2-versus1 lookup oracle in both
+profiles. No guard correction, full batch, new PR or publication followed.
+All732 inputs/modes and execution evidence are archived, the services owner is
+restored exactly and the new tests are removed from the checkout. See the
+`Manual settings sharing` dead end. The next design starts with real public
+application examples and audits settings, startup, actor creation, topology and
+Entity setup together. This remains part of the existing full DevX programme.
+
+The whole-journey source review includes all eight example applications and their
+21 domain/adapter files, together with application execution, native services,
+topology generation, Entity installation/routing, HTTP and remote adapters.
+Independent review closes the three initial omissions: supporting modules,
+endpoint/identity/Client/Export assembly, and the distinction between Node's
+complete custody and the example's first-error presentation. The existing
+`public-api-audit.md` records the source gaps; this is no usability or runtime
+completion claim. The recent representation changes also receive a bounded
+wrapper review, without declaring every historical public layer necessary.
+
+Use the existing normal configuration path before adding an abstraction:
+`Application::with_topology(root, archive::Topology::new(config))` already retains
+the configuration and borrows it internally. The manual-Arc fixture was not
+needed to demonstrate that path. Automatic internal borrowing, borrowing an
+arbitrary caller-local value, and sharing one configuration between independent
+applications are distinct claims; do not turn the latter two into unrequested
+prerequisites or add a holder that merely renames Arc.
+
+### Exact service replies: Core0.31 adoption (2026-11-19)
+
+The exact-reply policy is published in Behavior/Actors0.31.0 through normal
+Core PR124/125 delivery and actual registry/archive/tag verification. Macros0.16
+is unchanged. On fresh Runtime main `feae6524`, integrated locally as signed
+`772edfc6`, Runtime still selects Core/Actors0.30 at `628649da`. All six registry
+owners, their archive checksums/VCS and the selected775-line Behavior instructions
+are freshly verified; current1.99/Cargo1.99 metadata is locked and has no patch.
+Observe, Entity, Driver and the newly delivered Node repair retain their native
+owners. No earlier Runtime/peer qualification is transferred to this new epoch.
+
+The law is Bombay routing policy: an already established external management
+reply must use its exact recipient without requiring five logical hosts.
+Ordinary code keeps `directory::new(config)`, passes `client.recipient()` directly,
+and declares only the real root/proxy/worker topology. Logical users select the
+existing `.logical_replies()` family. This adds no actor-model guarantee, native
+adapter, configuration holder, shared factory, wrapper, public type or runtime flag.
+
+Before dependency edits, reuse the existing application-scope native regression
+with its five irrelevant hosts and six reply conversions removed. Preserve all39
+original assertion lines, including both Box allocations/values41 and99, duplicate
+refusal/reuse, cancellation, two stops, lifecycle and joined custody. Two additional
+root-report assertions observe existing results. Core0.30 must first refuse this
+syntax for the intended static reply/host reason; zero tests execute in that red
+check. Fresh debug/optimized native execution on the registry0.31 graph follows.
+The four actual management paths do not claim a native Replace execution; owning
+Core pure transitions and the generic typed send interpreter retain that contract.
+
+The complete inventory finds two Rust directory consumers: this public native
+case and the existing child-input custody test's explicit `LedgerSupervisor`
+alias. The latter will append existing `MixedReplies`, preserving its original
+logical/mixed type and all test bodies. No new semantic surface may arise from
+compiler errors. Mechanical migration starts only after the focused law passes.
+
+Expected cumulative scope is17 existing paths: the five retained documentation
+paths; root manifest/lock; Engine fuzz manifest/lock; transport-custody lock; the
+two Rust directory consumers; Driver law-manifest test; both current Driver JSON
+selections; Driver strategy and capability-interface guidance. Production Rust
++0/-0, public types+0/-0, no new module or control state. This concrete budget
+crosses15 and uses Joel's standing explicit instruction, “auto approve everything
+from now on, no need to ask me.” It does not authorize compiler-created wrappers
+or a runtime redesign. Record any unexpected scope before further edits.
+
+Keep all24 historical Driver evidence revisions unchanged; update only current
+selected version/source and the directory family spelling. Preserve unrelated
+SDK/package versions and inspect resolver-edge differences before acceptance.
+Current docs must distinguish exact defaults from explicit logical routing.
+The aggregate checkpoint delegates unchanged state/custody to existing owners;
+there is no new state sum, cause label, lifecycle engine or authority.
+
+At this initial prerecord, all28 native owners/actual flake, separate named
+Nextest, selected compiler, remote/corpus/coverage/hosted gates and normal
+reviewed PR delivery remained open. Core publication or an older source's
+passing probe did not establish Runtime adoption or publication. Exact inputs,
+law/test reviews and results remain in the existing DevX handoff under
+`context/dynamic-replies/runtime-adoption`.
+
+#### Focused exact-reply adoption and mechanical boundary
+
+On current-main integration772edfc6, Core0.30 actually refuses the reviewed
+native syntax with10 missing-host E0277 diagnostics and6 direct-recipient E0308
+diagnostics, all at the original named case. No tests execute. Its exact731
+pre-regression inputs/modes are restored before dependency changes.
+Supported Cargo then updates only Core and Actors0.30 to actual registry0.31;
+all other package versions/origins remain. Cargo selects four existing
+Windows-only references from windows-sys0.52 to0.61, which all four manifests
+allow. The complete402-package graph/features equals the independently reviewed
+0.31 registry probe; those Windows edges and two feature unions are explicit,
+not a Windows execution guarantee. No SDK update or package patch is selected.
+
+The unchanged39 original assertions and two joined root-report assertions pass
+one actual native case in debug and optimized on this new integrated source.
+Both executable hashes and all731 source bytes/modes are independently checked;
+the old refusal, restoration and new results close review7acd452c with no veto.
+This qualifies four actual management-command kinds and the original ownership
+journey, not native Replace, remote execution, whole Runtime/MSRV or delivery.
+
+Mechanical migration may now apply only the published spelling: append existing
+MixedReplies to the old advanced child-input test type, refresh the two existing
+secondary locks and Engine fuzz selection, and bind current Driver inventory/
+version checks to verified Core source3a4e1eeb. All24 historical law-evidence
+revisions,46 template entries and19 request/source families remain; only the
+selected directory event gains its existing reply-family parameter. Ordinary
+client guidance describes exact defaults versus explicit logical replies.
+There is no new Runtime production branch, state, type, trait, method or wrapper.
+At this focused checkpoint, broad/minimum/hosted qualification and normal
+delivery remained open; no earlier source's outcomes were relabeled.
+
+#### Retained Core0.31 caller composition
+
+The retained workspace now selects registry Core/Actors0.31 with Macro0.16.
+Engine fuzz and transport-custody locks select the same verified Core owners;
+their supported Cargo updates preserve every unrelated package version, origin
+and checksum. Their locked graphs and the ordinary workspace are checked
+separately. The root's four allowed Windows-only edge moves remain explicit.
+
+The existing advanced child-input test names MixedReplies, keeping its former
+logical/mixed protocol and all executable statements. The ordinary application
+case has no fake reply hosts or reply conversions. Runtime production bodies,
+control states, modules and owned public types remain unchanged. Current Driver
+selection records name3a4e1eeb; all24 historical law-evidence records,45 unrelated
+template records and19 capability records are retained byte-for-byte as values.
+
+The cumulative submission remains17 existing files including the five earlier
+owned documentation paths. No new source file, public wrapper, configuration
+holder, runtime service or authoring syntax is selected. Current-source proof
+must cover the retained mixed child-input law, Driver owner inventory, strict
+lint/format policy, selected minimum compiler and all repository/hosted gates.
+Receipts in the existing handoff bind their exact source and commands; focused
+eligibility results do not certify the later migration or another source.
+
+#### Integration with the Runtime0.5 release
+
+Actual main advanced as PR442 merge6d0c5fae on2026-11-19T20:30:45Z. Its four
+paths change only Runtime's own version, two lock entries and its changelog.
+Local signed mergee7d4f425 integrates that actual main without conflict; every
+Rust, test, example, API contract and external dependency selection is unchanged
+from the retained Core0.31 adoption. The cumulative own budget remains17 existing
+paths, Runtime production Rust+0/-0 and owned public types+0/-0.
+
+The official registry index and actual Runtime0.5 archive independently establish
+publication20:31:36Z, checksum0fd41cf6, VCS940f77eb and the accepted main tree.
+All415 packaged Rust files match Git. This release includes the Entity and typed
+Node-close contracts while selecting Core/Actors0.30. It excludes the local
+Core0.31 adoption. This is source/package custody, not a publication action or
+adoption of another session's compiler or runtime results.
+
+Original signed1a9dcab qualification remains on Runtime0.4/basefeae. Nine scoped
+owners were accepted, including optimized remote562/12harnesses/32fixtures with
+six separate guard echoes, and the finite Counter value1 journey. Thirteen
+registered outputs, exact731 inputs/archive/bundle/ref, source and Cargo input
+roots and the complete parent raw are retained. Only the verified owning Nix
+client received SIGINT after the upstream change was inspected. Its command
+exit1 records controlled interruption, not an inferred semantic failure or a
+passing all28/flake/Nextest result. Peer jobs and inputs were untouched.
+
+Runtime's self version and locks belong to every check's source inputs. The
+integrated0.5 source therefore required fresh all28/actual-flake qualification,
+the selected1.96 native case in both profiles, then a separate guarded workspace
+Nextest run and exact hosted/normal delivery. Old results keep their original
+source and command scopes; no old outcomes were adopted for this new source.
+The existing two-family model and original39+2 caller assertions are unchanged;
+this metadata integration introduces no new semantic experiment or machinery.
+
+#### Local verification snapshot (2026-11-20)
+
+Clean signed41619606/tree95b1d1be on actualmain6d0c5fae closes the local Runtime0.5
+adoption gates for its exact731 inputs. All28 native owners and the authoritative
+flake check pass, with each output, deriver, physical NAR, source and retained
+payload checked (native acceptance32c284ff). Independent coverage and optimized
+workspace execution each reconcile1035 passes/123 compiled harnesses/1041 names,
+the same six controlled ignored children,154 compiler fixtures and3 bench targets.
+Coverage's four owner floors pass from the actual JSON; the full report is
+retained losslessly. Build export is compile-only evidence. Selected1.96 local/
+Axum114/28/138 and public remote4/12 pass; neither is whole-private-runtime MSRV
+execution. Driver and ActorExecution controls retain their distinct runtime,
+policy and compiler outcomes, rather than treating every refusal as a runtime kill.
+
+Fresh actual1.96 debug and optimized application execution each pass the one
+named ownership journey, preserving the original39 assertions plus2 joined-root
+reports (acceptance51c95ce5, independent reviewf95a8f45). Separately guarded
+Nextest passes1035 ordinary cases with zeroLEAK and the same six skips;123 physical
+test executables and all current source bytes/modes are reconciled (acceptance
+17717f8a, independent reviewb6039be5). Of those compiled executables,111 contain
+selected cases. ZeroLEAK is not global task quiescence or a resource bound.
+
+The complete17-path source/model/interface/minimization review passesd4904592:
+Runtime production bodies, owned public types, modules and control states remain
+unchanged. ExactReplies/MixedReplies reuse removes the five unused logical hosts
+and six identity conversions without another wrapper or routing authority. All24
+historical Driver evidence revisions remain intact. The four allowed Windows-only
+resolver-edge changes and two feature unions are not Windows execution proof.
+
+The disposable Cargo target was normally removed after14,158 generated inputs,
+source and required proofs were preserved, with fresh empty process-use checks;
+net7,808,401,408 allocated bytes were reclaimed. Required Nix outputs, packages,
+archives and evidence remain protected. This is separate from earlier cleanup.
+
+As of this record freeze, the two-record successor still requires exact-source
+qualification and hosted/normal PR delivery. Only unchanged registered Nix
+derivation/output identities may reuse accepted owner proofs; changed identities
+require their own outcomes. The416 results remain source-specific. No new Runtime
+publication is claimed. Full terminal/callback/catalogue/cost/support/documentation
+and DX01–DX28 completion remain open; this snapshot does not close that programme.
