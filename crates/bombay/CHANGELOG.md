@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.5.0...bombay-rs-v0.6.0) - 2026-11-20
+
+### Changed
+
+- **Breaking:** use Bombay Behavior and Behavior Actors 0.31.0, with exact
+  directory replies as the default. Pass `client.recipient()` directly; ordinary
+  exact-reply applications no longer need logical hosts or identity conversions.
+- Choose `.logical_replies()` when replies need logical routing. Advanced callers
+  that explicitly name `DynamicSupervisor`, its `Command`, or its `Event` include
+  the existing `ExactReplies` or `MixedReplies` family in those type arguments.
+
 ## [0.5.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.4.0...bombay-rs-v0.5.0) - 2026-11-19
 
 ### Fixed

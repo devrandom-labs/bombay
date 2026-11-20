@@ -1,5 +1,26 @@
 # Static remote actors and typed admission
 
+## Actual main integration — PR444 (2026-11-20)
+
+Local scoped checkpoint59550a1b preserves the two retained tests and their
+qualified0.5 source. Actual Runtime mainPR444/d98db0aa is now being integrated
+with that checkpoint. Its ten release metadata/document paths import Engine0.4
+and Runtime0.6; every Rust/AGENTS/SDK/Nix/workflow byte stays unchanged. Nine
+incoming paths remain exact upstream; backlog status keeps both the upstream
+DX1 delivery row and this goal's independent records/edges. No new Root
+production body, public type, effect, runtime policy or dependency is invented.
+The selected registry Core/Actors0.31 and Macros0.16, Address, Communication,
+Observe, Timers, SDK and all external checksum/edge choices remain unchanged.
+The complete selected Behavior instructions and exact published031 VCS/checksums
+were rechecked during resume.
+
+This is actual-main source integration, not new execution, registry publication
+or adoption of later Core032. Prior healthy/inverse/restored-replay/strict-lint
+receipts retain their0.5 graph. Fresh combined qualification remains open and the
+user-selected implementation-first/broad-checks-last workflow still applies.
+Both stopped-task notices/candidates remain preserved and unaccepted. Full
+R01–R25/AUTH1/NET1 and final source/CI/minimization/delivery requirements remain.
+
 ## Current continuation — explicit user reactivation (2026-11-20)
 
 The user reactivated the EXISTING full R01–R25/AUTH1/NET1 Goal; the actual
