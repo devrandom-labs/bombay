@@ -5058,9 +5058,69 @@ source and required proofs were preserved, with fresh empty process-use checks;
 net7,808,401,408 allocated bytes were reclaimed. Required Nix outputs, packages,
 archives and evidence remain protected. This is separate from earlier cleanup.
 
-As of this record freeze, the two-record successor still requires exact-source
+As of this historical record freeze, the two-record successor still required exact-source
 qualification and hosted/normal PR delivery. Only unchanged registered Nix
 derivation/output identities may reuse accepted owner proofs; changed identities
 require their own outcomes. The416 results remain source-specific. No new Runtime
 publication is claimed. Full terminal/callback/catalogue/cost/support/documentation
 and DX01–DX28 completion remain open; this snapshot does not close that programme.
+
+#### Exact reply delivery (2026-11-20)
+
+[PR443](https://github.com/devrandom-labs/bombay/pull/443) normally merged signed
+`e3a2648db130e6e9b239722d2886806235574a2a` at06:49:01UTC as
+`3057b955ecea4a27a76ef8db29e4a40c02e56be2`. Its physical Git/API tree is exactly
+the accepted `ad86391165d54257e1c9a475088029778f4417e0`, with parents6d0c5fae+e3a2648d.
+Fresh BEFORE, actual Remote Actors no-hold ACK, immediate head/base/rules/all8/
+review guards and normal MERGE are retained; no bypass or retrospective ACK.
+
+Final-source native28/actualflake0 acceptance96d9dfdd combines24 exact registered
+identity adoptions and four actual changed owners. Fresh standalone1035 ordinary
+passes/123 executables/1041 names/same six controlled skips/zeroLEAK is independently
+closeda093eb46. Original416 executions stay source-specific; its actual1.96 D/R
+application outcomes qualify by reviewed unchanged consumed inputs, not a fresh
+e3 direct-case execution. Complete17-path sourced4904592 and two-record0a16d22c
+reviews pass. Runtime production Rust changes/new owned public types remain0; the existing
+two-family model and39+2 caller assertions are unchanged.
+
+All eight exact hosted checks pass. Detailed Linux28 log scopes closef6d71d43;
+optimized workspace and coverage each separately reconcile1035/123/1041/same6/
+154 compiler fixtures/3bench targets. All four CI-reported owner floors pass.
+Remote debug/release each562/12/32/six guard echoes; selected1.96 local/Axum
+114/28/138/same1child and remote4/12 retain their selected scope. Eight official
+ZIP digests and522 payloads are rehashed: six profiles and two bounded ASan fuzz
+archives, Driver2048/fourObserve1024 with16 original source seeds. Miri is skipped.
+Linux physical NAR/export/coverageJSON/hidden ActorExecution artifacts are not
+downloaded; script-reported negative markers are bounded accordingly. Deny
+tool/DB/binary, CodeQL467/7/9 baseline-warning and CI-reported TLS binary limits
+remain explicit. Build-only, finite, controlled-child, compiler and runtime
+evidence are distinct; zeroLEAK is not global quiescence.
+
+Final acceptance is `d061bfb1745d6398b9f720c57b5cb0517aa7fe5371e59ea400181276d3022310`;
+actual delivery is `224692745aa93daa3d95923f393cdcd1e025bbbbaff9790e803b3b586b4d488f`
+in the existing `records-final/{final-acceptance,delivery}.json` handoff. Source731,
+archive/bundle/raw commits/ref,28 native roots/registry/receipts/raw and32 required
+payloads are preserved. The obsolete merged tree was normally removed after two
+audited idle login shells exited and two fresh empty process-use scans; one clean
+source-only continuation replaces it, with no material net disk claim or cache
+recount. Both completed Cargo targets remain removed.
+
+This merge adopts published Core/Actors0.31 on main; it does not publish Runtime.
+Observed registry Runtime0.5.0 still selects Core/Actors0.30. Actual release/source/
+registry/tag/consumer qualification remains separate. Full terminal/callback/
+catalogue/configuration/cost/support/workflow/documentation and DX01–DX28 acceptance
+remain open; this feature delivery does not close the original programme.
+
+#### Exact reply release candidate (2026-11-20)
+
+PR444 proposes Engine0.4.0 and Runtime0.6.0 on delivered main3057. Its existing
+release metadata and consumer locks change only the two workspace package
+versions. The new changelog sections describe the actual Core/Actors0.31 caller
+migration: direct exact recipients by default, explicit logical replies where
+needed, and the existing reply family in advanced supervisor protocol types.
+The Node close repair already shipped in Runtime0.5; it is not a new0.6 feature.
+Together with the two delivery records above, this candidate changes ten existing
+metadata/document paths, no Rust/tests/SDK/Nix/workflows or owned public types.
+Original bot8c3 CI and accepted e3 outcomes retain their source scopes. Exact
+release-source native/standalone/package/consumer/minimum/hosted qualification,
+normal guarded delivery and actual publication verification remain separate.
