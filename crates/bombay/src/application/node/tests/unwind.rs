@@ -17,7 +17,7 @@ use crate::{ActorRetirement, MailAddr, TrySendError, WorkOutcome};
 use behavior::{EstablishedRecipient, Never, User};
 use core::future::{IntoFuture, pending, poll_fn, ready};
 use core::task::Poll;
-use futures_util::FutureExt;
+use futures_util::{FutureExt, future};
 use std::cell::{Cell, Ref, RefCell};
 use std::error::Error;
 use std::io;
@@ -121,32 +121,74 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                         .await
                         .expect("the actual tracked query-timeout callback entered");
                     let (retirement_notice, mut retirement) = oneshot::channel();
-                    let retirement_thread = thread::spawn(move || {
-                        let original = catch_unwind(
-                            access::native_allow_does_not_replace_the_application_grant,
-                        );
-                        match retirement_notice.send(original) {
-                            Ok(()) => {}
-                            Err(original) => drop(original),
-                        }
-                    });
-                    let progress = timeout(Duration::from_secs(15), &mut retirement).await;
-                    let (closed, released, destroyed) = match &completion {
+                    let (closed, progress, retirement_thread, close_start, released, destroyed) = match &completion {
                         QueryCompletion::BeforeClose => {
+                            let retirement_thread = thread::spawn(move || {
+                                let original = catch_unwind(
+                                    access::native_allow_does_not_replace_the_application_grant,
+                                );
+                                match retirement_notice.send(original) {
+                                    Ok(()) => {}
+                                    Err(original) => drop(original),
+                                }
+                            });
+                            let progress = timeout(Duration::from_secs(15), &mut retirement).await;
                             let released = release.send(());
                             let destroyed = callback_destruction.await;
                             let closed = AssertUnwindSafe(session.close().into_future())
                                 .catch_unwind()
                                 .await;
-                            (closed, released, destroyed)
+                            (closed, progress, Some(retirement_thread), None, released, destroyed)
                         }
                         QueryCompletion::AfterTimeout => {
-                            let closed = AssertUnwindSafe(session.close().into_future())
+                            let mut closing = AssertUnwindSafe(session.close().into_future())
                                 .catch_unwind()
-                                .await;
+                                .inspect(|_| {
+                                    eprintln!(
+                                        "native-close-component: close completed at {:?}",
+                                        Instant::now()
+                                    );
+                                });
+                            let (closed, progress, retirement_thread, close_start) = match poll_fn(|cx| Poll::Ready(closing.poll_unpin(cx))).await {
+                                Poll::Pending => {
+                                    eprintln!(
+                                        "native-close-component: first close poll pending at {:?}",
+                                        Instant::now()
+                                    );
+                                    let retirement_thread = thread::spawn(move || {
+                                        let original = catch_unwind(
+                                            access::native_allow_does_not_replace_the_application_grant,
+                                        );
+                                        match retirement_notice.send(original) {
+                                            Ok(()) => {}
+                                            Err(original) => drop(original),
+                                        }
+                                    });
+                                    let (closed, progress) = future::join(
+                                        &mut closing,
+                                        timeout(Duration::from_secs(15), &mut retirement).inspect(|_| {
+                                            eprintln!(
+                                                "native-close-component: peer observation completed at {:?}",
+                                                Instant::now()
+                                            );
+                                        }),
+                                    ).await;
+                                    (closed, progress, Some(retirement_thread), Poll::Pending)
+                                }
+                                Poll::Ready(original) => {
+                                    eprintln!(
+                                        "native-close-component: first close poll ready at {:?}",
+                                        Instant::now()
+                                    );
+                                    drop(retirement_notice);
+                                    let progress = timeout(Duration::from_secs(15), &mut retirement).await;
+                                    (original, progress, None, Poll::Ready(()))
+                                }
+                            };
+                            drop(closing);
                             let released = release.send(());
                             let destroyed = callback_destruction.await;
-                            (closed, released, destroyed)
+                            (closed, progress, retirement_thread, Some(close_start), released, destroyed)
                         }
                     };
                     // This notifier follows callback return, but precedes field/task
@@ -159,9 +201,22 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                         Ok(original) => Ok(original),
                         Err(deadline) => Err((deadline, retirement.await)),
                     };
-                    let joined = task::spawn_blocking(move || retirement_thread.join()).await;
+                    let joined = match retirement_thread {
+                        Some(retirement_thread) => {
+                            Some(task::spawn_blocking(move || retirement_thread.join()).await)
+                        }
+                        None => None,
+                    };
 
-                    assert!(matches!(&joined, Ok(Ok(()))));
+                    assert!(
+                        matches!(
+                            (&completion, &close_start),
+                            (QueryCompletion::BeforeClose, None)
+                                | (QueryCompletion::AfterTimeout, Some(Poll::Pending))
+                        ),
+                        "the adverse native close must actually be pending before the ACL peer starts: {closed:?}"
+                    );
+                    assert!(matches!(&joined, Some(Ok(Ok(())))));
                     assert!(released.is_ok());
                     assert!(destroyed.is_ok());
                     assert!(repeated.is_ok());
