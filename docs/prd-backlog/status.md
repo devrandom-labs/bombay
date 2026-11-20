@@ -1,5 +1,30 @@
 # Backlog status and dependencies
 
+## Current Remote Actors qualification (2026-11-20)
+
+The existing full goal was explicitly resumed. Actual PR443/main3057b955 is
+imported locally by signed69db401f; Behavior/Actors0.31.0 at3a4e1eeb is now
+selected with unchanged Macros0.16/Address0.3/Communication0.1.7/Timers0.2/
+private Observe/SDK1.10.10/Tokio1.53.3/rustix1.1.6, without patch overrides.
+The [owning current record](../prds/static-remote-actors.md#current-qualification--core-031-integration-2026-11-20)
+records fresh contract/ownership verification and source review196ef910. All17
+upstream paths and both status histories are preserved; original retained tests
+and Node production are unchanged. Existing exact replies need no R18 adapter.
+Only this PRD/status reconciliation follows integration: production/API0,
+tests+476/-2/net474, three retained paths/cumulative37-of-approved40.
+
+Before integration, bf49/source0cf passed six focused commands/pairede3602060
+and the unchanged normal remote-debug owner:564passes/12harnesses/32fixtures/
+sixguards/configuredClippy+docs0, independent0df237c8/author7d2eb7db. Those
+outcomes stay source-specific, not combined-Core0.31 acceptance. Old processes
+are retired; removed executables stay removed, unfinished dependencies/evidence
+protected. Original05ec failed await/cause remains UNKNOWN; no fix is claimed.
+Fresh combined-source focused D/R precedes full native/flake/Nextest/hosted/
+minimization/delivery. R18/AUTH1/NET1 and wider requirements remain unfinished
+at their existing statuses and reciprocal dependency edges; no full completion inferred.
+
+## Prior native-close source boundaries (historical)
+
 The full Remote Actors goal is active. Signed local integrationb8366977 imports
 actual PR442/main6d0c5fae with Runtime self-version0.5.0 and unchanged selected
 Behavior/Actors0.30.0/Macros0.16.0/SDK1.10.10. The current

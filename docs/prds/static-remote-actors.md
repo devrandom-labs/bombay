@@ -1,5 +1,59 @@
 # Static remote actors and typed admission
 
+## Current qualification — Core 0.31 integration (2026-11-20)
+
+The existing full R01–R25/AUTH1/NET1 goal was explicitly resumed. Clean signed
+local integration `69db401f`, tree `dc75a8dc`, has parents `bf49e2ea` and actual
+PR443/main `3057b955`. That delivered main has tree `ad863911`. All17 upstream paths are
+preserved;16 are byte-exact upstream and backlog status preserves both owners'
+changes. The retained `unwind.rs`, Node production and original retirement
+oracles are unchanged. Independent source review196ef910 records the complete
+731-file provenance and the ordinary Core0.31 reply syntax. No Root adapter,
+production body, public type, policy or SDK change is selected.
+
+Fresh selected contracts are Behavior/Actors0.31.0 at published `3a4e1eeb`,
+Macros0.16.0, Address0.3.0, Communication0.1.7, Timers0.2.0, private Observe,
+SDK1.10.10/config1.10.2, Tokio1.53.3 and rustix1.1.6, without patch overrides.
+The complete selected Behavior AGENTS is read. Behavior still owns pure Actions,
+ordered births and typed settlements; Actors owns template/reply policy;
+Address owns leases; Communication owns exact delivery/refusal custody; Observe
+owns publication/waiting; Timers owns generation-safe scheduling; Bombay owns
+Application/Node retirement and SDK interpretation. The imported directory
+defaults to existing exact replies; logical callers choose existing
+`logical_replies()`/`MixedReplies`. This Counter's established-recipient path
+needs no syntax change. Archive/source and relevant API/test/document checks
+are recorded under common Git `remote-retirement/after-close/node-native-timeout/`
+`scheduler/pattern/native/investigation/diagnostic/retained/main443`.
+
+**Qualification change record:** only this PRD and backlog status are reconciled
+after actual-main integration. All test bodies and production stay unchanged.
+Retained scope remains three paths, tests+476/-2/net474, production+0/-0/net0,
+public types+0/-0 and cumulative37-of-explicitly-approved40. First freeze the
+complete source and close the fresh contract/source reviews; then compile and
+execute the component and actual Node case separately in debug and optimized
+profiles, using the existing pinned-Nix commands, one Cargo job and unchanged
+inputs, oracles, native defaults and watchdogs. Stop and classify the first
+failed command. The normal native gates retain their own concurrency policy.
+
+Source `bf49e2ea`/0cf0, before Core0.31 integration, already passes all six focused
+commands and independent paired audite3602060. Its unchanged normal remote-debug
+owner also completed0 at2026-11-20T04:25:49Z:564 actual named passes/12 harnesses,
+32 fixtures (5 compile passes/27 denials), six guard echoes and configured
+Clippy/docs0. Independent0df237c8 and author7d2eb7db bind the full731 canonical
+inputs/663 selected inputs, raw19190723B/d1d1 and physicalv7m/hxf/NAR96/root.
+These remain source-specific evidence; zero outcomes are adopted for the
+combined Core0.31 source. All old execution handles are retired. Both focused
+executables were removed after2736 preserved inputs and fresh empty liveness
+checks;511852544B net owned allocation was reclaimed once, unfinished dependencies
+remain protected. Original05ec failed await/cause stays UNKNOWN; neither this
+successful epoch nor the earlier diagnostic supplies a production-fix claim.
+
+Current-source focused qualification, native28/authoritative flake, independent
+Nextest, exact hosted checks, final minimization and reviewed delivery remain
+open. Actual SDK task joining, resource baselines, reconnect, later R18 cuts and
+full R01–R25/AUTH1/NET1 remain unproved. The dated source boundaries below are
+historical; they do not override the selected Core0.31 contract above.
+
 ## Current continuation — native Node close error (2026-11-19)
 
 The full goal is active. Signed local integration `b8366977` imports actual
