@@ -128,6 +128,28 @@ remain intact. Freeze and review this separate source, then execute its held
 case and unconditional ordinary unheld control. Earlier source/results remain
 separate. No wider acceptance or production repair follows from either cohort.
 
+The absent-grant cohort on signed46264/source3d398 also passes debug compilation,
+both held native controls and the ordinary unheld case. Each named test passes
+once with464 filtered; independent audit47c9ad0e binds the complete real TLS
+journeys inside callback waits. Both comparisons retain their own sources and
+the original unexplained05ec failure. Normal package cleanup preserved2733
+generated inputs and reclaimed425877504 bytes of owned allocation after evidence
+preservation; unfinished dependencies remain. No executable replay is retained.
+
+**Pre-edit active-close diagnostic record:** plan a1ed278e selects the existing
+Allow-without-grant peer with BeforeClose unchanged. Only AfterTimeout first
+polls the existing native close future, preserves its actual Pending/Ready fact,
+and drives pending close together with peer observation through supported
+`future::join`. Keep an unexpected Ready original through cleanup before
+rejection; never repoll it or fabricate a peer. Completion markers belong inside
+each future. Preserve all original deadlines, native results, late peer custody,
+release, cleanup and join. Expected test growth35–65 lines in existing unwind.rs
+plus these two records; production/API/types+0, cumulative37-of-approved40.
+Reuse the SDK's existing pinned future and FutureExt, without another box,
+helper or lifecycle model. Actual source reviews precede the next execution;
+the exact ordinary unheld control still runs even if the diagnostic fails.
+Native Pending or timeout does not establish SDK joining or the original cause.
+
 Current required native gates, independent Nextest, hosted delivery and normal
 reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource
 baselines and whole-operation withdrawal surrender remain unfinished. Evidence

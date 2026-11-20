@@ -38,6 +38,11 @@ The first Allow-plus-grant pair passed with actual witnessed overlap in both
 native close controls, independently auditeddd6ab499. A separate unchanged
 Allow-without-grant journey is now selected for the same bounded comparison;
 original failure cause and full native qualification remain open.
+The absent-grant pair also passed with witnessed overlap, audit47c9ad0e. Both
+are bounded debug observations; no repair or full native acceptance is inferred.
+The next recorded diagnostic tests actual pending native close beside that same
+access journey. Completed package cleanup removed0.396629GiB net owned allocation;
+exact inputs/evidence and unfinished dependencies remain preserved.
 
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
 merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as
