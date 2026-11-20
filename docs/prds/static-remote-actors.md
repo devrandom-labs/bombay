@@ -91,6 +91,29 @@ formatting precede one marked normal concurrent remote-debug run. This is stage
 observation, not a retry offered as a fix; counterfactuals follow the actual
 failed stage. Preserve all prior exact-source proofs and unfinished inputs.
 
+The marked normal remote-debug run on signed7da8/source25e completed0, with
+564 named passes across12 harnesses,32 compiler fixtures and the six separate
+guard echoes. Configured debug Clippy and warnings-denied docs also completed.
+Its trace does not reproduce the failed overlap: all four access journeys
+finished before either new callback entered, by at least10.507570959 seconds.
+The original failed await remains unknown; a successful marked run is not a fix.
+
+**Pre-edit overlap change record:** plan7c56c18b selects one bounded diagnostic
+cohort. Reuse the existing Allow-plus-grant test wrapper through test-private
+`pub(super)` visibility and invoke it on the component's existing owned peer
+thread instead of the SessionLocal refusal journey. No new helper, type, state,
+production body or public API is added. Expected Rust delta is approximately
++6/-4 in the same access/unwind owners; four existing paths and cumulative
+37-of-approved40 remain unchanged. Keep every original ACL/grant assertion,
+result channel, late recovery, release, native cleanup, join and deadline.
+Actual wait-enter/access-start/access-finish/wait-return markers must witness
+the overlap. Run the exact existing Allow wrapper alone afterward even if the
+held cohort fails. That fresh-process control resets the shared SDK pool, so
+it cannot establish holding as the sole cause of the original failure. This
+cohort starts the peer before primary close; simultaneous close is unproved.
+Source reviews precede execution; no production repair or timeout change is
+selected. Inspect this cohort before selecting the absent-grant counterpart.
+
 Current required native gates, independent Nextest, hosted delivery and normal
 reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource
 baselines and whole-operation withdrawal surrender remain unfinished. Evidence

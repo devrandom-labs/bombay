@@ -4,7 +4,9 @@ use super::protocol::{
     ReadReplyRef, ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope,
     limits, metadata, recorded,
 };
-use super::{Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger, completed_actor};
+use super::{
+    Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger, access, completed_actor,
+};
 use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::application::{Application, ApplicationClient, MailboxCapacity};
@@ -121,7 +123,7 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                     let (retirement_notice, mut retirement) = oneshot::channel();
                     let retirement_thread = thread::spawn(move || {
                         let original = catch_unwind(
-                            discharged_refusal_panic_preserves_joined_node_finalization,
+                            access::native_allow_and_grant_admit_exactly_one_increment,
                         );
                         match retirement_notice.send(original) {
                             Ok(()) => {}
@@ -178,7 +180,7 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                     }
                     assert!(
                         matches!(&retirement, Ok(Ok(Ok(())))),
-                        "a held query callback must let the unrelated Node retire before release"
+                        "a held query callback must let the native Allow journey retire before release"
                     );
                 })
                 .await

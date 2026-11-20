@@ -48,7 +48,7 @@ enum Operation {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn native_allow_and_grant_admit_exactly_one_increment() {
+pub(super) async fn native_allow_and_grant_admit_exactly_one_increment() {
     crossing(Permission::Allow, Some(BINDING)).await;
 }
 

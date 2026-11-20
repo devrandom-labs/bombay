@@ -28,6 +28,13 @@ concurrent gate; no production change, deadline increase or serialization is
 selected. Scope becomes37-of-approved40 if the access diagnostics are retained.
 Reported coverage floors lack a physical output and receive no owner credit.
 
+The marked remote-debug diagnostic passed564 cases/12 harnesses/32 fixtures,
+but all four access journeys finished before the new callbacks entered. It
+does not explain the original timeout. The owning PRD now selects one test-only
+Allow-plus-grant overlap cohort using the existing peer thread and unchanged
+deadlines/oracles, followed unconditionally by its ordinary unheld control.
+No production repair, dependency change or wider acceptance is selected.
+
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
 merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as
 feae6524 at2026-11-19T18:07:26Z, tree8d1aa1ec equal to accepted609e. API and
