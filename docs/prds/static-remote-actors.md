@@ -114,6 +114,20 @@ cohort starts the peer before primary close; simultaneous close is unproved.
 Source reviews precede execution; no production repair or timeout change is
 selected. Inspect this cohort before selecting the absent-grant counterpart.
 
+The first Allow-plus-grant cohort on signedf41f/source04f passes both held
+controls and its ordinary unheld control. Actual trace encloses the complete
+TLS journey inside each callback wait; independent auditdd6ab499 closes this
+bounded observation. It establishes a healthy schedule, not the original cause.
+
+**Pre-edit absent-grant counterpart:** under the same plan7c56c18b, replace
+only the selected peer with the existing Allow-without-grant wrapper and move
+the test-private visibility to that wrapper. Expected Rust delta+3/-3/net0;
+production/API0, the same four paths/cumulative37-of-approved40. Its original
+absent-grant assertions, all controls, deadlines and result/cleanup/join order
+remain intact. Freeze and review this separate source, then execute its held
+case and unconditional ordinary unheld control. Earlier source/results remain
+separate. No wider acceptance or production repair follows from either cohort.
+
 Current required native gates, independent Nextest, hosted delivery and normal
 reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource
 baselines and whole-operation withdrawal surrender remain unfinished. Evidence

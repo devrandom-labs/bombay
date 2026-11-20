@@ -34,6 +34,10 @@ does not explain the original timeout. The owning PRD now selects one test-only
 Allow-plus-grant overlap cohort using the existing peer thread and unchanged
 deadlines/oracles, followed unconditionally by its ordinary unheld control.
 No production repair, dependency change or wider acceptance is selected.
+The first Allow-plus-grant pair passed with actual witnessed overlap in both
+native close controls, independently auditeddd6ab499. A separate unchanged
+Allow-without-grant journey is now selected for the same bounded comparison;
+original failure cause and full native qualification remain open.
 
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
 merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as

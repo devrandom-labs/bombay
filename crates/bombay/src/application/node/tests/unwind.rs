@@ -123,7 +123,7 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                     let (retirement_notice, mut retirement) = oneshot::channel();
                     let retirement_thread = thread::spawn(move || {
                         let original = catch_unwind(
-                            access::native_allow_and_grant_admit_exactly_one_increment,
+                            access::native_allow_does_not_replace_the_application_grant,
                         );
                         match retirement_notice.send(original) {
                             Ok(()) => {}
