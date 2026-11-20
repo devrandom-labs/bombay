@@ -383,6 +383,13 @@ does not make it globally exact. A mixed `ReplyRoute<P>` also retains both
 lanes in its static sends product and continues to require `Hosts<P>` for its
 logical branch.
 
+With selected Actors0.31, `supervisor::directory::new(config)` uses exact
+management replies automatically. A caller supplies `client.recipient()` and
+declares only actual actors; five unused logical host declarations disappear.
+The consuming `.logical_replies()` choice retains the existing mixed family and
+its real logical-host requirements. Lifecycle and diagnostic routes keep their
+independent configured capabilities; no native interpreter or lookup is added.
+
 ## Behavior foundation, Behavior Actors templates, and Bombay runtime
 
 ### Current contract retained

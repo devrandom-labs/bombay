@@ -851,6 +851,7 @@ mod child_input_custody {
         CreationId, CreationSequence, Creations, Here, InterpretItem, ItemSettlement,
         MessageProtocol, Recipient,
     };
+    use behavior_actors::composition::replies::MixedReplies;
     use behavior_actors::proxy::{ProxyControl, StableProxy};
     use behavior_actors::supervisor::directory::{DynamicLifecycle, DynamicSupervisor};
     use behavior_actors::worker::ImmediateStartup;
@@ -882,6 +883,7 @@ mod child_input_custody {
             MessageProtocol<MailAddr, DynamicLifecycle<u64, ShutdownLedger, ImmediateStartup>>,
         >,
         Infallible,
+        MixedReplies,
     >;
     type LedgerBindings = ChildBindings<
         LedgerSupervisor,

@@ -32,9 +32,12 @@ it cannot be used to pass or block an Engine law.
 ## Actor-template boundary inventory
 
 `driver-template-manifest.json` schema 3 is the revision-bound ownership
-inventory for published Behavior Actors0.30.0 at verified source
-`628649da014a527d47f21567a859c5c78494df13`, selected together with Core0.30.0
-and Macros0.16.0 through the registry manifest/lock. It records the
+inventory for published Behavior Actors0.31.0 at verified source
+`3a4e1eebd671ee0f9e67649f7478e1578e872efe`, selected together with Core0.31.0
+and Macros0.16.0 through the registry manifest/lock. The directory event names
+its existing reply family: exact by default, with mixed logical replies
+explicitly selected. Lifecycle/diagnostic routes and all other template and
+capability ownership remain unchanged. It records the
 46 public Behavior compositions by family, public spelling, event boundary,
 ordered effect lanes, composition edge, owning source, and upstream evidence.
 It separately records all 19 actor-owned interpreter-request/source-action

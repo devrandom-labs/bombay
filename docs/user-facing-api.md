@@ -200,10 +200,9 @@ Entity families are independent hydrated roots in that same declaration. Its
 and its definition. The complete declaration lives with its
 [two-family journey](../crates/bombay/tests/entity_application.rs).
 
-The Entity spelling below is unreleased. Published Runtime0.4.0 still requires
-the independent `ChildFailures` declaration and fourth activation-error type
-parameter; the source branch supplies the derived failures and
-`EntityRetirement<D>` described here.
+Runtime0.5.0 publishes the Entity spelling below, including derived child
+failures and `EntityRetirement<D>`. Runtime0.4.0 requires the independent
+`ChildFailures` declaration and fourth activation-error type parameter.
 
 The definitions supply their actual `Behavior`; protocol hosts remain explicit
 logical address-space choices. A definition with children selects the generated
@@ -307,32 +306,40 @@ assembly uses the generated topology above. A manual namespace that executes
 native actors also implements `NativeHost`, returning its selected `Runtime`
 by reference. Pure hosting metadata does not require that execution capability.
 
-## Application interpreters
+## Application services
 
 For application effects such as opening a file, keep the request in an explicit
 `Actions` lane. Its `ExternalRequest::Interpreter` names the concrete interpreter
 that owns the operation; its existing `ActionItem` and `InterpretItem` contracts
 retain the original request, acquired reply and complete rejection.
 
-A leaf application selects a constructor with
+A leaf application selects service setup with
 `Application::new(actor).with_interpreter(factory)`. A function or closure can
-supply the constructor; named configuration implements `InterpreterFactory`.
+create each actor's services; named settings implement `InterpreterFactory`.
 For a child graph, add `interpreter: Config;` to the existing `topology!`
-declaration and pass the configuration to `Topology::new(config)`. Root, fresh
+declaration and pass the settings to `Topology::new(config)`. Root, fresh
 children, cold actors and Entity actors each receive their own interpreter.
-Their concrete service may be non-`Sync`; the shared constructor is `Send + Sync`.
+Their concrete service may be non-`Sync`; its shared setup is `Send + Sync`.
 `Runtime` selects these native capabilities and construction, not an executor.
 
-Construction happens after successful pure initialization, before address
+Application retains the topology and handles its sharing. Service setup borrows
+the retained settings through `InterpreterFactory::create(&self)`. Ordinary
+application code does not build an Arc, Runtime or custom native host to obtain
+this behavior. This is internal borrowing of settings supplied to Application;
+it does not promise that arbitrary caller-local references can enter actor tasks.
+The [public API audit](public-api-audit.md#ordinary-application-review-2026-11-19)
+records the remaining consistency and lifetime questions.
+
+Service setup happens after successful pure initialization, before address
 commitment and initialization effects. Dropping and recreating a pending native
 activation preserves its original interpreter and initialization actions.
 Ordinary applications retain their standard capabilities without supplying a
-constructor. Even when the declared interpreter is `()`, custom requests require
-an explicit constructor; absence grants no custom interpretation capability.
+setup function. Even when the declared interpreter is `()`, custom requests
+require explicit service setup; absence grants no custom interpretation capability.
 
 The [file/environment journeys](../crates/bombay/tests/application_services.rs),
 [configured descendants](../crates/bombay/tests/configured_descendants.rs) and
-[constructor failure tests](../crates/bombay/tests/interpreter_startup.rs) execute
+[service startup failure tests](../crates/bombay/tests/interpreter_startup.rs) execute
 this path with complete rejection and retirement. The
 [unit interpreter tests](../crates/bombay/tests/interpreter_selection.rs) prove
 that explicit unit services can perform real IO while missing or wrongly owned
@@ -582,8 +589,9 @@ The latter establishes no joined native cleanup. This source-breaking error is
 Send but may be !Sync because the original payload need not be Sync; forward or
 match it directly instead of requiring a Sync error box. Abort, construction/
 disposal panics and whole-operation cancellation remain outside this poll catch.
-Published Runtime0.4.0 already has the seven-value extraction below, but retains
-the native-only close error; this typed close-error change is beyond that release.
+Runtime0.5.0 publishes this close-error contract and the seven-value extraction
+below. Runtime0.4.0 has the same extraction positions with a native-only close
+error.
 For independently driven basic transport operations, use
 `node.execute_with(|application| async move { ... })` and retain both returned
 futures. This uses the same actor-only Work contract.
@@ -1093,6 +1101,20 @@ requires a separately declared logical host/transport interpreter. Similarly,
 exact variant does not remove the logical host bound. Exact-only external
 customer seams should instantiate templates with
 `EstablishedRecipient<P>`.
+
+The exact directory replies below belong to the repository's unreleased
+Core/Actors0.31 adoption. Published Runtime0.5.0 selects Core/Actors0.30.
+Dynamic service directories select exact management replies automatically with
+Actors0.31: keep `directory::new(config)` and pass `client.recipient()` directly.
+The application topology lists the actual root/proxy/worker only; it does not
+need five unused reply hosts. Select `.logical_replies()` only when commands
+actually use logical reply names. Their existing host requirements remain.
+Explicit advanced `DynamicSupervisor`, `DynamicCommand` and
+`DynamicSupervisorEvent` annotations name the existing `ExactReplies` or
+`MixedReplies` family; ordinary construction infers it. Lifecycle and diagnostics
+retain their separate configured routes. The complete real client/custody
+journey is in `crates/bombay/tests/application_scope_birth.rs`; it uses the same
+Application-owned settings and clients, without a new wrapper or runtime port.
 
 The intended ordinary public surface is:
 

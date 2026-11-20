@@ -1,5 +1,61 @@
 # Rejected DevX hypotheses
 
+## Manual settings sharing (2026-11-19)
+
+Disposition: **reopen**. Joel rejected the proposed user example requiring
+`Arc<Runtime<Config>>` and a handwritten native host. Users must be able to define
+their application settings plainly and supply them once, including the borrowed
+settings case. Bombay owns the necessary sharing and per-actor service setup.
+An internal ownership improvement does not meet that public interface contract.
+
+The existing generated topology already retains its selected settings and
+Application shares the topology internally. The experiment instead exercised an
+advanced native port and presented that plumbing as ordinary application code.
+No public settings interface, lifetime law or complete application example had
+been established. The same issue must be audited across application startup,
+actor creation, topology and Entity declarations before choosing another model.
+
+The local experiment established owned-control success, the old shared-form
+compiler refusal, and two native integration passes per debug/optimized profile.
+Independent review also found an eager host lookup during repeated startup.
+Two focused owning tests reproduced that defect in both profiles; a proposed
+guard was reviewed but never applied. These outcomes remain historical evidence,
+not an accepted public design, passing repair or full verification batch.
+
+The services owner is restored byte-for-byte to the retained source. The new
+integration and private replay tests are removed from the checkout and preserved
+with all732 inputs/modes, raw results and actual executable identities in the
+handoff under `context/shared-construction/rejected-user-surface`. Production
+lines, states, modules, public declarations and runtime fields return to their
+original values. No new public type, manual-sharing example or migration remains.
+
+## Global family-role context (2026-11-19)
+
+Disposition: **reopen**, before implementation. The proposed hydration/notice
+split put Hosts and Terminal metadata on one nominal family role. An unanchored
+topology instead has type `Topology<ExecutedRoot>`; one unit role cannot select
+that host for every valid application root. This relocates the original global
+choice. Current anchored consumers do not justify requiring root annotations
+or adding host parameters to ordinary role/reference syntax.
+
+The existing `EntityReceptionist` retains the concrete runtime port through its
+shared state. A context-independent reference therefore needs a truthful concrete
+representation, not erasure, a new dispatcher or an unexplained opaque type.
+Recursive Root/family references and actual application-context selection must
+be proved before selecting another representation.
+
+The proposed shared product also owns two independent destructible values:
+the definition and notification consumer. The current installed-family catch
+does not by itself establish definition-only, consumer-only, coexisting or
+delayed last-Arc destruction outcomes. Those values need an explicit custody
+law, including cancellation, before that split can be retained.
+
+Independent model review supplies these vetoes. No production or caller migration
+was applied; all ten Entity modules,5129 production-prefix lines,192 match-arm
+tokens and126 public declarations remain unchanged. The candidate and exact
+review remain in the existing handoff under `context/binding`. No nominal
+error/notice branding, new actor/queue/runtime or partial workaround survives.
+
 ## Definition identity in native activation errors (2026-11-18)
 
 Disposition: **reopen**. Start the next hypothesis from signed67131997.
