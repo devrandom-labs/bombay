@@ -10,7 +10,7 @@ patches. Selected complete Behavior instructions aa5c and actual provider,
 request, native admission, startup and retirement owners govern this work.
 No new production body, public type, dependency or runtime policy is retained.
 
-Three missing bounded witnesses now have actual healthy/inverse/restored
+Four missing bounded witnesses now have actual healthy/inverse/restored
 execution in debug and optimized builds, with independent execution reviews:
 
 - **R09 verifier capacity**, review63451268: two actual held verifier futures,
@@ -30,6 +30,13 @@ execution in debug and optimized builds, with independent execution reviews:
   cleanup in both builds. Later native-custody assertions are unexecuted in
   that inverse; they pass in healthy/restored runs. SessionLocal does not
   establish two public Applications or a full SDK-task baseline.
+- **R11 joined failure**, reviewf2f6957d: the same target releases its real
+  resource and then panics with its original allocation. Target and parent
+  independently retain Established/FailuresFound, the sibling progresses,
+  and the exact native cause survives. Erasing only the parent's failure
+  assessment at Node's actual result handoff fails after cleanup in both
+  profiles; the successful startup control still passes. Exact restoration
+  and saved original healthy executables pass both cases again.
 
 Exact originals and qualified artifacts remain in acceptance-current under
 verifier-capacity, compatibility and remote-retirement-law. Restored artifact
@@ -94,7 +101,7 @@ all other unproved clauses and final AUTH1/NET1 delivery remain open.
 
 Complete scoped change record, including untracked inventory (none): six
 tracked paths, four owning test files plus this PRD and backlog status.
-Production: +0/-0/net0. Tests: +2869/-9/net2860. Public API: +0/-0.
+Production: +0/-0/net0. Tests: +2932/-9/net2923. Public API: +0/-0.
 This adds verification capability; it is not source reduction or full feature
 delivery. Exact path deltas are retained in scoped-final-change-record.json.
 
@@ -103,14 +110,64 @@ compositions, independently reviewed in r09-local-acceptance-composition.json
 (465654d1). This composes the actual live capacity/recovery and bounded grant
 proofs with fixed input/parser/trust-source bounds and cache0. Invalid-pressure
 recovery uses Discharge; exhausted Retain history deliberately refuses new
-work and has no unpromised liveness guarantee. R08's independent-provider
-algorithm obligations remain separate. Current-source combined CI and reviewed
+work and has no unpromised liveness guarantee. R08's selected independent
+provider consumers remain separate. Current-source combined CI and reviewed
 merge are still required; this does not mark R09/NET1 merged.
 
 Cumulative scope remains40-of-explicitly-approved40, including restored owner
 cuts; no refund. Any41st path requires its explicit checkpoint. Full combined
 gates, final minimization, exact-head review/CI and recorded merge remain
 required after coherent implementation. No local witness marks the PRD merged.
+
+## R11 joined failure — pre-edit record (2026-11-20)
+
+The held-startup positive establishes delayed retirement and sibling progress,
+but has no actual target-owned runtime failure. Reuse that same trace with a
+closed Ready/Panicked startup choice. After release, the real startup drops
+its semaphore permit and panics with its original readiness allocation. Existing
+startup interpretation and joined task custody must retain that exact cause.
+The target and parent reports must independently establish retirement and known
+failure presence; the Stop request must retain that same target report while
+the unrelated sibling still processes its independent increment/Read.
+
+Only already-charged retirement.rs and these existing records change; forecast
+80–120 additional test lines, production +0/-0/net0, public API +0/-0 and
+dependencies0. Keep the original successful Ready assertions. Reuse the same
+finite watchdogs, pure parent, ActorExt composition, native Stop and joined
+cleanup. A temporary cut in already-charged Node will erase only the acquired
+parent report's failure assessment at the actual application-result handoff:
+the healthy Ready control must pass and the real failure case must reject the
+altered parent report after cleanup. The Stop declaration's separate report
+assignment lives in an uncharged file; no cut or transport proof is invented
+there, and query.rs is not its owner.
+Exact restoration and debug/optimized controls remain required. This is no
+NotEstablished/inability, two-Application or full SDK-task proof. The separate
+40-to-45-file checkpoint remains unanswered; no new path is authorized.
+
+### Scoped execution and source restoration
+
+Exact731-input source5fa6 passes both named cases in debug and optimized builds,
+formatting and strict release remote lib/tests Clippy with warnings and both
+mandatory supplementary denies. Reviewed Node.run_with handoff840 erasure
+source21d0 produces one healthy control PASS and one intended parent-report
+failure per profile after complete cleanup; the earlier exact target
+FailuresFound assertion has already passed. All assertions after that parent
+failure, including original-payload and final Stop custody, are unexecuted in
+the inverse. They execute in the healthy and restored controls. Node81d702ad
+and all731 inputs are restored exactly. Restored controls execute the actual
+saved original healthy binaries; they are not new Cargo recompilation.
+Independent six-run reviewf2f6957d verifies raw results, source, preserved
+binaries and extracted source archive. No library change is retained.
+
+R08 reconciliation3da63c40 removes an invented prerequisite: the accepted
+profile explicitly chooses finite lookup and scheduled oneshot providers;
+it does not require two cryptographic or parser algorithms. Their historical
+Application classification/revocation/expiry proofs and the new AUTH03
+stable-binding rotation controls supply the scoped laws. Current provider
+sources differ from those historical hashes, so current combined tests, CI
+and reviewed delivery remain required. Historical campaign JSONs are absent;
+neither historical inversions nor original-source outcomes are relabelled as
+fresh current-source execution. No new provider or runtime harness is selected.
 
 ## Actual main integration — PR444 (2026-11-20)
 

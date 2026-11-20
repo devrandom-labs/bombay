@@ -32,6 +32,7 @@ use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
 use std::mem::take;
 use std::num::NonZeroUsize;
+use std::panic::panic_any;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
@@ -65,11 +66,18 @@ enum StopPublication<Reply> {
     AfterSibling(Reply),
 }
 
+#[derive(Clone, Copy)]
+enum StartupCompletion {
+    Ready,
+    Panicked,
+}
+
 struct HeldCounterStartup {
     reached: oneshot::Sender<()>,
     release: oneshot::Receiver<()>,
     resource: OwnedSemaphorePermit,
     readiness: Box<[u8]>,
+    completion: StartupCompletion,
 }
 
 impl StartupPlan for HeldCounterStartup {
@@ -81,7 +89,11 @@ impl StartupPlan for HeldCounterStartup {
         published.expect("the binding observes this actual target-owned startup");
         let released = self.release.await;
         drop(self.resource);
-        released.map(|()| self.readiness)
+        released?;
+        match self.completion {
+            StartupCompletion::Ready => Ok(self.readiness),
+            StartupCompletion::Panicked => panic_any(self.readiness),
+        }
     }
 }
 
@@ -329,7 +341,7 @@ crate::topology! {
 #[test]
 #[expect(
     clippy::large_futures,
-    reason = "the finite owned-startup test retains its measured 16 KiB concrete future on the test stack"
+    reason = "the finite owned-startup test retains its concrete future on the test stack"
 )]
 fn remote_stop_waits_for_target_owned_startup_after_termination() {
     let host = Builder::new_multi_thread()
@@ -338,9 +350,33 @@ fn remote_stop_waits_for_target_owned_startup_after_termination() {
         .build()
         .expect("the actual remote retirement host opens");
     host.block_on(async {
-        tokio::time::timeout(Duration::from_secs(40), stop_with_held_startup())
-            .await
-            .expect("the watchdog establishes no stop, join or resource evidence");
+        tokio::time::timeout(
+            Duration::from_secs(40),
+            stop_with_held_startup(StartupCompletion::Ready),
+        )
+        .await
+        .expect("the watchdog establishes no stop, join or resource evidence");
+    });
+}
+
+#[test]
+#[expect(
+    clippy::large_futures,
+    reason = "the finite owned-startup test retains its concrete future on the test stack"
+)]
+fn remote_stop_retains_joined_startup_failure_and_sibling_progress() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the actual failed-startup retirement host opens");
+    host.block_on(async {
+        tokio::time::timeout(
+            Duration::from_secs(40),
+            stop_with_held_startup(StartupCompletion::Panicked),
+        )
+        .await
+        .expect("the watchdog establishes no failure custody or retirement evidence");
     });
 }
 
@@ -350,7 +386,7 @@ fn remote_stop_waits_for_target_owned_startup_after_termination() {
     clippy::await_holding_refcell_ref,
     reason = "one remote stop trace conserves original startup/native/notification custody, and the configured proof table is immutable during actual verification"
 )]
-async fn stop_with_held_startup() {
+async fn stop_with_held_startup(completion: StartupCompletion) {
     let resources = Arc::new(Semaphore::new(1));
     let resource = Arc::clone(&resources)
         .try_acquire_owned()
@@ -364,6 +400,7 @@ async fn stop_with_held_startup() {
         release: released,
         resource,
         readiness,
+        completion,
     };
     let records = RefCell::new(Vec::<ProtectedMessage>::new());
     let protected_replies = RefCell::new(Vec::<ProtectedMessage>::new());
@@ -716,9 +753,13 @@ async fn stop_with_held_startup() {
     assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopped));
     assert_eq!(retired, replayed);
     assert_eq!(retired.retirement(), RetirementAssessment::Established);
-    assert_eq!(retired.failures(), ActorFailureAssessment::NoFailuresFound);
+    let failures = match completion {
+        StartupCompletion::Ready => ActorFailureAssessment::NoFailuresFound,
+        StartupCompletion::Panicked => ActorFailureAssessment::FailuresFound,
+    };
+    assert_eq!(retired.failures(), failures);
     assert_eq!(report.retirement(), RetirementAssessment::Established);
-    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert_eq!(report.failures(), failures);
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(polling.is_none() && disposal.is_none());
     assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
@@ -824,9 +865,11 @@ async fn stop_with_held_startup() {
     else {
         panic!("the exact target proxy remains its completed original");
     };
-    assert!(
-        proxy_custody.child_failures.is_empty() && proxy_custody.capability_failures.is_empty()
-    );
+    assert!(proxy_custody.child_failures.is_empty());
+    match completion {
+        StartupCompletion::Ready => assert_eq!(proxy_custody.capability_failures.len(), 0),
+        StartupCompletion::Panicked => assert_eq!(proxy_custody.capability_failures.len(), 1),
+    }
     assert!(
         proxy_custody.additional_failures.is_empty()
             && proxy_custody.retirement_failures.is_empty()
@@ -864,13 +907,33 @@ async fn stop_with_held_startup() {
         .filter_map(|receipt| receipt.as_ref().ok())
         .filter_map(|(worker, ready)| ready.as_ref().ok().map(|ready| (worker, ready)))
         .collect();
-    let [readiness] = readiness.as_slice() else {
-        panic!("one original ready result returns to its stopped owner");
-    };
-    let (worker, ready) = *readiness;
-    assert_eq!(worker.creation(), child.origin.creation_id());
-    assert_eq!(ready.as_ptr(), readiness_allocation);
-    assert_eq!(ready.as_ref(), [211, 223]);
+    match completion {
+        StartupCompletion::Ready => {
+            let [readiness] = readiness.as_slice() else {
+                panic!("one original ready result returns to its stopped owner");
+            };
+            let (worker, ready) = *readiness;
+            assert_eq!(worker.creation(), child.origin.creation_id());
+            assert_eq!(ready.as_ptr(), readiness_allocation);
+            assert_eq!(ready.as_ref(), [211, 223]);
+        }
+        StartupCompletion::Panicked => {
+            assert_eq!(readiness.len(), 0);
+            let failure = proxy_custody
+                .capability_failures
+                .pop()
+                .expect("the joined target retains its one real startup task failure");
+            assert!(failure.is_panic());
+            let original = failure
+                .try_into_panic()
+                .expect("the actual joined startup task panicked");
+            let original = original
+                .downcast::<Box<[u8]>>()
+                .expect("the original startup readiness allocation is the panic cause");
+            assert_eq!(original.as_ptr(), readiness_allocation);
+            assert_eq!(original.as_ref().as_ref(), [211, 223]);
+        }
+    }
     let [request] = <[_; 1]>::try_from(requests)
         .unwrap_or_else(|_| panic!("one complete native Stop request remains"));
     let (

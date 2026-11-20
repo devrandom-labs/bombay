@@ -7,6 +7,11 @@ independent reviewd2e53 now pass. R09 local semantic acceptance465654d1 closes
 for declared profiles, pending current-source CI/reviewed merge; Discharge
 recovery differs from exhausted Retain custody. Full R05/R11 and AUTH1/NET1
 remain open; production/API/dependencies0 and dependency edges stay unchanged.
+R11's additional genuine joined-startup failure now has healthy, intended
+parent-report erasure and restored debug/optimized controls independently
+acceptedf2f6957d; the original native cause and separate failure assessment
+survive cleanup. R08 reconciliation3da63c40 requires no new provider algorithm:
+current-source combined qualification and reviewed delivery remain open.
 
 Remote Actors actual-main integration2026-11-20: local scoped checkpoint59550a1b
 preserves its0.5 proofs; actualPR444/maind98 metadata is imported separately,
