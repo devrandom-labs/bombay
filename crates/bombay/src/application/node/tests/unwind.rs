@@ -4,9 +4,7 @@ use super::protocol::{
     ReadReplyRef, ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope,
     limits, metadata, recorded,
 };
-use super::{
-    Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger, access, completed_actor,
-};
+use super::{Counter, CounterMessage, CounterValue, LedgerCommand, MailLedger, completed_actor};
 use crate::RetirementOutcome;
 use crate::actors::ActorExt;
 use crate::application::{Application, ApplicationClient, MailboxCapacity};
@@ -80,26 +78,13 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                         .consolidation(ConsolidationMode::None)
                         .with(CallbackDrop {
                             callback: move |original: Reply| {
-                                eprintln!(
-                                    "native-close-component: callback entered at {:?}",
-                                    Instant::now()
-                                );
                                 let announcement = entered.lock().unwrap().take();
                                 match announcement {
                                     Some(announcement) => match announcement.send(original) {
-                                        Ok(()) => match task::block_in_place(|| {
-                                            eprintln!(
-                                                "native-close-component: callback wait enter at {:?}",
-                                                Instant::now()
-                                            );
-                                            continuation.lock().unwrap().recv()
-                                        }) {
-                                            Ok(()) | Err(_) => {
-                                                eprintln!(
-                                                    "native-close-component: callback wait returned at {:?}",
-                                                    Instant::now()
-                                                );
-                                            }
+                                        Ok(()) => match task::block_in_place(
+                                            || continuation.lock().unwrap().recv(),
+                                        ) {
+                                            Ok(()) | Err(_) => {}
                                         },
                                         Err(original) => drop(original),
                                     },
@@ -125,7 +110,7 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                         QueryCompletion::BeforeClose => {
                             let retirement_thread = thread::spawn(move || {
                                 let original = catch_unwind(
-                                    access::native_allow_does_not_replace_the_application_grant,
+                                    discharged_refusal_panic_preserves_joined_node_finalization,
                                 );
                                 match retirement_notice.send(original) {
                                     Ok(()) => {}
@@ -142,22 +127,12 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                         }
                         QueryCompletion::AfterTimeout => {
                             let mut closing = AssertUnwindSafe(session.close().into_future())
-                                .catch_unwind()
-                                .inspect(|_| {
-                                    eprintln!(
-                                        "native-close-component: close completed at {:?}",
-                                        Instant::now()
-                                    );
-                                });
+                                .catch_unwind();
                             let (closed, progress, retirement_thread, close_start) = match poll_fn(|cx| Poll::Ready(closing.poll_unpin(cx))).await {
                                 Poll::Pending => {
-                                    eprintln!(
-                                        "native-close-component: first close poll pending at {:?}",
-                                        Instant::now()
-                                    );
                                     let retirement_thread = thread::spawn(move || {
                                         let original = catch_unwind(
-                                            access::native_allow_does_not_replace_the_application_grant,
+                                            discharged_refusal_panic_preserves_joined_node_finalization,
                                         );
                                         match retirement_notice.send(original) {
                                             Ok(()) => {}
@@ -166,20 +141,11 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                                     });
                                     let (closed, progress) = future::join(
                                         &mut closing,
-                                        timeout(Duration::from_secs(15), &mut retirement).inspect(|_| {
-                                            eprintln!(
-                                                "native-close-component: peer observation completed at {:?}",
-                                                Instant::now()
-                                            );
-                                        }),
+                                        timeout(Duration::from_secs(15), &mut retirement),
                                     ).await;
                                     (closed, progress, Some(retirement_thread), Poll::Pending)
                                 }
                                 Poll::Ready(original) => {
-                                    eprintln!(
-                                        "native-close-component: first close poll ready at {:?}",
-                                        Instant::now()
-                                    );
                                     drop(retirement_notice);
                                     let progress = timeout(Duration::from_secs(15), &mut retirement).await;
                                     (original, progress, None, Poll::Ready(()))
@@ -214,7 +180,7 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                             (QueryCompletion::BeforeClose, None)
                                 | (QueryCompletion::AfterTimeout, Some(Poll::Pending))
                         ),
-                        "the adverse native close must actually be pending before the ACL peer starts: {closed:?}"
+                        "the adverse native close must actually be pending before the unrelated Node starts: {closed:?}"
                     );
                     assert!(matches!(&joined, Some(Ok(Ok(())))));
                     assert!(released.is_ok());
@@ -235,7 +201,7 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                     }
                     assert!(
                         matches!(&retirement, Ok(Ok(Ok(())))),
-                        "a held query callback must let the native Allow journey retire before release"
+                        "a held query callback must let the unrelated Node retire before release"
                     );
                 })
                 .await
@@ -707,26 +673,11 @@ fn session_close_native_timeout_preserves_acquired_application_outcome() {
                         .consolidation(ConsolidationMode::None)
                         .with(CallbackDrop {
                             callback: move |original: Reply| {
-                                eprintln!(
-                                    "native-close-outcome: callback entered at {:?}",
-                                    Instant::now()
-                                );
                                 let announcement = entered.lock().unwrap().take();
                                 match announcement {
                                     Some(announcement) => match announcement.send(original) {
-                                        Ok(()) => match task::block_in_place(|| {
-                                            eprintln!(
-                                                "native-close-outcome: callback wait enter at {:?}",
-                                                Instant::now()
-                                            );
-                                            continuation.lock().unwrap().recv()
-                                        }) {
-                                            Ok(()) | Err(_) => {
-                                                eprintln!(
-                                                    "native-close-outcome: callback wait returned at {:?}",
-                                                    Instant::now()
-                                                );
-                                            }
+                                        Ok(()) => match task::block_in_place(|| continuation.lock().unwrap().recv()) {
+                                            Ok(()) | Err(_) => {}
                                         },
                                         Err(original) => drop(original),
                                     },

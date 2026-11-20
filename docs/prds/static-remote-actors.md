@@ -16,8 +16,8 @@ QueryCompletion and joined root/notification owners. Expected scope is three
 existing files: this PRD, backlog status and owning `application/node/tests/unwind.rs`.
 No production body, public type, runtime field, dependency or policy is added.
 The initial test estimate was approximately280 lines; the retained test delta,
-including the component and independent progress regression, is+439/-1/net438.
-Production+0/-0/net0; public types+0/-0; cumulative scope36-of-approved40.
+including the component and independent progress regression, is+476/-2/net474.
+Production+0/-0/net0; public types+0/-0; cumulative scope37-of-approved40.
 
 The useful Counter Work keeps its original allocation, sender/value1, root,
 report/notifications, binding and both export dispositions. Healthy close and a
@@ -149,6 +149,35 @@ Reuse the SDK's existing pinned future and FutureExt, without another box,
 helper or lifecycle model. Actual source reviews precede the next execution;
 the exact ordinary unheld control still runs even if the diagnostic fails.
 Native Pending or timeout does not establish SDK joining or the original cause.
+
+The active-close diagnostic on signed05b524/source d017 passes debug compilation
+and both named commands. Audit e4d84d10 confirms the exact pending/ACL/close
+window: the complete TLS journey takes0.53557s and its successful observation
+precedes native close completion by9.4674s. The original05ec failed await and
+cause remain unknown. Selected hook/libtest FIFO2 reconstruction puts those
+failures before new callback-test dispatch; this is a configuration-derived
+inference, not captured original runtime environment or callback timestamps.
+
+**Pre-edit minimization disposition:** review511fefcf selects restoration of
+access.rs/private visibility and the original concurrent SessionLocal refusal-
+panic peer. Temporary TLS substitutions must not replace that regression.
+Remove only newly added progress messages; preserve the older close-cut record
+and every original test/oracle. Retain actual first-Pending-before-peer and
+concurrent close/peer driving on AfterTimeout, with original early-Ready custody
+and cleanup. Expected test reduction exceeds240 lines; production/API/types0,
+three retained files and cumulative37-of-approved40. Measure the full result.
+Fresh source reviews, focused debug/optimized controls and the unchanged normal
+failed remote-debug owner follow. A pass qualifies only the new source; no old
+cause/fix claim, altered timeout, test-thread policy, skip or retry loop is
+selected. A new failure returns to its actual evidence before further work.
+
+The retained draft restores access.rs exactly to main/private467c and the
+original refusal-panic peer. It removes289 test lines from the diagnostic
+source, leaving only unwind.rs and the two existing records changed against
+main. The stronger adverse pending-close exercise remains. All ten temporary
+close messages and both logging-only inspect adapters are removed; the older
+close-cut message remains. Current formatting passes. Earlier source-specific
+passes remain historical; fresh retained-source verification is still required.
 
 Current required native gates, independent Nextest, hosted delivery and normal
 reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource

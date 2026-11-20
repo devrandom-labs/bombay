@@ -12,12 +12,14 @@ The fixture's shared-worker defect is also resolved in focused execution:
 rawbf7521cd fails the independent concurrent-retirement law in both profiles;
 correctedbd053789 passes component and actual Node controls debug/optimized.
 All six normal Cargo commands0, independent paired3c3f8f96/model04064e23/
-surfacebd44095c close this bounded correction. Only two supported blocking
-handoffs and equivalent explicit test runtimes were added; existing test bodies,
-watchdogs, native defaults and custody oracles remain intact. The final successor
-changes only new-body indentation and current records, not semantic evidence.
-Production/API0, tests+439/-1/net438 across the same three paths and cumulative
-36-of-approved40. Current wider gates, independent Nextest and reviewed delivery
+surfacebd44095c close that earlier bounded correction. Its two supported blocking
+handoffs and equivalent explicit test runtimes remain; existing test bodies,
+watchdogs, native defaults and custody oracles stay intact. The current retained
+draft restores its original refusal-panic peer and adds actual pending-close
+concurrency on the adverse path. Temporary access tracing/test visibility and ten
+close progress messages are removed. Production/API0, tests+476/-2/net474 across
+three retained paths and cumulative37-of-approved40. Fresh focused controls,
+current wider gates, independent Nextest and reviewed delivery
 remain open. Full R18/R01–R25/AUTH1/NET1 and SDK joining/resource baselines remain
 unfinished; requirement states and reciprocal dependencies are unchanged.
 
@@ -43,6 +45,12 @@ are bounded debug observations; no repair or full native acceptance is inferred.
 The next recorded diagnostic tests actual pending native close beside that same
 access journey. Completed package cleanup removed0.396629GiB net owned allocation;
 exact inputs/evidence and unfinished dependencies remain preserved.
+The active-close cohort also passes with witnessed progress before close
+completion (e4d84d10). Temporary TLS probes are now being removed; the permanent
+fixture restores its original concurrent refusal-panic peer and retains the
+stronger pending-close exercise. Original05ec cause remains unknown. Exact
+minimized-source debug/optimized tests and normal failed-owner qualification
+remain required; no wider gate or full R18 acceptance is inferred.
 
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
 merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as
