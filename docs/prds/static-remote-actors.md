@@ -1,5 +1,200 @@
 # Static remote actors and typed admission
 
+## Current continuation — explicit user reactivation (2026-11-20)
+
+The user reactivated the EXISTING full R01–R25/AUTH1/NET1 Goal; the actual
+controller independently reports active. No new/reduced goal, safeguard change
+or retry/rephrasing of the two automatically stopped tasks was used. Their exact
+notices, partial/candidate sources and unresolved review findings remain archived;
+those candidate owners are restored to HEAD and remain unaccepted.
+
+The retained R18 started-withdrawal observer and R20 wrong-server-root edits now
+have healthy debug/optimized executions, both intended post-cleanup source-cut
+failures in both profiles, exact owner restoration and new actual positive
+executions after restoration. The last positives deliberately reused physically
+verified original healthy binaries through pinned Nix; they are fresh libtest
+executions, not fresh Cargo recompilation, Nextest, leak or whole-gate evidence.
+All Rust/fixtures/manifests/lock/toolchain match their original healthy inputs;
+only two unconsumed historical Markdown records differ. Independent final audit
+4eda962c verifies named outcomes, source/binary hashes, actual failure stages and
+limits, including unexecuted withdrawal-tail assertions in inverse runs.
+Focused release Runtime remote lib+tests Clippy27311 additionally exits0 with
+warnings and BOTH mandatory supplementary lints denied, on all731 unchanged
+checkpoint inputs. No full workspace/Nix acceptance follows from that scope.
+
+This local checkpoint adds tests+116/-10/net106; production+0/-0/net0 and public
+types+0/-0. Historical cumulative charge remains39-of-approved40, including two
+restored temporary owner paths. No complete R18/R20/NET1 delivery is claimed.
+Full combined implementation, final minimization, authoritative gates/CI and
+reviewed merge remain open. Preserve the earlier source qualifications below.
+
+Actual Runtime main has meanwhile advanced to PR444/d98db0aa (Engine0.4 and
+Runtime0.6 release metadata). Its ten paths contain no Rust/AGENTS/SDK/Nix change;
+selected Core/Actors0.31 and external checksums stay unchanged. Import that actual
+main separately after preserving this qualified0.5 graph; do not relabel these
+executions as0.6 qualification or infer registry publication from a merge.
+
+## Current implementation batch — remaining acceptance (2026-11-20)
+
+**Source-safe checkpoint, 2026-11-20T12:45:33Z:** the actual Goal controller
+reports `blocked` after two delegated automatic safety-review refusals for
+possible cybersecurity risk. The original full objective is preserved; no reset,
+resume, safeguard change or new goal was attempted. Only the R18 withdrawal and
+R20 server-root test edits below remain. Their three selected cases pass debug
+and optimized, and both independently reviewed source cuts fail at their intended
+post-cleanup assertions in both profiles. Both production owners are restored
+byte-exact. Positive replay after restoration, strict lint and full combined
+acceptance remain open; these are not full R18/R20/NET1 delivery claims.
+
+The R04 partial imports and complete R03/R24 candidate were preserved with exact
+patches/review findings outside the working tree, then those own unaccepted
+files were restored to HEAD. No candidate test ran; the proposed laws remain
+open. Current cache is unfinished and preserved; all Root compiler/observer
+handles are terminal. Source/evidence authority is the existing Remote Actors
+RESTART handoff and common Git acceptance-current records. Historical pre-edit
+estimates below are plans, not retained implementations or passing outcomes.
+
+
+Joel selected finishing the remaining implementation in coherent batches, with
+focused regressions during development and full verification on the combined
+result. The premature broad run on a813/source3e7 was intentionally stopped,
+parent130, after five successful check commands; this is neither a semantic
+failure nor full-native acceptance. Exact completed results, roots and logs stay
+source-specific. Three independent current inventories under common Git
+`remote-retirement/acceptance-current/{identity,lifecycle,network}.json` separate
+actual missing clauses from delivered work and explicit deferrals. Literal R01,
+R10 and the selected R17 profile are delivered; do not implement them again.
+AUTH1 remains independently eligible for local work, and NET1 still needs its
+compatible delivery. Real cryptographic provider correctness remains SELO1.
+
+**Pre-edit change record — started withdrawal observer surrender:** R18 still
+lacks a real native witness for dropping the whole started withdrawal wait
+while its existing Node owner completes withdrawal. The unbound test supplies
+completion manually, while the existing native sibling test awaits the result;
+neither establishes this cut. Reuse the full real two-export/three-child journey
+in existing `application/node/tests/retirement/withdrawal.rs`, preserving its
+named awaited control and all original actor, request, reply, terminal, cleanup
+and notification oracles. Add a separately selectable plain-Rust test for whole
+observer surrender, using the existing two-worker runtime construction.
+
+The real cold `take_withdrawal` operation is first polled inside a lexical
+`pin!` scope; retain the actual Poll until after cleanup, then let that scope
+destroy the entire future. Pending is required for this selected cut; an early
+Ready value is preserved and rejected as the wrong observation. Actual first
+query EOF precedes matching-status inspection, allowing the existing Node to
+consume its intent before inspection. Both paths still require first-declaration
+removal, real sibling remote increment/read1 before final owner cleanup, and
+the owner's retained original withdrawal result. No manual completion replaces
+that native result. Native success is not callback/task quiescence.
+
+Expected scope reuses an already charged test file within the prior37 paths,
+approximately35–55 new test lines, production+0/-0/
+net0 and public types+0/-0. A private closed observation choice separates awaited
+and surrendered controls; one shared ordinary async test journey avoids copying
+the complete oracle. No runtime state, wrapper API, dependency, SDK or policy is
+added. Exact selected Core/Actors0.31 and the other owner contracts remain those
+verified in8baf805c; `Export::take_withdrawal`, existing Observe publication and
+Node-owned native declaration retirement remain the sole owners.
+
+Before execution, review the changed test twice. Then run its healthy debug and
+optimized cases with the original awaited control. The intended owning-source
+inverse replaces only request publication with `drop(authority)` and executes
+only the new case: the first native declaration must incorrectly remain matched,
+while unrelated sibling work still succeeds. That actual isolation oracle must
+fail after cleanup; the unchanged40-second watchdog is not inversion credit.
+Restore the exact owner before positive replays. Keep all5-second native query
+limits, values and existing checks unchanged. Broader SDK baselines, reconnect,
+other acceptance rows and final integration remain independent obligations.
+
+**Pre-edit change record — correlation batch:** R04 lacks independent executed
+substitutions of deployment, caller, caller session, controller, actor, host,
+protocol, grant issuer, runtime generation, actor generation, authority generation,
+request sequence, purpose and operation. Reuse the real Counter/Node-owned Client,
+MessageAdapter, nominal provider records and independent effect/acknowledgment
+ledgers in existing `tests/application_clients/outbound/overlap.rs`. Every wrong
+scope must have a separately configured trusted record and actually succeed at
+proof verification before correlation refuses it. Wire/schema compatibility is
+not correlation credit. Include an exact matching control and an unrelated
+request that progresses while the selected request remains unsettled. Preserve
+the actual Response originals and observe verification success, exact permission
+refusal, absent decode/admission and no wrong acknowledgment after unconditional
+cleanup. Collect all row observations before final semantic assertions.
+
+Expected growth450–650 test lines in that one existing owner, production/API0,
+within the prior37 charged paths with the withdrawal case. No framework,
+generic adapter, actor contract or dependency is added. The intended inverse
+omits wrong-context checks in the actual test-owned CurrentReply policy and any
+redundant decoder context checks that would mask the same omission, preserving
+proof verification, framing, cleanup and unrelated progress. The new batch must
+then expose the wrong-settlement vector in both profiles. Restore exact source
+before positive replays. Neither an early verifier failure nor a timeout supplies
+correlation-denial credit. Existing overlap/campaign tests and values remain intact.
+
+**Pre-edit change record — wrong server trust root:** R20's existing real native
+security trace already covers valid protected Reads, foreign client credentials,
+listener survival and mTLS omission sensitivity. The32 TLS combinations are not
+32 independent security-negative cases. In existing `node/tests/security.rs`, add
+one caller with the foreign deployment root and otherwise identical valid caller
+credentials and localhost target. Use the unmodified production Network mapping;
+retain the actual native refusal, original wrong-root inputs, valid before/after
+Reads, exact protected-row/admission counts and complete cleanup. Close an
+unexpectedly acquired Session before rejecting that result. The matching control
+restores only the intended root and actually connects/reads; setup failure or a
+watchdog cannot substitute for an observed trust refusal. No insecure fallback
+or new hostname/deployment platform requirement is selected.
+
+Expected growth60–120 test lines, one existing file, production/API/types0,
+within the prior37 charged paths across this batch. Fresh Git census proves all
+three test owners and the later real-process lost-reply owner were already in
+the delivered35-path repair; do not repeatedly charge the same files. Keep the
+recorded37 total, without refunding older temporary work. The planned temporary
+inversions in `remote/export/mod.rs` and `remote/network.rs` add two actual paths:
+maximum39-of-approved40 for this batch, as recorded in `acceptance-current/scope.json`.
+No retained production mapping or API change is selected. Temporarily substitute
+the known-good root at the owning production Network mapping with the wrong-root
+caller and all oracles unchanged. That must acquire and close the actual Session
+before the refusal oracle fails. Restore the exact owner before positive replays.
+This supplies new trust-selection source-inversion evidence, not a production
+repair. Review both new tests twice before focused D/R;
+the complete suite waits for the final combined implementation. Any additional
+path or actual production/API design requires its own concrete scope review.
+
+**Pre-edit change record — real crash and stale exact target:** extend only the
+existing process owner `examples/remote-counter/tests/processes/lost_reply.rs`.
+The delivered loss control acquires graceful cleanup; it is not a receiver crash.
+A new trace must fence actual Increment processing with an independent local
+Read1, then kill and reap that exact owned receiver while its ordinary caller
+retains Uncertain(Increment). The killed process earns no joined-cleanup credit.
+Restart at the same endpoint with independently observed fresh runtime bindings.
+Retain the exact old protected bytes/proof and historical assignment, not a
+reserialized command or a new request identity. No native Session escapes into
+the application-facing process package.
+
+The test-owned fresh receiver separately validates predecessor configuration
+against the ACTUAL saved old binding and current configuration against its fresh
+binding, using existing Deployment::configure. Verification may return either
+existing nominal Receipt; it must not fabricate one or relabel old authority as
+current. The unchanged current-scope policy compares that predecessor receipt to
+the fresh grant/runtime/actor. Require verified old evidence, typed scope refusal,
+no request key/decoded input/native admission and an independent local Read0
+BEFORE releasing the fresh ordinary caller. Then fresh Increment/Read/Stop must
+produce value1 and actual joined fresh cleanup. Preserve old and fresh original
+rows so deduplication cannot conceal an illicit stale increment. No durable
+replay ledger, global uniqueness or complete R03/R24 claim follows.
+
+Reuse existing test-only bounded IPC, process ownership, finite assignments,
+protocol Caller/Requests and public Client. No new framework, public type,
+production body, transport dependency or timing policy. Expected one already
+charged source file, approximately350–650 test lines; existing loss case and its
+oracles remain. Keep current cumulative37 plus two planned temporary owner cuts
+=39 of approved40 paths. The intended test-application source inverse supplies
+permit-all ONLY at this receiver's current-request callback; proof verification,
+reply policy, raw framing, cleanup and fresh caller remain unchanged. The actual
+wrong stale Increment must fail the retained Read0/row oracle after cleanup in
+both profiles, then exact restoration must pass. Timeouts, unverified stale
+bytes, fresh effects alone or exit status without old-row custody are not the
+selected refusal proof. Review all changed tests twice before execution.
+
 ## Current qualification — Core 0.31 integration (2026-11-20)
 
 The existing full R01–R25/AUTH1/NET1 goal was explicitly resumed. Clean signed

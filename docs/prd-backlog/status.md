@@ -1,5 +1,38 @@
 # Backlog status and dependencies
 
+Remote Actors resumed by explicit user action2026-11-20: actual Goal ACTIVE,
+original full scope/dependency edges unchanged. Retained withdrawal/server-root
+tests have healthy+intended-negative D/R and restored original-binary positive
+executions; independent execution review4eda962c and focused strict Clippy0.
+These are scoped local proofs, not full rows/native/CI/merge. Two stopped tasks
+remain archived/unaccepted, without safeguard changes or retries. Preserve the
+qualified0.5 graph, then integrate actual Runtime mainPR444/d98 metadata separately.
+The blocked checkpoint below is historical at its stated time.
+
+Remote Actors checkpoint 2026-11-20T12:45:33Z: actual Goal controller reports
+`blocked` after automatic safety review stopped two delegated tasks. Full original
+scope/requirement states/dependency edges are unchanged. Two retained test edits
+have healthy D/R and intended D/R fault outcomes; both temporary production cuts
+are restored. Restoration positives/full combined gates remain open. Correlation
+and crash/restart candidates are preserved outside the tree and unaccepted source
+restored, not delivered. No Root builder live; unfinished cache/source/evidence
+are protected in the existing Remote Actors handoff.
+
+## Current implementation batching (2026-11-20)
+
+Joel selected coherent remaining implementation batches with focused regressions,
+then full verification on the combined result. The premature a813 native run was
+intentionally stopped after five successful commands; two scopes are independently
+accepted, without full-native credit or a semantic failure from cancellation.
+The [current batch record](../prds/static-remote-actors.md#current-implementation-batch--remaining-acceptance-2026-11-20)
+separates delivered R01/R10/fixed-profile R17 from real gaps and explicit deferrals.
+The first missing R18 law is whole started withdrawal-observer surrender with
+actual owner completion and sibling progress, reusing existing native owners.
+Fresh Git census proves the selected test owners are already charged in the
+prior37-path scope; two planned temporary owner inversions bring this batch to
+at most39-of-approved40. Production/API0. No requirement status or dependency
+edge changes from preparation.
+
 ## Current Remote Actors qualification (2026-11-20)
 
 The existing full goal was explicitly resumed. Actual PR443/main3057b955 is
