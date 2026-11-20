@@ -26,9 +26,11 @@ use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::oneshot;
+use tokio::task;
 use tokio::time::timeout;
 use zenoh::bytes::ZBytes;
 use zenoh::handlers::CallbackDrop;
@@ -40,100 +42,136 @@ enum QueryCompletion {
     AfterTimeout,
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn session_close_returns_native_timeout_while_query_callback_is_held() {
-    for completion in [QueryCompletion::BeforeClose, QueryCompletion::AfterTimeout] {
-        timeout(Duration::from_secs(40), async {
-            let config = configuration("tls/localhost:0", &EndpointRole::Receiver)
-                .to_configuration()
-                .unwrap();
-            let session = zenoh::open(config).await.unwrap();
-            let queryable = session
-                .declare_queryable("bombay/close/query-timeout")
-                .allowed_origin(Locality::SessionLocal)
-                .await
-                .unwrap();
-            // Disconnect on controller cancellation before native owners drop.
-            let (release, continuation) = mpsc::channel::<()>();
-            let continuation = Mutex::new(continuation);
-            let (entered, callback_entry) = oneshot::channel();
-            let entered = Mutex::new(Some(entered));
-            let (destroyed, callback_destruction) = oneshot::channel();
-            let mut destroyed = Some(destroyed);
-            session
-                .get("bombay/close/query-timeout")
-                .allowed_destination(Locality::SessionLocal)
-                .consolidation(ConsolidationMode::None)
-                .with(CallbackDrop {
-                    callback: move |original: Reply| {
-                        let announcement = entered.lock().unwrap().take();
-                        match announcement {
-                            Some(announcement) => match announcement.send(original) {
-                                Ok(()) => match continuation.lock().unwrap().recv() {
-                                    Ok(()) | Err(_) => {}
-                                },
-                                Err(original) => drop(original),
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one actual held callback preserves native close results and independent concurrent Node retirement"
+)]
+fn session_close_returns_native_timeout_while_query_callback_is_held() {
+    Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the native close test runtime opens")
+        .block_on(async {
+            for completion in [QueryCompletion::BeforeClose, QueryCompletion::AfterTimeout] {
+                timeout(Duration::from_secs(40), async {
+                    let config = configuration("tls/localhost:0", &EndpointRole::Receiver)
+                        .to_configuration()
+                        .unwrap();
+                    let session = zenoh::open(config).await.unwrap();
+                    let queryable = session
+                        .declare_queryable("bombay/close/query-timeout")
+                        .allowed_origin(Locality::SessionLocal)
+                        .await
+                        .unwrap();
+                    // Disconnect on controller cancellation before native owners drop.
+                    let (release, continuation) = mpsc::channel::<()>();
+                    let continuation = Mutex::new(continuation);
+                    let (entered, callback_entry) = oneshot::channel();
+                    let entered = Mutex::new(Some(entered));
+                    let (destroyed, callback_destruction) = oneshot::channel();
+                    let mut destroyed = Some(destroyed);
+                    session
+                        .get("bombay/close/query-timeout")
+                        .allowed_destination(Locality::SessionLocal)
+                        .consolidation(ConsolidationMode::None)
+                        .with(CallbackDrop {
+                            callback: move |original: Reply| {
+                                let announcement = entered.lock().unwrap().take();
+                                match announcement {
+                                    Some(announcement) => match announcement.send(original) {
+                                        Ok(()) => match task::block_in_place(|| {
+                                            continuation.lock().unwrap().recv()
+                                        }) {
+                                            Ok(()) | Err(_) => {}
+                                        },
+                                        Err(original) => drop(original),
+                                    },
+                                    None => drop(original),
+                                }
                             },
-                            None => drop(original),
+                            drop: move || {
+                                if let Some(publication) = destroyed.take() {
+                                    match publication.send(()) {
+                                        Ok(()) | Err(()) => {}
+                                    }
+                                }
+                            },
+                        })
+                        .await
+                        .unwrap();
+                    let query = queryable.recv_async().await.unwrap();
+                    let original = callback_entry
+                        .await
+                        .expect("the actual tracked query-timeout callback entered");
+                    let (retirement_notice, mut retirement) = oneshot::channel();
+                    let retirement_thread = thread::spawn(move || {
+                        let original = catch_unwind(
+                            discharged_refusal_panic_preserves_joined_node_finalization,
+                        );
+                        match retirement_notice.send(original) {
+                            Ok(()) => {}
+                            Err(original) => drop(original),
                         }
-                    },
-                    drop: move || {
-                        if let Some(publication) = destroyed.take() {
-                            match publication.send(()) {
-                                Ok(()) | Err(()) => {}
-                            }
+                    });
+                    let progress = timeout(Duration::from_secs(15), &mut retirement).await;
+                    let (closed, released, destroyed) = match &completion {
+                        QueryCompletion::BeforeClose => {
+                            let released = release.send(());
+                            let destroyed = callback_destruction.await;
+                            let closed = AssertUnwindSafe(session.close().into_future())
+                                .catch_unwind()
+                                .await;
+                            (closed, released, destroyed)
                         }
-                    },
+                        QueryCompletion::AfterTimeout => {
+                            let closed = AssertUnwindSafe(session.close().into_future())
+                                .catch_unwind()
+                                .await;
+                            let released = release.send(());
+                            let destroyed = callback_destruction.await;
+                            (closed, released, destroyed)
+                        }
+                    };
+                    // This notifier follows callback return, but precedes field/task
+                    // destruction. A repeated close does not prove the first joined.
+                    drop(query);
+                    drop(queryable);
+                    let repeated = session.close().await;
+                    drop(session);
+                    let retirement = match progress {
+                        Ok(original) => Ok(original),
+                        Err(deadline) => Err((deadline, retirement.await)),
+                    };
+                    let joined = task::spawn_blocking(move || retirement_thread.join()).await;
+
+                    assert!(matches!(&joined, Ok(Ok(()))));
+                    assert!(released.is_ok());
+                    assert!(destroyed.is_ok());
+                    assert!(repeated.is_ok());
+                    match original.result() {
+                        Err(cause) => assert_eq!(cause.payload().to_bytes().as_ref(), b"Timeout"),
+                        Ok(_) => panic!("the retained native reply must come from query timeout"),
+                    }
+                    match (completion, closed) {
+                        (QueryCompletion::BeforeClose, Ok(Ok(()))) => {}
+                        (QueryCompletion::AfterTimeout, Ok(Err(cause))) => {
+                            assert!(cause.to_string().starts_with("close operation timed out!"));
+                        }
+                        _ => panic!(
+                            "actual native close must retain its selected callback completion"
+                        ),
+                    }
+                    assert!(
+                        matches!(&retirement, Ok(Ok(Ok(())))),
+                        "a held query callback must let the unrelated Node retire before release"
+                    );
                 })
                 .await
-                .unwrap();
-            let query = queryable.recv_async().await.unwrap();
-            let original = callback_entry
-                .await
-                .expect("the actual tracked query-timeout callback entered");
-            let (closed, released, destroyed) = match &completion {
-                QueryCompletion::BeforeClose => {
-                    let released = release.send(());
-                    let destroyed = callback_destruction.await;
-                    let closed = AssertUnwindSafe(session.close().into_future())
-                        .catch_unwind()
-                        .await;
-                    (closed, released, destroyed)
-                }
-                QueryCompletion::AfterTimeout => {
-                    let closed = AssertUnwindSafe(session.close().into_future())
-                        .catch_unwind()
-                        .await;
-                    let released = release.send(());
-                    let destroyed = callback_destruction.await;
-                    (closed, released, destroyed)
-                }
-            };
-            // This notifier follows callback return, but precedes field/task
-            // destruction. A repeated close does not prove the first joined.
-            drop(query);
-            drop(queryable);
-            let repeated = session.close().await;
-            drop(session);
-
-            assert!(released.is_ok());
-            assert!(destroyed.is_ok());
-            assert!(repeated.is_ok());
-            match original.result() {
-                Err(cause) => assert_eq!(cause.payload().to_bytes().as_ref(), b"Timeout"),
-                Ok(_) => panic!("the retained native reply must come from query timeout"),
+                .expect("the native close controls finish within the existing watchdog");
             }
-            match (completion, closed) {
-                (QueryCompletion::BeforeClose, Ok(Ok(()))) => {}
-                (QueryCompletion::AfterTimeout, Ok(Err(cause))) => {
-                    assert!(cause.to_string().starts_with("close operation timed out!"));
-                }
-                _ => panic!("actual native close must retain its selected callback completion"),
-            }
-        })
-        .await
-        .expect("the native close controls finish within the existing watchdog");
-    }
+        });
 }
 
 enum SubscriptionRetirement {
@@ -484,6 +522,304 @@ async fn session_close_panic_preserves_acquired_application_outcome() {
     })
     .await
     .expect("the real Node close controls complete before the failure-only watchdog");
+}
+
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "one real Node trace preserves every acquired Counter result beside the actual native close timeout"
+)]
+fn session_close_native_timeout_preserves_acquired_application_outcome() {
+    Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the native close test runtime opens")
+        .block_on(async {
+            for completion in [QueryCompletion::BeforeClose, QueryCompletion::AfterTimeout] {
+                timeout(Duration::from_secs(40), async {
+                    let registered: [ProtectedMessage; 0] = [];
+                    let binding = Binding {
+                        deployment: "native-close-outcome",
+                        caller: "caller",
+                        controller: "owner",
+                        actor: "counter",
+                        host: "receiver",
+                        protocol: "counter",
+                        target_assignment: "root",
+                        logical_session: 557,
+                    };
+                    let verify = async |bytes: &[u8], proof: &[u8]| {
+                        recorded::verify::<CounterOperation>(
+                            &ProtectedMessage {
+                                protected: bytes.into(),
+                                proof: proof.into(),
+                            },
+                            &registered,
+                            binding,
+                        )
+                        .await
+                    };
+                    let protect = async |_: &[u8], _: &recorded::Receipt<CounterOperation>| {
+                        Err::<Box<[u8]>, _>(VerificationError::Invalid)
+                    };
+                    let current =
+                        |receipt: &recorded::Receipt<CounterOperation>, runtime: &str, target: MailAddr| {
+                            let scope = recorded::projection(receipt);
+                            if scope.kind == Purpose::Request
+                                && scope.bombay.runtime_generation.as_ref() == runtime
+                                && scope.bombay.actor_generation == target.0
+                                && recorded::identity(receipt).0 == &binding
+                            {
+                                Ok(())
+                            } else {
+                                Err(VerificationError::Invalid)
+                            }
+                        };
+                    let maximum = NonZeroUsize::new(2).unwrap();
+                    let export = Export::new(
+                        "bombay/native-close/outcome",
+                        ExportLimits {
+                            refusals: RefusalRetention::Retain,
+                            queued_queries: maximum,
+                            retained_queries: maximum,
+                            retained_requests: maximum,
+                            diagnostics: maximum,
+                        },
+                        limits(),
+                        |bytes: &[u8]| {
+                            serde_json::from_slice::<ReadRequest<CounterOperation>>(bytes)
+                                .map(|request| request.operation)
+                        },
+                        reply(
+                            |CounterOperation::Read| {
+                                Ok::<_, CounterOperation>(|reply_to: EstablishedRecipient<CounterValue>| {
+                                    CounterMessage::Read(reply_to)
+                                })
+                            },
+                            |receipt: &recorded::Receipt<CounterOperation>, original: &User<MailAddr, u64>| {
+                                let scope = recorded::projection(receipt);
+                                serde_json::to_vec(&ReadReplyRef {
+                                    bombay: &scope.bombay,
+                                    kind: Purpose::ReadReply,
+                                    operation: &scope.operation,
+                                    value: &original.message,
+                                })
+                                .map(Vec::into_boxed_slice)
+                            },
+                        ),
+                        &verify,
+                        &protect,
+                        |left, right| recorded::identity(left) == recorded::identity(right),
+                        &current,
+                        &current,
+                    );
+                    let node = Application::new(Counter::new().stop_on_shutdown())
+                        .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+                        .await
+                        .unwrap_or_else(|_| panic!("the real Counter Node opens before the close cut"));
+                    let session = node.session.clone();
+                    let queryable = session
+                        .declare_queryable("bombay/native-close/query-timeout")
+                        .allowed_origin(Locality::SessionLocal)
+                        .await
+                        .unwrap();
+                    // Disconnect before native owners drop if this controller is cancelled.
+                    let (release, continuation) = mpsc::channel::<()>();
+                    let continuation = Mutex::new(continuation);
+                    let (entered, callback_entry) = oneshot::channel();
+                    let entered = Mutex::new(Some(entered));
+                    let (destroyed, mut callback_destruction) = oneshot::channel();
+                    let mut destroyed = Some(destroyed);
+                    session
+                        .get("bombay/native-close/query-timeout")
+                        .allowed_destination(Locality::SessionLocal)
+                        .consolidation(ConsolidationMode::None)
+                        .with(CallbackDrop {
+                            callback: move |original: Reply| {
+                                let announcement = entered.lock().unwrap().take();
+                                match announcement {
+                                    Some(announcement) => match announcement.send(original) {
+                                        Ok(()) => match task::block_in_place(|| continuation.lock().unwrap().recv()) {
+                                            Ok(()) | Err(_) => {}
+                                        },
+                                        Err(original) => drop(original),
+                                    },
+                                    None => drop(original),
+                                }
+                            },
+                            drop: move || {
+                                if let Some(publication) = destroyed.take() {
+                                    match publication.send(()) {
+                                        Ok(()) | Err(()) => {}
+                                    }
+                                }
+                            },
+                        })
+                        .await
+                        .unwrap();
+                    let query = queryable.recv_async().await.unwrap();
+                    let native_reply = callback_entry
+                        .await
+                        .expect("the actual tracked query-timeout callback entered before Node execution");
+                    let bound_address = Cell::new(None);
+                    let bound_address_ref = &bound_address;
+                    let mut node = node.exports(export, async move |application| {
+                        let target = application.root().established_recipient();
+                        let address = application
+                            .actor_address(&target)
+                            .expect("the real binding target belongs to this Application");
+                        bound_address_ref.set(Some(address));
+                        Ok::<_, Never>(target)
+                    });
+                    let observed_value = Cell::new(None);
+                    let observed_value_ref = &observed_value;
+                    let calls = Cell::new(0);
+                    let calls_ref = &calls;
+                    let output = Box::new(541_u64);
+                    let output_allocation = ptr::from_ref(output.as_ref());
+                    let completion_ref = &completion;
+                    let release_ref = &release;
+                    let callback_destruction_ref = &mut callback_destruction;
+                    let acquired = AssertUnwindSafe(node.run_with(async move |application| {
+                        calls_ref.set(calls_ref.get() + 1);
+                        let mut values = application.client::<CounterValue>().unwrap();
+                        let increment = values.send(CounterMessage::Increment).await;
+                        let read = values.send(CounterMessage::Read(values.recipient())).await;
+                        let original = values.receive().await;
+                        if let Some(original) = original.as_ref() {
+                            observed_value_ref.set(Some((original.from, original.message)));
+                        }
+                        let shutdown = application.shutdown();
+                        let joined = application.retirement().await;
+                        let before_close = match completion_ref {
+                            QueryCompletion::BeforeClose => {
+                                let released = release_ref.send(());
+                                let destroyed = callback_destruction_ref.await;
+                                Some((released, destroyed))
+                            }
+                            QueryCompletion::AfterTimeout => None,
+                        };
+                        (output, increment, read, original, shutdown, joined, before_close)
+                    }))
+                    .catch_unwind()
+                    .await;
+                    // An uncompleted Work can still own the closure's gate borrows.
+                    // Consume that carrier before reclaiming controller-owned gates.
+                    let completed = match acquired {
+                        Ok(Ok(outcome)) => {
+                            let (work, report, native, notifications, ()) = outcome.into_parts();
+                            match work.try_into_completed() {
+                                Ok((output, cleanup)) => {
+                                    Some((output, cleanup, report, native, notifications))
+                                }
+                                Err(original) => {
+                                    drop(original);
+                                    None
+                                }
+                            }
+                        }
+                        Ok(Err(original)) => {
+                            drop(original);
+                            None
+                        }
+                        Err(original) => {
+                            drop(original);
+                            None
+                        }
+                    };
+                    let native_allocation = match &node.closed {
+                        Some(Err(NodeCloseError::Native { cause })) => {
+                            Some(ptr::from_ref(cause.as_ref()).cast::<()>())
+                        }
+                        Some(Ok(())) | Some(Err(NodeCloseError::PollPanic { .. })) | None => None,
+                    };
+                    let after_close = match &completion {
+                        QueryCompletion::BeforeClose => None,
+                        QueryCompletion::AfterTimeout => {
+                            let released = release.send(());
+                            let destroyed = callback_destruction.await;
+                            Some((released, destroyed))
+                        }
+                    };
+                    // Also disconnect if an unexpected refusal never invoked healthy Work.
+                    drop(release);
+                    // CallbackDrop announces destruction beginning, not full task joining.
+                    // A repeated close is best-effort cleanup, never a first-close result.
+                    drop(query);
+                    drop(queryable);
+                    let rescued = session.close().await;
+                    let originals = match node.into_parts() {
+                        Ok(originals) => Some(originals),
+                        Err(node) => {
+                            drop(node);
+                            None
+                        }
+                    };
+                    drop(session);
+
+                    assert!(rescued.is_ok());
+                    assert_eq!(calls.get(), 1);
+                    match native_reply.result() {
+                        Err(cause) => assert_eq!(cause.payload().to_bytes().as_ref(), b"Timeout"),
+                        Ok(_) => panic!("the actual tracked query must return its native timeout reply"),
+                    }
+                    let origin = bound_address.get().expect("actual binding recorded the root");
+                    assert_eq!(observed_value.get(), Some((origin, 1)));
+                    let (output, cleanup, report, native, notifications) =
+                        completed.expect("the actual completed Counter Work and acquired outcome remain");
+                    let (output, increment, read, original, shutdown, joined, before_close) = output;
+                    assert_eq!(ptr::from_ref(output.as_ref()), output_allocation);
+                    assert_eq!(*output, 541);
+                    assert!(increment.is_ok() && read.is_ok() && shutdown.is_ok() && cleanup.is_ok());
+                    let original = original.expect("the actual original Counter reply returns");
+                    assert_eq!((original.from, original.message), (origin, 1));
+                    assert_eq!(report, Some(joined));
+                    let (root, native) = native.expect("the complete native root remains");
+                    assert_eq!(root.address(), origin);
+                    let _counter = completed_actor(root, native);
+                    let notifications = notifications.expect("both original notification results remain");
+                    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+                    let (export, binding, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+                        originals.expect("the actual completed Node remains extractable");
+                    assert!(binding.as_ref().is_some_and(Result::is_ok));
+                    let native_source = closed
+                        .as_ref()
+                        .err()
+                        .and_then(Error::source)
+                        .map(|source| ptr::from_ref(source).cast::<()>());
+                    assert_eq!(native_source, native_allocation);
+                    match (completion, closed, before_close, after_close) {
+                        (QueryCompletion::BeforeClose, Ok(()), Some((released, destroyed)), None) => {
+                            assert!(released.is_ok() && destroyed.is_ok());
+                            assert!(native_allocation.is_none());
+                        }
+                        (
+                            QueryCompletion::AfterTimeout,
+                            Err(NodeCloseError::Native { cause }),
+                            None,
+                            Some((released, destroyed)),
+                        ) => {
+                            assert!(released.is_ok() && destroyed.is_ok());
+                            assert_eq!(
+                                Some(ptr::from_ref(cause.as_ref()).cast::<()>()),
+                                native_allocation
+                            );
+                            assert!(cause.to_string().starts_with("close operation timed out!"));
+                        }
+                        _ => panic!("Node must preserve the actual native close disposition beside its acquired outcome"),
+                    }
+                    assert!(polling.is_none() && disposal.is_none());
+                    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
+                    let (_inputs, _declarations, startup, withdrawal, diagnostics, requests) =
+                        export.into_parts();
+                    assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+                    assert!(diagnostics.is_empty() && requests.is_empty());
+                })
+                .await
+                .expect("the actual Node native-error controls finish within the existing watchdog");
+            }
+        });
 }
 
 #[test]

@@ -1,5 +1,26 @@
 # Backlog status and dependencies
 
+The full Remote Actors goal is active. Signed local integrationb8366977 imports
+actual PR442/main6d0c5fae with Runtime self-version0.5.0 and unchanged selected
+Behavior/Actors0.30.0/Macros0.16.0/SDK1.10.10. The current
+[Node native-error regression](../prds/static-remote-actors.md#current-continuation--native-node-close-error-2026-11-19)
+now preserves useful acquired Counter/Application results beside a genuine
+default native close timeout in both profiles. Isolated source7823 custody
+inverses/restorations remain source-specific at490ea2de.
+
+The fixture's shared-worker defect is also resolved in focused execution:
+rawbf7521cd fails the independent concurrent-retirement law in both profiles;
+correctedbd053789 passes component and actual Node controls debug/optimized.
+All six normal Cargo commands0, independent paired3c3f8f96/model04064e23/
+surfacebd44095c close this bounded correction. Only two supported blocking
+handoffs and equivalent explicit test runtimes were added; existing test bodies,
+watchdogs, native defaults and custody oracles remain intact. The final successor
+changes only new-body indentation and current records, not semantic evidence.
+Production/API0, tests+439/-1/net438 across the same three paths and cumulative
+36-of-approved40. Current wider gates, independent Nextest and reviewed delivery
+remain open. Full R18/R01–R25/AUTH1/NET1 and SDK joining/resource baselines remain
+unfinished; requirement states and reciprocal dependencies are unchanged.
+
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
 merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as
 feae6524 at2026-11-19T18:07:26Z, tree8d1aa1ec equal to accepted609e. API and
@@ -7,7 +28,7 @@ physical Git parents07f233e3+609eebac match; fresh no-hold acknowledgment and
 immediate normal guards preceded merge. Full R18 remains active. PR440's
 transparent Entity retirement result and derived
 native failures are imported without a dependency/SDK or Node-law change.
-Published Runtime0.4.0 contains Node7 but excludes the current close-error repair.
+The earlier Runtime0.4.0 publication contains Node7 but excludes this later close-error repair.
 The bounded repair preserves the acquired real Counter/Application outcome and
 exact native/poll-panic originals through one typed NodeCloseError and one reused
 close policy, without new lifecycle state or extraction position. Three scoped

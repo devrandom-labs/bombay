@@ -1,5 +1,77 @@
 # Static remote actors and typed admission
 
+## Current continuation — native Node close error (2026-11-19)
+
+The full goal is active. Signed local integration `b8366977` imports actual
+main `6d0c5fae` (PR442), whose four release paths change metadata and the Runtime
+self-version to0.5.0 without changing Rust bodies or selected dependencies.
+Behavior/Actors0.30.0, Macros0.16.0 and SDK1.10.10 remain selected; the separate
+DevX Core0.31 adoption is not imported. Earlier release and verification
+statements below retain their original source and time.
+
+**Change record, established before implementation:** prove R18's conservation
+of an acquired Application outcome beside a genuine native close error through
+one real Counter/Node case. Reuse the existing Counter, Export, binding,
+QueryCompletion and joined root/notification owners. Expected scope is three
+existing files: this PRD, backlog status and owning `application/node/tests/unwind.rs`.
+No production body, public type, runtime field, dependency or policy is added.
+The initial test estimate was approximately280 lines; the retained test delta,
+including the component and independent progress regression, is+439/-1/net438.
+Production+0/-0/net0; public types+0/-0; cumulative scope36-of-approved40.
+
+The useful Counter Work keeps its original allocation, sender/value1, root,
+report/notifications, binding and both export dispositions. Healthy close and a
+real default-ten-second native timeout are separate controls. The latter keeps
+`NodeCloseError::Native` and the exact error allocation through consuming
+extraction; panic slots remain absent. Both controls release the held callback
+before final assertions. The existing forty-second watchdog and native defaults
+remain unchanged. CallbackDrop announces destruction beginning; repeated close
+does not prove task joining or a resource baseline.
+
+The first source failed E0505 before execution: an uncompleted Work can retain
+the closure and its borrowed gates. Consuming that actual carrier before gate
+reclamation resolved the test lifetime without Clone, a new owner or policy.
+Isolated source7823 then passed actual Node debug/optimized controls, actual
+native-cause loss and acquired-outcome loss inversions, and exact restored
+positives. Receipt490ea2de preserves those source identities. Restored immutable
+executable replays are actual runs, not fresh Cargo compilations. No production
+repair was selected.
+
+### Test executor isolation — focused correction verified
+
+Final model review found a fixture defect: its raw synchronous receives occupied
+the SDK's shared Net worker (default one), blocking an existing concurrent
+refusal/retirement journey. Raw sourcebf7521cd reproduces the existing ten-second
+peer watchdog and an independent held-callback progress failure in both profiles.
+Only the first control executes in those failed runs. Independent receiptf7b71aa9
+binds their731 inputs, source archive, actual binaries and original logs.
+
+The corrected component runs that existing real journey on an owned thread and
+requires its successful retirement before releasing the primary callback. It
+preserves an actual peer failure or observer deadline with its late outcome,
+releases before late waiting, and joins before assertions. The fifteen-second
+observer leaves the existing peer ten-second watchdog and query/close defaults
+unchanged. Only the two new callback receives use selected Tokio's supported
+`task::block_in_place`; the callback remains held and tracked while unrelated
+work can run. Two ordinary `#[test]` functions use the already imported Builder
+with the same two-worker runtime, avoiding newly generated function-local imports.
+Existing test bodies remain byte-identical.
+
+Frozen sourcebd053789 passes all six normal Cargo commands: compilation plus
+component and actual Node execution in each debug/optimized profile. Each case
+passes once with464 filtered/zero ignored and both internal close controls.
+Independent paired audit3c3f8f96, model04064e23 and surfacebd44095c close the
+focused fixture issue. The later successor changes only the new Node body's
+indentation and these current records; prior executions keep their source identity.
+No custody seam, assertion, deadline or production owner changes. The source7823
+custody inversions remain exact-epoch support rather than new-source executions.
+
+Current required native gates, independent Nextest, hosted delivery and normal
+reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource
+baselines and whole-operation withdrawal surrender remain unfinished. Evidence
+is retained in common Git `remote-retirement/after-close/node-native-timeout`;
+pre-edit plans, failed sources and exact inputs remain in their source archives.
+
 ## Session close — current main qualification (2026-11-19)
 
 **Delivery: merged for close-future polling only. Full R18 remains active.**
