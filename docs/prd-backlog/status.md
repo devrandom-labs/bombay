@@ -1,5 +1,12 @@
 # Backlog status and dependencies
 
+Remote Actors current2026-11-20: actual0.6 verifier-capacity, configured
+compatibility and held-startup Stop witnesses have scoped six-run independent
+reviews6345/6141/bf68. Full R05/R09/R11 and AUTH1/NET1 remain open. The next
+already-charged permissions owner implements the reviewed two-edge bounded
+delegation policy; production/API/dependencies0. Source-qualified evidence and
+remaining obligations live in the PRD; all dependency edges stay unchanged.
+
 Remote Actors actual-main integration2026-11-20: local scoped checkpoint59550a1b
 preserves its0.5 proofs; actualPR444/maind98 metadata is imported separately,
 Engine0.4/Runtime0.6 with all Rust/SDK/Nix unchanged. Keep the upstream DX1 row

@@ -1,5 +1,108 @@
 # Static remote actors and typed admission
 
+## Current implementation and remaining acceptance (2026-11-20)
+
+The full R01–R25/AUTH1/NET1 scope remains active. Current main integration is
+PR444/d98 with Runtime0.6/Engine0.4, selected Behavior/Actors0.31@3a4e,
+Macros0.16, Address0.3, Communication0.1.7, Timers0.2, private Observe and
+SDK1.10.10. Tokio1.53.3/rustix1.1.6 and external checksums remain locked without
+patches. Selected complete Behavior instructions aa5c and actual provider,
+request, native admission, startup and retirement owners govern this work.
+No new production body, public type, dependency or runtime policy is retained.
+
+Three missing bounded witnesses now have actual healthy/inverse/restored
+execution in debug and optimized builds, with independent execution reviews:
+
+- **R09 verifier capacity**, review63451268: two actual held verifier futures,
+  one refused excess Query, then valid progress after invalid pressure ends.
+  The owning threshold inverse admits actual count(2,3) instead of(2,2), and
+  fails after cleanup. This is not arbitrary CPU fairness or cache/delegation.
+- **R05 configured compatibility**, review6141c04f: supported native Read and
+  separate typed wire/schema/provider-profile refusals retain original caller
+  input and independent unchanged receiver state. One comparator inverse
+  reaches all three exact mismatch oracles after cleanup. This is trusted
+  configured preflight; peer-version exchange/required features remain open.
+- **R11 held target startup**, reviewbf68e09b: genuine target termination
+  precedes settlement of its held startup resource; retirement and Stop reply
+  remain pending while its same-parent sibling increments/reads1. Release
+  yields native joined retirement, original child/readiness and notifications.
+  Removing only receiving.await produces actual premature QueryEOF after
+  cleanup in both builds. Later native-custody assertions are unexecuted in
+  that inverse; they pass in healthy/restored runs. SessionLocal does not
+  establish two public Applications or a full SDK-task baseline.
+
+Exact originals and qualified artifacts remain in acceptance-current under
+verifier-capacity, compatibility and remote-retirement-law. Restored artifact
+runs are actual executions, not fresh Cargo compilation. Original source scope
+is preserved; no old Runtime0.5 proof is adopted. Test-only lint successors
+preserve bodies/oracles except equivalent Option branching and typed empty
+vector equality; their source reviews9ca97 and final combined execution remain
+separate. Existing tests, assertions and deadlines stay intact. Initial E0716,
+SDK capacity, parent/event-contract and SendProduct syntax refusals ran no
+accepted semantic regression and remain preserved as such.
+
+## R09/AUTH-03 bounded delegation — decision and pre-edit record
+
+Delegated choice selects a concrete application-owned test-provider policy,
+not a direct-only waiver. Actual Mnesis Context leaves tenant representation
+to applications; it grants no authority. This application explicitly assigns
+independent tenant shop to its exact certified Counter export. Tenant is not
+inferred from deployment, controller, runtime or a path. No Selo production
+credential/delegation contract or cryptographic signing is claimed.
+
+Reuse actual Export verification/current-permission callbacks, opaque concrete
+receipts, the coherent retained Ref guard, existing Counter and normal native
+cleanup. Two authenticated provider-owned grant edges narrow root authority
+through broker to caller independently in tenant/protocol/actor/operation.
+Each scope has at most3 unique members; this delegated profile requires exactly
+2 links. Immutable configured evidence is shared through existing Rc ownership;
+no provider receipt cache exists (cache0). Replay retention remains separate.
+Current issuer status/generation, exact parent and issuer continuity, root
+anchor, exact target/purpose and local Instant deadline are checked before the
+existing nonwaiting native attempt. No await splits permission from admission.
+
+The source-only proposal/model review1ebdf450 requires an exact26-query census
+per provider with derived test capacities: six real native replies and20
+pre-admission refusals. Eight otherwise-lawful broadenings isolate both grant
+edges and four scope dimensions. Direct/overdepth and both root/leaf anchor
+controls isolate their corresponding guard. Root and broker rotation must
+refuse old credentials, accept freshly authenticated current credentials on
+the same stable target, and keep the old credentials stale. Revoke/restore with
+fresh requests also observes recovery without a negative cache. A complete
+post-cleanup native trace precedes per-row tag assertions; grouped inverses
+must reveal every corresponding actual illegal admission/reply, not just tags.
+
+Only already-charged node/tests/permissions.rs and these existing records may
+change. Forecast up to900 test lines, production+0/-0/net0, public API+0/-0,
+dependencies0. Reuse actual requester operation variants and preserve original
+wire/proof/receipt custody; this predecode refusal owns no fabricated native
+User. Source reviews e0148193/954851bf and Root full-source review now pass; Root
+integration preserves the whole old permissions owner byte-exact. Actual
+source55a passes all11 selected cases per profile (7 library/4 public consumer),
+including26 real Queries per provider, six native replies and20 distinct
+pre-admission refusals. Eight private policy omissions produce all26 native
+replies per provider in both builds:80 forbidden admissions observed after
+cleanup. Exact source restoration and four actual original-healthy-artifact
+executions pass all11 cases per profile again. Independent execution review
+d2e53aaa preserves the native-aggregate failure boundary and unexecuted later
+inverse assertions. These artifact executions are not fresh recompilation.
+A final source successor only moves two observation collections outside
+assertions, leaving every native operation/guard/first failure unchanged;
+current fmt and strict remote package Clippy with both denies pass (1ba3bee4).
+No new final-source runtime execution is invented. Current R08 freshness/capacity obligations,
+all other unproved clauses and final AUTH1/NET1 delivery remain open.
+
+Complete scoped change record, including untracked inventory (none): six
+tracked paths, four owning test files plus this PRD and backlog status.
+Production: +0/-0/net0. Tests: +2869/-9/net2860. Public API: +0/-0.
+This adds verification capability; it is not source reduction or full feature
+delivery. Exact path deltas are retained in scoped-final-change-record.json.
+
+Cumulative scope remains40-of-explicitly-approved40, including restored owner
+cuts; no refund. Any41st path requires its explicit checkpoint. Full combined
+gates, final minimization, exact-head review/CI and recorded merge remain
+required after coherent implementation. No local witness marks the PRD merged.
+
 ## Actual main integration — PR444 (2026-11-20)
 
 Local scoped checkpoint59550a1b preserves the two retained tests and their

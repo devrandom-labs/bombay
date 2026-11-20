@@ -1216,3 +1216,1006 @@ async fn scheduled_ledger_permissions_survive_cold_queries() {
     .await
     .expect("the actual synchronized authority trace and joined cleanup finish");
 }
+
+mod delegation {
+    use super::super::requester::{CounterOperation as GrantOperation, Permission};
+    use super::{
+        Binding, Counter, CounterMessage, CounterOperation, EndpointRole, Metadata,
+        ProtectedMessage, ProviderProfile, Purpose, VerificationError, completed_actor,
+        configuration, limits, metadata, permission_replies,
+    };
+    use bombay::actors::ActorExt;
+    use bombay::behavior::{Never, User};
+    use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, reply};
+    use bombay::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment};
+    use core::ops::AsyncFn;
+    use serde::{Deserialize, Serialize};
+    use std::cell::{BorrowError, Ref, RefCell};
+    use std::future::{Ready, ready};
+    use std::num::NonZeroUsize;
+    use std::rc::Rc;
+    use std::time::{Duration, Instant};
+    use tokio::runtime::Builder;
+    use tokio::sync::oneshot;
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Principal {
+        Authority,
+        Broker,
+        Delegate,
+        Caller,
+    }
+
+    impl Principal {
+        fn name(self) -> &'static str {
+            match self {
+                Self::Authority => "authority",
+                Self::Broker => "broker",
+                Self::Delegate => "delegate",
+                Self::Caller => "caller",
+            }
+        }
+    }
+
+    struct GrantScope {
+        tenants: Vec<&'static str>,
+        protocols: Vec<&'static str>,
+        actors: Vec<(&'static str, &'static str)>,
+        operations: Vec<GrantOperation>,
+    }
+
+    impl GrantScope {
+        fn authority() -> Self {
+            Self {
+                tenants: vec!["shop", "workshop", "warehouse"],
+                protocols: vec!["counter", "ledger", "audit"],
+                actors: vec![
+                    ("owner", "counter"),
+                    ("owner", "ledger"),
+                    ("owner", "audit"),
+                ],
+                operations: vec![GrantOperation::Read, GrantOperation::Increment],
+            }
+        }
+
+        fn broker() -> Self {
+            Self {
+                tenants: vec!["shop", "workshop"],
+                protocols: vec!["counter", "ledger"],
+                actors: vec![("owner", "counter"), ("owner", "ledger")],
+                operations: vec![GrantOperation::Read, GrantOperation::Increment],
+            }
+        }
+
+        fn caller() -> Self {
+            Self {
+                tenants: vec!["shop"],
+                protocols: vec!["counter"],
+                actors: vec![("owner", "counter")],
+                operations: vec![GrantOperation::Read],
+            }
+        }
+    }
+
+    struct Grant {
+        id: u8,
+        parent: Option<u8>,
+        issuer: Principal,
+        subject: Principal,
+        issuer_generation: u64,
+        scope: GrantScope,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Dimension {
+        Tenant,
+        Protocol,
+        Actor,
+        Operation,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum Edge {
+        Authority,
+        Delegate,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum GrantCase {
+        Permitted,
+        AuthorityScope(Dimension),
+        DelegatedScope(Dimension),
+        TooDeep,
+        Direct,
+        AuthorityIssuer,
+        AuthorityParent,
+        DifferentIssuer,
+        DifferentParent,
+        AuthorityRevoked,
+        AuthorityRestored,
+        BrokerRevoked,
+        BrokerRestored,
+        AuthorityStale,
+        AuthorityRotated,
+        AuthorityStillStale,
+        BrokerStale,
+        BrokerRotated,
+        BrokerStillStale,
+        Progress,
+    }
+
+    const CASES: [GrantCase; 26] = [
+        GrantCase::Permitted,
+        GrantCase::AuthorityScope(Dimension::Tenant),
+        GrantCase::AuthorityScope(Dimension::Protocol),
+        GrantCase::AuthorityScope(Dimension::Actor),
+        GrantCase::AuthorityScope(Dimension::Operation),
+        GrantCase::DelegatedScope(Dimension::Tenant),
+        GrantCase::DelegatedScope(Dimension::Protocol),
+        GrantCase::DelegatedScope(Dimension::Actor),
+        GrantCase::DelegatedScope(Dimension::Operation),
+        GrantCase::TooDeep,
+        GrantCase::Direct,
+        GrantCase::AuthorityIssuer,
+        GrantCase::AuthorityParent,
+        GrantCase::DifferentIssuer,
+        GrantCase::DifferentParent,
+        GrantCase::AuthorityRevoked,
+        GrantCase::AuthorityRestored,
+        GrantCase::BrokerRevoked,
+        GrantCase::BrokerRestored,
+        GrantCase::AuthorityStale,
+        GrantCase::AuthorityRotated,
+        GrantCase::AuthorityStillStale,
+        GrantCase::BrokerStale,
+        GrantCase::BrokerRotated,
+        GrantCase::BrokerStillStale,
+        GrantCase::Progress,
+    ];
+
+    #[derive(Debug, PartialEq, Eq)]
+    enum NativeObservation {
+        Absent,
+        SelectedWithoutReply,
+        Replied { from: MailAddr, value: u64 },
+    }
+
+    fn grants(case: GrantCase) -> Rc<[Grant]> {
+        let mut broker = Grant {
+            id: 11,
+            parent: None,
+            issuer: Principal::Authority,
+            subject: Principal::Broker,
+            issuer_generation: 1,
+            scope: GrantScope::broker(),
+        };
+        let mut caller = Grant {
+            id: 17,
+            parent: Some(broker.id),
+            issuer: Principal::Broker,
+            subject: Principal::Caller,
+            issuer_generation: 1,
+            scope: GrantScope::caller(),
+        };
+        match case {
+            GrantCase::AuthorityScope(dimension) => match dimension {
+                Dimension::Tenant => broker.scope.tenants[1] = "foreign",
+                Dimension::Protocol => broker.scope.protocols[1] = "foreign",
+                Dimension::Actor => broker.scope.actors[1] = ("owner", "foreign"),
+                Dimension::Operation => broker.scope.operations[1] = GrantOperation::Stop,
+            },
+            GrantCase::DelegatedScope(dimension) => match dimension {
+                Dimension::Tenant => caller.scope.tenants.push("warehouse"),
+                Dimension::Protocol => caller.scope.protocols.push("audit"),
+                Dimension::Actor => caller.scope.actors.push(("owner", "audit")),
+                Dimension::Operation => caller.scope.operations.push(GrantOperation::Stop),
+            },
+            GrantCase::TooDeep => {
+                caller.subject = Principal::Delegate;
+                let leaf = Grant {
+                    id: 23,
+                    parent: Some(caller.id),
+                    issuer: Principal::Delegate,
+                    subject: Principal::Caller,
+                    issuer_generation: 1,
+                    scope: GrantScope::caller(),
+                };
+                return vec![broker, caller, leaf].into();
+            }
+            GrantCase::Direct => {
+                broker.subject = Principal::Caller;
+                broker.scope = GrantScope::caller();
+                return vec![broker].into();
+            }
+            GrantCase::AuthorityIssuer => broker.issuer = Principal::Broker,
+            GrantCase::AuthorityParent => broker.parent = Some(29),
+            GrantCase::DifferentIssuer => caller.issuer = Principal::Delegate,
+            GrantCase::DifferentParent => caller.parent = Some(29),
+            GrantCase::AuthorityRotated | GrantCase::BrokerStale | GrantCase::BrokerStillStale => {
+                broker.issuer_generation = 2;
+            }
+            GrantCase::BrokerRotated | GrantCase::Progress => {
+                broker.issuer_generation = 2;
+                caller.issuer_generation = 2;
+            }
+            GrantCase::Permitted
+            | GrantCase::AuthorityRevoked
+            | GrantCase::AuthorityRestored
+            | GrantCase::BrokerRevoked
+            | GrantCase::BrokerRestored
+            | GrantCase::AuthorityStale
+            | GrantCase::AuthorityStillStale => {}
+        }
+        vec![broker, caller].into()
+    }
+
+    #[derive(Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
+    struct DelegatedRequest {
+        bombay: Metadata,
+        tenant: Box<str>,
+        kind: Purpose,
+        operation: CounterOperation,
+    }
+
+    type Evidence = Vec<(ProtectedMessage, Rc<[Grant]>)>;
+
+    fn grant_profile(profile: ProviderProfile) -> &'static str {
+        match profile {
+            ProviderProfile::Recorded => "delegated-record-test-v1",
+            ProviderProfile::Scheduled => "delegated-scheduled-test-v1",
+        }
+    }
+
+    fn authenticated(
+        original: &ProtectedMessage,
+        evidence: &Evidence,
+        binding: Binding,
+        profile: ProviderProfile,
+    ) -> Result<(DelegatedRequest, Rc<[Grant]>), VerificationError> {
+        let request: DelegatedRequest =
+            serde_json::from_slice(&original.protected).map_err(VerificationError::Declaration)?;
+        let claims = &request.bombay;
+        if claims.provider_profile.as_ref() != grant_profile(profile)
+            || claims.deployment.as_ref() != binding.deployment
+            || claims.caller.as_ref() != binding.caller
+            || claims.controller.as_ref() != binding.controller
+            || claims.actor.as_ref() != binding.actor
+            || claims.host.as_ref() != binding.host
+            || claims.protocol.as_ref() != binding.protocol
+        {
+            return Err(VerificationError::Invalid);
+        }
+        let Some((_, grants)) = evidence.iter().find(|(record, _)| {
+            record.protected == original.protected && record.proof == original.proof
+        }) else {
+            return Err(VerificationError::Invalid);
+        };
+        Ok((request, Rc::clone(grants)))
+    }
+
+    mod recorded {
+        use super::{
+            Binding, DelegatedRequest, Evidence, Grant, ProtectedMessage, ProviderProfile, Rc,
+            Ready, VerificationError, authenticated, ready,
+        };
+
+        pub(super) struct Receipt {
+            request: DelegatedRequest,
+            grants: Rc<[Grant]>,
+        }
+
+        pub(super) fn verify(
+            original: &ProtectedMessage,
+            evidence: &Evidence,
+            binding: Binding,
+        ) -> Ready<Result<Receipt, VerificationError>> {
+            ready(
+                authenticated(original, evidence, binding, ProviderProfile::Recorded)
+                    .map(|(request, grants)| Receipt { request, grants }),
+            )
+        }
+
+        pub(super) fn projection(receipt: &Receipt) -> (&DelegatedRequest, &[Grant]) {
+            (&receipt.request, &receipt.grants)
+        }
+
+        pub(super) fn same_request(left: &Receipt, right: &Receipt) -> bool {
+            left.request.bombay == right.request.bombay
+                && left.request.tenant == right.request.tenant
+                && left.request.kind == right.request.kind
+                && left.request.operation == right.request.operation
+        }
+    }
+
+    mod scheduled {
+        use super::{
+            Binding, DelegatedRequest, Evidence, Grant, ProtectedMessage, ProviderProfile, Rc,
+            VerificationError, authenticated, oneshot,
+        };
+
+        pub(super) struct Receipt {
+            request: DelegatedRequest,
+            grants: Rc<[Grant]>,
+        }
+
+        pub(super) async fn verify(
+            original: &ProtectedMessage,
+            evidence: &Evidence,
+            binding: Binding,
+        ) -> Result<Receipt, VerificationError> {
+            let (published, received) = oneshot::channel();
+            let verified = authenticated(original, evidence, binding, ProviderProfile::Scheduled)
+                .map(|(request, grants)| Receipt { request, grants });
+            let transfer = published.send(verified);
+            match transfer {
+                Ok(()) => received.await.map_err(VerificationError::Unavailable)?,
+                Err(original) => original,
+            }
+        }
+
+        pub(super) fn projection(receipt: &Receipt) -> (&DelegatedRequest, &[Grant]) {
+            (&receipt.request, &receipt.grants)
+        }
+
+        pub(super) fn same_request(left: &Receipt, right: &Receipt) -> bool {
+            left.request.bombay == right.request.bombay
+                && left.request.tenant == right.request.tenant
+                && left.request.kind == right.request.kind
+                && left.request.operation == right.request.operation
+        }
+    }
+
+    struct Authority {
+        principal: Principal,
+        generation: u64,
+        permission: Permission,
+    }
+
+    #[derive(Debug)]
+    enum GrantRefusal {
+        Borrow(BorrowError),
+        Depth,
+        Issuer,
+        Parent,
+        Scope { edge: Edge, dimension: Dimension },
+        Revoked(Principal),
+        Generation(Principal),
+        Binding,
+        Tenant,
+        Request,
+    }
+
+    fn subset(child: &GrantScope, parent: &GrantScope) -> Option<Dimension> {
+        if child
+            .tenants
+            .iter()
+            .any(|tenant| !parent.tenants.contains(tenant))
+        {
+            Some(Dimension::Tenant)
+        } else if child
+            .protocols
+            .iter()
+            .any(|protocol| !parent.protocols.contains(protocol))
+        {
+            Some(Dimension::Protocol)
+        } else if child
+            .actors
+            .iter()
+            .any(|actor| !parent.actors.contains(actor))
+        {
+            Some(Dimension::Actor)
+        } else if child
+            .operations
+            .iter()
+            .any(|operation| !parent.operations.contains(operation))
+        {
+            Some(Dimension::Operation)
+        } else {
+            None
+        }
+    }
+
+    fn configured_scope(claims: &Metadata, configured: &Metadata) -> bool {
+        claims.wire_version == configured.wire_version
+            && claims.schema_version == configured.schema_version
+            && claims.provider_profile == configured.provider_profile
+            && claims.deployment == configured.deployment
+            && claims.caller == configured.caller
+            && claims.caller_session == configured.caller_session
+            && claims.controller == configured.controller
+            && claims.actor == configured.actor
+            && claims.host == configured.host
+            && claims.protocol == configured.protocol
+            && claims.runtime_generation == configured.runtime_generation
+            && claims.actor_generation == configured.actor_generation
+    }
+
+    #[expect(
+        clippy::too_many_arguments,
+        reason = "the retained current-authority guard compares independent authenticated facts, configured export, actual target and deadline without a new policy wrapper"
+    )]
+    fn permitted<'authority, Receipt>(
+        authorities: &'authority RefCell<Vec<Authority>>,
+        receipt: &Receipt,
+        projection: fn(&Receipt) -> (&DelegatedRequest, &[Grant]),
+        configured: &Metadata,
+        root_scope: &GrantScope,
+        runtime: &str,
+        target: MailAddr,
+        deadline: Instant,
+    ) -> Result<Ref<'authority, Vec<Authority>>, GrantRefusal> {
+        let authority = authorities.try_borrow().map_err(GrantRefusal::Borrow)?;
+        let (request, grants) = projection(receipt);
+        if grants.len() != 2 {
+            return Err(GrantRefusal::Depth);
+        }
+        let mut parent: Option<&Grant> = None;
+        for grant in grants {
+            let (scope, edge) = match parent {
+                None => {
+                    if grant.issuer != Principal::Authority {
+                        return Err(GrantRefusal::Issuer);
+                    }
+                    if grant.parent.is_some() {
+                        return Err(GrantRefusal::Parent);
+                    }
+                    (root_scope, Edge::Authority)
+                }
+                Some(parent) => {
+                    if grant.issuer != parent.subject {
+                        return Err(GrantRefusal::Issuer);
+                    }
+                    if grant.parent != Some(parent.id) {
+                        return Err(GrantRefusal::Parent);
+                    }
+                    (&parent.scope, Edge::Delegate)
+                }
+            };
+            if let Some(dimension) = subset(&grant.scope, scope) {
+                return Err(GrantRefusal::Scope { edge, dimension });
+            }
+            let Some(current) = authority
+                .iter()
+                .find(|current| current.principal == grant.issuer)
+            else {
+                return Err(GrantRefusal::Issuer);
+            };
+            match current.permission {
+                Permission::Revoked => return Err(GrantRefusal::Revoked(grant.issuer)),
+                Permission::Granted => {}
+            }
+            if grant.issuer_generation != current.generation {
+                return Err(GrantRefusal::Generation(grant.issuer));
+            }
+            parent = Some(grant);
+        }
+        let leaf = parent.expect("a nonempty bounded chain retains its actual final grant");
+        if !configured_scope(&request.bombay, configured)
+            || request.bombay.runtime_generation.as_ref() != runtime
+            || request.bombay.actor_generation != target.0
+            || request.bombay.caller.as_ref() != leaf.subject.name()
+            || request.bombay.grant_issuer.as_ref() != leaf.issuer.name()
+            || request.bombay.authority_generation != leaf.issuer_generation
+        {
+            return Err(GrantRefusal::Binding);
+        }
+        // This application assigns shop independently of deployment/controller
+        // to precisely the capability certified by the Node binder above.
+        if request.tenant.as_ref() != "shop" || !leaf.scope.tenants.contains(&"shop") {
+            return Err(GrantRefusal::Tenant);
+        }
+        if request.kind != Purpose::Request
+            || request.operation != CounterOperation::Read
+            || !leaf
+                .scope
+                .protocols
+                .contains(&request.bombay.protocol.as_ref())
+            || !leaf.scope.actors.contains(&(
+                request.bombay.controller.as_ref(),
+                request.bombay.actor.as_ref(),
+            ))
+            || !leaf.scope.operations.contains(&GrantOperation::Read)
+            || Instant::now() >= deadline
+        {
+            return Err(GrantRefusal::Request);
+        }
+        Ok(authority)
+    }
+
+    #[expect(
+        clippy::result_large_err,
+        clippy::too_many_lines,
+        clippy::await_holding_refcell_ref,
+        reason = "one finite real Application journey preserves both provider receipts and all original requests; authenticated evidence remains immutable across its scheduled provider wait"
+    )]
+    async fn delegated_permissions<Receipt>(
+        profile: ProviderProfile,
+        verify: impl AsyncFn(
+            &ProtectedMessage,
+            &Evidence,
+            Binding,
+        ) -> Result<Receipt, VerificationError>,
+        projection: fn(&Receipt) -> (&DelegatedRequest, &[Grant]),
+        same_request: fn(&Receipt, &Receipt) -> bool,
+    ) {
+        let binding = Binding {
+            deployment: "two-node-read-study",
+            caller: "caller",
+            controller: "owner",
+            actor: "counter",
+            host: "receiver",
+            protocol: "counter",
+            target_assignment: "delegated-shop-counter",
+            logical_session: 47,
+        };
+        let authorities = RefCell::new(vec![
+            Authority {
+                principal: Principal::Authority,
+                generation: 1,
+                permission: Permission::Granted,
+            },
+            Authority {
+                principal: Principal::Broker,
+                generation: 1,
+                permission: Permission::Granted,
+            },
+            Authority {
+                principal: Principal::Delegate,
+                generation: 1,
+                permission: Permission::Granted,
+            },
+        ]);
+        let root_scope = GrantScope::authority();
+        let evidence = RefCell::new(Evidence::new());
+        let current_claims = RefCell::new(None::<Metadata>);
+        let before = RefCell::new(Vec::new());
+        let decoded = RefCell::new(Vec::new());
+        let constructed = RefCell::new(Vec::new());
+        let deadline = Instant::now() + Duration::from_secs(150);
+        // Every Query may retain its native timeout charge until final cleanup.
+        // Reserve the entire exact 26-query inventory at every preceding owner.
+        let maximum = NonZeroUsize::new(CASES.len()).unwrap();
+        let current = |receipt: &Receipt, runtime: &str, target: MailAddr| {
+            let configured = current_claims.borrow();
+            permitted(
+                &authorities,
+                receipt,
+                projection,
+                configured
+                    .as_ref()
+                    .expect("the actual target binding precedes serving"),
+                &root_scope,
+                runtime,
+                target,
+                deadline,
+            )
+        };
+        let export = Export::new(
+            "bombay/permission/delegated-counter",
+            ExportLimits {
+                refusals: RefusalRetention::Retain,
+                queued_queries: maximum,
+                retained_queries: maximum,
+                retained_requests: maximum,
+                diagnostics: maximum,
+            },
+            limits(),
+            |bytes| {
+                let request: DelegatedRequest = serde_json::from_slice(bytes)?;
+                decoded.borrow_mut().push(request.bombay.request_sequence);
+                Ok::<_, serde_json::Error>(request)
+            },
+            reply(
+                |request: DelegatedRequest| {
+                    let constructed = &constructed;
+                    Ok::<_, DelegatedRequest>(move |reply_to| {
+                        constructed
+                            .borrow_mut()
+                            .push(request.bombay.request_sequence);
+                        CounterMessage::Read(reply_to)
+                    })
+                },
+                |_: &Receipt, original: &User<MailAddr, u64>| {
+                    serde_json::to_vec(&original.message).map(Vec::into_boxed_slice)
+                },
+            ),
+            async |bytes: &[u8], proof: &[u8]| {
+                let original = ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                };
+                let verified = verify(&original, &evidence.borrow(), binding).await;
+                if let Ok(receipt) = &verified {
+                    let (request, chain) = projection(receipt);
+                    before.borrow_mut().push((
+                        bytes.as_ptr(),
+                        proof.as_ptr(),
+                        serde_json::to_vec(request).unwrap(),
+                        chain.as_ptr(),
+                    ));
+                }
+                verified
+            },
+            async |_: &[u8], _: &Receipt| Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17])),
+            same_request,
+            &current,
+            &current,
+        );
+        let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+        network.max_retained_queries = maximum;
+        let node = Application::new(Counter::new().stop_on_shutdown())
+            .open_node(network)
+            .await
+            .unwrap_or_else(|_| panic!("the actual tenant Counter Node opens"));
+        let runtime = node.runtime_id();
+        let session = node.session.clone();
+        let (configured, receiving) = oneshot::channel();
+        let mut node = node.exports(export, async |application| {
+            let target = application.root().established_recipient();
+            let address = application.actor_address(&target).unwrap();
+            let mut configured_claims =
+                metadata(profile, "counter", runtime.clone(), runtime.clone());
+            configured_claims.provider_profile = grant_profile(profile).into();
+            configured_claims.actor_generation = address.0;
+            let mut originals = Vec::new();
+            let original_grants = grants(GrantCase::Permitted);
+            let rotated_authority = grants(GrantCase::AuthorityRotated);
+            let rotated_broker = grants(GrantCase::BrokerRotated);
+            for (position, case) in CASES.iter().copied().enumerate() {
+                let chain = match case {
+                    GrantCase::Permitted
+                    | GrantCase::AuthorityRevoked
+                    | GrantCase::AuthorityRestored
+                    | GrantCase::BrokerRevoked
+                    | GrantCase::BrokerRestored
+                    | GrantCase::AuthorityStale
+                    | GrantCase::AuthorityStillStale => Rc::clone(&original_grants),
+                    GrantCase::AuthorityRotated
+                    | GrantCase::BrokerStale
+                    | GrantCase::BrokerStillStale => Rc::clone(&rotated_authority),
+                    GrantCase::BrokerRotated | GrantCase::Progress => Rc::clone(&rotated_broker),
+                    _ => grants(case),
+                };
+                let leaf = chain.last().unwrap();
+                let mut claims = metadata(profile, "counter", runtime.clone(), runtime.clone());
+                claims.provider_profile = grant_profile(profile).into();
+                claims.actor_generation = address.0;
+                claims.request_sequence = u64::try_from(position).unwrap() + 1;
+                claims.grant_issuer = leaf.issuer.name().into();
+                claims.authority_generation = leaf.issuer_generation;
+                let original = ProtectedMessage {
+                    protected: serde_json::to_vec(&DelegatedRequest {
+                        bombay: claims,
+                        tenant: "shop".into(),
+                        kind: Purpose::Request,
+                        operation: CounterOperation::Read,
+                    })
+                    .unwrap()
+                    .into_boxed_slice(),
+                    proof: vec![7, u8::try_from(position).unwrap(), 11].into_boxed_slice(),
+                };
+                evidence.borrow_mut().push((
+                    ProtectedMessage {
+                        protected: original.protected.clone(),
+                        proof: original.proof.clone(),
+                    },
+                    chain,
+                ));
+                originals.push(original);
+            }
+            *current_claims.borrow_mut() = Some(configured_claims);
+            let delivered = configured.send(originals);
+            delivered
+                .unwrap_or_else(|_| panic!("Work receives the exact finite request inventory"));
+            Ok::<_, Never>(target)
+        });
+        let outcome = node
+            .run_with(|application| {
+                let session = &session;
+                let authorities = &authorities;
+                async move {
+                    let originals = receiving
+                        .await
+                        .expect("binding supplies all protected requests");
+                    let mut replies = Vec::new();
+                    for (case, original) in CASES.iter().zip(&originals) {
+                        match case {
+                            GrantCase::AuthorityRevoked
+                            | GrantCase::AuthorityRestored
+                            | GrantCase::BrokerRevoked
+                            | GrantCase::BrokerRestored
+                            | GrantCase::AuthorityStale
+                            | GrantCase::BrokerStale => {
+                                let mut current = authorities.borrow_mut();
+                                match case {
+                                    GrantCase::AuthorityRevoked => {
+                                        current[0].permission = Permission::Revoked;
+                                    }
+                                    GrantCase::AuthorityRestored => {
+                                        current[0].permission = Permission::Granted;
+                                    }
+                                    GrantCase::BrokerRevoked => {
+                                        current[1].permission = Permission::Revoked;
+                                    }
+                                    GrantCase::BrokerRestored => {
+                                        current[1].permission = Permission::Granted;
+                                    }
+                                    GrantCase::AuthorityStale => current[0].generation = 2,
+                                    GrantCase::BrokerStale => current[1].generation = 2,
+                                    _ => {
+                                        unreachable!("only an authority update enters this branch")
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                        replies.push(
+                            permission_replies(
+                                session,
+                                "bombay/permission/delegated-counter",
+                                original,
+                            )
+                            .await,
+                        );
+                    }
+                    let shutdown = application.shutdown();
+                    (originals, replies, shutdown)
+                }
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the real tenant Application enters its host"));
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+            node.into_parts()
+                .unwrap_or_else(|_| panic!("all original Node finalization remains"));
+        let (work, report, native, notifications, ()) = outcome.into_parts();
+        let ((originals, replies, shutdown), cleanup) = work
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("the actual Work finishes before native cleanup"));
+        cleanup.expect("actual Application cleanup joins");
+        closed.expect("actual Session disposal completes");
+        let (origin, native) = native.expect("the complete original native Counter remains");
+        let _counter = completed_actor(origin, native);
+        let report = report.expect("the independent root report remains");
+        let notifications = notifications.expect("both original publication receipts remain");
+        let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+        assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+        assert!(
+            matches!(bound, Some(Ok(_)))
+                && matches!(startup, Some(Ok(())))
+                && matches!(withdrawal, Some(Ok(())))
+        );
+        assert!(shutdown.is_ok() && diagnostics.is_empty());
+        assert!(
+            polling.is_none()
+                && disposal.is_none()
+                && withdrawal_polling.is_none()
+                && withdrawal_disposal.is_none()
+                && session.is_closed()
+        );
+        let mut rows = requests
+            .into_iter()
+            .map(|request| {
+                request
+                    .try_into_parts()
+                    .unwrap_or_else(|_| panic!("each original request releases its producer loans"))
+            })
+            .collect::<Vec<_>>();
+        // Every real Query and native cleanup have completed before this
+        // complete trace is compared. A combined source inversion therefore
+        // exposes every reached scope edge, rather than stopping at its first.
+        let observed = rows
+            .iter()
+            .zip(CASES)
+            .map(|(row, case)| {
+                let native = match &row.4 {
+                    None => NativeObservation::Absent,
+                    Some((_, _, Attempt::Returned(Ok(())), Some(Some(original)), _)) => {
+                        NativeObservation::Replied {
+                            from: original.from,
+                            value: original.message,
+                        }
+                    }
+                    Some(_) => NativeObservation::SelectedWithoutReply,
+                };
+                (case, native)
+            })
+            .collect::<Vec<_>>();
+        let expected = CASES
+            .into_iter()
+            .map(|case| {
+                let native = match case {
+                    GrantCase::Permitted
+                    | GrantCase::AuthorityRestored
+                    | GrantCase::BrokerRestored
+                    | GrantCase::AuthorityRotated
+                    | GrantCase::BrokerRotated
+                    | GrantCase::Progress => NativeObservation::Replied {
+                        from: origin.address(),
+                        value: 0,
+                    },
+                    _ => NativeObservation::Absent,
+                };
+                (case, native)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            observed, expected,
+            "all actual delegated native admissions and replies"
+        );
+        assert_eq!(rows.len(), CASES.len());
+        assert_eq!(replies.len(), CASES.len());
+        let before = before.into_inner();
+        assert_eq!(before.len(), CASES.len());
+        let mut admitted = Vec::new();
+        for (position, (((row, case), original), replies)) in rows
+            .iter_mut()
+            .zip(CASES)
+            .zip(&originals)
+            .zip(&replies)
+            .enumerate()
+        {
+            let receipt = row
+                .2
+                .as_ref()
+                .expect("verification completed")
+                .as_ref()
+                .unwrap_or_else(|_| panic!("all fixture evidence is authentic"));
+            let (request, chain) = projection(receipt);
+            assert_eq!(row.1.0, original.protected);
+            assert_eq!(row.1.1, original.proof);
+            assert_eq!(
+                (row.1.0.as_ptr(), row.1.1.as_ptr()),
+                (before[position].0, before[position].1)
+            );
+            assert_eq!(serde_json::to_vec(request).unwrap(), before[position].2);
+            assert_eq!(chain.as_ptr(), before[position].3);
+            assert_eq!(request.tenant.as_ref(), "shop");
+            assert_eq!(request.bombay.deployment.as_ref(), binding.deployment);
+            assert_eq!(request.bombay.controller.as_ref(), binding.controller);
+            assert_eq!(
+                request.bombay.request_sequence,
+                u64::try_from(position).unwrap() + 1
+            );
+            assert!(row.8.1.is_none() && row.8.2.is_none());
+            assert!(matches!(row.9, (None, None, None, None, None, None)));
+            match case {
+                GrantCase::Permitted
+                | GrantCase::AuthorityRestored
+                | GrantCase::BrokerRestored
+                | GrantCase::AuthorityRotated
+                | GrantCase::BrokerRotated
+                | GrantCase::Progress => {
+                    let (constructor, client, admission, received, tail) = row
+                        .4
+                        .take()
+                        .expect("a permitted delegated grant reaches the actual native request");
+                    assert!(
+                        constructor.is_none() && matches!(admission, Attempt::Returned(Ok(())))
+                    );
+                    let Attempt::Returned(Ok(client)) = client else {
+                        panic!("the actual native reply client remains");
+                    };
+                    let original = received
+                        .expect("native reception returned")
+                        .expect("the actual Counter reply remains");
+                    assert_eq!((original.from, original.message), (origin.address(), 0));
+                    assert_ne!(client.address(), origin.address());
+                    assert!(matches!(tail.as_slice(), [None]));
+                    assert!(row.8.0.is_none());
+                    assert_eq!(replies.len(), 1);
+                    assert!(matches!(row.5, Some(Ok(_))) && matches!(row.6, Some(Ok(_))));
+                    admitted.push(request.bombay.request_sequence);
+                }
+                _ => {
+                    // This independent native absence oracle must fail before
+                    // an error-tag assertion when a grant check is removed.
+                    assert!(row.4.is_none(), "{case:?} reached native admission/reply");
+                    assert!(row.3.is_none() && row.5.is_none() && row.6.is_none());
+                    assert!(replies.is_empty() && row.7.is_empty());
+                    let refusal = row
+                        .8
+                        .0
+                        .as_ref()
+                        .expect("the exact authorization refusal remains");
+                    if let GrantRefusal::Borrow(cause) = refusal {
+                        panic!("no concurrent authority loan is part of {case:?}: {cause}");
+                    }
+                    match case {
+                        GrantCase::AuthorityScope(dimension) => assert!(matches!(refusal,
+                            GrantRefusal::Scope { edge: Edge::Authority, dimension: actual }
+                                if *actual == dimension)),
+                        GrantCase::DelegatedScope(dimension) => assert!(matches!(refusal,
+                            GrantRefusal::Scope { edge: Edge::Delegate, dimension: actual }
+                                if *actual == dimension)),
+                        GrantCase::TooDeep | GrantCase::Direct => {
+                            assert!(matches!(refusal, GrantRefusal::Depth));
+                        }
+                        GrantCase::AuthorityIssuer | GrantCase::DifferentIssuer => {
+                            assert!(matches!(refusal, GrantRefusal::Issuer));
+                        }
+                        GrantCase::AuthorityParent | GrantCase::DifferentParent => {
+                            assert!(matches!(refusal, GrantRefusal::Parent));
+                        }
+                        GrantCase::AuthorityRevoked => assert!(matches!(
+                            refusal,
+                            GrantRefusal::Revoked(Principal::Authority)
+                        )),
+                        GrantCase::BrokerRevoked => {
+                            assert!(matches!(refusal, GrantRefusal::Revoked(Principal::Broker)));
+                        }
+                        GrantCase::AuthorityStale | GrantCase::AuthorityStillStale => assert!(
+                            matches!(refusal, GrantRefusal::Generation(Principal::Authority))
+                        ),
+                        GrantCase::BrokerStale | GrantCase::BrokerStillStale => assert!(matches!(
+                            refusal,
+                            GrantRefusal::Generation(Principal::Broker)
+                        )),
+                        _ => unreachable!("all permitted cases consumed actual native replies"),
+                    }
+                }
+            }
+            assert_eq!(row.7.len(), replies.len());
+            assert!(row.7.iter().all(Result::is_ok));
+            for reply in replies {
+                let result = reply.result();
+                let reply = result
+                    .as_ref()
+                    .expect("the actual protected reply is successful");
+                assert_eq!(reply.payload().to_bytes().as_ref(), b"0");
+                assert_eq!(reply.attachment().unwrap().to_bytes().as_ref(), [13, 17]);
+            }
+        }
+        assert_eq!(admitted, [1, 17, 19, 21, 24, 26]);
+        let decoded = decoded.into_inner();
+        let constructed = constructed.into_inner();
+        assert_eq!(decoded, admitted);
+        assert_eq!(constructed, admitted);
+    }
+
+    #[test]
+    fn recorded_delegation_preserves_both_scope_edges_and_current_authority() {
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            tokio::time::timeout(
+                Duration::from_secs(150),
+                delegated_permissions(
+                    ProviderProfile::Recorded,
+                    recorded::verify,
+                    recorded::projection,
+                    recorded::same_request,
+                ),
+            )
+            .await
+            .expect("all recorded grants, native replies and joined cleanup finish");
+        });
+    }
+
+    #[test]
+    fn scheduled_delegation_preserves_both_scope_edges_and_current_authority() {
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            tokio::time::timeout(
+                Duration::from_secs(150),
+                delegated_permissions(
+                    ProviderProfile::Scheduled,
+                    scheduled::verify,
+                    scheduled::projection,
+                    scheduled::same_request,
+                ),
+            )
+            .await
+            .expect("all scheduled grants, native replies and joined cleanup finish");
+        });
+    }
+}
