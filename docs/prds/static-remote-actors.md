@@ -299,12 +299,83 @@ negative assertions are unexecuted; their healthy/restored controls pass.
 This closes the selected distinct-identity capacity pairing locally, with
 combined-source checks, full R12 and reviewed delivery still open.
 
-Current complete delta against local integratione2fb15a1: seven tracked paths,
+Local checkpointd1b1 complete delta against integratione2fb15a1: seven tracked paths,
 five owning test files and the two existing requirement records; no untracked
 files. Production +0/-0/net0; tests +4029/-131/net3898; public API +0/-0.
 The reconnect/quota checkpoint adds tests +1099/-124/net975 since3df, not a
 production capability or code reduction. All locks, manifests, production
 owners and SDK features remain exact. Cumulative file charge stays40/approved40.
+
+## R19 selected Query pressure — pre-edit record (2026-11-20)
+
+Existing verifier-capacity evidence stalls two real asynchronous Export
+consumers and acquires one excess Query EOF before release. Extend only the
+already-charged pressure.rs trace with three excess Queries and an independent
+health Query/reply/EOF on the same receiving Session while both verifiers remain
+held. Use a distinct actual TLS caller Session, the existing Caller credentials
+and the receiver's actual bound address. Bind both native IDs into the existing
+metadata and acquire real matching before Gets. Remote destination/origin rules
+exclude SessionLocal fallback. Keep all originals, every excess reply/EOF,
+later permitted append and final native Ledger state through joined cleanup.
+The health callback never invokes a Behavior;
+Work owns its reply and normal declaration withdrawal. No runtime task, wrapper,
+public capability, scheduler, telemetry service or test-controlled sleep is added.
+
+Reuse the exact locked owners and current recorded provider. Export query and
+diagnostic capacities stay4, retained request rows2. Derive native query budget7
+from two held, three excess, one independent health and one later valid request
+so an earlier transport limit cannot mask the selected Export law. Healthy
+expectation is two held verifiers, three explicit retention refusals, independent
+native health progress before release, then only the permitted113 append.
+The existing request-limit threshold inverse must allow the otherwise-valid109
+through and expose its actual pre-release reply and final native Ledger state
+plus the actual final Read User at a complete post-cleanup aggregate. A counter/tag alone is not
+proof. Preserve all original refusal-cause, exact byte/proof and cleanup checks.
+
+Forecast60–100 net additional test lines; production/API/dependencies0, one
+already-charged test owner plus existing records, cumulative40/40. This is the
+finite selected Query-class/verification-stalled-consumer witness, not arbitrary
+CPU fairness, a blocked Behavior executor, reply flooding or full R19. Model,
+counterexample reviews and focused healthy/inverse/restored D/R remain required.
+Do not reuse the separate append_after_full fixture: its deliberate synchronous
+actor-executor block cannot provide independent sibling progress.
+
+Pre-edit source veto: the shared Ledger Read is terminal. The proposed early
+Read would stop the target and invalidate later recovery, so it is rejected
+before any implementation. Keep the original terminal Read at the end; no new
+actor or changed Ledger law is introduced merely to produce an extra witness.
+This pressure trace proves independent native callback progress, not actor
+processing before release. Reusing the real TLS profile strengthens the earlier
+SessionLocal-only pressure boundary without adding a second networking owner.
+
+The formatted pressure draft measures tests +231/-29/net202, exceeding its
+forecast; production/API/dependencies remain0. All three excess requests are
+fully drained and retained before release, not concurrent reply flooding.
+Source review also replaces an expected-value index into possibly empty actual
+Ledger state with an optional source relationship, so an empty-state defect
+reaches the complete oracle instead of panicking during expectation construction.
+Actual caller and receiver IDs are compared as distinct after cleanup. Focused
+compilation and strict linting precede the expensive debug/optimized executions.
+
+Actual source9d825 passes the complete TLS-pressure trace in debug and optimized
+builds, strict remote library/tests Clippy with both mandatory denies, and fmt.
+The one owning request-threshold2-to3 cut admits109: both profiles fail at the
+first complete post-cleanup aggregate with its actual pre-release admitted
+reply, both native admissions and original requests3/4, final Read User and
+native Ledger payloads109/113, while the independent health exchange still
+completes. Exact whole-query/all731 restoration and saved original9d artifact
+replays pass again in both profiles. Independent six-run review34807f9f verifies
+both complete source archives, actual binaries, outcomes and failure boundary.
+The negative awaits health withdrawal/caller close but does not reach their
+success assertions or the later original custody tail; only positive/restored
+executions credit those values. This closes the selected finite TLS Query
+pressure witness locally, not reply flooding, full R19, SDK baselines or delivery.
+
+Complete current local delta against integratione2fb15a1 remains seven tracked
+paths, five owning test files plus these two requirement records, no untracked
+files: production +0/-0/net0, tests +4233/-133/net4100, public API +0/-0.
+The change remains net-positive verification code, with all production owners,
+locks, SDK features and dependency edges unchanged; cumulative charge40/40.
 
 ## Actual main integration — PR444 (2026-11-20)
 

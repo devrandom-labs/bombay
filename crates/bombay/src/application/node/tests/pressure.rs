@@ -1,8 +1,8 @@
 //! Cold admission retains native Full through capacity and authority changes.
 use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef,
-    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits, metadata,
-    recorded,
+    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits,
+    listener_address, metadata, recorded,
 };
 use super::{LedgerCommand, MailLedger, Receipts};
 use crate::RetirementOutcome;
@@ -24,6 +24,7 @@ use tokio::runtime::Builder;
 use tokio::sync::mpsc::channel;
 use tokio::sync::{Semaphore, oneshot};
 use tokio::time::timeout;
+use zenoh::handlers::FifoChannel;
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
 
@@ -84,6 +85,8 @@ fn held_verifiers_bound_excess_requests_before_recovering_capacity() {
     reason = "one finite native trace retains complete input, admission and cleanup facts; its registered proof table is immutable throughout provider verification"
 )]
 async fn verifier_capacity() {
+    const EXCESS_QUERIES: usize = 3;
+    const HEALTH: &str = "bombay/verifier-health";
     let registered = RefCell::new(Vec::<ProtectedMessage>::new());
     let verified = RefCell::new(Vec::<ProtectedMessage>::new());
     let claims = RefCell::new(None::<Metadata>);
@@ -198,7 +201,8 @@ async fn verifier_capacity() {
         &current,
     );
     let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
-    network.max_retained_queries = maximum;
+    let native_queries = NonZeroUsize::new(2 + EXCESS_QUERIES + 1 + 1).unwrap();
+    network.max_retained_queries = native_queries;
     let node = Application::new(MailLedger {
         entries: Vec::new(),
     })
@@ -207,14 +211,27 @@ async fn verifier_capacity() {
     .unwrap_or_else(|_| panic!("the actual bounded-verifier Node opens"));
     let runtime = node.runtime_id();
     let session = node.session.clone();
+    let address = listener_address(node.listen_addresses().await);
+    let mut outgoing = configuration(&address, &EndpointRole::Caller);
+    outgoing.max_retained_queries = native_queries;
+    let caller = zenoh::open(outgoing.to_configuration().unwrap())
+        .await
+        .expect("the actual TLS caller opens");
+    let caller_id = caller.zid().to_string();
+    let health = session
+        .declare_queryable(HEALTH)
+        .allowed_origin(Locality::Remote)
+        .with(FifoChannel::new(1))
+        .await
+        .expect("the same receiving Session owns the independent health declaration");
     let (configured, inputs) = oneshot::channel();
     let mut node = node.exports(export, async |application| {
         let target = application.root().established_recipient();
         let mut actual = metadata(
             ProviderProfile::Recorded,
             "ledger",
+            caller_id.clone(),
             runtime.clone(),
-            runtime,
         );
         actual.actor_generation = application.actor_address(&target).unwrap().0;
         let mut originals = Vec::new();
@@ -245,16 +262,40 @@ async fn verifier_capacity() {
     let outcome = node
         .run_with(|application| {
             let session = &session;
+            let caller = &caller;
             let active = &active;
             let verified = &verified;
             let release = &release;
             async move {
                 let originals = inputs.await.unwrap();
+                let mut discovery = Vec::new();
+                for key in ["bombay/verifier-capacity", HEALTH] {
+                    let querier = caller.declare_querier(key).await.unwrap();
+                    let matching = querier
+                        .matching_listener()
+                        .with(FifoChannel::new(2))
+                        .await
+                        .unwrap();
+                    let initial = querier.matching_status().await.unwrap();
+                    let matched = if initial.matching() {
+                        initial
+                    } else {
+                        loop {
+                            let status = matching.recv_async().await.unwrap();
+                            if status.matching() {
+                                break status;
+                            }
+                        }
+                    };
+                    let listener_closed = matching.undeclare().await;
+                    let querier_closed = querier.undeclare().await;
+                    discovery.push((matched, listener_closed, querier_closed));
+                }
                 let mut held = Vec::new();
                 for original in &originals[..2] {
-                    let incoming = session
+                    let incoming = caller
                         .get("bombay/verifier-capacity")
-                        .allowed_destination(Locality::SessionLocal)
+                        .allowed_destination(Locality::Remote)
                         .payload(original.protected.to_vec())
                         .attachment(original.proof.to_vec())
                         .consolidation(ConsolidationMode::None)
@@ -266,26 +307,66 @@ async fn verifier_capacity() {
                 let first = entries.recv().await;
                 let second = entries.recv().await;
                 let original = &originals[2];
-                let overflow = session
-                    .get("bombay/verifier-capacity")
-                    .allowed_destination(Locality::SessionLocal)
-                    .payload(original.protected.to_vec())
-                    .attachment(original.proof.to_vec())
+                let mut overflow = Vec::new();
+                for _ in 0..EXCESS_QUERIES {
+                    let incoming = caller
+                        .get("bombay/verifier-capacity")
+                        .allowed_destination(Locality::Remote)
+                        .payload(original.protected.to_vec())
+                        .attachment(original.proof.to_vec())
+                        .consolidation(ConsolidationMode::None)
+                        .timeout(Duration::from_secs(30))
+                        .await
+                        .expect("each excess native query starts");
+                    let mut replies = Vec::new();
+                    let ending = loop {
+                        match incoming.recv_async().await {
+                            Ok(original) => replies.push(original),
+                            Err(cause) => break Err::<(), _>(cause),
+                        }
+                    };
+                    overflow.push((replies, ending));
+                }
+                let receiving = caller
+                    .get(HEALTH)
+                    .allowed_destination(Locality::Remote)
+                    .payload(vec![149_u8])
                     .consolidation(ConsolidationMode::None)
                     .timeout(Duration::from_secs(30))
                     .await
-                    .expect("the excess native query starts");
-                let overflow = overflow.recv_async().await;
+                    .expect("the independent remote health Query starts while consumers wait");
+                let query = health
+                    .recv_async()
+                    .await
+                    .expect("the native health callback progresses");
+                let health_input = query
+                    .payload()
+                    .map(|payload| payload.to_bytes().into_owned());
+                let health_published = query.reply(HEALTH, vec![151_u8]).await;
+                drop(query);
+                let mut health_replies = Vec::new();
+                let health_end = loop {
+                    match receiving.recv_async().await {
+                        Ok(original) => health_replies.push(original),
+                        Err(cause) => break Err::<(), _>(cause),
+                    }
+                };
                 let saturated = (active.get(), verified.borrow().len());
+                let live = (
+                    session.zid().to_string(),
+                    caller.zid().to_string(),
+                    session.is_closed(),
+                    caller.is_closed(),
+                );
                 release.add_permits(2);
                 let mut refused = Vec::new();
                 for incoming in held {
                     refused.push(incoming.recv_async().await);
                 }
                 let original = &originals[3];
-                let permitted = session
+                let permitted = caller
                     .get("bombay/verifier-capacity")
-                    .allowed_destination(Locality::SessionLocal)
+                    .allowed_destination(Locality::Remote)
                     .payload(original.protected.to_vec())
                     .attachment(original.proof.to_vec())
                     .consolidation(ConsolidationMode::None)
@@ -301,6 +382,8 @@ async fn verifier_capacity() {
                     .send(LedgerCommand::Read(ordinary.recipient()))
                     .await;
                 let reply = ordinary.receive().await;
+                let health_closed = health.undeclare().await;
+                let caller_closed = caller.close().await;
                 (
                     originals,
                     first,
@@ -312,6 +395,16 @@ async fn verifier_capacity() {
                     permitted_end,
                     admission,
                     reply,
+                    discovery,
+                    (
+                        health_input,
+                        health_published,
+                        health_replies,
+                        health_end,
+                        health_closed,
+                    ),
+                    live,
+                    caller_closed,
                 )
             }
         })
@@ -333,6 +426,10 @@ async fn verifier_capacity() {
             permitted_end,
             admission,
             reply,
+            discovery,
+            (health_input, health_published, health_replies, health_end, health_closed),
+            live,
+            caller_closed,
         ),
         cleanup,
     ) = work
@@ -344,6 +441,114 @@ async fn verifier_capacity() {
     let report = report.expect("the original root report remains");
     let notifications = notifications.expect("both notification receipts remain");
     let (_, _, startup, withdrawal, diagnostics, rows) = export.into_parts();
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { completion, .. },
+    } = native
+    else {
+        panic!("the exact original Ledger state survives joined retirement");
+    };
+    let rows = rows
+        .into_iter()
+        .map(|request| {
+            request
+                .try_into_parts()
+                .unwrap_or_else(|_| panic!("all request producer loans ended"))
+        })
+        .collect::<Vec<_>>();
+    let excess = overflow
+        .iter()
+        .map(|(replies, _)| {
+            replies
+                .iter()
+                .map(|reply| {
+                    reply
+                        .result()
+                        .as_ref()
+                        .ok()
+                        .map(|sample| sample.payload().to_bytes().into_owned())
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let healthy = health_replies
+        .iter()
+        .map(|reply| {
+            reply
+                .result()
+                .as_ref()
+                .ok()
+                .map(|sample| sample.payload().to_bytes().into_owned())
+        })
+        .collect::<Vec<_>>();
+    let admissions = rows
+        .iter()
+        .map(|row| {
+            let admitted =
+                row.4
+                    .as_ref()
+                    .and_then(|(_, sender, admission)| match (sender, admission) {
+                        (Attempt::Returned(Ok(sender)), Attempt::Returned(Ok(()))) => {
+                            Some(sender.address())
+                        }
+                        _ => None,
+                    });
+            (row.1.0.as_ref(), row.1.1.as_ref(), admitted)
+        })
+        .collect::<Vec<_>>();
+    let final_origins = custody
+        .behavior
+        .entries
+        .iter()
+        .map(|(origin, _)| *origin)
+        .collect::<Vec<_>>();
+    let final_payloads = custody
+        .behavior
+        .entries
+        .iter()
+        .map(|(_, payload)| payload.as_ref())
+        .collect::<Vec<_>>();
+    // Retain real extra replies, native admissions and actor payloads before count assertions.
+    assert_eq!(
+        (
+            excess,
+            saturated,
+            healthy,
+            health_input.as_deref(),
+            health_end.is_err(),
+            admissions,
+            reply
+                .as_ref()
+                .map(|read| (read.from, read.message.as_slice())),
+            final_payloads
+        ),
+        (
+            vec![Vec::new(); EXCESS_QUERIES],
+            (2, 2),
+            vec![Some(vec![151_u8])],
+            Some([149_u8].as_slice()),
+            true,
+            vec![(
+                originals[3].protected.as_ref(),
+                originals[3].proof.as_ref(),
+                custody.behavior.entries.first().map(|(sender, _)| *sender)
+            )],
+            Some((origin.address(), final_origins.as_slice())),
+            vec![[113_u8].as_slice()]
+        )
+    );
+    health_published.expect("the original health Query reply publishes before verifier release");
+    health_closed.expect("the independent native health declaration withdraws");
+    caller_closed.expect("the actual TLS caller closes independently");
+    assert!(caller.is_closed());
+    assert_ne!(live.0, live.1);
+    assert_eq!(live, (runtime, caller_id, false, false));
+    assert_eq!(discovery.len(), 2);
+    for (matched, listener_closed, querier_closed) in discovery {
+        assert!(matched.matching());
+        listener_closed.expect("the matching listener withdraws");
+        querier_closed.expect("the matching querier withdraws");
+    }
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(matches!(bound, Some(Ok(_))));
@@ -352,14 +557,7 @@ async fn verifier_capacity() {
     assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
     assert!(session.is_closed() && admission.is_ok());
-    assert_eq!(native.completion(), Some(&Completion::Stopped));
-    let ActorRetirement::Retained {
-        custody,
-        outcome: RetirementOutcome::Completed { .. },
-    } = native
-    else {
-        panic!("the exact original Ledger state survives joined retirement");
-    };
+    assert_eq!(completion, Completion::Stopped);
     assert_eq!((first, second), (Some(0), Some(1)));
     assert_eq!(
         saturated,
@@ -368,9 +566,11 @@ async fn verifier_capacity() {
     );
     assert_eq!((peak.get(), active.get()), (2, 0));
     assert_eq!(invalid.get(), 2);
+    assert_eq!(overflow.len(), EXCESS_QUERIES);
     assert!(
-        overflow.is_err(),
-        "capacity refusal produces native EOF without a reply"
+        overflow
+            .iter()
+            .all(|(replies, ending)| replies.is_empty() && ending.is_err())
     );
     assert_eq!(refused.len(), 2);
     assert!(refused.iter().all(Result::is_err));
@@ -388,7 +588,11 @@ async fn verifier_capacity() {
     assert_eq!(verifications[2].proof, originals[3].proof);
     assert!(matches!(
         diagnostics.as_slice(),
-        [ExportError::RetentionCapacity]
+        [
+            ExportError::RetentionCapacity,
+            ExportError::RetentionCapacity,
+            ExportError::RetentionCapacity
+        ]
     ));
     assert_eq!(custody.behavior.entries.len(), 1);
     assert_eq!(custody.behavior.entries[0].1.as_ref(), [113]);
@@ -413,9 +617,7 @@ async fn verifier_capacity() {
     let [request] = <[_; 1]>::try_from(rows)
         .unwrap_or_else(|_| panic!("only the keyed admitted request remains retained"));
     let (key, raw, verification, input, native, encoded, protected, published, refusals, panics) =
-        request
-            .try_into_parts()
-            .unwrap_or_else(|_| panic!("all request producer loans ended"));
+        request;
     assert!(key.is_some());
     assert_eq!(raw.0, originals[3].protected);
     assert_eq!(raw.1, originals[3].proof);

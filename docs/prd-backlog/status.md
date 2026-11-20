@@ -20,6 +20,11 @@ cases per profile and the intended guard-only full-budget failure beside a
 successful room control (74d3e1ec). These are local R12/R18 clause proofs;
 the full rows, combined gates and delivery remain open. No production/API/
 dependency change, prerequisite completion or reciprocal-edge change is inferred.
+R19 now also has a real TLS Query-pressure witness: three excess queries while
+two verifiers stay held, independent same-receiver health reply before release,
+and retained native actor facts. Healthy/inverse/restored D/R and independent
+review34807f9f close that selected clause; reply flooding, full R19 and combined
+delivery remain open. No new production/API/dependency or requirement-edge change.
 
 Remote Actors actual-main integration2026-11-20: local scoped checkpoint59550a1b
 preserves its0.5 proofs; actualPR444/maind98 metadata is imported separately,
