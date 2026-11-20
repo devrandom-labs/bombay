@@ -732,7 +732,7 @@ fn session_close_native_timeout_preserves_acquired_application_outcome() {
                         Some(Err(NodeCloseError::Native { cause })) => {
                             Some(ptr::from_ref(cause.as_ref()).cast::<()>())
                         }
-                        Some(Ok(())) | Some(Err(NodeCloseError::PollPanic { .. })) | None => None,
+                        Some(Ok(()) | Err(NodeCloseError::PollPanic { .. })) | None => None,
                     };
                     let after_close = match &completion {
                         QueryCompletion::BeforeClose => None,

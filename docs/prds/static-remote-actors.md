@@ -66,6 +66,11 @@ indentation and these current records; prior executions keep their source identi
 No custody seam, assertion, deadline or production owner changes. The source7823
 custody inversions remain exact-epoch support rather than new-source executions.
 
+Owning strict release workspace Clippy on signed5308/source0265 refused one
+unnested or-pattern in the new test. Nesting it preserves exactly the same three
+non-native alternatives and unchanged native allocation arm; no oracle or value
+changes. The failed raw is retained; corrected owning qualification remains open.
+
 Current required native gates, independent Nextest, hosted delivery and normal
 reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource
 baselines and whole-operation withdrawal surrender remain unfinished. Evidence
