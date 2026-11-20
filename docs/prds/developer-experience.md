@@ -4930,11 +4930,12 @@ Current docs must distinguish exact defaults from explicit logical routing.
 The aggregate checkpoint delegates unchanged state/custody to existing owners;
 there is no new state sum, cause label, lifecycle engine or authority.
 
-Fresh all28 native owners/actual flake, separate named Nextest, selected compiler,
-remote/corpus/coverage/hosted gates and normal reviewed PR delivery remain open.
-Permanent Runtime adoption or publication is not established by Core publication
-or an older source's passing probe. Exact inputs, law/test reviews and results
-remain in the existing DevX handoff under `context/dynamic-replies/runtime-adoption`.
+At this initial prerecord, all28 native owners/actual flake, separate named
+Nextest, selected compiler, remote/corpus/coverage/hosted gates and normal
+reviewed PR delivery remained open. Core publication or an older source's
+passing probe did not establish Runtime adoption or publication. Exact inputs,
+law/test reviews and results remain in the existing DevX handoff under
+`context/dynamic-replies/runtime-adoption`.
 
 #### Focused exact-reply adoption and mechanical boundary
 
@@ -4964,8 +4965,8 @@ revisions,46 template entries and19 request/source families remain; only the
 selected directory event gains its existing reply-family parameter. Ordinary
 client guidance describes exact defaults versus explicit logical replies.
 There is no new Runtime production branch, state, type, trait, method or wrapper.
-Fresh current-source broad/minimum/hosted qualification and normal delivery stay
-open; no earlier source's outcomes are relabeled.
+At this focused checkpoint, broad/minimum/hosted qualification and normal
+delivery remained open; no earlier source's outcomes were relabeled.
 
 #### Retained Core0.31 caller composition
 
@@ -5016,9 +5017,50 @@ exit1 records controlled interruption, not an inferred semantic failure or a
 passing all28/flake/Nextest result. Peer jobs and inputs were untouched.
 
 Runtime's self version and locks belong to every check's source inputs. The
-integrated0.5 source therefore requires fresh all28/actual-flake qualification,
+integrated0.5 source therefore required fresh all28/actual-flake qualification,
 the selected1.96 native case in both profiles, then a separate guarded workspace
 Nextest run and exact hosted/normal delivery. Old results keep their original
-source and command scopes; no old outcomes are adopted for this new source.
+source and command scopes; no old outcomes were adopted for this new source.
 The existing two-family model and original39+2 caller assertions are unchanged;
 this metadata integration introduces no new semantic experiment or machinery.
+
+#### Local verification snapshot (2026-11-20)
+
+Clean signed41619606/tree95b1d1be on actualmain6d0c5fae closes the local Runtime0.5
+adoption gates for its exact731 inputs. All28 native owners and the authoritative
+flake check pass, with each output, deriver, physical NAR, source and retained
+payload checked (native acceptance32c284ff). Independent coverage and optimized
+workspace execution each reconcile1035 passes/123 compiled harnesses/1041 names,
+the same six controlled ignored children,154 compiler fixtures and3 bench targets.
+Coverage's four owner floors pass from the actual JSON; the full report is
+retained losslessly. Build export is compile-only evidence. Selected1.96 local/
+Axum114/28/138 and public remote4/12 pass; neither is whole-private-runtime MSRV
+execution. Driver and ActorExecution controls retain their distinct runtime,
+policy and compiler outcomes, rather than treating every refusal as a runtime kill.
+
+Fresh actual1.96 debug and optimized application execution each pass the one
+named ownership journey, preserving the original39 assertions plus2 joined-root
+reports (acceptance51c95ce5, independent reviewf95a8f45). Separately guarded
+Nextest passes1035 ordinary cases with zeroLEAK and the same six skips;123 physical
+test executables and all current source bytes/modes are reconciled (acceptance
+17717f8a, independent reviewb6039be5). Of those compiled executables,111 contain
+selected cases. ZeroLEAK is not global task quiescence or a resource bound.
+
+The complete17-path source/model/interface/minimization review passesd4904592:
+Runtime production bodies, owned public types, modules and control states remain
+unchanged. ExactReplies/MixedReplies reuse removes the five unused logical hosts
+and six identity conversions without another wrapper or routing authority. All24
+historical Driver evidence revisions remain intact. The four allowed Windows-only
+resolver-edge changes and two feature unions are not Windows execution proof.
+
+The disposable Cargo target was normally removed after14,158 generated inputs,
+source and required proofs were preserved, with fresh empty process-use checks;
+net7,808,401,408 allocated bytes were reclaimed. Required Nix outputs, packages,
+archives and evidence remain protected. This is separate from earlier cleanup.
+
+As of this record freeze, the two-record successor still requires exact-source
+qualification and hosted/normal PR delivery. Only unchanged registered Nix
+derivation/output identities may reuse accepted owner proofs; changed identities
+require their own outcomes. The416 results remain source-specific. No new Runtime
+publication is claimed. Full terminal/callback/catalogue/cost/support/documentation
+and DX01–DX28 completion remain open; this snapshot does not close that programme.
