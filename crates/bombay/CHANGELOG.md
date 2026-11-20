@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.5.0...bombay-rs-v0.6.0) - 2026-11-20
+
+### Other
+
+- *(devx)* record Core 0.31 adoption on Runtime 0.5
+- integrate Runtime 0.5 release metadata
+- [**breaking**] adopt Core 0.31 exact replies
+- integrate delivered Node close repair
+- *(devx)* require complete application review before changes
+
 ## [0.5.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.4.0...bombay-rs-v0.5.0) - 2026-11-19
 
 ### Fixed
