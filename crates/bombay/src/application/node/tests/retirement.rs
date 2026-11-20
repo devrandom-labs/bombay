@@ -1,5 +1,5 @@
-//! A retained result remains available after target retirement while Work is live.
-use super::counter::{CounterIncremented, CounterProcessed, CounterValue};
+//! Native retirement and connection changes conserve actor work and original results.
+use super::counter::{CounterError, CounterIncremented, CounterProcessed, CounterValue};
 use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef,
     ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits, metadata,
@@ -7,10 +7,13 @@ use super::protocol::{
 };
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
-use crate::application::Application;
+use crate::application::{Application, ApplicationScope};
 use crate::local::endpoint::ExtractLocalEndpoint;
 use crate::proxy::{ProxyControl, ProxyDiagnostic, ProxyOutcome, StableProxy};
-use crate::remote::{Attempt, Export, ExportLimits, RefusalRetention, stop, submission};
+use crate::remote::{
+    Attempt, CredentialSource, Export, ExportLimits, Network, NetworkLayout, RefusalRetention,
+    reply, stop, submission,
+};
 use crate::worker::{StartupPlan, WorkerStartup};
 use crate::{
     ActorFailureAssessment, ActorRetirement, ActorRetirementReport, Completion, MailAddr,
@@ -33,12 +36,16 @@ use std::cell::{Cell, RefCell};
 use std::mem::take;
 use std::num::NonZeroUsize;
 use std::panic::panic_any;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
+use zenoh::Session;
+use zenoh::handlers::FifoChannel;
 use zenoh::query::ConsolidationMode;
-use zenoh::sample::Locality;
+use zenoh::sample::{Locality, SampleKind};
+use zenoh_config::WhatAmI;
 
 #[path = "../../../../tests/application_clients/node_exports/actors.rs"]
 #[expect(
@@ -64,6 +71,771 @@ enum RetirementCommand {
 enum StopPublication<Reply> {
     BeforeSibling(Reply),
     AfterSibling(Reply),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct StartupCounterValue {
+    value: u64,
+    initializations: u64,
+}
+
+type StartupCounterValues = MessageProtocol<MailAddr, StartupCounterValue>;
+type StartupCounterStarted = MessageProtocol<MailAddr, u64>;
+
+enum StartupCounterMessage {
+    Increment {
+        request_sequence: u64,
+        reply_to: EstablishedRecipient<CounterProcessed>,
+    },
+    Read(EstablishedRecipient<StartupCounterValues>),
+}
+
+struct StartupCounter {
+    value: u64,
+    initializations: u64,
+    started: EstablishedRecipient<StartupCounterStarted>,
+}
+
+#[bombay::actor(
+    sends = {
+        startups: Vec<EstablishedDelivery<StartupCounterStarted>>,
+        values: Vec<EstablishedDelivery<StartupCounterValues>>,
+        processed: Vec<EstablishedDelivery<CounterProcessed>>,
+    },
+    error = CounterError,
+)]
+impl StartupCounter {
+    fn init(&mut self) -> BehaviorActed<Self> {
+        self.initializations = self
+            .initializations
+            .checked_add(1)
+            .ok_or(CounterError::Overflow)?;
+        Ok(Actions::cont().send_startups(EstablishedDelivery::new(
+            self.started.clone(),
+            self.initializations,
+        )))
+    }
+
+    fn receive(&mut self, message: StartupCounterMessage) -> BehaviorActed<Self> {
+        match message {
+            StartupCounterMessage::Increment {
+                request_sequence,
+                reply_to,
+            } => {
+                self.value = self.value.checked_add(1).ok_or(CounterError::Overflow)?;
+                Ok(Actions::cont().send_processed(EstablishedDelivery::new(
+                    reply_to,
+                    CounterIncremented { request_sequence },
+                )))
+            }
+            StartupCounterMessage::Read(reply_to) => {
+                Ok(Actions::cont().send_values(EstablishedDelivery::new(
+                    reply_to,
+                    StartupCounterValue {
+                        value: self.value,
+                        initializations: self.initializations,
+                    },
+                )))
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+enum ReconnectOperation {
+    Increment,
+}
+
+const RECONNECT_COUNTER: &str = "bombay/reconnect/counter";
+
+fn router_client(address: &str, role: &EndpointRole) -> Network {
+    let mut network = configuration(address, role);
+    let (NetworkLayout::Peer {
+        connect: Some(connect),
+        listen: None,
+    }
+    | NetworkLayout::Peer {
+        connect: None,
+        listen: Some(connect),
+    }) = network.layout
+    else {
+        panic!("one explicit TLS direction supplies this client's identity");
+    };
+    network.layout = NetworkLayout::RouterClient { connect };
+    network
+}
+
+async fn reconnect_router(address: &str) -> (Session, String) {
+    let mut network = configuration(address, &EndpointRole::Receiver);
+    let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+    let NetworkLayout::Peer {
+        listen: Some(endpoint),
+        ..
+    } = &mut network.layout
+    else {
+        panic!("the independent Router owns one TLS listener");
+    };
+    endpoint.certificate = CredentialSource::File(certificates.join("router-certificate.pem"));
+    endpoint.private_key = CredentialSource::File(certificates.join("router-private-key.pem"));
+    let mut configuration = network.to_configuration().unwrap();
+    configuration.set_mode(Some(WhatAmI::Router)).unwrap();
+    let router = zenoh::open(configuration)
+        .await
+        .expect("the independent TLS Router opens");
+    let [locator]: [_; 1] = router
+        .info()
+        .locators()
+        .await
+        .try_into()
+        .expect("the actual Router owns exactly one TLS listener");
+    (router, locator.to_string())
+}
+
+#[test]
+#[expect(
+    clippy::large_futures,
+    reason = "this finite trace retains its measured approximately 31 KiB concrete future on the test host stack"
+)]
+fn automatic_router_reconnect_preserves_initialization_and_acknowledged_replay() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the real reconnect host opens");
+    host.block_on(async {
+        tokio::time::timeout(Duration::from_secs(40), reconnect_counter())
+            .await
+            .expect("a watchdog supplies no reconnect, initialization or replay evidence");
+    });
+}
+
+#[expect(
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    clippy::await_holding_refcell_ref,
+    clippy::large_futures,
+    reason = "one finite trace retains the measured 20728-byte Node future, original requests, typed results and native cleanup on the test stack; its proof table stays immutable during verification"
+)]
+async fn reconnect_counter() {
+    let (router, address) = reconnect_router("tls/localhost:0").await;
+    let old_router = router.zid().to_string();
+    let caller = zenoh::open(
+        router_client(&address, &EndpointRole::Caller)
+            .to_configuration()
+            .unwrap(),
+    )
+    .await
+    .expect("the one caller Session connects to the controlled Router");
+    let caller_id = caller.zid().to_string();
+    let scope = ApplicationScope::new();
+    let mut startups = scope.external::<StartupCounterStarted>().unwrap();
+    let node = scope
+        .with_root(
+            StartupCounter {
+                value: 0,
+                initializations: 0,
+                started: startups.recipient(),
+            }
+            .stop_on_shutdown(),
+        )
+        .open_node(router_client(&address, &EndpointRole::Receiver))
+        .await
+        .unwrap_or_else(|_| panic!("the one receiving Node connects to the Router"));
+    let runtime = node.runtime_id();
+    let session = node.session.clone();
+    let events = session
+        .info()
+        .transport_events_listener()
+        .history(true)
+        .with(FifoChannel::new(8))
+        .await
+        .expect("the receiver observes its actual transports");
+    let caller_events = caller
+        .info()
+        .transport_events_listener()
+        .history(true)
+        .with(FifoChannel::new(8))
+        .await
+        .expect("the caller observes its actual transports");
+    let records = RefCell::new(Vec::<ProtectedMessage>::new());
+    let protected_replies = RefCell::new(Vec::<ProtectedMessage>::new());
+    let claims = RefCell::new(None);
+    let prepared = RefCell::new(None);
+    let first_startup = RefCell::new(None);
+    let binding = Binding {
+        deployment: "two-node-read-study",
+        caller: "caller",
+        controller: "owner",
+        actor: "reconnect-counter",
+        host: "receiver",
+        protocol: "reconnect-counter",
+        target_assignment: "one-live-root",
+        logical_session: 503,
+    };
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let current =
+        |receipt: &recorded::Receipt<ReconnectOperation>, runtime: &str, target: MailAddr| {
+            let claims = claims.borrow();
+            let actual = claims.as_ref().ok_or(VerificationError::Invalid)?;
+            current_scope(
+                recorded::projection(receipt),
+                actual,
+                &ReconnectOperation::Increment,
+                Purpose::Request,
+                deadline,
+            )?;
+            if actual.runtime_generation.as_ref() != runtime
+                || actual.actor_generation != target.0
+                || recorded::identity(receipt).0 != &binding
+            {
+                return Err(VerificationError::Invalid);
+            }
+            Ok(claims)
+        };
+    let maximum = NonZeroUsize::new(2).unwrap();
+    let export = Export::new(
+        RECONNECT_COUNTER,
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+            refusals: RefusalRetention::Retain,
+        },
+        limits(),
+        |bytes: &[u8]| serde_json::from_slice::<ReadRequest<ReconnectOperation>>(bytes),
+        reply(
+            |request: ReadRequest<ReconnectOperation>| {
+                let ReconnectOperation::Increment = request.operation;
+                Ok::<_, ReadRequest<ReconnectOperation>>(move |reply_to| {
+                    StartupCounterMessage::Increment {
+                        request_sequence: request.bombay.request_sequence,
+                        reply_to,
+                    }
+                })
+            },
+            |receipt: &recorded::Receipt<ReconnectOperation>,
+             original: &User<MailAddr, CounterIncremented>| {
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &recorded::projection(receipt).bombay,
+                    kind: Purpose::Processed,
+                    operation: &ReconnectOperation::Increment,
+                    value: &original.message.request_sequence,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            recorded::verify::<ReconnectOperation>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                &records.borrow(),
+                binding,
+            )
+            .await
+        },
+        async |bytes: &[u8], _: &recorded::Receipt<ReconnectOperation>| {
+            let proof: Box<[u8]> = [251, 253].into();
+            protected_replies.borrow_mut().push(ProtectedMessage {
+                protected: bytes.into(),
+                proof: proof.clone(),
+            });
+            Ok::<_, Never>(proof)
+        },
+        |left, right| recorded::identity(left) == recorded::identity(right),
+        &current,
+        &current,
+    );
+    let mut node = node.exports(export, async |application| {
+        let started = startups
+            .receive()
+            .await
+            .expect("the actual initialization Action arrives");
+        *first_startup.borrow_mut() = Some(started);
+        let target = application.root().established_recipient();
+        let mut actual = metadata(
+            ProviderProfile::Recorded,
+            "reconnect-counter",
+            caller_id.clone(),
+            runtime.clone(),
+        );
+        actual.actor_generation = application.actor_address(&target).unwrap().0;
+        let original = ProtectedMessage {
+            protected: serde_json::to_vec(&ReadRequestRef {
+                bombay: &actual,
+                kind: Purpose::Request,
+                operation: &ReconnectOperation::Increment,
+            })
+            .unwrap()
+            .into_boxed_slice(),
+            proof: Box::from([241_u8, 247]),
+        };
+        records.borrow_mut().push(ProtectedMessage {
+            protected: original.protected.clone(),
+            proof: original.proof.clone(),
+        });
+        *prepared.borrow_mut() = Some(original);
+        *claims.borrow_mut() = Some(actual);
+        Ok::<_, Never>(target)
+    });
+    let outcome = node
+        .run_with(|application| {
+            let caller = &caller;
+            let router = &router;
+            let session = &session;
+            let address = &address;
+            let prepared = &prepared;
+            async move {
+                let original = prepared.borrow_mut().take().unwrap();
+                let initial = (
+                    events.recv_async().await.unwrap(),
+                    caller_events.recv_async().await.unwrap(),
+                );
+                let links_before = (
+                    session.info().links().await.collect::<Vec<_>>(),
+                    caller.info().links().await.collect::<Vec<_>>(),
+                );
+                let querier = caller.declare_querier(RECONNECT_COUNTER).await.unwrap();
+                let matching = querier
+                    .matching_listener()
+                    .with(FifoChannel::new(8))
+                    .await
+                    .unwrap();
+                let first_matching = loop {
+                    let status = matching.recv_async().await.unwrap();
+                    if status.matching() {
+                        break status;
+                    }
+                };
+                let matching_closed = matching.undeclare().await;
+                let querier_closed = querier.undeclare().await;
+                let receiving = caller
+                    .get(RECONNECT_COUNTER)
+                    .payload(original.protected.to_vec())
+                    .attachment(original.proof.to_vec())
+                    .consolidation(ConsolidationMode::None)
+                    .timeout(Duration::from_secs(30))
+                    .await
+                    .expect("the first authorized native Query starts");
+                let first = receiving.recv_async().await;
+                let first_end = receiving.recv_async().await;
+                let mut values = application.client::<StartupCounterValues>().unwrap();
+                let read_before = values
+                    .send(StartupCounterMessage::Read(values.recipient()))
+                    .await;
+                let before = values.receive().await;
+                let router_closed = router.close().await;
+                let deleted = (
+                    events.recv_async().await.unwrap(),
+                    caller_events.recv_async().await.unwrap(),
+                );
+                let links_down = (
+                    session.info().links().await.collect::<Vec<_>>(),
+                    caller.info().links().await.collect::<Vec<_>>(),
+                );
+                let live_before_reconnect = (
+                    session.is_closed(),
+                    caller.is_closed(),
+                    session.zid().to_string(),
+                    caller.zid().to_string(),
+                );
+                let mut processed = application.client::<CounterProcessed>().unwrap();
+                let local_increment = processed
+                    .send(StartupCounterMessage::Increment {
+                        request_sequence: 509,
+                        reply_to: processed.recipient(),
+                    })
+                    .await;
+                let local_processed = processed.receive().await;
+                let read_down = values
+                    .send(StartupCounterMessage::Read(values.recipient()))
+                    .await;
+                let down = values.receive().await;
+                let (replacement, rebound) = reconnect_router(address).await;
+                let new_router = replacement.zid().to_string();
+                let restored = (
+                    events.recv_async().await.unwrap(),
+                    caller_events.recv_async().await.unwrap(),
+                );
+                let links_after = (
+                    session.info().links().await.collect::<Vec<_>>(),
+                    caller.info().links().await.collect::<Vec<_>>(),
+                );
+                let querier = caller.declare_querier(RECONNECT_COUNTER).await.unwrap();
+                let matching = querier
+                    .matching_listener()
+                    .with(FifoChannel::new(8))
+                    .await
+                    .unwrap();
+                let last_matching = loop {
+                    let status = matching.recv_async().await.unwrap();
+                    if status.matching() {
+                        break status;
+                    }
+                };
+                let last_matching_closed = matching.undeclare().await;
+                let last_querier_closed = querier.undeclare().await;
+                let replay = caller
+                    .get(RECONNECT_COUNTER)
+                    .payload(original.protected.to_vec())
+                    .attachment(original.proof.to_vec())
+                    .consolidation(ConsolidationMode::None)
+                    .timeout(Duration::from_secs(30))
+                    .await
+                    .expect(
+                        "the acknowledged exact identity is explicitly replayed after reconnect",
+                    );
+                let second = replay.recv_async().await;
+                let second_end = replay.recv_async().await;
+                let read_after = values
+                    .send(StartupCounterMessage::Read(values.recipient()))
+                    .await;
+                let after = values.receive().await;
+                let live_after = (
+                    session.is_closed(),
+                    caller.is_closed(),
+                    session.zid().to_string(),
+                    caller.zid().to_string(),
+                );
+                let events_closed = events.undeclare().await;
+                let caller_events_closed = caller_events.undeclare().await;
+                let caller_closed = caller.close().await;
+                let shutdown = application.shutdown::<Here>();
+                let retired = application.lifecycle().retirement().await;
+                (
+                    original,
+                    (
+                        initial,
+                        deleted,
+                        restored,
+                        links_before,
+                        links_down,
+                        links_after,
+                        old_router,
+                        new_router,
+                        rebound,
+                        live_before_reconnect,
+                        live_after,
+                    ),
+                    (
+                        first_matching,
+                        matching_closed,
+                        querier_closed,
+                        last_matching,
+                        last_matching_closed,
+                        last_querier_closed,
+                    ),
+                    (first, first_end, second, second_end),
+                    (
+                        read_before,
+                        before,
+                        local_increment,
+                        local_processed,
+                        read_down,
+                        down,
+                        read_after,
+                        after,
+                    ),
+                    (
+                        router_closed,
+                        caller_closed,
+                        events_closed,
+                        caller_events_closed,
+                        shutdown,
+                        retired,
+                    ),
+                    replacement,
+                )
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the one Node returns its actual joined result"));
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("the one Node retains all native result fields"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((original, connections, matching, replies, observations, closure, replacement), cleanup) =
+        work.try_into_completed().unwrap_or_else(|_| {
+            panic!("all reconnect observations survive actual Application cleanup")
+        });
+    let replacement_closed = replacement.close().await;
+    let mut notices = vec![first_startup.into_inner().unwrap()];
+    startups.close_admission();
+    while let Some(original) = startups.receive().await {
+        notices.push(original);
+    }
+    let (origin, native) = native.expect("the original native root remains acquired");
+    let (
+        initial,
+        deleted,
+        restored,
+        links_before,
+        links_down,
+        links_after,
+        old_router,
+        new_router,
+        rebound,
+        live_down,
+        live_after,
+    ) = connections;
+    let (
+        first_matching,
+        matching_closed,
+        querier_closed,
+        last_matching,
+        last_matching_closed,
+        last_querier_closed,
+    ) = matching;
+    let (first, first_end, second, second_end) = replies;
+    let (read_before, before, local_increment, local_processed, read_down, down, read_after, after) =
+        observations;
+    let (router_closed, caller_closed, events_closed, caller_events_closed, shutdown, retired) =
+        closure;
+    let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+    let [first_request, second_request] = <[_; 2]>::try_from(requests)
+        .unwrap_or_else(|_| panic!("both original protected requests remain retained"));
+    let first_request = first_request
+        .try_into_parts()
+        .unwrap_or_else(|_| panic!("the first request producer ended"));
+    let second_request = second_request
+        .try_into_parts()
+        .unwrap_or_else(|_| panic!("the replay producer ended"));
+    cleanup.expect("the actual Application cleanup joins");
+    closed.expect("the receiving Session closes once");
+    router_closed.expect("the original Router closes normally");
+    caller_closed.expect("the same caller Session closes after replay");
+    replacement_closed.expect("the replacement Router closes after the receiving Node");
+    events_closed.expect("the native receiver listener is undeclared");
+    caller_events_closed.expect("the native caller listener is undeclared");
+    matching_closed.expect("the first matching listener is undeclared");
+    querier_closed.expect("the first querier is undeclared");
+    last_matching_closed.expect("the restored matching listener is undeclared");
+    last_querier_closed.expect("the restored querier is undeclared");
+    assert!(first_matching.matching() && last_matching.matching());
+    assert!(
+        read_before.is_ok()
+            && read_down.is_ok()
+            && read_after.is_ok()
+            && local_increment.is_ok()
+            && shutdown.is_ok()
+    );
+    let before = before.expect("the independent initial Read returns");
+    let down = down.expect("the actor progresses while both transport clients are disconnected");
+    let after = after.expect("the independent final Read returns");
+    let sequence = claims.borrow().as_ref().unwrap().request_sequence;
+    let admitted = [&first_request.4, &second_request.4].map(|row| {
+        row.as_ref().and_then(
+            |(_, _, admission, received, _)| match (admission, received) {
+                (Attempt::Returned(Ok(())), Some(Some(original))) => {
+                    Some((original.from, original.message.request_sequence))
+                }
+                _ => None,
+            },
+        )
+    });
+    let expected_startups = [User::new(origin.address(), 1)];
+    // All real business and initialization observations precede tag/count oracles.
+    assert_eq!(
+        (
+            admitted,
+            [
+                (&before.message, before.from),
+                (&down.message, down.from),
+                (&after.message, after.from)
+            ],
+            notices.as_slice(),
+        ),
+        (
+            [Some((origin.address(), sequence)), None],
+            [
+                (
+                    &StartupCounterValue {
+                        value: 1,
+                        initializations: 1
+                    },
+                    origin.address()
+                ),
+                (
+                    &StartupCounterValue {
+                        value: 2,
+                        initializations: 1
+                    },
+                    origin.address()
+                ),
+                (
+                    &StartupCounterValue {
+                        value: 2,
+                        initializations: 1
+                    },
+                    origin.address()
+                ),
+            ],
+            expected_startups.as_slice(),
+        ),
+    );
+    let local_processed =
+        local_processed.expect("the actual disconnected local operation is processed");
+    assert_eq!(
+        local_processed,
+        User::new(
+            origin.address(),
+            CounterIncremented {
+                request_sequence: 509
+            }
+        )
+    );
+    for event in [&initial.0, &initial.1] {
+        assert_eq!(event.kind(), SampleKind::Put);
+        assert_eq!(event.transport().zid().to_string(), old_router);
+    }
+    for event in [&deleted.0, &deleted.1] {
+        assert_eq!(event.kind(), SampleKind::Delete);
+        assert_eq!(event.transport().zid().to_string(), old_router);
+    }
+    for event in [&restored.0, &restored.1] {
+        assert_eq!(event.kind(), SampleKind::Put);
+        assert_eq!(event.transport().zid().to_string(), new_router);
+    }
+    assert_ne!(old_router, new_router);
+    assert_eq!(rebound, address);
+    for (links, expected_router) in [
+        (&links_before.0, &old_router),
+        (&links_before.1, &old_router),
+        (&links_after.0, &new_router),
+        (&links_after.1, &new_router),
+    ] {
+        let [link] = links.as_slice() else {
+            panic!("each Client owns one actual TLS Router link");
+        };
+        assert_eq!(link.zid().to_string(), *expected_router);
+        assert!(
+            link.src().to_string().starts_with("tls/")
+                && link.dst().to_string().starts_with("tls/")
+        );
+    }
+    assert!(links_down.0.is_empty() && links_down.1.is_empty());
+    assert_eq!(
+        live_down,
+        (false, false, runtime.clone(), caller_id.clone())
+    );
+    assert_eq!(live_after, (false, false, runtime, caller_id));
+    assert_eq!(retired.retirement(), RetirementAssessment::Established);
+    assert_eq!(retired.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert_eq!(report, Some(retired));
+    let notifications = notifications.expect("both actor notification receipts remain");
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    assert!(
+        matches!(bound, Some(Ok(_)))
+            && matches!(startup, Some(Ok(())))
+            && matches!(withdrawal, Some(Ok(())))
+    );
+    assert!(diagnostics.is_empty() && polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none() && session.is_closed());
+    let first = first.expect("the first processed operation has a real reply");
+    let second = second.expect("the acknowledged replay has a real cached reply");
+    let mut protected = Vec::new();
+    for reply in [&first, &second] {
+        let native = reply.result();
+        let sample = native
+            .as_ref()
+            .expect("the actual native reply is successful");
+        protected.push(ProtectedMessage {
+            protected: sample.payload().to_bytes().as_ref().into(),
+            proof: sample
+                .attachment()
+                .expect("the actual protected reply has its proof")
+                .to_bytes()
+                .as_ref()
+                .into(),
+        });
+    }
+    assert_eq!(
+        (&protected[0].protected, &protected[0].proof),
+        (&protected[1].protected, &protected[1].proof)
+    );
+    for reply in &protected {
+        let verified =
+            recorded::verify::<ReconnectOperation>(reply, &protected_replies.borrow(), binding)
+                .await
+                .expect("both actual replies verify against the original provider publication");
+        let value: ReadReply<u64, ReconnectOperation> =
+            serde_json::from_slice(&reply.protected).unwrap();
+        assert_eq!(value.bombay, recorded::projection(&verified).bombay);
+        assert_eq!(value.kind, Purpose::Processed);
+        assert_eq!(value.operation, ReconnectOperation::Increment);
+        assert_eq!(value.value, value.bombay.request_sequence);
+    }
+    assert!(first_end.is_err() && second_end.is_err());
+    assert_eq!(first_request.0, second_request.0);
+    assert_eq!(first_request.1, second_request.1);
+    assert_eq!(
+        (first_request.1.0.as_ref(), first_request.1.1.as_ref()),
+        (original.protected.as_ref(), original.proof.as_ref())
+    );
+    assert!(matches!(first_request.2, Some(Ok(_))) && matches!(second_request.2, Some(Ok(_))));
+    let (constructor, client, admission, received, tail) = first_request
+        .4
+        .expect("the original native operation is retained");
+    assert!(
+        constructor.is_none()
+            && matches!(client, Attempt::Returned(Ok(_)))
+            && matches!(admission, Attempt::Returned(Ok(())))
+    );
+    let received = received
+        .expect("the original native receive completed")
+        .expect("the original processing User remains");
+    let actual = claims.into_inner().unwrap();
+    assert_eq!(
+        received,
+        User::new(
+            origin.address(),
+            CounterIncremented {
+                request_sequence: actual.request_sequence
+            }
+        )
+    );
+    assert!(matches!(tail.as_slice(), [None]));
+    assert!(
+        second_request.3.is_none()
+            && second_request.4.is_none()
+            && second_request.5.is_none()
+            && second_request.6.is_none()
+    );
+    assert_eq!((first_request.7.len(), second_request.7.len()), (1, 1));
+    assert!(
+        first_request.7.iter().all(Result::is_ok) && second_request.7.iter().all(Result::is_ok)
+    );
+    assert!(
+        matches!(first_request.8, (None, None, None))
+            && matches!(second_request.8, (None, None, None))
+    );
+    assert!(
+        matches!(first_request.9, (None, None, None, None, None, None))
+            && matches!(second_request.9, (None, None, None, None, None, None))
+    );
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { .. },
+    } = native
+    else {
+        panic!("the one actual counter completes its original native retirement");
+    };
+    assert_eq!(
+        (
+            custody.behavior.base().value,
+            custody.behavior.base().initializations
+        ),
+        (2, 1)
+    );
+    assert!(
+        custody.child_failures.is_empty()
+            && custody.descendants.is_empty()
+            && custody.capability_failures.is_empty()
+    );
+    assert!(custody.additional_failures.is_empty() && custody.retirement_failures.is_empty());
 }
 
 #[derive(Clone, Copy)]

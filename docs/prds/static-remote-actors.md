@@ -99,7 +99,7 @@ current fmt and strict remote package Clippy with both denies pass (1ba3bee4).
 No new final-source runtime execution is invented. Current R08 freshness/capacity obligations,
 all other unproved clauses and final AUTH1/NET1 delivery remain open.
 
-Complete scoped change record, including untracked inventory (none): six
+Historical 3df scoped change record, including untracked inventory (none): six
 tracked paths, four owning test files plus this PRD and backlog status.
 Production: +0/-0/net0. Tests: +2932/-9/net2923. Public API: +0/-0.
 This adds verification capability; it is not source reduction or full feature
@@ -168,6 +168,143 @@ sources differ from those historical hashes, so current combined tests, CI
 and reviewed delivery remain required. Historical campaign JSONs are absent;
 neither historical inversions nor original-source outcomes are relabelled as
 fresh current-source execution. No new provider or runtime harness is selected.
+
+## R12/R18 automatic reconnect — pre-edit record (2026-11-20)
+
+Existing replay traces keep one connection throughout. The missing witness is
+real connection loss/restoration with the same living receiver Node, caller
+Session, exact actor and replay history. Use the existing RouterClient profile
+on both clients. Replace only an independently owned native TLS Router at its
+actual bound address with unchanged credentials; neither Application nor
+client Session is recreated. Selected SDK1.10.10 Client closed_session already
+retries its configured endpoints, so no reconnect API or retry policy is added.
+Acquire actual old-Router Delete and new-Router Put on both clients, actual TLS
+links and fresh matching before sending the explicitly selected replay.
+
+Reuse Runtime0.6/Engine0.4, Behavior/Actors0.31, Address0.3,
+Communication0.1.7, private Observe, Timers0.2 and unchanged locked SDK features
+transport_tls/unstable; no patches or dependency changes. Existing Network,
+ApplicationScope, actor facade, ActorExt shutdown, Export reply, recorded
+receipt, native event listener and exact request custody own each boundary.
+Before/after native events are not SDK task counts or all callback quiescence.
+
+A private test counter makes initialization observable through pure state and
+a typed startup Action to an already established external endpoint. Collect
+the entire startup-notice prefix after joined cleanup and retain native count1;
+no channel, Cell or callback runs in its fold. Process one protected Increment
+and acquire its acknowledgement plus independent Read1. During the broken
+connection, an explicit local operation progresses to2. Replaying the identical
+acknowledged bytes/proof/identity after automatic reconnection must reuse the
+original reply, retain no second native attempt and leave independent Read2.
+This is no uncertain retry under a fresh identity, caller-session retirement,
+actor-host restart, durable recovery or stopped-task retry.
+
+Only already-charged retirement.rs and existing PRD/status records may change;
+forecast450–650 test lines, production +0/-0/net0, public API +0/-0,
+dependencies0 and cumulative40/40. Two focused sensitivities stay in charged
+owners: omit query.rs canonical reuse to produce real native Increment3; then
+duplicate the test actor's actual typed initialization output and observe two
+delivered startup notices. The latter checks initialization-effect sensitivity,
+not an invented production transport-to-initialization route. Both profiles,
+exact restoration and complete cleanup precede law assertions. Model/source
+research and two independent counterexample reviews precede execution. The
+separate45-file approval remains unanswered; no new path is authorized.
+
+The first formatted draft exceeds its forecast: retirement.rs +769/-5/net764
+test lines before the final exact-link assertion (+770/-5/net765 afterward).
+Both source/counterexample
+reviews pass against82a0483b and preserve the complete original test suffix;
+their small hardening finding binds every TLS snapshot to its actual old/new
+Router identity. No production/API/dependency or file-scope expansion follows
+from the larger test trace. Selected SDK removes its links before Delete and
+inserts the new link before Put, so no extra observation wait is invented.
+
+The original61ceb test passes debug and optimized (d73dd1e8/25b70b09).
+Strict Clippy first refuses exactly one manual-let-else and two measured finite
+future sizes31264/20728; the equivalent pattern rewrite and scoped finite-test
+expectations pass corrected Clippy2c7abb84 with both mandatory denies intact.
+No action, value, policy or deadline changes; original positive execution stays
+at61ceb. Independent review2f006f4f qualifies this semantic successor while
+retaining the requirement for fresh final combined-source CI.
+
+To observe both faults without masking either, the existing startup-prefix
+equality joins the first complete post-cleanup native/business aggregate.
+Its expected facts are unchanged and compared once, by borrowing. One compound
+two-owner cut may then exercise both profiles: accept its intended failure only
+if the first raw assertion shows two real protected native processing Users,
+final value3 instead of2, AND two actual startup Users instead of1. Exit101
+alone supplies no proof. These are orthogonal effects; record one compound
+sensitivity, not two separately isolated executions. Exact restoration and
+saved original healthy-artifact positives remain required. No new production
+reconnect guard or runtime-init bug is inferred from the initialization control.
+
+The actual compound run now fails in both profiles at that complete aggregate:
+each raw result contains two successful native processing Users, final Read3
+instead of2, and two delivered startup Users instead of1, with initialization
+state still1. Both whole source owners and all731 inputs restore exactly.
+The actual saved original61 healthy executables then pass again in both builds.
+Independent final-execution-review16f64ed9 rehashes all six raw outcomes, both
+original executables and the complete compound archive. This is scoped semantic
+acceptance with explicit source-equivalence qualification, not fresh joint-source
+positive Cargo execution, full R12/R18 acceptance or delivery. Final combined
+checks remain required.
+
+## R12 distinct identity at full retention — pre-edit record (2026-11-20)
+
+The existing quota test repeats one registered identity after its first canonical
+row fills retention. It does not pair a full row with a distinct otherwise-valid
+identity. Extend only the already-charged public consumer quota.rs: register331
+and332 independently using the existing provider, admit331 with request limit1,
+and require332 to yield RetentionCapacity before another verifier, constructor
+or native Read. The paired request-limit2 control must admit both exact originals
+and acquire two real native Read replies and two distinct canonical keys.
+Query/protection capacities remain2; no eviction or sequence allocator is added.
+
+Reuse the selected locked owners above, existing Export retention and query
+loop, recorded provider identity, Peer::quota and joined Node/Application
+cleanup. Provider identity includes the sequence; current permission checks
+the authority, actor, runtime, caller and deadline without restricting it to331.
+Keep the existing repeat and original-cause refusal cases. Compare all retained
+rows, original bytes/proofs, verified sequences and native Users together after
+cleanup, before per-row checks. Omitting only the owning request-limit rejection
+must expose both real native Users and both original rows in the full case;
+an early row-count panic is not sensitivity proof. Healthy/negative/restored
+debug and optimized outcomes and two reviews remain required.
+
+Forecast100–150 added test lines, production +0/-0/net0, public API +0/-0,
+dependencies0. Only quota.rs plus the existing PRD/status records may change;
+cumulative scope stays40/approved40. This closes only the distinct-identity
+capacity pairing, not caller retirement, actor restart, durable deduplication,
+the full SDK-task baseline or the complete R12/NET1 acceptance.
+
+Formatted quota.rs measures tests +322/-119/net203, exceeding that forecast;
+the existing complete trace is reused rather than copied. Source review first
+required plain test functions for the two new entrypoints and conservation of
+the original first-query versus second-query reply census. Both are corrected
+before execution: the first complete aggregate includes first replies, actual
+Some replies and additional replies independently. Original two test entrypoints
+and all original cause/native/cleanup assertions remain. Production/API/deps0,
+no new path; this is net-positive verification code, not simplification.
+
+Actual sourceef46 now passes all four quota cases in debug and optimized builds,
+format checking and strict optimized caller Clippy with both mandatory denies.
+The owning rejection omission admits both331 and332: both profiles fail at the
+first complete post-cleanup aggregate with two actual native Read Users, two
+original byte/proof pairs, two verifier/constructor calls and one reply on each
+query. The room control still passes. Exact whole-query/all731 restoration and
+actual saved originalef46 executable replays pass all four cases/profile again.
+Independent final-execution-review74d3e1ec rehashes all six outcome logs, both
+executables and complete healthy/inverse source archives. Later full-case
+negative assertions are unexecuted; their healthy/restored controls pass.
+This closes the selected distinct-identity capacity pairing locally, with
+combined-source checks, full R12 and reviewed delivery still open.
+
+Current complete delta against local integratione2fb15a1: seven tracked paths,
+five owning test files and the two existing requirement records; no untracked
+files. Production +0/-0/net0; tests +4029/-131/net3898; public API +0/-0.
+The reconnect/quota checkpoint adds tests +1099/-124/net975 since3df, not a
+production capability or code reduction. All locks, manifests, production
+owners and SDK features remain exact. Cumulative file charge stays40/approved40.
 
 ## Actual main integration — PR444 (2026-11-20)
 

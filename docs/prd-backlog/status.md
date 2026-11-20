@@ -12,6 +12,14 @@ parent-report erasure and restored debug/optimized controls independently
 acceptedf2f6957d; the original native cause and separate failure assessment
 survive cleanup. R08 reconciliation3da63c40 requires no new provider algorithm:
 current-source combined qualification and reviewed delivery remain open.
+Actual same-Session automatic Router reconnection now preserves acknowledged
+replay, actor progress and one startup notice; compound sensitivity/restored
+controls are independently accepted16f64ed9 at their explicit source epochs.
+The distinct valid-identity retention pair also passes four healthy/restored
+cases per profile and the intended guard-only full-budget failure beside a
+successful room control (74d3e1ec). These are local R12/R18 clause proofs;
+the full rows, combined gates and delivery remain open. No production/API/
+dependency change, prerequisite completion or reciprocal-edge change is inferred.
 
 Remote Actors actual-main integration2026-11-20: local scoped checkpoint59550a1b
 preserves its0.5 proofs; actualPR444/maind98 metadata is imported separately,
