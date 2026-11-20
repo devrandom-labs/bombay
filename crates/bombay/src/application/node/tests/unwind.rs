@@ -78,13 +78,26 @@ fn session_close_returns_native_timeout_while_query_callback_is_held() {
                         .consolidation(ConsolidationMode::None)
                         .with(CallbackDrop {
                             callback: move |original: Reply| {
+                                eprintln!(
+                                    "native-close-component: callback entered at {:?}",
+                                    Instant::now()
+                                );
                                 let announcement = entered.lock().unwrap().take();
                                 match announcement {
                                     Some(announcement) => match announcement.send(original) {
                                         Ok(()) => match task::block_in_place(|| {
+                                            eprintln!(
+                                                "native-close-component: callback wait enter at {:?}",
+                                                Instant::now()
+                                            );
                                             continuation.lock().unwrap().recv()
                                         }) {
-                                            Ok(()) | Err(_) => {}
+                                            Ok(()) | Err(_) => {
+                                                eprintln!(
+                                                    "native-close-component: callback wait returned at {:?}",
+                                                    Instant::now()
+                                                );
+                                            }
                                         },
                                         Err(original) => drop(original),
                                     },
@@ -637,11 +650,26 @@ fn session_close_native_timeout_preserves_acquired_application_outcome() {
                         .consolidation(ConsolidationMode::None)
                         .with(CallbackDrop {
                             callback: move |original: Reply| {
+                                eprintln!(
+                                    "native-close-outcome: callback entered at {:?}",
+                                    Instant::now()
+                                );
                                 let announcement = entered.lock().unwrap().take();
                                 match announcement {
                                     Some(announcement) => match announcement.send(original) {
-                                        Ok(()) => match task::block_in_place(|| continuation.lock().unwrap().recv()) {
-                                            Ok(()) | Err(_) => {}
+                                        Ok(()) => match task::block_in_place(|| {
+                                            eprintln!(
+                                                "native-close-outcome: callback wait enter at {:?}",
+                                                Instant::now()
+                                            );
+                                            continuation.lock().unwrap().recv()
+                                        }) {
+                                            Ok(()) | Err(_) => {
+                                                eprintln!(
+                                                    "native-close-outcome: callback wait returned at {:?}",
+                                                    Instant::now()
+                                                );
+                                            }
                                         },
                                         Err(original) => drop(original),
                                     },

@@ -153,7 +153,15 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
     timeout(
         Duration::from_secs(15),
         Box::pin(async {
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: router open enter at {:?}",
+                Instant::now()
+            );
             let (router, address) = open_router(permission).await;
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: router open returned at {:?}",
+                Instant::now()
+            );
             let mut receiving = configuration(&address, &EndpointRole::Receiver);
             let NetworkLayout::Peer {
                 listen: Some(connect),
@@ -163,12 +171,20 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
                 panic!("the actual recipient identity is supplied");
             };
             receiving.layout = NetworkLayout::RouterClient { connect };
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: node open enter at {:?}",
+                Instant::now()
+            );
             let node = Application::new(Counter::new().stop_on_shutdown())
                 .open_node(receiving)
                 .await
                 .unwrap_or_else(|_| {
                     panic!("the actual Counter Node connects securely to the Router")
                 });
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: node open returned at {:?}",
+                Instant::now()
+            );
             let runtime = node.runtime_id();
             let mut outgoing = configuration(&address, &EndpointRole::Caller);
             // Both health Queries and the protected Query can retain native timeout captures after EOF.
@@ -181,15 +197,31 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
                 panic!("the actual caller identity is supplied");
             };
             outgoing.layout = NetworkLayout::RouterClient { connect };
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: caller open enter at {:?}",
+                Instant::now()
+            );
             let caller = zenoh::open(outgoing.to_configuration().unwrap())
                 .await
                 .expect("the same native caller connects securely to the Router");
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: caller open returned at {:?}",
+                Instant::now()
+            );
             let caller_id = caller.zid().to_string();
             let router_id = router.zid().to_string();
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: health declare enter at {:?}",
+                Instant::now()
+            );
             let health =
                 node.session.declare_queryable(HEALTH).await.expect(
                     "the actual receiving connection declares its independent health endpoint",
                 );
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: health declare returned at {:?}",
+                Instant::now()
+            );
             let records = RefCell::new(Vec::<ProtectedMessage>::new());
             let authority = RefCell::new(grant);
             let current_claims = RefCell::new(None::<Metadata>);
@@ -306,67 +338,159 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
                     .unwrap_or_else(|_| panic!("actual Work receives the protected pair"));
                 Ok::<_, Never>(target)
             });
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: node run enter at {:?}",
+                Instant::now()
+            );
             let outcome = node
                 .run_with(|application| {
                     let caller = &caller;
                     async move {
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: binding request enter at {:?}",
+                            Instant::now()
+                        );
                         let original = request
                             .await
                             .expect("the actual export binding supplies the request");
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: binding request returned; protected querier enter at {:?}",
+                            Instant::now()
+                        );
                         let querier = caller
                             .declare_querier(PROTECTED)
                             .timeout(Duration::from_secs(60))
                             .consolidation(ConsolidationMode::None)
                             .await
                             .unwrap();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected querier returned; listener enter at {:?}",
+                            Instant::now()
+                        );
                         let matching = querier.matching_listener().await.unwrap();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected listener returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected status enter at {:?}",
+                            Instant::now()
+                        );
                         let initial = querier.matching_status().await.unwrap();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected status returned at {:?}",
+                            Instant::now()
+                        );
                         let matched = if initial.matching() {
                             initial
                         } else {
                             loop {
+                                eprintln!(
+                                    "native-access {permission:?}/{grant:?}: protected matching event enter at {:?}",
+                                    Instant::now()
+                                );
                                 let status = matching.recv_async().await.unwrap();
+                                eprintln!(
+                                    "native-access {permission:?}/{grant:?}: protected matching event returned at {:?}",
+                                    Instant::now()
+                                );
                                 if status.matching() {
                                     break status;
                                 }
                             }
                         };
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected matching complete; health querier enter at {:?}",
+                            Instant::now()
+                        );
                         let health_queries = caller
                             .declare_querier(HEALTH)
                             .timeout(Duration::from_secs(60))
                             .consolidation(ConsolidationMode::None)
                             .await
                             .unwrap();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health querier returned; listener enter at {:?}",
+                            Instant::now()
+                        );
                         let health_matching = health_queries.matching_listener().await.unwrap();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health listener returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health status enter at {:?}",
+                            Instant::now()
+                        );
                         let initial = health_queries.matching_status().await.unwrap();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health status returned at {:?}",
+                            Instant::now()
+                        );
                         let health_matched = if initial.matching() {
                             initial
                         } else {
                             loop {
+                                eprintln!(
+                                    "native-access {permission:?}/{grant:?}: health matching event enter at {:?}",
+                                    Instant::now()
+                                );
                                 let status = health_matching.recv_async().await.unwrap();
+                                eprintln!(
+                                    "native-access {permission:?}/{grant:?}: health matching event returned at {:?}",
+                                    Instant::now()
+                                );
                                 if status.matching() {
                                     break status;
                                 }
                             }
                         };
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health matching complete at {:?}",
+                            Instant::now()
+                        );
                         let healthy = async |marker: u8| {
+                            eprintln!(
+                                "native-access {permission:?}/{grant:?}: health {marker} get enter at {:?}",
+                                Instant::now()
+                            );
                             let receiving =
                                 health_queries.get().payload(vec![marker]).await.expect(
                                     "same connected caller submits the independent health Query",
                                 );
+                            eprintln!(
+                                "native-access {permission:?}/{grant:?}: health {marker} get returned; receiving query enter at {:?}",
+                                Instant::now()
+                            );
                             let query = health
                                 .recv_async()
                                 .await
                                 .expect("same receiving connection acquires the health Query");
+                            eprintln!(
+                                "native-access {permission:?}/{grant:?}: health {marker} receiving query returned at {:?}",
+                                Instant::now()
+                            );
                             let payload = query
                                 .payload()
                                 .expect("actual health payload")
                                 .to_bytes()
                                 .into_owned();
+                            eprintln!(
+                                "native-access {permission:?}/{grant:?}: health {marker} reply enter at {:?}",
+                                Instant::now()
+                            );
                             let published = query.reply(HEALTH, payload.clone()).await;
+                            eprintln!(
+                                "native-access {permission:?}/{grant:?}: health {marker} reply returned at {:?}",
+                                Instant::now()
+                            );
                             drop(query);
                             let mut replies = Vec::new();
                             let eof = loop {
+                                eprintln!(
+                                    "native-access {permission:?}/{grant:?}: health {marker} receiving reply enter, count={} at {:?}",
+                                    replies.len(), Instant::now()
+                                );
                                 match receiving.recv_async().await {
                                     Ok(reply) => replies.push(reply),
                                     Err(cause) => break cause,
@@ -381,32 +505,128 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
                                 receiving.is_disconnected(),
                             )
                         };
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health61 enter at {:?}",
+                            Instant::now()
+                        );
                         let before = healthy(61).await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health61 returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected get enter at {:?}",
+                            Instant::now()
+                        );
                         let receiving = querier
                             .get()
                             .payload(original.protected.to_vec())
                             .attachment(original.proof.to_vec())
                             .await
                             .expect("the actual protected Query is submitted");
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected get returned at {:?}",
+                            Instant::now()
+                        );
                         let mut replies = Vec::new();
                         let eof = loop {
+                            eprintln!(
+                                "native-access {permission:?}/{grant:?}: protected receiving reply enter, count={} at {:?}",
+                                replies.len(), Instant::now()
+                            );
                             match receiving.recv_async().await {
                                 Ok(reply) => replies.push(reply),
                                 Err(cause) => break cause,
                             }
                         };
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected reply stream ended at {:?}",
+                            Instant::now()
+                        );
                         let disconnected = receiving.is_disconnected();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health67 enter at {:?}",
+                            Instant::now()
+                        );
                         let after = healthy(67).await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health67 returned at {:?}",
+                            Instant::now()
+                        );
                         let mut local = application.client::<CounterValue>().unwrap();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: local send enter at {:?}",
+                            Instant::now()
+                        );
                         let admitted = local.send(CounterMessage::Read(local.recipient())).await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: local send returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: local reply enter at {:?}",
+                            Instant::now()
+                        );
                         let value = local.receive().await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: local reply returned at {:?}",
+                            Instant::now()
+                        );
                         local.close_admission();
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: local tail enter at {:?}",
+                            Instant::now()
+                        );
                         let tail = local.receive().await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: local tail returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected listener undeclare enter at {:?}",
+                            Instant::now()
+                        );
                         let listener_withdrawal = matching.undeclare().await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected listener undeclare returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected querier undeclare enter at {:?}",
+                            Instant::now()
+                        );
                         let querier_withdrawal = querier.undeclare().await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: protected querier undeclare returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health listener undeclare enter at {:?}",
+                            Instant::now()
+                        );
                         let health_listener_withdrawal = health_matching.undeclare().await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health listener undeclare returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health querier undeclare enter at {:?}",
+                            Instant::now()
+                        );
                         let health_querier_withdrawal = health_queries.undeclare().await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health querier undeclare returned at {:?}",
+                            Instant::now()
+                        );
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health endpoint undeclare enter at {:?}",
+                            Instant::now()
+                        );
                         let health_withdrawal = health.undeclare().await;
+                        eprintln!(
+                            "native-access {permission:?}/{grant:?}: health endpoint undeclare returned at {:?}",
+                            Instant::now()
+                        );
                         let shutdown = application.shutdown();
                         (
                             original,
@@ -431,6 +651,10 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
                 })
                 .await
                 .unwrap_or_else(|_| panic!("the actual Counter Node runs its ordinary Work"));
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: node run returned at {:?}",
+                Instant::now()
+            );
             let (work, report, native, notes, ()) = outcome.into_parts();
             let (observations, cleanup) = work
                 .try_into_completed()
@@ -438,8 +662,24 @@ async fn crossing(permission: Permission, grant: Option<Binding>) {
             let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
                 .into_parts()
                 .unwrap_or_else(|_| panic!("actual Node finalization is acquired"));
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: caller close enter at {:?}",
+                Instant::now()
+            );
             let caller_closed = caller.close().await;
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: caller close returned at {:?}",
+                Instant::now()
+            );
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: router close enter at {:?}",
+                Instant::now()
+            );
             let router_closed = router.close().await;
+            eprintln!(
+                "native-access {permission:?}/{grant:?}: router close returned at {:?}",
+                Instant::now()
+            );
             let (origin, native) = native.expect("the independent native root is acquired");
             let report = report.expect("the independent report is acquired");
             let notes = notes.expect("both independent notifications are acquired");

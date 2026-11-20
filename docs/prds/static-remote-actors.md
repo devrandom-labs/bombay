@@ -71,6 +71,26 @@ unnested or-pattern in the new test. Nesting it preserves exactly the same three
 non-native alternatives and unchanged native allocation arm; no oracle or value
 changes. The failed raw is retained; corrected owning qualification remains open.
 
+**Pre-edit diagnostic change record:** current native parent99145/source05ec
+failed remote-debug with463 library passes and two unchanged15-second native
+Allow watchdogs at access.rs635. The original stalled await is unreported; the
+same cases passed earlier coverage, which does not explain this failure. Raw
+908863c4 and independent failure auditd2cb2375 retain the original epoch.
+Coverage reported four floors but its output is unavailable; no JSON/NAR or
+coverage-owner acceptance is claimed. No production repair is selected.
+
+Plans0c253a31/d8ad45ce justify sparse test-only entered/completed messages around
+actual access awaits and callback holds, using current permission/grant, health
+marker and monotonic time. No stage field, helper, type, synchronization or policy
+is added. Expected scope is four existing files: access.rs, unwind.rs, this PRD
+and backlog status, bringing cumulative scope to37-of-approved40. Expected test
+growth is approximately90 lines; production+0/-0/net0, public types+0/-0. All
+assertions, ACL/grant inputs,15/40-second watchdogs,60-second explicit Queries,
+default native close/query times and Net1 stay unchanged. Two source reviews and
+formatting precede one marked normal concurrent remote-debug run. This is stage
+observation, not a retry offered as a fix; counterfactuals follow the actual
+failed stage. Preserve all prior exact-source proofs and unfinished inputs.
+
 Current required native gates, independent Nextest, hosted delivery and normal
 reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource
 baselines and whole-operation withdrawal surrender remain unfinished. Evidence

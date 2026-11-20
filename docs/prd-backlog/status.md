@@ -21,6 +21,13 @@ Production/API0, tests+439/-1/net438 across the same three paths and cumulative
 remain open. Full R18/R01–R25/AUTH1/NET1 and SDK joining/resource baselines remain
 unfinished; requirement states and reciprocal dependencies are unchanged.
 
+The current normal native batch failed in two existing native Allow cases at
+their unchanged15-second watchdog. The failed await is not yet known. Independent
+failure/source plans permit only test progress diagnostics before another normal
+concurrent gate; no production change, deadline increase or serialization is
+selected. Scope becomes37-of-approved40 if the access diagnostics are retained.
+Reported coverage floors lack a physical output and receive no owner credit.
+
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
 merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as
 feae6524 at2026-11-19T18:07:26Z, tree8d1aa1ec equal to accepted609e. API and
