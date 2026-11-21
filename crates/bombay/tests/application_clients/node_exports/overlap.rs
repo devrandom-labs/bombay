@@ -10,14 +10,15 @@ use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, ActorRetirement, MailAddr, RetirementAssessment};
 use futures_util::future::Either;
 use protocol::{
-    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, listener_address,
-    recorded,
+    Binding, EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits,
+    listener_address, recorded,
 };
 use std::cell::{Cell, RefCell};
 use std::convert::Infallible;
 use std::error::Error;
 use std::num::NonZeroUsize;
 use std::time::{Duration, Instant};
+use tokio::runtime::Builder as RuntimeBuilder;
 use tokio::sync::oneshot;
 use wire::CounterInput;
 
@@ -30,6 +31,469 @@ async fn overlapping_queries_admit_only_the_assigned_counter() {
     tokio::time::timeout(Duration::from_secs(40), Box::pin(overlapping_counters()))
         .await
         .expect("watchdog supplies no reception, ownership or cleanup credit");
+}
+
+#[test]
+fn same_name_deployments_authenticate_without_sharing_placement() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the ordinary native host opens")
+        .block_on(async {
+            tokio::time::timeout(Duration::from_secs(40), isolated_deployments())
+                .await
+                .expect("a watchdog supplies no deployment, admission or cleanup evidence");
+        });
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "two reciprocal live deployments retain every original and join both owners before the first independent effect oracle"
+)]
+async fn isolated_deployments() {
+    const COUNTER: &str = "bombay/deployments/counter";
+    let mut first_deployment = wire::binding("counter");
+    first_deployment.deployment = "first-shop";
+    let mut second_deployment = wire::binding("counter");
+    second_deployment.deployment = "second-shop";
+    let (first_ready, first_matched) = oneshot::channel();
+    let (second_ready, second_matched) = oneshot::channel();
+    let (first_release, first_begin) = oneshot::channel();
+    let (second_release, second_begin) = oneshot::channel();
+    let journey = async |local: Binding,
+                         foreign: Binding,
+                         ready: oneshot::Sender<()>,
+                         begin: oneshot::Receiver<()>| {
+        let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+        network.max_retained_queries = NonZeroUsize::new(2).unwrap();
+        let node = Application::new(Counter::new().stop_on_shutdown())
+            .open_node(network)
+            .await
+            .unwrap_or_else(|_| panic!("the actual configured Counter Node opens"));
+        let address = listener_address(node.listen_addresses().await);
+        let runtime = node.runtime_id();
+        let peer = peer::Peer::open(&address).await;
+        let caller = peer.runtime_id();
+        let catalog = RefCell::new(Vec::<(Binding, ProtectedMessage)>::new());
+        let protected = RefCell::new(Vec::new());
+        let observed = RefCell::new(Vec::new());
+        let decoded = Cell::new(0usize);
+        let authenticated = Cell::new(0usize);
+        let maximum = NonZeroUsize::new(2).unwrap();
+        let deadline = Instant::now() + Duration::from_secs(30);
+        let current =
+            |receipt: &recorded::Receipt<CounterInput>, runtime: &str, target: MailAddr| {
+                let authenticated = recorded::identity(receipt).0;
+                wire::current(
+                    recorded::projection(receipt),
+                    runtime,
+                    target,
+                    *authenticated,
+                    &caller,
+                    deadline,
+                )?;
+                // A trusted identity scope and this receiver's placement are independent.
+                if authenticated.deployment != local.deployment {
+                    return Err(wire::Refusal::Scope);
+                }
+                Ok(())
+            };
+        let export = Export::new(
+            COUNTER,
+            ExportLimits {
+                refusals: RefusalRetention::Retain,
+                queued_queries: maximum,
+                retained_queries: maximum,
+                retained_requests: maximum,
+                diagnostics: maximum,
+            },
+            limits(),
+            |bytes| {
+                decoded.set(decoded.get() + 1);
+                wire::decode_counter(bytes)
+            },
+            reply(wire::increment, wire::processed),
+            async |bytes: &[u8], proof: &[u8]| {
+                observed.borrow_mut().push((bytes.as_ptr(), proof.as_ptr()));
+                let original = ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                };
+                let catalog = catalog.borrow();
+                let result = match catalog.iter().find(|(_, registered)| {
+                    registered.protected.as_ref() == bytes && registered.proof.as_ref() == proof
+                }) {
+                    Some((trusted, registered)) => recorded::verify::<CounterInput>(
+                        &original,
+                        std::slice::from_ref(registered),
+                        *trusted,
+                    )
+                    .into_inner(),
+                    None => Err(protocol::VerificationError::Invalid),
+                };
+                if result.is_ok() {
+                    authenticated.set(authenticated.get() + 1);
+                }
+                result
+            },
+            async |bytes: &[u8], receipt: &recorded::Receipt<CounterInput>| {
+                wire::protect(bytes, recorded::projection(receipt), &protected, maximum)
+            },
+            same_counter,
+            &current,
+            &current,
+        );
+        let (published, configured) = oneshot::channel();
+        let mut node = node.exports(export, async |application| {
+            let target = application.root().established_recipient();
+            let actor = application
+                .actor_address(&target)
+                .expect("the actual Counter is certified");
+            let registered = RefCell::new(Vec::new());
+            let mut requests = Vec::new();
+            for (trusted, sequence) in [(local, 701), (foreign, 702)] {
+                let mut claims = wire::claims(
+                    ProviderProfile::Recorded,
+                    "counter",
+                    &caller,
+                    &runtime,
+                    actor,
+                    sequence,
+                );
+                claims.deployment = trusted.deployment.into();
+                requests.push(wire::register(
+                    claims,
+                    CounterInput::Increment(sequence),
+                    &registered,
+                ));
+            }
+            for (trusted, original) in [local, foreign].into_iter().zip(registered.into_inner()) {
+                catalog.borrow_mut().push((trusted, original));
+            }
+            let published = published.send((actor, requests));
+            published.unwrap_or_else(|_| panic!("the ordinary Work awaits both registered inputs"));
+            Ok::<_, Infallible>(target)
+        });
+        let outcome = node
+            .run_with(|application| {
+                let peer = &peer;
+                async move {
+                    let (actor, requests) = configured
+                        .await
+                        .expect("actual binding supplies the requests");
+                    peer.wait_for(COUNTER).await;
+                    let ready = ready.send(());
+                    let begin = begin.await;
+                    let mut replies = Vec::new();
+                    let mut endings = Vec::new();
+                    let mut refusals = Vec::new();
+                    for original in &requests {
+                        let (mut receiving, refusal) = peer.query(COUNTER, original).await;
+                        let mut acquired = Vec::new();
+                        let ending = loop {
+                            match receiving.recv().await {
+                                Some(original) => acquired.push(original),
+                                ending @ None => break ending,
+                            }
+                        };
+                        replies.push(acquired);
+                        endings.push(ending);
+                        refusals.push(refusal);
+                    }
+                    let mut local = application
+                        .client::<CounterValue>()
+                        .unwrap_or_else(|_| panic!("the independent FIFO client allocates"));
+                    let admitted = local.send(CounterMessage::Read(local.recipient())).await;
+                    let value = local.receive().await;
+                    local.close_admission();
+                    let mut tail = Vec::new();
+                    while let Some(original) = local.receive().await {
+                        tail.push(original);
+                    }
+                    let shutdown = application.shutdown();
+                    (
+                        actor, requests, replies, endings, refusals, ready, begin, admitted, value,
+                        tail, shutdown, local,
+                    )
+                }
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the actual deployment execution is issued"));
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+            node.into_parts()
+                .unwrap_or_else(|_| panic!("every native Node result remains retained"));
+        let (work, report, native, notifications, ()) = outcome.into_parts();
+        let (exchange, cleanup) = work
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("the completed ordinary Work remains owned"));
+        // Drop captured verifier/policy inputs here; no local catalog loan escapes.
+        let (policies, declarations, startup, withdrawal, diagnostics, rows) = export.into_parts();
+        drop((policies, declarations));
+        let rows = rows
+            .into_iter()
+            .map(|row| {
+                row.try_into_parts()
+                    .unwrap_or_else(|_| panic!("joined producers release original request custody"))
+            })
+            .collect::<Vec<_>>();
+        let peer = peer.close().await;
+        (
+            local,
+            foreign,
+            runtime,
+            caller,
+            catalog.into_inner(),
+            protected.into_inner(),
+            observed.into_inner(),
+            (decoded.get(), authenticated.get()),
+            exchange,
+            cleanup,
+            report,
+            native,
+            notifications,
+            bound,
+            closed,
+            (polling, disposal, withdrawal_polling, withdrawal_disposal),
+            startup,
+            withdrawal,
+            diagnostics,
+            rows,
+            peer,
+        )
+    };
+    let release = async {
+        let matched = futures_util::future::join(first_matched, second_matched).await;
+        let released = (first_release.send(()), second_release.send(()));
+        (matched, released)
+    };
+    let ((first, second), barrier) = Box::pin(futures_util::future::join(
+        futures_util::future::join(
+            journey(
+                first_deployment,
+                second_deployment,
+                first_ready,
+                first_begin,
+            ),
+            journey(
+                second_deployment,
+                first_deployment,
+                second_ready,
+                second_begin,
+            ),
+        ),
+        release,
+    ))
+    .await;
+    // BOTH owners and peers have completed cleanup before the first effect oracle.
+    let first_value = first.8.8.as_ref();
+    let second_value = second.8.8.as_ref();
+    assert_eq!(
+        (first_value, second_value),
+        (
+            Some(&User::new(first.8.0, 1)),
+            Some(&User::new(second.8.0, 1))
+        )
+    );
+    assert_ne!(first.2, second.2);
+    assert_ne!(first.3, second.3);
+    assert_eq!(first.0, second.1);
+    assert_eq!(first.1, second.0);
+    let ((first_matched, second_matched), (first_released, second_released)) = barrier;
+    assert!(
+        first_matched.is_ok()
+            && second_matched.is_ok()
+            && first_released.is_ok()
+            && second_released.is_ok()
+    );
+    for (
+        local,
+        foreign,
+        runtime,
+        caller,
+        catalog,
+        protected,
+        observed,
+        counts,
+        exchange,
+        cleanup,
+        report,
+        native,
+        notifications,
+        bound,
+        closed,
+        panics,
+        startup,
+        withdrawal,
+        diagnostics,
+        rows,
+        peer,
+    ) in [first, second]
+    {
+        let (
+            actor,
+            requests,
+            replies,
+            endings,
+            refusals,
+            ready,
+            begin,
+            admitted,
+            value,
+            tail,
+            shutdown,
+            _local,
+        ) = exchange;
+        cleanup.expect("the actual Application cleanup joins");
+        closed.expect("the actual receiving Node Session closes");
+        peer.closed
+            .as_ref()
+            .expect("the directed peer closes independently");
+        let report = report.expect("the joined original report remains");
+        let (origin, native) = native.expect("the complete original Counter remains");
+        let notifications = notifications.expect("both original notifications remain");
+        notifications.termination.expect("termination is published");
+        notifications
+            .retirement
+            .expect("joined retirement is published");
+        assert_retirement(&native);
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+        assert_eq!(origin.address(), actor);
+        assert_ne!(runtime, caller);
+        assert!(
+            matches!(bound, Some(Ok(_)))
+                && matches!(startup, Some(Ok(())))
+                && matches!(withdrawal, Some(Ok(())))
+        );
+        assert!(
+            panics.0.is_none() && panics.1.is_none() && panics.2.is_none() && panics.3.is_none()
+        );
+        assert!(diagnostics.is_empty() && ready.is_ok() && begin.is_ok());
+        assert!(admitted.is_ok() && shutdown.is_ok() && tail.is_empty());
+        assert_eq!(value, Some(User::new(actor, 1)));
+        assert_eq!(counts, (1, 2));
+        assert_eq!(catalog.len(), 2);
+        assert_eq!(requests.len(), 2);
+        assert_eq!(observed.len(), 2);
+        assert_eq!(rows.len(), 2);
+        assert_eq!(protected.len(), 1);
+        assert_eq!(replies.iter().map(Vec::len).collect::<Vec<_>>(), [1, 0]);
+        assert!(endings.iter().all(Option::is_none));
+        for refusal in &refusals {
+            let refusal = refusal.lock().unwrap();
+            assert!(refusal.is_none());
+        }
+        let [own, rejected]: [_; 2] = rows
+            .try_into()
+            .unwrap_or_else(|_| panic!("both expected actual originals remain"));
+        for (index, row) in [own, rejected].into_iter().enumerate() {
+            let (
+                key,
+                raw,
+                verified,
+                input,
+                native,
+                encoding,
+                protection,
+                publications,
+                refusals,
+                panics,
+            ) = row;
+            assert_eq!(raw.0, requests[index].protected);
+            assert_eq!(raw.1, requests[index].proof);
+            assert_eq!((raw.0.as_ptr(), raw.1.as_ptr()), observed[index]);
+            assert_eq!(raw.0, catalog[index].1.protected);
+            assert_eq!(raw.1, catalog[index].1.proof);
+            let receipt = verified
+                .expect("both requests reached the actual verifier")
+                .unwrap_or_else(|_| panic!("both trusted exact pairs authenticate"));
+            let scope = recorded::projection(&receipt);
+            let declared: wire::Request<CounterInput> = serde_json::from_slice(&raw.0).unwrap();
+            assert_eq!(scope.bombay, declared.bombay);
+            assert_eq!(scope.kind, protocol::Purpose::Request);
+            assert_eq!(scope.operation, declared.operation);
+            assert_eq!(
+                recorded::identity(&receipt),
+                (&catalog[index].0, scope.bombay.request_sequence)
+            );
+            assert_eq!(scope.bombay.runtime_generation.as_ref(), runtime);
+            assert_eq!(scope.bombay.actor_generation, actor.0);
+            assert_eq!(scope.bombay.caller_session.as_ref(), caller);
+            assert!(matches!(panics, (None, None, None, None, None, None)));
+            if index == 0 {
+                assert_eq!(catalog[index].0, local);
+                assert_eq!(scope.bombay.deployment.as_ref(), local.deployment);
+                assert!(key.is_some() && input.is_none() && matches!(refusals, (None, None, None)));
+                let (constructor, client, admission, received, tail) =
+                    native.expect("the own native increment remains");
+                assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+                let Attempt::Returned(Ok(client)) = client else {
+                    panic!("the real native reply client remains");
+                };
+                assert_ne!(client.address(), actor);
+                let received = received
+                    .expect("the native receive completed")
+                    .expect("the processed User remains");
+                assert_eq!(
+                    (received.from, received.message.request_sequence),
+                    (actor, 701)
+                );
+                assert!(matches!(tail.as_slice(), [None]));
+                let encoding = encoding
+                    .expect("the native result encodes")
+                    .unwrap_or_else(|_| panic!("actual encoding succeeds"));
+                let protection = protection
+                    .expect("the reply is protected")
+                    .unwrap_or_else(|_| panic!("actual protection succeeds"));
+                assert_eq!(encoding, protected[0].protected);
+                assert_eq!(protection, protected[0].proof);
+                assert!(matches!(publications.as_slice(), [Ok(())]));
+            } else {
+                assert_eq!(catalog[index].0, foreign);
+                assert_ne!(local.deployment, foreign.deployment);
+                assert_eq!(scope.bombay.deployment.as_ref(), foreign.deployment);
+                assert!(matches!(refusals, (Some(wire::Refusal::Scope), None, None)));
+                assert!(
+                    key.is_none()
+                        && input.is_none()
+                        && native.is_none()
+                        && encoding.is_none()
+                        && protection.is_none()
+                        && publications.is_empty()
+                );
+            }
+        }
+        let native_reply = replies[0][0].result();
+        let sample = native_reply
+            .as_ref()
+            .expect("the own processed Sample remains");
+        let original = ProtectedMessage {
+            protected: sample.payload().to_bytes().as_ref().into(),
+            proof: sample
+                .attachment()
+                .expect("the own proof remains")
+                .to_bytes()
+                .as_ref()
+                .into(),
+        };
+        let receipt = recorded::verify::<CounterInput>(&original, &protected, local)
+            .into_inner()
+            .unwrap_or_else(|_| panic!("the actual published own pair verifies"));
+        let parsed: serde_json::Value = serde_json::from_slice(&original.protected).unwrap();
+        assert_eq!(sample.key_expr().as_str(), COUNTER);
+        assert_eq!(original.protected, protected[0].protected);
+        assert_eq!(original.proof, protected[0].proof);
+        assert_eq!(
+            parsed,
+            serde_json::json!({
+                "bombay": recorded::projection(&receipt).bombay,
+                "operation": CounterInput::Increment(701),
+                "kind": protocol::Purpose::Processed,
+                "value": 701,
+            })
+        );
+    }
 }
 
 #[expect(

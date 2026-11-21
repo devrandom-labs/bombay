@@ -4,7 +4,9 @@ use super::super::assert_retirement;
 use super::{peer, protocol, same_ledger, wire};
 use bombay::RetirementOutcome;
 use bombay::prelude::Application;
-use bombay::remote::{Attempt, Export, ExportLimits, RefusalRetention, submission};
+use bombay::remote::{
+    Attempt, Export, ExportError, ExportLimits, RefusalRetention, json, submission,
+};
 use bombay::{ActorFailureAssessment, ActorRetirement, MailAddr, RetirementAssessment};
 use protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, configuration, limits,
@@ -15,22 +17,56 @@ use std::convert::Infallible;
 use std::num::NonZeroUsize;
 use std::pin::pin;
 use std::time::{Duration, Instant};
+use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use wire::LedgerInput;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn noncanonical_requests_keep_their_original_registered_pair() {
-    let trace = pin!(registered_originals());
+    let trace = pin!(registered_originals(NonZeroUsize::new(8).unwrap(), Ok(())));
     tokio::time::timeout(Duration::from_secs(40), trace)
         .await
         .expect("watchdog supplies no byte preservation, processing or cleanup credit");
+}
+
+#[test]
+fn exact_nesting_budget_keeps_the_original_registered_pair() {
+    Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the ordinary two-worker runtime opens")
+        .block_on(async {
+            let trace = pin!(registered_originals(NonZeroUsize::new(3).unwrap(), Ok(())));
+            tokio::time::timeout(Duration::from_secs(40), trace)
+                .await
+                .expect("the exact nesting control and all native cleanup complete");
+        });
+}
+
+#[test]
+fn excess_nesting_refuses_before_ledger_admission() {
+    Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the ordinary two-worker runtime opens")
+        .block_on(async {
+            let trace = pin!(registered_originals(
+                NonZeroUsize::new(2).unwrap(),
+                Err(json::Error::Nesting),
+            ));
+            tokio::time::timeout(Duration::from_secs(40), trace)
+                .await
+                .expect("the nesting refusal and all native cleanup complete");
+        });
 }
 
 #[expect(
     clippy::too_many_lines,
     reason = "one native request retains the complete protected pair, moved Ledger payload and independently joined owners before the byte oracle"
 )]
-async fn registered_originals() {
+async fn registered_originals(nesting: NonZeroUsize, expected: Result<(), json::Error>) {
     let address = "tls/localhost:0".to_owned();
     let node = Application::new(MailLedger {
         entries: Vec::new(),
@@ -92,7 +128,10 @@ async fn registered_originals() {
             retained_requests: maximum,
             diagnostics: maximum,
         },
-        limits(),
+        json::Limits {
+            nesting,
+            ..limits()
+        },
         |bytes| wire::decode_ledger(bytes, &allocation),
         submission(
             |input| {
@@ -223,6 +262,102 @@ async fn registered_originals() {
     close_observed.expect("the actual Node close was observed");
     finished.expect("Work observed actual query EOF");
     completed.expect("the peer published its actual query completion");
+    let received = received.expect("the actual local terminal Read returns its origins");
+    if expected.is_err() {
+        let entries = match &native {
+            Ok((_, ActorRetirement::Retained { custody, .. })) => {
+                Some(custody.behavior.entries.len())
+            }
+            _ => None,
+        };
+        assert_eq!(
+            (received.from, received.message.as_slice(), entries),
+            (actor, &[] as &[MailAddr], Some(0)),
+            "nesting limit {nesting} must leave the actual Ledger unchanged: {expected:?}"
+        );
+    }
+    assert!(admitted.is_ok() && tail.is_empty() && local_eof.is_none());
+    assert!(eof.is_none());
+    {
+        let refused = refused.lock().unwrap();
+        assert!(refused.is_none());
+    }
+    assert!(ingress.is_empty());
+    let (origin, native) = native.expect("the actual native Ledger root remains");
+    assert_retirement(&native);
+    let ActorRetirement::Retained {
+        custody,
+        outcome:
+            RetirementOutcome::Completed {
+                interpretation,
+                source,
+                ..
+            },
+    } = &native
+    else {
+        panic!("the actual Ledger Read completed its root");
+    };
+    assert_eq!(origin.address(), actor);
+    assert!(interpretation.is_none() && source.is_none());
+    assert!(
+        custody.control.is_empty() && custody.user.is_empty() && custody.descendants.is_empty()
+    );
+    assert!(custody.unread_owner_cancellation.is_none());
+    assert!(custody.received_interpretation.is_none() && custody.received_source.is_none());
+    assert!(custody.source_index.is_none() && custody.acquired_ingress.is_none());
+    assert!(custody.terminal_report.is_none());
+    let report = report.expect("the independent actual root report remains");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let notes = notes.expect("both original notification results remain");
+    notes.termination.expect("actual termination publication");
+    notes.retirement.expect("actual retirement publication");
+    bound
+        .expect("actual binding returned")
+        .expect("actual binding succeeded");
+    startup
+        .expect("actual declaration attempted")
+        .expect("actual declaration succeeded");
+    withdrawal
+        .expect("actual withdrawal attempted")
+        .expect("actual withdrawal succeeded");
+    assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
+    let [request] = originals.as_slice() else {
+        panic!("the actual query retains one original Request");
+    };
+    if expected.is_err() {
+        assert_eq!(request.1.0, original.protected);
+        assert_eq!(request.1.1, original.proof);
+        let registry = requests.borrow();
+        let [registered] = registry.as_slice() else {
+            panic!("the actual provider owns exactly the transmitted pair");
+        };
+        assert_eq!(registered.protected, original.protected);
+        assert_eq!(registered.proof, original.proof);
+        assert!(matches!(
+            (&expected, &request.8),
+            (
+                Err(json::Error::Nesting),
+                (
+                    None,
+                    None,
+                    Some(ExportError::Json {
+                        cause: json::Error::Nesting
+                    })
+                )
+            )
+        ));
+        assert!(request.0.is_none() && request.2.is_none() && request.3.is_none());
+        assert!(request.4.is_none() && request.5.is_none() && request.6.is_none());
+        assert!(request.7.is_empty() && samples.is_empty());
+        assert!(matches!(&request.9, (None, None, None, None, None, None)));
+        assert!(observations.borrow().is_empty() && replies.borrow().is_empty());
+        assert_eq!(constructors.get(), 0);
+        assert!(allocation.borrow().is_none());
+        assert_eq!(custody.behavior.entries, []);
+        return;
+    }
     let observed_pointers = {
         let observations = observations.borrow();
         let [(observed_bytes, observed_proof, bytes_pointer, proof_pointer)] =
@@ -243,9 +378,6 @@ async fn registered_originals() {
         (*bytes_pointer, *proof_pointer)
     };
 
-    let [request] = originals.as_slice() else {
-        panic!("the actual accepted query retains one original Request");
-    };
     let declared: wire::Request<LedgerInput> =
         serde_json::from_slice(&original.protected).expect("the original current Request is valid");
     let compact = serde_json::to_vec(&declared).expect("the typed current Request serializes");
@@ -356,37 +488,8 @@ async fn registered_originals() {
         serde_json::from_slice(&response.protected).expect("the actual encoded reply parses");
     assert_eq!(wire_reply["value"], "admitted");
     let expected_origins = vec![sender];
-    let received = received.expect("the actual local terminal Read returns its origins");
     assert_eq!(received.from, actor);
     assert_eq!(received.message, expected_origins);
-    assert!(admitted.is_ok() && tail.is_empty() && local_eof.is_none());
-    assert!(eof.is_none());
-    let refused = refused.lock().unwrap();
-    assert!(refused.is_none());
-    assert!(ingress.is_empty());
-    let (origin, native) = native.expect("the actual native Ledger root remains");
-    assert_retirement(&native);
-    let ActorRetirement::Retained {
-        custody,
-        outcome:
-            RetirementOutcome::Completed {
-                interpretation,
-                source,
-                ..
-            },
-    } = &native
-    else {
-        panic!("the actual Ledger Read completed its root");
-    };
-    assert_eq!(origin.address(), actor);
-    assert!(interpretation.is_none() && source.is_none());
-    assert!(
-        custody.control.is_empty() && custody.user.is_empty() && custody.descendants.is_empty()
-    );
-    assert!(custody.unread_owner_cancellation.is_none());
-    assert!(custody.received_interpretation.is_none() && custody.received_source.is_none());
-    assert!(custody.source_index.is_none() && custody.acquired_ingress.is_none());
-    assert!(custody.terminal_report.is_none());
     let [(entry_origin, entry)] = custody.behavior.entries.as_slice() else {
         panic!("the actual native Ledger stores one original Append");
     };
@@ -395,21 +498,4 @@ async fn registered_originals() {
     assert_eq!(*entry_origin, sender);
     assert_eq!(entry.as_ref(), payload);
     assert_eq!(entry.as_ptr(), allocation);
-    let report = report.expect("the independent actual root report remains");
-    assert_eq!(report.retirement(), RetirementAssessment::Established);
-    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
-    let notes = notes.expect("both original notification results remain");
-    notes.termination.expect("actual termination publication");
-    notes.retirement.expect("actual retirement publication");
-    bound
-        .expect("actual binding returned")
-        .expect("actual binding succeeded");
-    startup
-        .expect("actual declaration attempted")
-        .expect("actual declaration succeeded");
-    withdrawal
-        .expect("actual withdrawal attempted")
-        .expect("actual withdrawal succeeded");
-    assert!(polling.is_none() && disposal.is_none());
-    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
 }

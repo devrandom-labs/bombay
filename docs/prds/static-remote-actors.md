@@ -1,5 +1,163 @@
 # Static remote actors and typed admission
 
+## Deployment and nesting qualification (2026-11-21)
+
+Executed sourceed1061aa/731 inputs on signed1a02/Runtime0.6 passes format and
+strict optimized remote package all-target Clippy, with warnings and both
+mandatory supplementary denies. Actual Application consumer tests pass one
+deployment case and three nesting cases EACH debug/optimized profile. Healthy
+independent review6e796162 and final inverse/restoration review5a1a231c pass.
+The pre-edit records below retain the selected laws, owners and limitations.
+
+Both deployment routes are matched simultaneously. The same exact key and
+stable names authenticate local and foreign-deployment originals independently;
+the separate local placement comparison rejects the latter. Acquired native
+Users after both cleanup chains are(1,1). Removing only that comparison yields
+actual(2,2), failing the first complete state oracle in both profiles. No
+separate constructor-call counter, discovery authority or new namespace is
+claimed; the native admission and processed User trace supplies the observation.
+
+The same authenticated depth3 Ledger Append succeeds at nesting3 and original8,
+and refuses at2 before provider/decoder/native admission. Native query EOF
+precedes the sole terminal Ledger Read; normal joined cleanup precedes its
+state oracle. Passing only nesting+1
+to the existing Query check yields actual sender/entries([sender],1) instead
+of([],0), failing the first complete state oracle in both profiles; both legal
+controls still pass. No parser/global/SDK heap bound follows from the absent
+domain decode-allocation cell. The public extraction tuple stores this
+ExportError in its THIRD slot; the initial first-slot compiler refusal ran no
+tests and was corrected against the actual owning API, without changing a law.
+
+Each cut restores the complete owner and all731 healthy inputs before original
+healthy-artifact controls: deployment1PASS and nesting3PASS per profile.
+Those controls are actual saved-binary executions, not fresh recompilation.
+Later inverse assertions are unexecuted and uncredited. Source snapshots,
+archives, raw outcomes, exact restored modes and independent reviews remain in
+acceptance-current/admissions. No source fault remains applied. The first
+external selector missed the consumer namespace and selected zero tests; that
+metadata refusal has no runtime credit. Correct actual named selection then
+executed the unchanged tests. A concrete Box::pin stores the existing large
+joined future without type erasure, new runtime state or payload copies.
+
+Retained software delta: tests+605/-55/net550 across the two existing owners;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0.
+This is added verification capability, not code reduction. Scope45/45 remains
+fully charged. R15 reconciliation below selects no additional mechanism.
+Six completed executable copies are now gzip-only after full restored-byte
+hash checks and two empty lsof scans per path. Retained-file size falls by
+634929494bytes; two obsolete mutant target paths remove264437280bytes
+separately. Shared/cloned blocks make these figures non-additive; no exclusive
+disk-space claim follows. Raw executable copy paths are retired and must not
+be recreated/replayed. Unfinished dependencies, exact inputs, packages, raw
+logs and required old-version fixtures remain protected.
+Full R02/R21 and remaining R01–R25/AUTH1/NET1, combined checks, distillation,
+exact submitted-head CI/review and normal merged delivery remain open.
+
+## Logical nesting before admission — pre-edit record (2026-11-21)
+
+R02's existing fixed vectors, parser limits, strict metadata, authenticated
+original bytes and fragmented size/allocation witnesses remain intact. Plan
+1e32945a identifies one missing composition: a schema-valid, exact-pair-authentic
+Ledger Append of logical depth3 must be refused by the actual Export when
+configured nesting is2, before verification, domain decoding or admission.
+Current1a02/Runtime0.6/Engine0.4/Core031 and unpatched locke5fd83cd select the
+existing json-event-parser0.2.3, json::check, Query producer, Scheduled provider,
+typed submission lane, MailLedger and ordinary Node/peer retirement owners.
+The actual Query check stores ExportError::Json with json::Error::Nesting before
+provider entry. Limits is the existing Copy product; no parser/API change.
+
+Reuse the existing concrete pretty Append host in charged node_exports/bytes.rs
+with explicit NonZeroUsize nesting and an existing typed expected outcome. Keep
+the original nesting8 case and every original successful assertion. Add the
+same Append at exact3 as a legal control, and at2 as the one-level excess case.
+This schema has no depth2 Append. Do not add another encoding or an early
+Ledger Read: Read terminates MailLedger. Drain actual native query EOF first;
+one final independent terminal Read and normal joined cleanup precede the
+empty-Ledger oracle. An erroneously accepted Append and its extra native reply
+must reach that oracle rather than a premature missing-refusal assertion.
+
+The refused row must retain the exact native input/proof and typed Nesting
+cause; provider/decoder/constructor/admission/publication remain absent and
+the existing decoder-allocation cell stays None. This proves no domain payload
+decode allocation, not zero parser/global/SDK heap. Existing independent
+oversized materialization measurements are not repeated or broadened.
+
+The intended already-charged Query owner sensitivity changes only the passed
+Limits.nesting to limits.nesting.saturating_add(1), preserving all other
+fields/checks, bytes/proof, provider, scope and replay policy. The depth3 Append
+then executes at configured2 and must fail the first independent empty-state
+oracle after cleanup; exact3 and original8 controls still pass. Restore the
+whole Query owner and all other inputs before original healthy controls.
+
+Expected retained edits: existing bytes.rs and these records; temporary cut:
+existing remote/export/query.rs. Forecast120–220 test lines; production+0/-0/
+net0, public types+0/-0, dependencies/new paths0, cumulative45/45. Parameterize
+the one existing host only, without a new wrapper/type/generic framework or
+changing original successful expected values. Two source reviews precede
+acceptance. Root combines this independent test with same-name isolation into
+one frozen application_clients build per profile after all writers release.
+No new cryptographic representation, allocator, stopped correlation/restart
+candidate, full R02/NET1 closure or delivered-state claim is selected.
+
+## Same-name deployment isolation — pre-edit record (2026-11-21)
+
+R21 still needs two live deployments with identical stable actor/host/protocol
+names and the same exact export key. Existing overlap uses different keys in
+one deployment, where actual runtime/target refusal masks this question.
+This is the selected Bombay placement policy, not a new actor-model law.
+Read-only plan304a32a0 verifies current1a02/Runtime0.6/Engine0.4, locked
+Behavior/Actors0.31, Macros0.16, Address0.3, Communication0.1.7, Timers0.2,
+private Observe and SDK1.10.10/TLS; locke5fd83cd has no patches. Existing
+Application/Node binding, Export, typed reply lanes, nominal provider Receipt,
+configured Binding and ordinary native Counter own the complete journey.
+
+The smallest regression uses two actual Nodes and two directed peers. Each
+peer connects only to its receiver, with the same key and stable names across
+deployments. Both routes become matched before requests start. Each receiver
+gets one authenticated own-deployment Increment and one separately
+authenticated foreign-deployment Increment whose actual runtime, target,
+caller and other scope fields are valid for that receiver. A finite trusted
+catalog selects the original by exact bytes/proof before invoking the existing
+Recorded verifier; no receipt is manufactured from claims. Its nominal Binding
+comes from recorded::identity, independently of untrusted metadata.
+
+Existing wire::current checks authenticated fields and the actual receiver.
+A separate local comparison rejects a trusted binding from another configured
+deployment with existing wire::Refusal::Scope. These are independent facts:
+authentication does not establish local placement. Both constructor lanes stay
+outside Behavior folds. Acquire all replies/refusals and both genuine cleanup
+chains before comparing independent FIFO Counter Read Users: healthy(1,1).
+Temporarily omitting only this local placement guard must expose(2,2) at that
+first complete effect oracle; extra replies must remain retained until then.
+Restore the entire test owner exactly before positive controls.
+
+Expected edits: existing charged node_exports/overlap.rs plus these existing
+records. Forecast350–500 test lines before formatting; production+0/-0/net0,
+public types+0/-0, dependencies0/new paths0, cumulative45/45. Reuse existing
+wire/protocol/peer code unchanged; preserve every existing named overlap law.
+An ordinary concrete async closure may share the two actual journeys, returning
+owned results for the joint oracle; no new wrapper/type/trait or generic test
+framework is selected. Root alone formats/compiles after author/source reviews.
+Discovery/recovery services and recovery caches remain explicitly omitted;
+matching supplies route availability, not hosting authority or durable history.
+No new advertisement, namespace format, ACL, SDK policy or stopped
+correlation/restart work is selected. Full R21/NET1 and delivery remain open.
+
+### Approved ordering scope — reconciliation
+
+Independent reconciliationa5097e53 maps R15 to the existing approved decision:
+request sequence identifies a request; it promises no FIFO across independent
+requests or links. A causal caller waits for the prior processing reply before
+submitting dependent work. Existing overlap compares the unsorted actual emitted
+sequence and retains a held request's late reply beside independent fresh work;
+same-actor Router reconnect preserves the acknowledged Read sequence(1,2,2)
+without another replay admission or initialization. These witnesses map the
+selected ordering promises, so no new ordering mechanism/campaign is selected.
+Their original source/execution epochs stay explicit; this reconciliation is
+not fresh1a02 runtime execution. Current combined gates and delivery remain
+separate. Independent correlation substitutions and restart work retain their
+existing stops and cannot be moved into R15 to bypass them.
+
 ## Current compatibility and reply-pressure qualification (2026-11-21)
 
 The full R01–R25/AUTH1/NET1 goal remains active. Scope is now45-of-approved45,

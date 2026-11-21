@@ -1,5 +1,19 @@
 # Backlog status and dependencies
 
+Remote Actors deployment/nesting2026-11-21: sourceed106/731 passes deployment1
+and nesting3 cases EACH debug/optimized, format and strict all-target Clippy.
+Actual separate placement-guard and Query-nesting cuts fail the intended native
+state oracles in both profiles; whole-source restorations and original healthy
+artifact controls pass. Independent reviews6e796162/5a1a231c retain the exact
+source, zero-selection/compiler refusals and unexecuted-negative-tail limits in
+the owning [qualification](../prds/static-remote-actors.md#deployment-and-nesting-qualification-2026-11-21).
+Tests add550net lines; production/API/dependencies/new source paths0, scope45/45.
+R15 reconciliationa509 maps the approved no-global-FIFO profile to existing
+finite traces; no new ordering mechanism. Full R02/R21/remaining requirements,
+combined gates/distillation/CI/reviewed merge and existing dependency edges
+remain open. Stopped obligations and original source/execution epochs remain
+separate.
+
 Remote Actors retained-payload checkpoint2026-11-21: new finite byte witness
 and the two existing cold cancellation cases pass current0.6/Core031 debug
 and optimized execution; format and strict optimized all-target Clippy pass.
