@@ -1,4 +1,25 @@
+Remote Actors current2026-11-21: actual failed initialization now leaves zero
+ready native exports; genuine initialized protectedRead control passes EACH
+build. Early-declaration source fault fails intended finite first aggregate in
+EACH build, exact whole-owner/source restoration and four original-artifact
+controls pass; independent2d2297bc/5fe3a793 accepted. Production/API/dependencies0,
+tests+411/-1/net410, fully charged45/45. Current support reconciliation maps
+selected Query/Reply pressure, explicit availability facts, complete real-process
+semantic traces and command-scoped uncertainty without duplicate runtime/tests.
+The [owning record](../prds/static-remote-actors.md#initialization-to-export-qualification-and-support-reconciliation-2026-11-21)
+preserves source/negative/structural-evidence limits. R11 send-only composition,
+R18 extra-owner/profile approval, original stopped candidates and full combined
+checks/distillation/CI/reviewed delivery remain open. Scope47 is pending, not
+approved. No requirement-state or reciprocal dependency-edge changes.
+
 # Backlog status and dependencies
+
+Historical pre-edit readiness2026-11-21: planc918 selected one missing failed-INIT/no-
+native-export Node composition and its real ready/Read control. Existing
+StartupCounter MAX Overflow supplies the failure without a new actor/type/API;
+only charged retirement.rs and records are selected. Production/dependencies0,
+scope45/45. No replacement/restart/advertisement work; execution/full R16 and
+original dependency edges remain open.
 
 Remote Actors process/diagnostic qualification2026-11-21: actual source6f30/731
 passes all four selected cases EACH debug/optimized, format and strict Clippy.

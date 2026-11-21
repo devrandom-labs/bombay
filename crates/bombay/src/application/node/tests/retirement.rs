@@ -1,4 +1,5 @@
 //! Native retirement and connection changes conserve actor work and original results.
+use super::super::Binding as NodeBinding;
 use super::counter::{CounterError, CounterIncremented, CounterProcessed, CounterValue};
 use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef,
@@ -7,7 +8,7 @@ use super::protocol::{
 };
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
-use crate::application::{Application, ApplicationScope};
+use crate::application::{Application, ApplicationScope, WorkOutcome};
 use crate::local::endpoint::ExtractLocalEndpoint;
 use crate::proxy::{ProxyControl, ProxyDiagnostic, ProxyOutcome, StableProxy};
 use crate::remote::{
@@ -138,6 +139,415 @@ impl StartupCounter {
                 )))
             }
         }
+    }
+}
+
+#[test]
+fn failed_initialization_leaves_no_ready_export() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the supported Node host opens");
+    host.block_on(async {
+        tokio::time::timeout(Duration::from_secs(15), startup_exports(u64::MAX))
+            .await
+            .expect("a watchdog supplies no initialization or readiness evidence");
+    });
+}
+
+#[test]
+fn committed_initialization_serves_a_protected_read() {
+    let host = Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the supported Node host opens");
+    host.block_on(async {
+        tokio::time::timeout(Duration::from_secs(15), startup_exports(0))
+            .await
+            .expect("a watchdog supplies no initialization or readiness evidence");
+    });
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one concrete startup trace retains original initialization, declaration, protected reply and joined cleanup outcomes"
+)]
+async fn startup_exports(initializations: u64) {
+    let scope = ApplicationScope::new();
+    let mut startups = scope.external::<StartupCounterStarted>().unwrap();
+    let started = startups.recipient();
+    let node = scope
+        .with_root(
+            StartupCounter {
+                value: 0,
+                initializations,
+                started: started.clone(),
+            }
+            .stop_on_shutdown(),
+        )
+        .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+        .await
+        .unwrap_or_else(|(_, _, cause)| panic!("the actual Node opens: {cause:?}"));
+    let runtime = node.runtime_id();
+    let session = node.session.clone();
+    let binding = Binding {
+        deployment: "two-node-read-study",
+        caller: "caller",
+        controller: "owner",
+        actor: "startup-counter",
+        host: "receiver",
+        protocol: "startup-counter",
+        target_assignment: "one-live-root",
+        logical_session: 557,
+    };
+    let claims = RefCell::new(None);
+    let records = RefCell::new(Vec::<ProtectedMessage>::new());
+    let protected_replies = RefCell::new(Vec::<ProtectedMessage>::new());
+    let bindings = Cell::new(0);
+    let calls = Cell::new(0);
+    let verified = Cell::new(0);
+    let decoded = Cell::new(0);
+    let constructed = Cell::new(0);
+    let encoded = Cell::new(0);
+    let protected = Cell::new(0);
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let current = |receipt: &recorded::Receipt<Command>, runtime: &str, target: MailAddr| {
+        let claims = claims.borrow();
+        let actual = claims.as_ref().ok_or(VerificationError::Invalid)?;
+        current_scope(
+            recorded::projection(receipt),
+            actual,
+            &Command::Read,
+            Purpose::Request,
+            deadline,
+        )?;
+        if actual.runtime_generation.as_ref() != runtime
+            || actual.actor_generation != target.0
+            || recorded::identity(receipt).0 != &binding
+        {
+            return Err(VerificationError::Invalid);
+        }
+        Ok(())
+    };
+    let maximum = NonZeroUsize::new(1).unwrap();
+    let export = Export::new(
+        "bombay/startup-counter",
+        ExportLimits {
+            refusals: RefusalRetention::Retain,
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes| {
+            decoded.set(decoded.get() + 1);
+            serde_json::from_slice::<ReadRequest<Command>>(bytes).map(|request| request.operation)
+        },
+        reply(
+            |command| match command {
+                Command::Read => Ok(|reply_to| {
+                    constructed.set(constructed.get() + 1);
+                    StartupCounterMessage::Read(reply_to)
+                }),
+                original @ Command::Increment => Err(original),
+            },
+            |receipt: &recorded::Receipt<Command>,
+             original: &User<MailAddr, StartupCounterValue>| {
+                encoded.set(encoded.get() + 1);
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &recorded::projection(receipt).bombay,
+                    kind: Purpose::ReadReply,
+                    operation: &Command::Read,
+                    value: &original.message.value,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            verified.set(verified.get() + 1);
+            recorded::verify::<Command>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                &records.borrow(),
+                binding,
+            )
+            .into_inner()
+        },
+        async |bytes: &[u8], _: &recorded::Receipt<Command>| {
+            protected.set(protected.get() + 1);
+            let proof: Box<[u8]> = [179, 181].into();
+            protected_replies.borrow_mut().push(ProtectedMessage {
+                protected: bytes.into(),
+                proof: proof.clone(),
+            });
+            Ok::<_, Never>(proof)
+        },
+        |left, right| recorded::identity(left) == recorded::identity(right),
+        &current,
+        &current,
+    );
+    let mut node = node.exports(export, async |application| {
+        bindings.set(bindings.get() + 1);
+        let target = application.root().established_recipient();
+        let mut actual = metadata(
+            ProviderProfile::Recorded,
+            "startup-counter",
+            runtime.clone(),
+            runtime,
+        );
+        actual.actor_generation = application.actor_address(&target).unwrap().0;
+        records.borrow_mut().push(ProtectedMessage {
+            protected: serde_json::to_vec(&ReadRequestRef {
+                bombay: &actual,
+                kind: Purpose::Request,
+                operation: &Command::Read,
+            })
+            .unwrap()
+            .into_boxed_slice(),
+            proof: Box::from([173_u8]),
+        });
+        *claims.borrow_mut() = Some(actual);
+        Ok::<_, Never>(target)
+    });
+    let outcome = node
+        .run_with(|application| {
+            let calls = &calls;
+            let records = &records;
+            let session = &session;
+            async move {
+                calls.set(calls.get() + 1);
+                let (bytes, proof) = {
+                    let records = records.borrow();
+                    (records[0].protected.to_vec(), records[0].proof.to_vec())
+                };
+                let incoming = session
+                    .get("bombay/startup-counter")
+                    .allowed_destination(Locality::SessionLocal)
+                    .consolidation(ConsolidationMode::None)
+                    .payload(bytes)
+                    .attachment(proof)
+                    .timeout(Duration::from_secs(5))
+                    .await
+                    .expect("the actual protected Query starts");
+                let mut replies = Vec::new();
+                let ending = loop {
+                    match incoming.recv_async().await {
+                        Ok(original) => replies.push(original),
+                        original @ Err(_) => break original,
+                    }
+                };
+                let shutdown = application.shutdown();
+                (replies, ending, shutdown)
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Node execution is issued"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let closed = node
+        .closed
+        .take()
+        .expect("the actual Node close result is retained");
+    let bound = node.binding.take();
+    let (inputs, declarations, startup, withdrawal, diagnostics, requests) =
+        node.exports.into_parts();
+    drop((inputs, declarations));
+    startups.close_admission();
+    let mut notices = Vec::new();
+    while let Some(original) = startups.receive().await {
+        notices.push(original);
+    }
+    let (origin, native) =
+        native.expect("the original root is joined even after initialization rejection");
+    let custody = native
+        .custody()
+        .expect("actual original state and runtime custody survive");
+    let original = custody.behavior.base();
+    // Cleanup and all native originals precede this independent readiness oracle.
+    // Early declaration must reach this with Some(Ok), not a watchdog failure.
+    let observed = (
+        (original.value, original.initializations),
+        bindings.get(),
+        calls.get(),
+        notices.len(),
+        startup.as_ref().map(Result::is_ok),
+        requests.len(),
+    );
+    match initializations {
+        u64::MAX => assert_eq!(observed, ((0, u64::MAX), 0, 0, 0, None, 0)),
+        0 => assert_eq!(observed, ((0, 1), 1, 1, 1, Some(true), 1)),
+        _ => panic!(
+            "only the existing overflow boundary and its genuine startup control are selected"
+        ),
+    }
+    closed.expect("the actual Node Session closes");
+    work.cleanup()
+        .expect("actual cleanup has returned")
+        .as_ref()
+        .expect("actual Application cleanup joins");
+    assert!(session.is_closed());
+    assert!(node.poll_panic.is_none() && node.disposal_panic.is_none());
+    assert!(node.withdrawal_poll_panic.is_none() && node.withdrawal_disposal_panic.is_none());
+    let notifications = notifications.expect("both original notification receipts remain");
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    let report = report.expect("the actual native root report remains");
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert_eq!(&original.started, &started);
+    assert!(custody.user.is_empty() && custody.control.is_empty());
+    assert!(custody.descendants.is_empty() && custody.child_failures.is_empty());
+    assert!(
+        custody.capability_failures.is_empty()
+            && custody.additional_failures.is_empty()
+            && custody.retirement_failures.is_empty()
+    );
+    assert!(diagnostics.is_empty());
+    match initializations {
+        u64::MAX => {
+            assert!(matches!(&bound, Some(NodeBinding::Uninvoked(_))));
+            let WorkOutcome::NotInvoked {
+                work: _unused,
+                startup_error,
+                cleanup,
+            } = work
+            else {
+                panic!("actual initialization failure retains its uninvoked Work");
+            };
+            assert!(startup_error.is_some() && cleanup.is_ok());
+            assert!(matches!(
+                &native,
+                ActorRetirement::Retained {
+                    outcome: RetirementOutcome::InitializationRejected {
+                        error: CounterError::Overflow,
+                        ..
+                    },
+                    ..
+                }
+            ));
+            assert_eq!(report.failures(), ActorFailureAssessment::FailuresFound);
+            assert!(startup.is_none() && withdrawal.is_none());
+            assert_eq!(
+                (
+                    verified.get(),
+                    decoded.get(),
+                    constructed.get(),
+                    encoded.get(),
+                    protected.get()
+                ),
+                (0, 0, 0, 0, 0)
+            );
+            assert!(records.borrow().is_empty() && protected_replies.borrow().is_empty());
+        }
+        0 => {
+            assert!(matches!(&bound, Some(NodeBinding::Invoked(Some(Ok(_))))));
+            assert_eq!(notices, [User::new(origin.address(), 1)]);
+            assert_eq!(native.completion(), Some(&Completion::Stopped));
+            assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+            assert!(matches!(withdrawal, Some(Ok(()))));
+            let ((replies, ending, shutdown), cleanup) = work
+                .try_into_completed()
+                .unwrap_or_else(|_| panic!("actual initialized Work and Query EOF return"));
+            assert!(ending.is_err() && shutdown.is_ok() && cleanup.is_ok());
+            assert_eq!(replies.len(), 1);
+            let result = replies[0].result();
+            let sample = result
+                .as_ref()
+                .expect("the real Read publishes successfully");
+            let response = ProtectedMessage {
+                protected: sample.payload().to_bytes().as_ref().into(),
+                proof: sample
+                    .attachment()
+                    .expect("the actual reply proof remains")
+                    .to_bytes()
+                    .as_ref()
+                    .into(),
+            };
+            let receipt =
+                recorded::verify::<Command>(&response, &protected_replies.borrow(), binding)
+                    .into_inner()
+                    .expect("the whole actual response authenticates against its provider");
+            let value: ReadReply<u64, Command> =
+                serde_json::from_slice(&response.protected).unwrap();
+            assert_eq!(
+                (&value.bombay, value.kind, &value.operation, value.value),
+                (
+                    &recorded::projection(&receipt).bombay,
+                    Purpose::ReadReply,
+                    &Command::Read,
+                    0
+                )
+            );
+            assert_eq!(
+                (
+                    verified.get(),
+                    decoded.get(),
+                    constructed.get(),
+                    encoded.get(),
+                    protected.get()
+                ),
+                (1, 1, 1, 1, 1)
+            );
+            let [request] = <[_; 1]>::try_from(requests)
+                .unwrap_or_else(|_| panic!("the one actual request remains"));
+            let (
+                key,
+                raw,
+                verified,
+                input,
+                native,
+                encoding,
+                protection,
+                publications,
+                refusals,
+                panics,
+            ) = request
+                .try_into_parts()
+                .unwrap_or_else(|_| panic!("actual producer loans return before inspection"));
+            assert!(key.is_some() && input.is_none());
+            let records = records.borrow();
+            assert_eq!((&raw.0, &raw.1), (&records[0].protected, &records[0].proof));
+            let verified = verified
+                .expect("the actual verifier returns")
+                .expect("the exact configured original authenticates");
+            let declared: ReadRequest<Command> = serde_json::from_slice(&raw.0).unwrap();
+            assert_eq!(
+                recorded::identity(&verified),
+                (&binding, declared.bombay.request_sequence)
+            );
+            assert_eq!(&recorded::projection(&verified).bombay, &declared.bombay);
+            let (constructor, client, admission, received, tail) =
+                native.expect("the actual native Read remains");
+            assert!(
+                constructor.is_none()
+                    && matches!(&client, Attempt::Returned(Ok(_)))
+                    && matches!(&admission, Attempt::Returned(Ok(())))
+            );
+            assert_eq!(
+                received,
+                Some(Some(User::new(
+                    origin.address(),
+                    StartupCounterValue {
+                        value: 0,
+                        initializations: 1
+                    }
+                )))
+            );
+            assert!(matches!(tail.as_slice(), [None]));
+            let encoding = encoding.expect("the actual encoder returns").unwrap();
+            let protection = protection.expect("the actual protector returns").unwrap();
+            assert_eq!(encoding, response.protected);
+            assert_eq!(protection, response.proof);
+            assert!(matches!(publications.as_slice(), [Ok(())]));
+            assert!(
+                matches!(refusals, (None, None, None))
+                    && matches!(panics, (None, None, None, None, None, None))
+            );
+        }
+        _ => unreachable!("the original configured count was checked above"),
     }
 }
 

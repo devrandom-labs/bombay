@@ -1,5 +1,206 @@
 # Static remote actors and typed admission
 
+## Initialization-to-export qualification and support reconciliation (2026-11-21)
+
+Actual frozen1be4d0d1/731 passes formatting, strict optimized all-target remote
+Clippy with warnings and both mandatory supplementary denies, and the two exact
+startup cases EACH in debug and optimized builds. Independent healthy review
+2d2297bc and final source-fault/restoration review5fe3a793 pass. Root's third
+source/counterexample review retains their same scoped conclusions.
+
+The existing StartupCounter at MAX returns its real CounterError::Overflow
+before any Actions. Its actual original value0/countMAX survives with
+InitializationRejected, uninvoked binding and Work, zero startup notices and
+zero native declaration/request receipts. The same concrete composition from0
+must really initialize once, emit its startup User1, bind/declare and serve a
+protected Read0; its native User retains value0/initializations1. Actual Node
+close, Application cleanup, native root custody/report and both notification
+receipts remain separate acquired facts. These are existing owning types and
+public composition, not a new failing actor, placeholder export or accessor.
+
+The only temporary source fault adds the actual native declaration before the
+Application startup gate in Node::run_with. EACH build then fails the first
+post-cleanup equality at retirement.rs381: actual original0/MAX with all callback
+counts0 but Some(Ok) declaration versus required None. This is a real declaration
+receipt, not a timeout or native setup refusal; final withdrawal cannot erase
+that durable original. Later negative assertions are unexecuted/uncredited.
+Whole Node and all731 inputs are restored exactly before the four ORIGINAL
+healthy-artifact controls: both cases EACH build pass again. Those are saved
+original programs, not fresh healthy compilation. Mutant programs remain fully
+preserved; both current target programs were restored byte-exact after two fresh
+unused scans each. Dependency artifacts are not relabelled newly compiled.
+
+The retained software delta is tests+411/-1/net410 in the already-charged
+retirement.rs; raw author+275/-1/net274 and forecast180–260 remain distinguishable.
+Production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0;
+scope45/45 remains fully charged. Four completed program copies are gzip-only
+with full decoded-byte/SHA restoration and two fresh unused scans before unlink.
+Logical retained-file size falls902269377bytes; this is not exclusive APFS or
+global free-space savings. Their raw paths are retired, never replayed/recreated.
+Unfinished shared dependencies/current valid targets, exact inputs/packages/raw
+and old-version fixtures remain protected. Records and source archives live in
+acceptance-current/readiness. Only these two task records differ from executed
+1be4 at the final checkpoint; other729 bytes/modes are identical.
+
+This closes the selected failed-initialization/native-export law locally. Valid
+static grants, target certification, exact withdrawal and closed endpoint facts
+retain their own owning proofs. No same-name replacement/old-generation promise,
+dynamic advertisement or stopped restart candidate is recreated; full R16,
+current combined checks, CI and reviewed delivery remain open.
+
+### Selected pressure, availability and scenario evidence
+
+Read-only reviews6f1a22f0 and e657d788 reconcile current selected requirements
+without inventing duplicate services or a second runtime:
+
+- **R19:** Query pressure34807f9f and Reply pressureaef93e57 retain actual held
+  consumers, finite admission/retention and independent same-Session health.
+  Owning callbacks use nonwaiting transfer; selected Drop/overflow configuration
+  is explicit. Telemetry and bulk streams are unselected application classes,
+  not missing new services. No universal CPU fairness, global allocation or
+  arbitrary stalled-Behavior claim follows.
+- **R21:** Availability is the composition of actual committed startup, certified
+  bound target, native declaration, authenticated configured scope, actual
+  permitted command admission and selected exact withdrawal/retirement. Native
+  matching is route visibility only. R16 supplies startup ordering; current
+  admission/provider/withdrawal owners supply distinct remaining facts. The
+  actual two-deployment same-name isolation proof5a1a231c remains independent.
+  Static endpoints/discovery omissions and disabled recovery caches are explicit;
+  no advertisement, resolver, recovery-history service or matching authority is
+  added by this composition.
+
+R23/SIM09 asks equivalent semantic scenarios and their real-process mapping;
+it does not require one shared interpreter or a duplicate local Application.
+SIM07's oracle remains independent of the implementation. The accepted process
+child already schedules three synchronous sends in one joined worker poll,
+preventing actor drain during that prefix. Literal2/3/4 observations and exact
+Full(original) recovery are independent of the capacity implementation. Do not
+extend or relabel schedule.rs's separate replay/expiry/revocation event model.
+
+| Selected scenario | Deterministic semantic facts and actual process projection |
+| --- | --- |
+| Ordinary success | Typed admission and processed Increment precede actual Read1; transport enqueue alone is not processing. Separate TLS programs and real encoding are required. |
+| Mailbox pressure | Two admitted originals; Full retains the third without a fold; Read2; retry that SAME original once; Read3; ordinary separate TLS Increment/Read4/authorized Stop; both real reaps. |
+| Denied Stop | Actual pre-native provider proof refusal and independently readable Counter; denial is not target death. The authenticated send-only permission composition remains pending. |
+| Authorized Stop | Exact target control acceptance, termination and joined-retirement-derived completion remain distinct; unrelated sibling progress is independent. |
+| Lost reply | Independently processed Increment1 plus withheld publication yields caller Uncertain Increment/exit2; no nonexecution claim or fresh-ID automatic retry. |
+| Assignment EOF | Real Binding publication then configure EOF produces typed Configuration refusal and shipping exit1. This is process/configuration policy, not an actor crash or Counter transition. |
+
+The scoped source-bound native/provider/retirement receipts justify each
+projection. Current5d56f0a4 retains the pressure/EOF source faults and restorations;
+existing ordinary/loss/Stop proofs retain their original source epochs. This is
+not a new runtime execution, proof that remote Get met actor Full, a shared-state
+shortcut, or full R24's independent network-fault campaign.
+
+### Command-scoped uncertainty and support boundary
+
+Read-only c7c5d15a maps the selected post-join inspection route without adding a
+new diagnostic test or service. The actual loss child retains exact Increment101
+bytes/proof, trusted configured grant/provider identity, native processed User101
+and independent Read1 while publication is absent. Its parent retains caller
+Uncertain Increment/exit2 and both reaps. Client stores the original User, actual
+encoded/protected request before issuing Get. Native Get/response outcomes are
+acquired afterward; the unchanged post-join consuming handoff preserves all of
+these originals beside the validated Deployment. Existing extraction tests cover that handoff. These compose the
+configured-authority/Increment101 inspection route even with NO authenticated
+reply receipt. Configured authority is not proof of delivery/completion, and the
+separately known receiver processing does not upgrade the caller's uncertainty.
+
+The loss parent does not itself extract caller Client rows: this is actual-entry
+plus structural-retention evidence with separately tested extraction, not a new
+combined runtime assertion. Its six owning sources match the retained outcome
+reconciliation. Current-wide execution of existing parents/children remains
+required. The separate WriteZero presentation law is permission refusal only;
+it is not relabelled uncertainty. Diagnostic records end with owner disposal;
+thereafter record unavailable/outcome unknown unless independently established.
+No TTL/history/tombstone/telemetry API or raw-private-payload logging is selected.
+
+| Support fact | Exact current selection and evidence limit |
+| --- | --- |
+| Runtime and native owners | Runtime0.6/Engine0.4, Behavior/Actors0.31/Macros0.16, Address0.3/Communication0.1.7/private Observe/Timers0.2; unpatched locke5fd83cd. |
+| Transport | SDK1.10.10/config1.10.2/protocol1.10.1/transport1.10.4, TLS with declared fake provider profile; real localhost Peer subprocesses and separately scoped Router reconnect. Fake evidence is not a production cryptographic identity proof. |
+| Software compatibility | Four actual Runtime0.5/Core030 and Runtime0.6/Core031 caller/receiver pairs in both builds; explicit unsupported-version/feature refusals; no negotiation or downgrade. |
+| Platform | Actual Unix/local secure-process evidence; configuration-only address/IPv6 getters are not executable platform certification. No Windows/container/Kubernetes/WAN claim. |
+| Resources and delivery | Finite logical bytes and joined owner results keep their scopes. Whole enabled SDK task/declaration baseline, held candidates and final source/native/CI/distillation/reviewed merge remain open. |
+
+No requirement state or reciprocal dependency edge changes. R11's one genuine
+send-only Stop composition remains next; operation-independent shared metadata
+guards do not justify a repeated Stop Cartesian matrix. R18's reviewed numeric
+observation route needs two additional owners and a separately labelled profile;
+the scope47 question is PENDING, not approval or an edit. Original R03/R04/R07/R24
+automatic holds, original05ec unknown cause and every other full-goal obligation
+remain intact. This local checkpoint does not claim AUTH1/NET1 or Goal completion.
+
+## Send-only permission must not authorize Stop — pre-edit (2026-11-21)
+
+R11 model reviewa98ce99c narrows e2af's proposal to ONE current-Node SendOnly
+journey in the already-charged node_exports/consumer.rs. Shared wire::current is
+operation-independent and is called uniformly before decoding/selection; existing
+metadata negatives plus actual Stop positives compose for that metadata domain.
+Do not add OtherActor, a repeated Cartesian matrix or a second metadata fault.
+Current Runtime0.6/Core031/unpatched locke5fd owners and source contracts remain
+unchanged; author preparation confirms existing native TrySend and Stop products.
+
+Use the existing Creator/Counter/sibling/Ledger, Export lanes and actual TLS Peer.
+Immutable full authenticated Binding rows grant Sender[Increment401,Read] and
+Owner[Read,Stop]; choose a row by full nominal authenticated Binding equality,
+keep wire::current checks, then check the actual operation's membership. Four
+actual Gets retain sender Increment401/Read403, denied Stop407 and owner Stop409.
+After denial acquire actual nonwaiting target Read: receive only when admission
+really succeeds, otherwise preserve Full/Closed original and Unattempted receive.
+Independent sibling progress1/2 and same-policy owner Stop/report prevent an
+always-denying lifecycle path from passing. Preserve every native/provider/raw
+row and acquire complete parent/Node/Peer cleanup before the first borrowed
+aggregate; never unwrap contradictory mutant Stop facts before that oracle.
+
+Root's later intended fault omits ONLY this new operation-membership refusal.
+All metadata/provider/same-request checks and domain/test values remain unchanged.
+Actual bad Stop must retire the target and expose its missing/closed native Read
+at the first post-cleanup oracle, finitely in both builds. Restore the full owner
+then run original healthy controls. No actor crash/restart, forwarding, reply
+substitution, new actor/type/wrapper/API/dependency/framework or stopped task is
+selected. Original consumer tests and their assertions stay byte-exact.
+
+Forecast200–350 formatted test lines in this single existing owner plus these
+records; actual delta must be measured. Production+0/-0/net0, publicAPI+0types/
+-0types, dependencies/new source paths0, scope45/45. Two source/counterexample
+reviews precede Root's sole compiler and source fault; no execution credit yet.
+
+## Failed initialization must leave no ready export — pre-edit (2026-11-21)
+
+R16 planc918bcec maps the existing sequence: Driver pure initialization and
+settlement precede local startup publication; Application awaits that actual
+startup before Node binding, whole-product preflight and native declaration.
+Existing local rejection, binding refusal and target-preflight witnesses keep
+their scopes, but do not by themselves execute failed INIT plus zero native
+exports in the same Node trace. Current signed0432/Runtime0.6/Engine0.4,
+Behavior/Actors031/Macros016, Address03/Communication017/private Observe/
+Timers02/SDK1.10.10 use unchanged unpatched locke5fd83cd and these same owners.
+
+Reuse ONLY existing retirement.rs StartupCounter/protocol/error and normal
+Node/Export/provider/application composition on its supported multithread host.
+Initializations MAX causes its actual checked arithmetic to return existing
+CounterError::Overflow before Actions; independently require original MAX state,
+exact InitializationRejected cause, uninvoked binder/Work and no native
+declaration receipt. Initializations0 is the positive control: actual startup1,
+binding and declaration plus a real protected Read. Do not invent a new failing
+actor, placeholder exporter, public accessor or runtime. Preserve complete
+native results and actual cleanup before comparing independent facts.
+
+Public extraction may lawfully return the same unbound Node on failed startup;
+the owning private test can inspect its existing fields without a new API.
+Root's later intended sensitivity calls the existing native declare BEFORE the
+startup gate in already-charged node.rs; the failed-init case must then expose
+the actual Some(Ok) declaration despite absent binder/Work. Restore the full
+owner and actual healthy controls. No source fault is applied or authorized to
+the author. No replacement/restart or dynamic advertisement is selected.
+
+Forecast180–260 test lines in the single charged retirement.rs plus these
+records; production+0/-0/net0, publicAPI+0types/-0types, dependencies/new paths0,
+scope45/45. Author/independent source and counterexample reviews precede Root's
+debug/optimized execution. Current local law qualification is not full R16 or
+merged delivery; stopped candidates and all original obligations remain intact.
+
 ## Process pressure and diagnostic qualification (2026-11-21)
 
 Current executed source6f30d7b8/731 on signed41376/Runtime0.6 passes formatting
