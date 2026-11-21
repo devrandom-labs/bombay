@@ -1,5 +1,17 @@
 # Backlog status and dependencies
 
+Remote Actors retained-payload checkpoint2026-11-21: new finite byte witness
+and the two existing cold cancellation cases pass current0.6/Core031 debug
+and optimized execution; format and strict optimized all-target Clippy pass.
+The actual R1-to2 Client cut produces the intended extra wire/receipt/User
+bytes in both profiles; exact restoration and original healthy controls pass.
+Independent reviewse9bfcd1d/a132d69c retain byte units, source custody and
+unexecuted-negative-tail limits in the owning
+[qualification record](../prds/static-remote-actors.md#scoped-byte-and-cancellation-qualification).
+Production library/API/dependencies remain unchanged, scope45/45. Full R14,
+remaining R01–R25/AUTH1/NET1 and combined gates/distillation/CI/reviewed delivery
+remain open; no requirement state or reciprocal dependency edge changes.
+
 Remote Actors current2026-11-21: selected R05 local compatibility passes all
 four actual Runtime0.5/0.6 caller/receiver pairs and five configured refusal
 cases per debug/optimized profile. Actual guard omissions detect forbidden

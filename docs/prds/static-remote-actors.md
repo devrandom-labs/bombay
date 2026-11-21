@@ -52,6 +52,89 @@ Source archives, raw outcomes, original binaries, restoration and review
 records remain in the existing compatibility and r19 acceptance records.
 The earlier dated stages below keep their original source/execution boundaries.
 
+## Retained payload bytes — change record (2026-11-21)
+
+R14 still needs a joint byte observation for retained requests, unread input,
+an actual blocked sender and acquired-but-unconsumed replies. Count limits
+alone do not supply that evidence. Source audite347775b and model plan6daf4dee
+use current5941/Runtime0.6, Behavior/Actors0.31, Communication0.1.7 and the
+unchanged SDK1.10.10/TLS profile; root locke5fd83cd has no patches. Existing
+Client request/response owners, Communication mailbox, opaque Recorded
+receipt, native reply ingress and ordinary sender futures own the work.
+
+The proposed finite profile has four immutable valid source originals.
+Actual effective mailbox capacity is2: A/B fill it, then C/D both become
+Pending before A is acquired and source admission closes. C's already
+acquired sender fills the released slot; unread B/C and pending D coexist
+with the acquired A row. Peak pending producers is2, then1, without spawning
+producer tasks. Exact originals remain owned through consumer disposal;
+closing admission alone is not their settlement barrier.
+
+One actual native request receives two identical valid replies. Capture both
+a held-verifier observation and the retained originals after normal cleanup,
+before extraction. Borrow available payload/proof lengths and owned receipt
+text; label inaccessible queue/submission terms as conservative finite-frame
+allowances. Keep provider/provisioning/oracle buffers separate and bounded.
+No logical length sum is a unique allocation, allocator peak or global SDK
+heap measurement, and no generic aggregate-byte API is selected.
+
+The intended sensitivity changes only the already-charged Client semaphore
+from R1 to R2. With exactly two replies, total native bytes are conserved:
+one accepted plus one refused becomes two accepted and no refusal. The
+counterexample must expose extra acquired wire/proof, receipt-text and queued
+User bytes at the first complete post-cleanup aggregate. It must not invent
+native-byte growth, assume callback ordering or fail first on a missing tag.
+
+Expected retained edits: existing client/tests/limits.rs and these existing
+records only; temporary cut: existing client.rs, followed by full restoration.
+Forecast tests+300–400 lines, production+0/-0/net0, public types+0/-0,
+dependencies0 and new paths0; cumulative scope remains45/45. Preserve every
+old named law and oracle. Independent model/source reviews precede acceptance;
+actual healthy/inverse/restored debug and optimized execution remains pending.
+This is the existing manual-request component frontier, not a new proof of
+the separate production Serve acquisition guard. Full R14 remains open.
+
+### Scoped byte and cancellation qualification
+
+Current Runtime0.6/Core031 sourcee5b3673e (731 inputs, limits1a9ce9d0)
+passes the new retained-payload witness in debug and optimized builds. Both
+existing Recorded/Scheduled cold Node cases also pass in each profile, closing
+their current-version execution gap without adding another cancellation test.
+The earlier R06/R13 source reconciliation13af559d retains the precise
+post-processing borrowed-wait cancellation and original-custody scope.
+Formatting and strict optimized remote all-target Clippy pass, including
+warnings and both mandatory extra denies. Independent healthy reviewa132d69c
+rechecks raw outcomes, toolchain, exact source archive and both executables.
+
+The actual already-charged Client semaphore cut R1-to2 fails this witness in
+both profiles at its first complete post-cleanup aggregate. Actual retained
+wire bytes are890 versus445, receipt-owned text230 versus115, and queued User
+payload16 versus8. Native payload custody remains890: accepted/refused890/0
+versus the healthy445/445 split. All four source originals retain their exact
+allocations/bytes through row, unread-prefix and pending-sender settlement.
+Held observations legitimately differ: the excess native reply is queued in
+debug but still arriving in optimized execution. Both fail from the terminal
+byte/ownership observations, without a callback-arrival timing fence.
+
+Client45282b54 and all731 inputs are restored exactly. The original preserved
+healthy executables then pass one actual test per profile; those controls are
+executions of the original artifacts, not fresh restoration compilations.
+Independent final reviewe9bfcd1d accepts these bounded results. Assertions
+after the inverse's first failure are unexecuted: typed refusal/cleanup-result
+success in that later tail is not negative-run evidence. All cleanup calls
+precede the terminal census, and no original is consumed merely to reduce it.
+
+Retained library production+0/-0/net0, public types+0/-0, dependencies0 and
+new paths0. Formatted test delta is+887/-2/net885, above the pre-edit forecast;
+the same already-approved owner remains within45/45. The additional private
+product groups coexisting byte observations only; it supplies no runtime
+observer, allocator, registry, wrapper or aggregate-byte API. Existing named
+test bodies/oracles remain byte-exact apart from module imports. Original
+compiler/lint/format refusals and equivalent corrections retain separate
+source records; passing successors do not erase them. Full R14, conditional
+SDK resource evidence, remaining original requirements and final combined
+gates/minimization/CI/reviewed delivery remain open.
+
 ## Earlier scoped implementation and remaining acceptance (2026-11-20)
 
 The full R01–R25/AUTH1/NET1 scope remains active. Current main integration is
