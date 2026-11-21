@@ -4,20 +4,25 @@ use crate::MailAddr;
 use crate::application::{ApplicationScope, MailboxCapacity};
 use crate::local::endpoint::ExtractLocalEndpoint;
 use crate::remote::export::Exports;
-use crate::remote::{Attempt, IngressError};
+use crate::remote::{
+    Attempt, ConnectionEndpoints, CredentialSource, IngressError, Network, NetworkLayout,
+};
 use behavior::{EstablishedRecipient, MessageProtocol, Never, User};
 use futures_util::FutureExt;
 use futures_util::future::Either;
 use std::cell::{Cell, RefCell};
 use std::future::{Future, poll_fn, ready};
 use std::num::NonZeroUsize;
+use std::path::PathBuf;
 use std::pin::pin;
 use std::rc::Rc;
 use std::sync::{Arc, PoisonError};
 use std::task::Poll;
 use std::time::Duration;
+use tokio::runtime::Builder as RuntimeBuilder;
 use tokio::sync::{Semaphore, TryAcquireError, oneshot};
 use tokio::task::unconstrained;
+use zenoh::handlers::FifoChannel;
 use zenoh::sample::Locality;
 use zenoh_config::{Config, ModeDependentValue, WhatAmI};
 
@@ -542,11 +547,32 @@ async fn retain_requests(retained: usize, responses: usize) {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn held_native_reply_keeps_the_second_request_waiting() {
+    held_replies(ReplyTraffic::Single).await;
+}
+
+#[test]
+fn held_reply_consumer_bounds_a_valid_tls_burst_without_blocking_health() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the finite reply consumer owns its runtime")
+        .block_on(held_replies(ReplyTraffic::Burst));
+}
+
+#[derive(Clone, Copy)]
+enum ReplyTraffic {
+    Single,
+    Burst,
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "one permit trace retains both actual request futures, native originals and cleanup before the saved pre-release observations"
 )]
-async fn held_native_reply_keeps_the_second_request_waiting() {
+async fn held_replies(traffic: ReplyTraffic) {
+    const HEALTH: &str = "bombay/outbound/reply-health";
     tokio::time::timeout(Duration::from_secs(10), async {
         let mut configuration = Config::default();
         configuration.set_mode(Some(WhatAmI::Peer)).unwrap();
@@ -576,17 +602,89 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
             .gossip
             .set_enabled(Some(false))
             .unwrap();
-        let session = zenoh::open(configuration)
-            .await
-            .expect("the actual native Session opens");
+        let (session, peer) = match traffic {
+            ReplyTraffic::Single => (
+                zenoh::open(configuration)
+                    .await
+                    .expect("the actual native Session opens"),
+                None,
+            ),
+            ReplyTraffic::Burst => {
+                let certificates = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                    .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+                let endpoints = |address: String, identity: &str| ConnectionEndpoints {
+                    addresses: vec![address],
+                    certificate: CredentialSource::File(
+                        certificates.join(format!("{identity}-certificate.pem")),
+                    ),
+                    private_key: CredentialSource::File(
+                        certificates.join(format!("{identity}-private-key.pem")),
+                    ),
+                };
+                let network = |layout| Network {
+                    layout,
+                    deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
+                    max_retained_queries: NonZeroUsize::new(3).unwrap(),
+                };
+                let receiving = zenoh::open(
+                    network(NetworkLayout::Peer {
+                        connect: None,
+                        listen: Some(endpoints("localhost:0".into(), "recipient")),
+                    })
+                    .to_configuration()
+                    .unwrap(),
+                )
+                .await
+                .expect("the actual TLS reply peer opens");
+                let [locator]: [_; 1] = receiving
+                    .info()
+                    .locators()
+                    .await
+                    .try_into()
+                    .expect("the peer owns one actual bound TLS endpoint");
+                let caller = zenoh::open(
+                    network(NetworkLayout::Peer {
+                        connect: Some(endpoints(locator.address().as_str().to_owned(), "caller")),
+                        listen: None,
+                    })
+                    .to_configuration()
+                    .unwrap(),
+                )
+                .await
+                .expect("the actual TLS Client Session opens");
+                (caller, Some(receiving))
+            }
+        };
+        let receiving = peer.as_ref().unwrap_or(&session);
+        let locality = match traffic {
+            ReplyTraffic::Single => Locality::SessionLocal,
+            ReplyTraffic::Burst => Locality::Remote,
+        };
         let runtime = session.zid().to_string();
         let key = "bombay/outbound/held-native-permit";
-        let queryable = session
+        let queryable = receiving
             .declare_queryable(key)
-            .allowed_origin(Locality::SessionLocal)
+            .allowed_origin(locality)
             .await
             .expect("the actual local Queryable opens");
-        let scope = ApplicationScope::new().client_capacity(MailboxCapacity::new(2).unwrap());
+        let health = match traffic {
+            ReplyTraffic::Single => None,
+            ReplyTraffic::Burst => Some(
+                session
+                    .declare_queryable(HEALTH)
+                    .allowed_origin(Locality::Remote)
+                    .with(FifoChannel::new(1))
+                    .await
+                    .expect("the actual Client Session owns the independent health callback"),
+            ),
+        };
+        let scope = ApplicationScope::new().client_capacity(
+            MailboxCapacity::new(match traffic {
+                ReplyTraffic::Single => 2,
+                ReplyTraffic::Burst => 3,
+            })
+            .unwrap(),
+        );
         let source = scope
             .external::<MessageProtocol<MailAddr, Box<[u8]>>>()
             .unwrap();
@@ -612,6 +710,12 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
             admitted.push(target.send(&source.recipient(), original).await);
         }
         let authority = RefCell::new(target_address);
+        let (entered, entering) = oneshot::channel();
+        let (release, released) = oneshot::channel();
+        let reply_gate = RefCell::new(match traffic {
+            ReplyTraffic::Single => None,
+            ReplyTraffic::Burst => Some((entered, released)),
+        });
         let mut client = Client::new(
             source,
             key,
@@ -651,14 +755,22 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
                     serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
                 let position = usize::try_from(response.bombay.request_sequence)
                     .map_err(|_| VerificationError::Invalid)?;
-                recorded::verify(
+                let receipt = recorded::verify(
                     &ProtectedMessage {
                         protected: bytes.into(),
                         proof: proof.into(),
                     },
                     &registries[position],
                 )
-                .await
+                .await?;
+                let gate = reply_gate.borrow_mut().take();
+                if let Some((entered, released)) = gate {
+                    let announced = entered.send(());
+                    announced
+                        .expect("the native driver observes the actual verified response wait");
+                    released.await.map_err(VerificationError::Unavailable)?;
+                }
+                Ok::<_, VerificationError>(receipt)
             },
             |receipt: &recorded::Receipt, bytes: &[u8], original: &User<MailAddr, Box<[u8]>>| {
                 let response: ReadReply =
@@ -835,6 +947,9 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
             let native = async {
                 let mut held = Some(held);
                 let mut received = Vec::new();
+                let mut health_observed = Vec::new();
+                let mut entering = Some(entering);
+                let mut release = Some(release);
                 for _ in 0..2 {
                     let query = match held.take() {
                         Some(query) => query,
@@ -882,10 +997,105 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
                         .reply(key, bytes.to_vec())
                         .attachment(response_proof.to_vec())
                         .await;
+                    let mut published = vec![published];
+                    if matches!(traffic, ReplyTraffic::Burst) && position == 0 {
+                        let entered = entering.take().expect("one actual response gate").await;
+                        for _ in 0..3 {
+                            published.push(
+                                query
+                                    .reply(key, bytes.to_vec())
+                                    .attachment(response_proof.to_vec())
+                                    .await,
+                            );
+                        }
+                        let querier = receiving.declare_querier(HEALTH).await.unwrap();
+                        let listener = querier
+                            .matching_listener()
+                            .with(FifoChannel::new(2))
+                            .await
+                            .unwrap();
+                        let initial = querier.matching_status().await.unwrap();
+                        let matched = if initial.matching() {
+                            initial
+                        } else {
+                            loop {
+                                let status = listener.recv_async().await.unwrap();
+                                if status.matching() {
+                                    break status;
+                                }
+                            }
+                        };
+                        let listener_closed = listener.undeclare().await;
+                        let querier_closed = querier.undeclare().await;
+                        let receiving_health = receiving
+                            .get(HEALTH)
+                            .allowed_destination(Locality::Remote)
+                            .payload(vec![149_u8])
+                            .await
+                            .expect("the remote peer submits the independent health Query");
+                        let health_query = health
+                            .as_ref()
+                            .expect("the Client owns health")
+                            .recv_async()
+                            .await
+                            .expect("the actual Client callback progresses");
+                        let health_input = health_query
+                            .payload()
+                            .map(|payload| payload.to_bytes().into_owned());
+                        let health_published = health_query.reply(HEALTH, vec![151_u8]).await;
+                        drop(health_query);
+                        let mut health_replies = Vec::new();
+                        let health_end = loop {
+                            match receiving_health.recv_async().await {
+                                Ok(original) => health_replies.push(original),
+                                Err(cause) => break Err::<(), _>(cause),
+                            }
+                        };
+                        let connections = (
+                            session.zid().to_string(),
+                            receiving.zid().to_string(),
+                            session.info().links().await.collect::<Vec<_>>(),
+                            receiving.info().links().await.collect::<Vec<_>>(),
+                        );
+                        let callback_before_release = {
+                            let refusal = first
+                                .callback_refusal
+                                .lock()
+                                .unwrap_or_else(PoisonError::into_inner);
+                            refusal.as_ref().map(|refusal| match refusal {
+                                IngressError::Capacity { original, cause } => Either::Left((
+                                    original
+                                        .result()
+                                        .map(|sample| {
+                                            (
+                                                sample.payload().to_bytes().into_owned(),
+                                                sample
+                                                    .attachment()
+                                                    .map(|proof| proof.to_bytes().into_owned()),
+                                            )
+                                        })
+                                        .map_err(|error| error.payload().to_bytes().into_owned()),
+                                    match cause {
+                                        TryAcquireError::NoPermits => TryAcquireError::NoPermits,
+                                        TryAcquireError::Closed => TryAcquireError::Closed,
+                                    },
+                                )),
+                                IngressError::Queue { cause } => Either::Right(cause.to_string()),
+                            })
+                        };
+                        let released = release.take().expect("one verifier release").send(());
+                        health_observed.push((
+                            (entered, released),
+                            (health_input, health_published, health_replies, health_end),
+                            (matched, listener_closed, querier_closed),
+                            connections,
+                            callback_before_release,
+                        ));
+                    }
                     drop(query); // Actual native FINAL; no timeout represents EOF.
                     received.push((position, raw, proof, bytes, response_proof, published));
                 }
-                received
+                (received, health_observed)
             };
             let ((), (), received) =
                 tokio::join!(first_wait.as_mut(), second_wait.as_mut(), native);
@@ -898,6 +1108,7 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
                 received,
             )
         };
+        let (received, health_observed) = received;
         let joined_publication = publication.send(());
         // Direct request futures have returned and their borrows have ended.
         <Client<_, _, _, _, _, _, _, _, _, _> as Exports<
@@ -912,11 +1123,151 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
         while let Some(original) = target.receive().await {
             deliveries.push(original);
         }
+        let health_closed = match health {
+            Some(health) => Some(health.undeclare().await),
+            None => None,
+        };
         let withdrawn = queryable.undeclare().await;
         let closed = session.close().await;
+        let peer_closed = match peer.as_ref() {
+            Some(peer) => Some(peer.close().await),
+            None => None,
+        };
+        // Response keeps its native count charge through this completed cleanup;
+        // no ordering between health and the excess Reply callbacks is assumed.
+        let first_callback = {
+            let requests = client.requests.borrow();
+            let refusal = requests[0]
+                .callback_refusal
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner);
+            refusal.as_ref().map(|refusal| match refusal {
+                IngressError::Capacity { original, cause } => Either::Left((
+                    original
+                        .result()
+                        .map(|sample| {
+                            (
+                                sample.payload().to_bytes().into_owned(),
+                                sample
+                                    .attachment()
+                                    .map(|proof| proof.to_bytes().into_owned()),
+                            )
+                        })
+                        .map_err(|error| error.payload().to_bytes().into_owned()),
+                    match cause {
+                        TryAcquireError::NoPermits => TryAcquireError::NoPermits,
+                        TryAcquireError::Closed => TryAcquireError::Closed,
+                    },
+                )),
+                IngressError::Queue { cause } => Either::Right(cause.to_string()),
+            })
+        };
         let (source, _inputs, startup, withdrawal, joined_fact, source_eof_fact, rows, routes) =
             client.into_parts();
         // All native originals, both real EOFs and cleanup precede every oracle.
+        let mut delivered = deliveries
+            .iter()
+            .map(|original| (original.from, original.message))
+            .collect::<Vec<_>>();
+        delivered.sort_unstable();
+        let response_trace = rows
+            .iter()
+            .map(|row| {
+                row.8
+                    .iter()
+                    .map(|response| {
+                        (
+                            response.payload().flatten().copied().collect::<Vec<_>>(),
+                            response
+                                .proof()
+                                .map(|proof| proof.flatten().copied().collect::<Vec<_>>()),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        let expected_responses = received
+            .iter()
+            .map(|native| vec![(native.3.to_vec(), Some(native.4.to_vec()))])
+            .collect::<Vec<_>>();
+        let health_trace = health_observed
+            .iter()
+            .map(|(gate, health, _, _, _)| {
+                (
+                    gate.0.is_ok(),
+                    gate.1.is_ok(),
+                    health.0.as_deref(),
+                    health.1.is_ok(),
+                    health
+                        .2
+                        .iter()
+                        .map(|reply| {
+                            reply
+                                .result()
+                                .as_ref()
+                                .ok()
+                                .map(|sample| sample.payload().to_bytes().into_owned())
+                        })
+                        .collect::<Vec<_>>(),
+                    health.3.is_err(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let expected_health = match traffic {
+            ReplyTraffic::Single => Vec::new(),
+            ReplyTraffic::Burst => vec![(
+                true,
+                true,
+                Some([149_u8].as_slice()),
+                true,
+                vec![Some(vec![151_u8])],
+                true,
+            )],
+        };
+        assert_eq!(
+            (&delivered, response_trace, health_trace),
+            (
+                &vec![(source_address, 0), (source_address, 1)],
+                expected_responses,
+                expected_health
+            )
+        );
+        match traffic {
+            ReplyTraffic::Single => {
+                assert!(
+                    health_closed.is_none() && peer_closed.is_none() && first_callback.is_none()
+                );
+            }
+            ReplyTraffic::Burst => {
+                assert!(
+                    matches!(health_closed, Some(Ok(()))) && matches!(peer_closed, Some(Ok(())))
+                );
+                let Some(Either::Left((Ok((payload, Some(proof))), cause))) = &first_callback
+                else {
+                    panic!("the actual first excess native Reply and capacity cause remain owned");
+                };
+                assert_eq!(payload.as_slice(), received[0].3.as_ref());
+                assert_eq!(proof.as_slice(), received[0].4.as_ref());
+                assert!(matches!(cause, TryAcquireError::NoPermits));
+                for (_, _, (matched, listener_closed, querier_closed), connections, _) in
+                    &health_observed
+                {
+                    assert!(
+                        matched.matching() && listener_closed.is_ok() && querier_closed.is_ok()
+                    );
+                    assert_ne!(connections.0, connections.1);
+                    for links in [&connections.2, &connections.3] {
+                        let [link] = links.as_slice() else {
+                            panic!("one actual TLS link joins the Sessions");
+                        };
+                        assert!(
+                            link.src().to_string().starts_with("tls/")
+                                && link.dst().to_string().starts_with("tls/")
+                        );
+                    }
+                }
+            }
+        }
         assert!(admitted.iter().all(Result::is_ok));
         assert!(declared.is_ok() && withdrawn.is_ok() && closed.is_ok());
         assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
@@ -928,11 +1279,6 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
         assert_eq!(rows.len(), 2);
         assert_eq!(received.len(), 2);
         assert_eq!(deliveries.len(), 2);
-        let mut delivered = deliveries
-            .iter()
-            .map(|original| (original.from, original.message))
-            .collect::<Vec<_>>();
-        delivered.sort_unstable();
         assert_eq!(delivered, [(source_address, 0), (source_address, 1)]);
         for (position, row) in rows.into_iter().enumerate() {
             let (
@@ -967,13 +1313,19 @@ async fn held_native_reply_keeps_the_second_request_waiting() {
             assert_eq!(native.1.as_ref(), originals[position].1.as_slice());
             assert_eq!(encoded.as_ref(), native.1.as_ref());
             assert_eq!(protected.as_ref(), native.2.as_ref());
-            assert!(native.5.is_ok());
-            assert!(
-                refusal.is_none()
-                    && permission.is_none()
-                    && capacity.is_none()
-                    && callback.is_none()
+            assert!(native.5.iter().all(Result::is_ok));
+            assert_eq!(
+                native.5.len(),
+                match (traffic, position) {
+                    (ReplyTraffic::Burst, 0) => 4,
+                    _ => 1,
+                }
             );
+            assert!(refusal.is_none() && permission.is_none() && capacity.is_none());
+            match (traffic, position) {
+                (ReplyTraffic::Burst, 0) => assert!(callback.is_some()),
+                _ => assert!(callback.is_none()),
+            }
             assert!(matches!(query, Attempt::Returned(Ok(()))) && eof.is_some());
             assert!(
                 matches!(protection_panics, (None, None, None))

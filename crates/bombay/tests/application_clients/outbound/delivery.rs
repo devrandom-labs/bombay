@@ -24,52 +24,17 @@ use providers::{
 use reader::{Reader, ReaderReply};
 use requester::{CounterProtectedMeaning, CounterRequests, CounterServiceInput, Scope};
 
-#[derive(Debug, PartialEq, Eq)]
-enum Incompatibility {
-    Wire {
-        required: u64,
-        actual: u64,
-    },
-    Schema {
-        required: u64,
-        actual: u64,
-    },
-    Profile {
-        required: Box<str>,
-        actual: Box<str>,
-    },
-}
-
-fn compatible(
-    actual: &Metadata,
-    wire: u64,
-    schema: u64,
-    profile: &str,
-) -> Result<(), Incompatibility> {
-    if actual.wire_version != wire {
-        return Err(Incompatibility::Wire {
-            required: wire,
-            actual: actual.wire_version,
-        });
-    }
-    if actual.schema_version != schema {
-        return Err(Incompatibility::Schema {
-            required: schema,
-            actual: actual.schema_version,
-        });
-    }
-    if actual.provider_profile.as_ref() != profile {
-        return Err(Incompatibility::Profile {
-            required: profile.into(),
-            actual: actual.provider_profile.clone(),
-        });
-    }
-    Ok(())
-}
+#[path = "../../../../../examples/remote-counter/src/deployment.rs"]
+#[expect(
+    dead_code,
+    reason = "this consumer exercises the application's configured compatibility policy; the actual program owns assignment IO and its finite provider"
+)]
+mod deployment;
+use deployment::{Incompatibility, RequiredTransport, compatible};
 
 #[test]
 fn configured_compatibility_accepts_the_supported_pair() {
-    check_compatibility(1, 1, "read-record-test-v1", None);
+    check_compatibility(1, 1, "read-record-test-v1", RequiredTransport::Tls, None);
 }
 
 #[test]
@@ -78,6 +43,7 @@ fn configured_compatibility_refuses_an_unknown_wire_version() {
         2,
         1,
         "read-record-test-v1",
+        RequiredTransport::Tls,
         Some(Incompatibility::Wire {
             required: 2,
             actual: 1,
@@ -91,6 +57,7 @@ fn configured_compatibility_refuses_an_unknown_schema_version() {
         1,
         2,
         "read-record-test-v1",
+        RequiredTransport::Tls,
         Some(Incompatibility::Schema {
             required: 2,
             actual: 1,
@@ -104,9 +71,23 @@ fn configured_compatibility_refuses_a_different_provider_profile() {
         1,
         1,
         "read-scheduled-test-v1",
+        RequiredTransport::Tls,
         Some(Incompatibility::Profile {
             required: "read-scheduled-test-v1".into(),
             actual: "read-record-test-v1".into(),
+        }),
+    );
+}
+
+#[test]
+fn configured_compatibility_refuses_required_shared_memory() {
+    check_compatibility(
+        1,
+        1,
+        "read-record-test-v1",
+        RequiredTransport::TlsAndSharedMemory,
+        Some(Incompatibility::Transport {
+            required: RequiredTransport::TlsAndSharedMemory,
         }),
     );
 }
@@ -115,7 +96,13 @@ fn configured_compatibility_refuses_a_different_provider_profile() {
     clippy::large_futures,
     reason = "the finite two-Node test keeps its measured 20 KiB concrete future on the runtime thread stack, matching the existing delivery test"
 )]
-fn check_compatibility(wire: u64, schema: u64, profile: &str, refusal: Option<Incompatibility>) {
+fn check_compatibility(
+    wire: u64,
+    schema: u64,
+    profile: &str,
+    transport: RequiredTransport,
+    refusal: Option<Incompatibility>,
+) {
     Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
@@ -124,7 +111,7 @@ fn check_compatibility(wire: u64, schema: u64, profile: &str, refusal: Option<In
         .block_on(async {
             tokio::time::timeout(
                 Duration::from_secs(10),
-                compatibility(wire, schema, profile, refusal),
+                compatibility(wire, schema, profile, transport, refusal),
             )
             .await
             .expect("the actual compatibility consumer and both native cleanups finish");
@@ -138,7 +125,13 @@ fn check_compatibility(wire: u64, schema: u64, profile: &str, refusal: Option<In
     clippy::await_holding_refcell_ref,
     reason = "one real two-Node trace retains caller input, typed incompatibility, protected originals and both native outcomes before independent oracles"
 )]
-async fn compatibility(wire: u64, schema: u64, profile: &str, refusal: Option<Incompatibility>) {
+async fn compatibility(
+    wire: u64,
+    schema: u64,
+    profile: &str,
+    transport: RequiredTransport,
+    refusal: Option<Incompatibility>,
+) {
     let maximum = NonZeroUsize::new(4).unwrap();
     let records = &RefCell::new(Vec::<(Scope, ProtectedMessage)>::new());
     let claims = &RefCell::new(None::<Metadata>);
@@ -381,6 +374,7 @@ async fn compatibility(wire: u64, schema: u64, profile: &str, refusal: Option<In
                     wire,
                     schema,
                     profile,
+                    transport,
                 )
             },
             move |receipt: &recorded::Receipt,
@@ -472,6 +466,30 @@ async fn compatibility(wire: u64, schema: u64, profile: &str, refusal: Option<In
         .expect("the caller bound")
         .expect("the caller association");
     let (listener, visible, listener_withdrawal) = routes;
+    let (increment, before_admission, before) =
+        priming.into_inner().expect("the priming originals remain");
+    let before = before.expect("the independent initial Counter Read");
+    let after = observed.expect("the independent final Counter Read");
+    let (expected_replies, expected_activity): (&[CounterProtectedMeaning], (usize, usize, usize)) =
+        match refusal.as_ref() {
+            Some(_) => (&[], (0, 0, 0)),
+            None => (&[CounterProtectedMeaning::ReadReply(1)], (1, 1, 1)),
+        };
+    assert_eq!(
+        (
+            reader.replies.as_slice(),
+            (verified.get(), constructed.get(), rows.len()),
+            (before.from, before.message),
+            (after.from, after.message),
+        ),
+        (
+            expected_replies,
+            expected_activity,
+            (target, 1),
+            (target, 1)
+        ),
+        "configured ({wire}, {schema}, {profile}, {transport:?}) expected refusal={refusal:?}"
+    );
     assert!(cleanup.is_ok() && caller_cleanup.is_ok() && closed.is_ok() && caller_closed.is_ok());
     assert!(
         polling.is_none()
@@ -502,10 +520,6 @@ async fn compatibility(wire: u64, schema: u64, profile: &str, refusal: Option<In
             && matches!(joined, Some(Ok(())))
     );
     assert!(matches!(listener, Some(Ok(()))) && matches!(listener_withdrawal, Some(Ok(()))));
-    let (increment, before_admission, before) =
-        priming.into_inner().expect("the priming originals remain");
-    let before = before.expect("the independent initial Counter Read");
-    let after = observed.expect("the independent final Counter Read");
     assert!(increment.is_ok() && before_admission.is_ok());
     assert_eq!((before.from, before.message), (target, 1));
     assert_eq!((after.from, after.message), (target, 1));

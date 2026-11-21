@@ -1,6 +1,58 @@
 # Static remote actors and typed admission
 
-## Current implementation and remaining acceptance (2026-11-20)
+## Current compatibility and reply-pressure qualification (2026-11-21)
+
+The full R01–R25/AUTH1/NET1 goal remains active. Scope is now45-of-approved45,
+including the restored Client source cut. This is local scoped qualification,
+with remaining resource/fault/diagnostic evidence and final combined gates,
+minimization, reviewed PR/CI and normal merge still open.
+
+**R05:** actual Runtime0.5/Core030/Engine0.3 and current0.6/Core031/Engine0.4
+programs pass all four caller/receiver pairs in debug and optimized builds.
+Each performs the complete Increment, Read1 and joined Stop journey. Immutable
+old source940f77eb, both executables/profiles and complete locked graphs are
+verified and persistently rooted (2ad8). The shared private deployment policy
+passes five real Application cases per profile: supported TLS and separate
+unknown-wire/schema/profile/required-SHM refusals before native admission.
+
+Omitting only the three version/profile guards yields exactly three failures;
+omitting only the SHM refusal yields exactly one. The first post-cleanup
+aggregate observes actual checked ReadReply1 and native activity1/1/1 instead
+of none/0/0/0, with independent Counter state1 before and after. Supported
+controls still pass. Both full-owner restorations match all731 original inputs;
+saved original healthy binaries pass all five cases again per profile.
+Independent execution reviewd3ba1993 closes this selected R05 law; restoration
+executions are not fresh Cargo compilations. Later negative assertions are
+unexecuted and earn no credit. No negotiation, downgrade, new wire format,
+serialized field, CLI or transport support was added.
+
+**R19 Reply:** the original held-request control and valid TLS burst pass both
+profiles. Four identical authenticated A replies arrive while the first verifier
+is held; same-Session health149/151/EOF progresses, then B completes. Healthy
+delivery is Users0/1 and one original response per row. Raising only the actual
+callback semaphore from declared R1 to R2 produces Users0/0/1 and two identical
+A payload/proof originals at the first post-cleanup aggregate, in both profiles.
+The original Single control still passes. Client45282b54 and all731 inputs are
+restored exactly, and both original healthy cases pass again per profile.
+Healthy review974f6b03 and final independent inverse/restoration reviewaef93e57
+pass. Later negative closure/refusal/custody assertions are unexecuted. This
+proves selected Reply retention/callback progress, not an SDK task baseline or
+whole R19 acceptance.
+
+Executed source7c11aa1f passes formatting and strict optimized Clippy for both
+owning packages/all targets, with both mandatory supplementary denies. Initial
+compile/lint refusals ran no semantic tests and remain separate; narrow
+equivalent corrections are independently revieweda170a7a0/2e42faa9. Private
+example production is+67/-4/net63; tests+505/-76/net429; Nix+58/-0. Production
+library bodies/public types/dependencies are unchanged, with no new framework.
+No untracked input exists; documents are measured separately. This adds
+verification capability and is not code reduction or merged delivery.
+
+Source archives, raw outcomes, original binaries, restoration and review
+records remain in the existing compatibility and r19 acceptance records.
+The earlier dated stages below keep their original source/execution boundaries.
+
+## Earlier scoped implementation and remaining acceptance (2026-11-20)
 
 The full R01–R25/AUTH1/NET1 scope remains active. Current main integration is
 PR444/d98 with Runtime0.6/Engine0.4, selected Behavior/Actors0.31@3a4e,
@@ -376,6 +428,91 @@ paths, five owning test files plus these two requirement records, no untracked
 files: production +0/-0/net0, tests +4233/-133/net4100, public API +0/-0.
 The change remains net-positive verification code, with all production owners,
 locks, SDK features and dependency edges unchanged; cumulative charge40/40.
+
+## R05 actual software-version matrix — approved change record (2026-11-20)
+
+Joel explicitly approved expansion to45 changed paths. Use three new R05 owners:
+deployment.rs, processes.rs and flake.nix. The supported matrix and limits are
+recorded here; the existing example README remains accurate because the CLI,
+assignment contract, fixed schema1, provider profile and ordinary Nix commands
+do not change. This saves the fifth slot for the actual client.rs callback
+capacity inversion beside its owning limits test. No46th path is authorized.
+
+Test the real published Runtime0.5/Core030/Engine0.3 and Runtime0.6/Core031/
+Engine0.4 programs in all four caller/receiver pairs, debug and optimized.
+Each actual TLS exchange performs Increment, Read1 and joined Stop. Preserve
+one fixed wire/schema1; unknown wire/schema and required SHM are explicit typed
+incompatibilities before actor admission, with independent unchanged receiver
+state and normal two-Node cleanup. No adaptation, downgrade, retry or second
+wire format is introduced. Required support is the selected TLS profile; SHM
+remains unselected. This is configured compatibility, not authority from claims.
+
+Reuse the existing deployment/assignment owner, concrete request/reply DTOs,
+process guards, Node and admission ports. Old source is pinned published commit
+940f77eb with its unchanged manifest/lock; no personal checkout or current-source
+overlay. Reuse selected Fenix/Crane buildDepsOnly/buildPackage for actual old
+debug/release binaries, required runtime env paths and only the real consumers.
+Missing fixture is an explicit failure, never a skip or Cargo invocation from
+Rust tests. Default local builds remain SDK-free; no Cargo/flake lock changes,
+new dependency, public library type or runtime framework is planned.
+
+Forecast private example production net40–80, Nix70–120 and tests60–120 lines.
+Existing main/outbound consumer/PRD/status owners are already charged. The
+three new R05 paths plus the two reply-pressure owners use exactly the five
+approved slots. Exact selected lock/contracts and old/package source checks
+remain in compatibility records; actual executables/graphs and all matrix
+outcomes still require verification before any acceptance or delivery claim.
+
+## R19 retained Reply pressure — approved change record (2026-11-21)
+
+The owning client limits test now pairs its original held-request control with
+a valid TLS Reply burst. Use the existing Client, native callback and concrete
+response verifier: hold the first verified response, publish four exact valid A
+copies, acquire independent health on the same Client Session, then release and
+acquire ordinary B. Retained response count is1, pending request count1, native
+query budget2; target capacity3 allows the intended R1-to2 source cut to expose
+all actual Users0/0/1 instead of an earlier target-Full error. Healthy expects
+Users0/1 and exactly one original response per request.
+
+Response.original owns its native sample and count permit through retirement
+until public extraction. The final actual callback refusal is therefore acquired
+while that first response still owns its charge. A pre-release snapshot is only
+an optional observation: independent health is not an ordering fence for all
+other Reply callbacks. No busy polling, sleeps, copied callback, correlation
+field substitutions or stopped R04 candidate is introduced. First post-cleanup
+oracles retain every delivered User, native response byte/proof and health/gate
+fact; later oracles retain original exact refusal, request and closure facts.
+
+User-approved45 scope charges client/tests/limits.rs at41, R05 deployment and
+processes at42–43, and flake.nix at44. Only the actual client.rs callback-budget
+inverse remains reserved45; retained production/API/dependencies0 for this
+reply witness. The new test uses an ordinary runtime entrypoint, preserving the
+original control. Source review83ffe8a0 passes; actual focused debug/optimized,
+inversion/restoration and final execution review remain open. This is Reply
+retention and callback progress, not permission/correlation replacement or
+actor processing before release.
+
+## R20 selected TLS evidence reconciliation (2026-11-21)
+
+Reviewd9452eab reconciles existing wrong-server-root and foreign-credential
+native refusals beside usable protected controls. It compares every old guarded
+input, relevant consumed native guards/fixtures and lock-checksummed SDK source;
+external package blocks stay exact. Only workspace Runtime0.5-to0.6 and
+Engine0.3-to0.4 labels change in those locks. The original4eda root-selection
+falsifier remains at its original0.5/Core031 epoch; fresh55a0.6 positives are
+separate. This is applicability qualification, never a new0.6 negative run.
+
+The selected constructor creates only TLS endpoints, restricts protocols toTLS,
+requires mutual authentication/name checks and disables public-PKI fallback.
+Together with actual bad-root/foreign-credential native errors before protected
+admission, this proves the chosen fixed-profile failure routes do not silently
+fall back to insecure traffic. No additional plaintext mode or Cartesian
+credential campaign is selected by the literal R20 requirement. TLS protects
+each connection; an intermediary terminating a TLS hop can see metadata,
+payload and proof. The finite identity provider supplies no end-to-end secrecy.
+That limit already belongs to the accepted profile and is preserved here.
+Remaining work is final combined-source qualification/minimization/CI/reviewed
+delivery, not a newly demonstrated missing transport implementation.
 
 ## Actual main integration — PR444 (2026-11-20)
 

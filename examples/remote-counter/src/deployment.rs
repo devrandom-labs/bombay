@@ -10,6 +10,65 @@ use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt, AsyncWrite, AsyncWr
 const CONFIGURATION_BYTES: u64 = 262_144;
 const PROFILE: &str = "remote-counter-finite-pairs-v1";
 
+/// Requirements assigned by the operator, never inferred from peer claims.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum RequiredTransport {
+    Tls,
+    #[allow(
+        dead_code,
+        reason = "the configured compatibility consumer requests unsupported shared memory; the Counter program selects TLS"
+    )]
+    TlsAndSharedMemory,
+}
+
+#[derive(Debug, Error, PartialEq, Eq)]
+pub(crate) enum Incompatibility {
+    #[error("required wire version {required:?}, configured version {actual:?}")]
+    Wire { required: u64, actual: u64 },
+    #[error("required schema version {required:?}, configured version {actual:?}")]
+    Schema { required: u64, actual: u64 },
+    #[error("required provider profile does not match configuration")]
+    Profile {
+        required: Box<str>,
+        actual: Box<str>,
+    },
+    #[error("required transport {required:?} is not supported by this TLS-only deployment")]
+    Transport { required: RequiredTransport },
+}
+
+pub(crate) fn compatible(
+    actual: &Metadata,
+    wire: u64,
+    schema: u64,
+    profile: &str,
+    transport: RequiredTransport,
+) -> Result<(), Incompatibility> {
+    if actual.wire_version != wire {
+        return Err(Incompatibility::Wire {
+            required: wire,
+            actual: actual.wire_version,
+        });
+    }
+    if actual.schema_version != schema {
+        return Err(Incompatibility::Schema {
+            required: schema,
+            actual: actual.schema_version,
+        });
+    }
+    if actual.provider_profile.as_ref() != profile {
+        return Err(Incompatibility::Profile {
+            required: profile.into(),
+            actual: actual.provider_profile.clone(),
+        });
+    }
+    match transport {
+        RequiredTransport::Tls => Ok(()),
+        RequiredTransport::TlsAndSharedMemory => Err(Incompatibility::Transport {
+            required: RequiredTransport::TlsAndSharedMemory,
+        }),
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub(crate) enum Role {
@@ -116,6 +175,11 @@ pub(crate) enum Refusal {
     Binding,
     #[error("test deployment scope is not configured")]
     Scope,
+    #[error("test deployment is incompatible: {cause:}")]
+    Incompatible {
+        #[source]
+        cause: Incompatibility,
+    },
     #[error("all six operation and purpose slots are required exactly once")]
     Slots,
     #[error("each operation requires its own request correlation")]
@@ -152,10 +216,9 @@ impl Configuration {
             return Err(Refusal::Slots);
         }
         for grant in &self.grants {
-            if grant.wire_version != 1
-                || grant.schema_version != 1
-                || grant.provider_profile.as_ref() != PROFILE
-                || grant.caller_session.as_ref() != self.caller.runtime.as_str()
+            compatible(grant, 1, 1, PROFILE, RequiredTransport::Tls)
+                .map_err(|cause| Refusal::Incompatible { cause })?;
+            if grant.caller_session.as_ref() != self.caller.runtime.as_str()
                 || grant.runtime_generation.as_ref() != self.receiver.runtime.as_str()
                 || grant.actor_generation != self.receiver.actor
                 || grant.authority_generation != self.revision

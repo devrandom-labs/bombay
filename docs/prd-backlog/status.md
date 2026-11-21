@@ -1,6 +1,21 @@
 # Backlog status and dependencies
 
-Remote Actors current2026-11-20: actual0.6 verifier-capacity, configured
+Remote Actors current2026-11-21: selected R05 local compatibility passes all
+four actual Runtime0.5/0.6 caller/receiver pairs and five configured refusal
+cases per debug/optimized profile. Actual guard omissions detect forbidden
+native Read activity; exact restorations and original healthy controls pass,
+independently reviewedd3ba1993. The valid TLS Reply burst also passes both
+profiles and detects an actual R1-to2 callback-budget cut through an extra User
+and original response; source restoration and healthy controls pass, with final
+independent reviewaef93e57 accepted. The owning
+[qualification record](../prds/static-remote-actors.md#current-compatibility-and-reply-pressure-qualification-2026-11-21)
+retains the source and negative-assertion limits. Scope45 is fully charged.
+Private example policy adds63 net lines; production library/API/dependencies
+stay unchanged. Full R01–R25/AUTH1/NET1 and remaining resource/fault/diagnostic
+evidence, final combined gates/minimization/CI/reviewed delivery remain active.
+Requirement states and reciprocal dependency edges are unchanged.
+
+Earlier scoped record2026-11-20: actual0.6 verifier-capacity, configured
 compatibility and held-startup Stop witnesses have scoped six-run independent
 reviews6345/6141/bf68. Bounded delegation healthy/inverse/restored D/R and
 independent reviewd2e53 now pass. R09 local semantic acceptance465654d1 closes
