@@ -1,5 +1,75 @@
 # Static remote actors and typed admission
 
+## Send-only Stop qualification (2026-11-21)
+
+Actual4f47efd1/731 passes formatting, strict optimized all-target remote Clippy
+with warnings and both mandatory supplementary denies, and the exact new
+application_clients case EACH debug/optimized. Independent healthyf397667b,
+final source-fault/restorationdfbeaaf4 and Root third code review1d2667b3 pass.
+
+One immutable full-authenticated-Binding policy grants Sender Increment401/Read
+and Owner Read/Stop. Actual sender Increment401 and Read403 establish useful
+rights/native Counter1. Otherwise-current authentic sender Stop407 is refused
+by operation membership. The same actual target then returns local User1;
+sibling Users1/2 bracket actual owner Stop409, whose original native admission
+and Established/NoFailuresFound report remain. Four native Query streams are
+fully drained; actual replies1/1/0/1 and all unexpected originals survive through
+Node/Application/Peer cleanup before the first borrowed aggregate. A contrary
+retired target retains its actual nonwaiting Full/Closed original without an
+impossible receive. Same-policy owner admission/report defeats always-denying
+lifecycle. These are declared fake-provider rights, not production cryptography.
+
+Omitting ONLY the three-line operation-membership refusal makes EACH build fail
+the first complete equality at consumer.rs408: Counter User becomes absent,
+owner admission absent, sibling Users1/2 remain, and the acquired report still
+says Established/NoFailuresFound. The metadata/provider/target checks, source
+values and oracle are unchanged. This is a finite native-effect contradiction,
+not a timeout/setup error or a refusal-tag-only check. Later negative tags,
+original/custody and cleanup-success assertions are unexecuted/uncredited; the
+raw pre-oracle cleanup predicates do not confer those later assertions' credit.
+
+Whole consumer and all731 bytes/modes restore exactly before ORIGINAL healthy
+artifact controls EACH build pass. These are saved programs, not fresh healthy
+compilation. Both physical test targets are subsequently restored to original
+healthy bytes after preserving mutants and two fresh unused scans; dependency
+artifacts are not relabelled newly compiled. Four completed copies are gzip-only
+with full decoded hashes and two unused scans before unlink,433252745bytes
+logical file-size reduction, not exclusive APFS/global free-space savings. Raw
+copy paths are retired, never replayed/recreated. Shared unfinished dependencies,
+current valid programs, exact source/packages/raw and required old fixtures stay.
+
+The initial fixture incorrectly returned a child's message recipient. Actual
+E0277/three same Target diagnostics at a498 executed zero tests. The existing
+child EstablishedActor supplies the required installed lifecycle; retaining and
+returning that original capability fixes the handoff without new API/plumbing.
+Unused topology-declared Entity families need no installation: explicit ()
+installation/native contracts apply. No irrelevant family service was added.
+The next2854 strict gate stopped only on assert_is_empty, also zero tests;
+len()==0 preserves the same empty-Ledger oracle and prints the actual count.
+Both narrow corrections were independently reviewed; all failed epochs remain
+preserved. The final source qualifies only after actual strict0/runtime results.
+
+Current retained change is tests+569/-3/net566 in existing consumer.rs;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0,
+45approved/allcharged. The formatted size exceeds the200–350 forecast honestly.
+Every old body/assertion reconstructs byte-exact; imports and the new journey
+are the only additions. Local metadata scope support composes from the existing
+operation-independent wire::current and uniform pre-decode request check plus
+original scope negatives/Stop positives; no repeated Stop Cartesian matrix or
+OtherActor fault is claimed. Records live in acceptance-current/stop. The final
+checkpoint changes only these two task records from actual4f47; other729 inputs
+remain byte/mode-identical, not a new runtime execution.
+
+This closes the selected incoming send-only Stop composition locally, not full
+R11/AUTH1/NET1 or delivery. AUTH1's separate local implementation needs no live
+Zenoh prerequisite; its current-source ID/AUTH map/gates and reviewed delivery
+remain. The isolated C03 rotation/provider-loss source is reviewed but unexecuted;
+its scope includes same-actor progress, not a sibling. SDKscope47 approval is
+still pending; no extra owner/profile/lock edit is inferred. Original automatic
+holds, original05ec unknown cause, all remaining R24/resource/full-goal clauses,
+combined28/Nextest/minimum/CI/distillation and normal recorded merges remain.
+Requirement states and reciprocal dependency edges are unchanged.
+
 ## Initialization-to-export qualification and support reconciliation (2026-11-21)
 
 Actual frozen1be4d0d1/731 passes formatting, strict optimized all-target remote

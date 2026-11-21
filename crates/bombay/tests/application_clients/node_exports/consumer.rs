@@ -4,7 +4,7 @@ use super::actors::{ActorExports, Counters, CountersRole, Creator, Exports, topo
 use super::{assert_exports, assert_retirement};
 use bombay::RetirementOutcome;
 use bombay::actors::ActorExt;
-use bombay::behavior::BehaviorBase;
+use bombay::behavior::{BehaviorBase, User};
 use bombay::entity::{DirectoryConfig, EntityCapacity, EntityId, EntityMetrics, EntityShutdown};
 use bombay::prelude::Completion;
 use bombay::remote::{
@@ -12,13 +12,16 @@ use bombay::remote::{
 };
 use bombay::{
     ActorFailureAssessment, ActorRetirement, ApplicationScope, MailAddr, RetirementAssessment,
+    TrySendError,
 };
 use futures_util::future::Either;
 use std::cell::RefCell;
 use std::error::Error;
 use std::num::NonZeroUsize;
+use std::slice;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
+use tokio::runtime::Builder as RuntimeBuilder;
 use tokio::sync::oneshot;
 
 #[path = "bytes.rs"]
@@ -45,8 +48,8 @@ mod targets;
 mod wire;
 
 use protocol::{
-    EndpointRole, ProtectedMessage, ProviderProfile, configuration, limits, listener_address,
-    recorded, scheduled,
+    Binding, EndpointRole, ProtectedMessage, ProviderProfile, VerificationError, configuration,
+    limits, listener_address, recorded, scheduled,
 };
 use wire::{CounterInput, LedgerInput, Refusal};
 
@@ -72,6 +75,569 @@ fn same_ledger(
     right: &scheduled::Receipt<LedgerInput>,
 ) -> bool {
     scheduled::identity(left) == scheduled::identity(right)
+}
+
+#[test]
+fn send_permission_cannot_retire_an_actor() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the supported native host opens")
+        .block_on(async {
+            tokio::time::timeout(Duration::from_secs(40), Box::pin(stop_permissions()))
+                .await
+                .expect("a watchdog supplies no permission or retirement evidence");
+        });
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one finite permission trace retains four authenticated requests, independent actor effects and all joined originals"
+)]
+async fn stop_permissions() {
+    let mut sender = wire::binding("counter");
+    sender.caller = "sender";
+    let mut owner = wire::binding("counter");
+    owner.caller = "owner";
+    owner.logical_session = 397;
+    let permissions: [(Binding, [CounterInput; 2]); 2] = [
+        (sender, [CounterInput::Increment(401), CounterInput::Read]),
+        (owner, [CounterInput::Read, CounterInput::Stop]),
+    ];
+    let scope = ApplicationScope::new();
+    let mut exports = scope.external::<Exports>().unwrap();
+    let mut values = scope.external::<CounterValue>().unwrap();
+    let mut sibling_values = scope.external::<CounterValue>().unwrap();
+    let application = scope.with_topology(
+        Creator::default().stop_on_shutdown(),
+        topology::Topology::new(),
+    );
+    let maximum = NonZeroUsize::new(4).unwrap();
+    let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    network.max_retained_queries = maximum;
+    let node = application
+        .open_node(network)
+        .await
+        .unwrap_or_else(|(_, _, cause)| {
+            panic!("the actual native Node opens: {cause:?}");
+        });
+    let address = listener_address(node.listen_addresses().await);
+    let runtime = node.runtime_id();
+    let peer = peer::Peer::open(&address).await;
+    let caller = peer.runtime_id();
+    let catalog = RefCell::new(Vec::<(Binding, ProtectedMessage)>::new());
+    let prepared = RefCell::new(Vec::new());
+    let protected_replies = RefCell::new(Vec::new());
+    let bound = RefCell::new(None);
+    let deadline = Instant::now() + Duration::from_secs(30);
+    let current = |receipt: &recorded::Receipt<CounterInput>, runtime: &str, target: MailAddr| {
+        let (principal, allowed) = permissions
+            .iter()
+            .find(|(principal, _)| principal == recorded::identity(receipt).0)
+            .ok_or(Refusal::Scope)?;
+        let scope = recorded::projection(receipt);
+        wire::current(scope, runtime, target, *principal, &caller, deadline)?;
+        if !allowed.contains(&scope.operation) {
+            return Err(Refusal::Scope);
+        }
+        Ok::<_, Refusal>(allowed)
+    };
+    let export = Export::new(
+        peer::COUNTER,
+        ExportLimits {
+            refusals: RefusalRetention::Retain,
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        wire::decode_counter,
+        (
+            reply(wire::increment, wire::processed),
+            (
+                reply(wire::counter_read, wire::value),
+                stop(wire::counter_stop, wire::stopped),
+            ),
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            let catalog = catalog.borrow();
+            let (principal, registered) = catalog
+                .iter()
+                .find(|(_, original)| {
+                    original.protected.as_ref() == bytes && original.proof.as_ref() == proof
+                })
+                .ok_or(VerificationError::Invalid)?;
+            recorded::verify::<CounterInput>(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                slice::from_ref(registered),
+                *principal,
+            )
+            .into_inner()
+        },
+        async |bytes: &[u8], receipt: &recorded::Receipt<CounterInput>| {
+            wire::protect(
+                bytes,
+                recorded::projection(receipt),
+                &protected_replies,
+                maximum,
+            )
+        },
+        same_counter,
+        &current,
+        &current,
+    );
+    let mut node = node.exports(export, async |application| {
+        let admission = exports
+            .send(
+                &application.root().established_recipient(),
+                exports.recipient(),
+            )
+            .await;
+        let original = exports
+            .receive()
+            .await
+            .expect("the actual Creator publishes its children");
+        let counter = original.message.counter.recipient();
+        let sibling = original.message.sibling.recipient();
+        let ledger = original.message.ledger.recipient();
+        let addresses = (
+            application
+                .actor_address(&counter)
+                .expect("the actual Counter is certified"),
+            application
+                .actor_address(&sibling)
+                .expect("the actual sibling is certified"),
+            application
+                .actor_address(&ledger)
+                .expect("the actual Ledger is certified"),
+        );
+        for (principal, sequence, operation) in [
+            (sender, 401, CounterInput::Increment(401)),
+            (sender, 403, CounterInput::Read),
+            (sender, 407, CounterInput::Stop),
+            (owner, 409, CounterInput::Stop),
+        ] {
+            let mut claims = wire::claims(
+                ProviderProfile::Recorded,
+                "counter",
+                &caller,
+                &runtime,
+                addresses.0,
+                sequence,
+            );
+            claims.caller = principal.caller.into();
+            let original = ProtectedMessage {
+                protected: serde_json::to_vec(&wire::Request {
+                    bombay: claims,
+                    kind: protocol::Purpose::Request,
+                    operation,
+                })
+                .unwrap()
+                .into_boxed_slice(),
+                proof: Box::from([181_u8, 191]),
+            };
+            catalog.borrow_mut().push((
+                principal,
+                ProtectedMessage {
+                    protected: original.protected.clone(),
+                    proof: original.proof.clone(),
+                },
+            ));
+            prepared.borrow_mut().push(original);
+        }
+        let target = original.message.counter.clone();
+        *bound.borrow_mut() = Some((admission, original, addresses));
+        Ok::<_, Refusal>(target)
+    });
+    let outcome = node
+        .run_with(|application| {
+            let prepared = &prepared;
+            let bound = &bound;
+            let peer = &peer;
+            let values = &mut values;
+            let sibling_values = &mut sibling_values;
+            async move {
+                let [increment, read, denied_stop, owner_stop] =
+                    <[_; 4]>::try_from(prepared.borrow_mut().drain(..).collect::<Vec<_>>())
+                        .unwrap_or_else(|_| panic!("four actual registered requests precede Work"));
+                let (counter, sibling) = {
+                    let bound = bound.borrow();
+                    let (_, original, _) =
+                        bound.as_ref().expect("actual child binding precedes Work");
+                    (
+                        original.message.counter.recipient(),
+                        original.message.sibling.recipient(),
+                    )
+                };
+                peer.wait_for(peer::COUNTER).await;
+                let mut observations = Vec::new();
+                for request in [&increment, &read, &denied_stop] {
+                    let (mut receiving, refused) = peer.query(peer::COUNTER, request).await;
+                    let mut replies = Vec::new();
+                    while let Some(original) = receiving.recv().await {
+                        replies.push(original);
+                    }
+                    observations.push((replies, refused));
+                }
+                // Contradictory retirement is retained, never turned into a receive
+                // that cannot complete. The same ordinary local sender owns Read.
+                let target_read =
+                    values.try_send(&counter, CounterMessage::Read(values.recipient()));
+                let target_value = match &target_read {
+                    Ok(()) => Attempt::Returned(values.receive().await),
+                    Err(TrySendError::Full(_) | TrySendError::Closed(_)) => Attempt::Unattempted,
+                };
+                let first_increment = sibling_values.try_send(&sibling, CounterMessage::Increment);
+                let first_read = sibling_values
+                    .try_send(&sibling, CounterMessage::Read(sibling_values.recipient()));
+                let first_value = match &first_read {
+                    Ok(()) => Attempt::Returned(sibling_values.receive().await),
+                    Err(TrySendError::Full(_) | TrySendError::Closed(_)) => Attempt::Unattempted,
+                };
+                let (mut receiving, refused) = peer.query(peer::COUNTER, &owner_stop).await;
+                let mut replies = Vec::new();
+                while let Some(original) = receiving.recv().await {
+                    replies.push(original);
+                }
+                observations.push((replies, refused));
+                let second_increment = sibling_values.try_send(&sibling, CounterMessage::Increment);
+                let second_read = sibling_values
+                    .try_send(&sibling, CounterMessage::Read(sibling_values.recipient()));
+                let second_value = match &second_read {
+                    Ok(()) => Attempt::Returned(sibling_values.receive().await),
+                    Err(TrySendError::Full(_) | TrySendError::Closed(_)) => Attempt::Unattempted,
+                };
+                let shutdown = application.shutdown();
+                (
+                    observations,
+                    target_read,
+                    target_value,
+                    first_increment,
+                    first_read,
+                    first_value,
+                    second_increment,
+                    second_read,
+                    second_value,
+                    shutdown,
+                )
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("actual Node Work is issued"));
+    let (
+        export,
+        binding_result,
+        closed,
+        polling,
+        disposal,
+        withdrawal_polling,
+        withdrawal_disposal,
+    ) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("actual Node binding and cleanup originals return"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let (
+        (
+            observations,
+            target_read,
+            target_value,
+            first_increment,
+            first_read,
+            first_value,
+            second_increment,
+            second_read,
+            second_value,
+            shutdown,
+        ),
+        cleanup,
+    ) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("all four real Queries and conditional probes complete"));
+    let peer = peer.close().await;
+    let (inputs, declarations, startup, withdrawal, diagnostics, rows) = export.into_parts();
+    drop((inputs, declarations));
+    let rows = rows
+        .into_iter()
+        .map(|row| {
+            row.try_into_parts()
+                .unwrap_or_else(|_| panic!("every producer returns its original row"))
+        })
+        .collect::<Vec<_>>();
+    let bound = bound.borrow();
+    let (binding_admission, exported, (counter, sibling, ledger)) =
+        bound.as_ref().expect("actual binder originals remain");
+    let target_value = match &target_value {
+        Attempt::Returned(Some(original)) => Some(original),
+        _ => None,
+    };
+    let first_value = match &first_value {
+        Attempt::Returned(Some(original)) => Some(original),
+        _ => None,
+    };
+    let second_value = match &second_value {
+        Attempt::Returned(Some(original)) => Some(original),
+        _ => None,
+    };
+    let owner_stop = rows
+        .iter()
+        .find(|row| {
+            row.2
+                .as_ref()
+                .and_then(|result| result.as_ref().ok())
+                .is_some_and(|receipt| recorded::identity(receipt) == (&owner, 409))
+        })
+        .and_then(|row| match &row.4 {
+            Some(Either::Right(Either::Right(original))) => Some(original),
+            _ => None,
+        });
+    let owner_admission = owner_stop.and_then(|(admission, _)| match admission {
+        Attempt::Returned(Ok(original)) => Some(original),
+        _ => None,
+    });
+    let owner_report = owner_stop.and_then(|(_, report)| report.as_ref());
+    // No contrary Stop/native failure is unwrapped before this independent
+    // complete effect oracle. Both Node and peer cleanup have already returned.
+    eprintln!(
+        "stop permission cleanup: application={} node={} peer={}",
+        cleanup.is_ok(),
+        closed.is_ok(),
+        peer.closed.is_ok()
+    );
+    assert_eq!(
+        (
+            target_value,
+            first_value,
+            second_value,
+            owner_admission,
+            owner_report.map(|report| (report.retirement(), report.failures()))
+        ),
+        (
+            Some(&User::new(*counter, 1)),
+            Some(&User::new(*sibling, 1)),
+            Some(&User::new(*sibling, 2)),
+            Some(&()),
+            Some((
+                RetirementAssessment::Established,
+                ActorFailureAssessment::NoFailuresFound
+            ))
+        )
+    );
+    let owner_report = owner_report.copied();
+    cleanup.expect("actual Application cleanup joins");
+    closed.expect("actual Node Session closes");
+    peer.closed.expect("actual peer Session closes");
+    assert!(shutdown.is_ok() && binding_admission.is_ok());
+    assert!(
+        target_read.is_ok()
+            && first_increment.is_ok()
+            && first_read.is_ok()
+            && second_increment.is_ok()
+            && second_read.is_ok()
+    );
+    assert!(
+        polling.is_none()
+            && disposal.is_none()
+            && withdrawal_polling.is_none()
+            && withdrawal_disposal.is_none()
+    );
+    assert!(
+        matches!(binding_result, Some(Ok(_)))
+            && matches!(startup, Some(Ok(())))
+            && matches!(withdrawal, Some(Ok(())))
+    );
+    assert!(diagnostics.is_empty());
+    assert_eq!(rows.len(), 4);
+    assert_eq!(
+        observations
+            .iter()
+            .map(|(replies, _)| replies.len())
+            .collect::<Vec<_>>(),
+        [1, 1, 0, 1]
+    );
+    for (_, refused) in &observations {
+        let refused = refused.lock().unwrap();
+        assert!(refused.is_none());
+    }
+    let report = report.expect("the actual root report remains");
+    assert_eq!(
+        (report.retirement(), report.failures()),
+        (
+            RetirementAssessment::Established,
+            ActorFailureAssessment::NoFailuresFound
+        )
+    );
+    let notifications = notifications.expect("both original notification receipts remain");
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    let (origin, native) = native.expect("the entire original Creator and descendants remain");
+    assert_eq!(origin.address(), exported.from);
+    assert_retirement(&native);
+    let custody = native.custody().expect("complete Creator custody remains");
+    assert_exports(custody.behavior.base(), &exported.message);
+    assert_eq!(custody.descendants.len(), 3);
+    let mut retired = Vec::new();
+    for child in &custody.descendants {
+        match child {
+            topology::RootRetirements::Counter { origin, retirement } => {
+                assert_retirement(retirement);
+                retired.push(origin.address());
+                if origin.address() == *counter {
+                    assert_eq!(retirement.completion(), Some(&Completion::Stopped));
+                }
+            }
+            topology::RootRetirements::MailLedger { origin, retirement } => {
+                assert_retirement(retirement);
+                assert_eq!(origin.address(), *ledger);
+                assert_eq!(
+                    retirement.custody().unwrap().behavior.base().entries.len(),
+                    0
+                );
+            }
+        }
+    }
+    retired.sort_unstable();
+    let mut expected = [*counter, *sibling];
+    expected.sort_unstable();
+    assert_eq!(retired.as_slice(), expected.as_slice());
+    let catalog = catalog.borrow();
+    for (key, raw, verified, input, native, encoding, protection, publications, refusals, panics) in
+        rows
+    {
+        let receipt = verified
+            .expect("each actual provider returns")
+            .expect("each exact configured pair authenticates");
+        let (principal, sequence) = recorded::identity(&receipt);
+        let scope = recorded::projection(&receipt);
+        let declared: wire::Request<CounterInput> = serde_json::from_slice(&raw.0).unwrap();
+        assert_eq!(
+            (&scope.bombay, scope.kind, &scope.operation),
+            (&declared.bombay, declared.kind, &declared.operation)
+        );
+        let expected_principal = match sequence {
+            401 | 403 | 407 => &sender,
+            409 => &owner,
+            _ => panic!("only four actual authenticated identities are configured"),
+        };
+        assert_eq!(principal, expected_principal);
+        assert!(
+            catalog
+                .iter()
+                .any(|(principal, original)| principal == expected_principal
+                    && original.protected == raw.0
+                    && original.proof == raw.1)
+        );
+        assert!(input.is_none() && matches!(panics, (None, None, None, None, None, None)));
+        if sequence == 407 {
+            assert_eq!(scope.operation, CounterInput::Stop);
+            assert!(matches!(refusals, (Some(Refusal::Scope), None, None)));
+            assert!(
+                key.is_none()
+                    && native.is_none()
+                    && encoding.is_none()
+                    && protection.is_none()
+                    && publications.is_empty()
+            );
+            continue;
+        }
+        assert!(key.is_some() && matches!(refusals, (None, None, None)));
+        match (
+            sequence,
+            native.expect("each permitted operation selects its actual native lane"),
+        ) {
+            (401, Either::Left((constructor, client, admission, received, tail))) => {
+                assert_eq!(scope.operation, CounterInput::Increment(401));
+                assert!(
+                    constructor.is_none()
+                        && matches!(&client, Attempt::Returned(Ok(_)))
+                        && matches!(&admission, Attempt::Returned(Ok(())))
+                );
+                let original = received
+                    .expect("actual correlated receive returns")
+                    .expect("actual processed User remains");
+                assert_eq!(
+                    (original.from, original.message.request_sequence),
+                    (*counter, 401)
+                );
+                assert!(matches!(tail.as_slice(), [None]));
+            }
+            (
+                403,
+                Either::Right(Either::Left((constructor, client, admission, received, tail))),
+            ) => {
+                assert_eq!(scope.operation, CounterInput::Read);
+                assert!(
+                    constructor.is_none()
+                        && matches!(&client, Attempt::Returned(Ok(_)))
+                        && matches!(&admission, Attempt::Returned(Ok(())))
+                );
+                assert_eq!(received, Some(Some(User::new(*counter, 1))));
+                assert!(matches!(tail.as_slice(), [None]));
+            }
+            (409, Either::Right(Either::Right((admission, report)))) => {
+                assert_eq!(scope.operation, CounterInput::Stop);
+                assert!(matches!(&admission, Attempt::Returned(Ok(()))));
+                assert_eq!(report, owner_report);
+            }
+            _ => panic!("native operation must match its actual authenticated identity"),
+        }
+        let encoding = encoding
+            .expect("actual encoder returns")
+            .expect("actual native value encodes");
+        let protection = protection
+            .expect("actual protector returns")
+            .expect("actual pair protects");
+        let expected = match sequence {
+            401 => (
+                "processed",
+                serde_json::json!({"increment":401}),
+                serde_json::json!(401),
+            ),
+            403 => (
+                "read_reply",
+                serde_json::json!("read"),
+                serde_json::json!(1),
+            ),
+            409 => (
+                "stopped",
+                serde_json::json!("stop"),
+                serde_json::json!("retired"),
+            ),
+            _ => unreachable!("the denied row was retained separately"),
+        };
+        let actual: serde_json::Value = serde_json::from_slice(&encoding).unwrap();
+        let kind = serde_json::json!(expected.0);
+        let claims = serde_json::to_value(&scope.bombay).unwrap();
+        assert_eq!(
+            (&actual["kind"], &actual["operation"], &actual["value"]),
+            (&kind, &expected.1, &expected.2)
+        );
+        assert_eq!(actual["bombay"], claims);
+        assert_eq!(actual.as_object().unwrap().len(), 4);
+        assert!(matches!(publications.as_slice(), [Ok(())]));
+        assert!(
+            protected_replies
+                .borrow()
+                .iter()
+                .any(|original| original.protected == encoding && original.proof == protection)
+        );
+        let received = observations
+            .iter()
+            .flat_map(|(replies, _)| replies)
+            .any(|original| {
+                let result = original.result();
+                result.as_ref().is_ok_and(|sample| {
+                    sample.payload().to_bytes().as_ref() == encoding.as_ref()
+                        && sample
+                            .attachment()
+                            .is_some_and(|proof| proof.to_bytes().as_ref() == protection.as_ref())
+                })
+            });
+        assert!(received);
+    }
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

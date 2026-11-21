@@ -1,3 +1,13 @@
+Remote Actors Stop qualification2026-11-21: actual source4f47 passes exact
+send-only/ownerStop case EACH build, format and strict Clippy bothdenies0.
+Membership-only source fault fails first complete native-effect aggregate in
+EACH build; fullsource restores and original-artifact controls pass. Independent
+f397667b/dfbeaaf4 and third1d2667b3 accepted; production/API/deps0, tests+569/-3,
+scope45/45. The [owning record](../prds/static-remote-actors.md#send-only-stop-qualification-2026-11-21)
+retains zero-test compiler epochs, negative-tail and source/executable scopes.
+C03 source is isolated/unexecuted; SDK47 approval pending. Remaining full-goal
+clauses/current combined gates/CI/reviewed delivery and reciprocal edges unchanged.
+
 Remote Actors current2026-11-21: actual failed initialization now leaves zero
 ready native exports; genuine initialized protectedRead control passes EACH
 build. Early-declaration source fault fails intended finite first aggregate in
