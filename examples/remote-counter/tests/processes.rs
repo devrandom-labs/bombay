@@ -598,3 +598,62 @@ async fn wrong_caller_reply_proof_reports_uncertain_read_without_stopping_server
     assert_eq!(receiver_output.stdout.as_slice(), b"");
     // Parent-forced server exit is NOT clean Node/Session shutdown evidence.
 }
+
+#[test]
+fn assignment_eof_returns_failure_after_the_actual_serve_binding() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the ordinary process controller runtime opens")
+        .block_on(async {
+            let directory = Builder::new()
+                .prefix("counter-assignment-eof-")
+                .permissions(Permissions::from_mode(0o700))
+                .tempdir()
+                .expect("a private assignment directory");
+            let socket = directory.path().join("assignment.sock");
+            let certificates = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+            let trace = tokio::time::timeout(Duration::from_secs(40), async {
+                let listener = UnixListener::bind(&socket)?;
+                let mut receiver = Program::start(
+                    ProgramRole::Serve,
+                    Mode::Test,
+                    "localhost:0",
+                    &certificates,
+                    &socket,
+                    directory.path(),
+                )?;
+                let receiver_pid = receiver.child.id();
+                let (binding, mut assignment) = assignment(&listener).await?;
+                let address = receiver.listener_address()?;
+                // Actual published Binding precedes actual EOF. This is not a
+                // signal, killed process, actor crash or invented failure cause.
+                let closed = assignment.shutdown().await;
+                let output = receiver.finish().await?;
+                Ok::<_, io::Error>((receiver_pid, binding, address, closed, output))
+            })
+            .await;
+            let removed = directory.close();
+            let (receiver_pid, binding, address, closed, output) = trace
+                .expect("the natural assignment refusal is finite")
+                .expect("the actual process is reaped");
+            removed.expect("the actual native child is reaped before path removal");
+            // Main disposition sensitivity must reach this after normal exit.
+            let diagnostic =
+                format!("counter listening: {address}\ncounter deployment was refused\n");
+            assert_eq!(
+                (
+                    output.status.code(),
+                    output.stdout.as_slice(),
+                    output.stderr.as_slice()
+                ),
+                (Some(1), b"".as_slice(), diagnostic.as_bytes())
+            );
+            assert_ne!(receiver_pid, process::id());
+            assert_eq!(binding.role, Role::Serve);
+            assert_ne!(binding.runtime, "");
+            assert!(closed.is_ok());
+        });
+}

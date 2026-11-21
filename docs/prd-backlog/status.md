@@ -1,5 +1,27 @@
 # Backlog status and dependencies
 
+Remote Actors process/diagnostic qualification2026-11-21: actual source6f30/731
+passes all four selected cases EACH debug/optimized, format and strict Clippy.
+Capacity omission exposes actual native Read3/no Full versus2/Full despite
+unchanged shippingRead4; main Err-disposition cut exposes exit0versus1 with
+the same natural assignment refusal. Both cuts fail intended first parent
+equalities in both profiles, whole source/shipping binaries restore and saved
+healthy controls pass. Independent532281b2/5d56f0a4 retain original source scopes
+and unexecuted-negative-tail limits in the owning
+[qualification](../prds/static-remote-actors.md#process-pressure-and-diagnostic-qualification-2026-11-21).
+Selected post-join finite inspection also survives actual standard WriteZero;
+retention ends at owner disposal, unavailable/unknown afterward. Permission
+refusal is not uncertain delivery. Tests add754net lines; production/API/deps0,
+scope45/45. Completed copies gzip-only,801325064B logical file reduction.
+Full R23/R25, support/remaining clauses and combined CI/delivery remain open. R07's
+read-only forwarding proposal was stopped by automatic review before code;
+preserve without retry/relocation, alongside existing held candidates. This
+does not alter independent work or original requirement/dependency edges.
+
+Existing response pressure, Stop and lost-reply witnesses remain separate from
+the new actor-mailbox/native-pressure-plus-remote-continuation scope. No public
+example controls/new actor/crash-restart work or dependency-edge change occurs.
+
 Remote Actors deployment/nesting2026-11-21: sourceed106/731 passes deployment1
 and nesting3 cases EACH debug/optimized, format and strict all-target Clippy.
 Actual separate placement-guard and Query-nesting cuts fail the intended native

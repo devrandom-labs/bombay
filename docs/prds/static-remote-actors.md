@@ -1,5 +1,187 @@
 # Static remote actors and typed admission
 
+## Process pressure and diagnostic qualification (2026-11-21)
+
+Current executed source6f30d7b8/731 on signed41376/Runtime0.6 passes formatting
+and strict optimized two-package all-target Clippy with warnings and both
+mandatory supplementary denies. Actual diagnostic, mailbox, assignment-EOF and
+ordinary process cases EACH pass debug and optimized execution. Independent
+healthy review532281b2 and final inverse/restoration review5d56f0a4 pass.
+
+The supported MultiThread1 test host runs its three synchronous sends in one
+actually joined worker task, returning the same affine client and original
+results. Actual capacity2 produces Full, native Reads2/3 and the exact original
+retry; only afterward does the ordinary separate shipping caller perform TLS
+Increment/Read4/Stop. Both process exits and native cleanup results are acquired
+before the complete parent equality. Removing only capacity2 exposes real
+Read3/3 and no returned Full original in EACH profile, failing that equality at
+pressure.rs1641 while shipping Read4 remains unchanged. The child independently
+fails its native User3-versus2 oracle. This proves native actor-mailbox pressure
+and subsequent remote continuation, not a remote Get itself encountering Full.
+
+The ordinary Serve actually opens/listens and publishes its Binding before
+assignment EOF. It returns exit1, empty stdout and the exact bounded deployment
+refusal. Changing only main's Err disposition to success exposes actual exit0
+with identical diagnostics in EACH profile, failing processes.rs646. Ordinary
+success controls still pass under that cut. This is natural assignment refusal,
+not actor crash/restart or a signal used as a cause.
+
+Every cut restores its complete owner/all731 inputs. Main's original physical
+shipping binaries are also restored before six saved-original process controls:
+mailbox, assignment and ordinary success EACH profile pass. Those are original
+artifact executions, not fresh compilation. Four actual negative runs fail
+their first complete parent equality; later negative assertions are unexecuted
+and uncredited. Nested child harness outcomes remain distinct from the root
+harness header/final summary; raw logs and retained child files are preserved.
+
+The diagnostic case uses a real empty standard writer's WriteZero and a fixed
+512-byte successful public-field presentation AFTER actual joined cleanup.
+Original raw-pair/cause/authority references and independently configured
+command/runtime/actor context remain intact. The native BorrowError is a
+zero-sized standard cause: its address identifies the retained field relation,
+not a unique allocation. Its prose is delegated to the actual original standard
+Display, under dispute review7b856948; the earlier hardcoded older text failure
+remains failed/uncredited. No private payload/proof or opaque receipt is logged.
+This case is permission refusal, not uncertain delivery; existing uncertainty
+proofs keep their source scopes. Retention/after-disposal policy below adds no
+history service or inference of nonexecution. Final support reconciliation and
+full R25 remain open.
+
+Initial current-thread fixtures could not satisfy the existing Node host
+precondition; original watchdog failures remain failed, not SDK bug evidence.
+The corrected host/prefix reviews1d4d36c8/483586ba preserve the same client,
+domain values and watchdog. Root's first failed-log reader rejected the Nix tmp
+prefix before reading; kept child files DID remain and were copied/rehashed.
+No disappearance or original05ec cause is inferred. Evidence is in the existing
+acceptance-current/process-diagnostics records, including all prior refusals.
+
+Retained software is tests+766/-12/net754 across three existing owners;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0.
+This adds verification capability, not code reduction. Scope45/45 remains fully
+charged. Twelve completed executable copies are now gzip-only after complete
+restoration hashes and two fresh empty lsof scans each; logical retained-file
+size falls801325064bytes. This is not exclusive APFS/global free space. Raw copy
+paths are retired, never replayed/recreated. Unfinished shared dependencies and
+current valid target outputs, exact sources/packages/raw/.d and old-version
+fixtures remain protected. No new obsolete worktree exists.
+
+Full R01–R25/AUTH1/NET1, remaining readiness/authority/resource/network/support
+clauses, combined gates, distillation, submitted-head CI/review and normal
+recorded merge remain open. No source fault, live compiler or delivered-state
+claim remains from this local batch.
+
+## Bounded diagnostic route — selected pre-edit record (2026-11-21)
+
+Under the existing delegated recommendation policy, select the existing
+scope-owned post-join inspection route recommended in46c2fad6. Keep concrete
+original commands and their trusted configured/provider authority context in
+the existing finite Client/Export/Request rows. Inspect only after acquiring
+the actual joined outcomes. Retention ends when the actual owner is disposed;
+afterward report diagnostic record unavailable and outcome unknown unless
+separately established. No TTL, historical lookup, tombstone, task, callback,
+public type, arbitrary-label metric or telemetry service is selected. Ordinary
+payload-hiding Debug and conditional Error/source remain the existing contract.
+Inspection of a private original is deliberate local access, never safe-to-log
+serialization. This selects the bounded route; it is not execution evidence.
+
+Current41376/locke5fd83cd still selects Runtime0.6/Engine0.4, Behavior/Actors031,
+Address0.3/Communication0.1.7/private Observe/Timers0.2/SDK1.10.10 without patches.
+No owner or dependency contract changes. Existing request/cancellation and
+lost-reply evidence supplies actual uncertainty provenance in its source scope;
+do not relabel a permission refusal as uncertain delivery. The charged
+permissions.rs journey supplies exact acquired command/authority context,
+original typed refusal and joined results for a small presentation-failure law.
+After joining, format through standard io::Write on a finite empty byte slice:
+acquire actual WriteZero outside assertions, then independently inspect the same
+original facts. A sufficient fixed slice supplies the successful public-field
+control. Retain the existing privacy/native-cause oracles and source-mapped
+negative evidence without another source-disconnection campaign. This is a
+failure of the selected real presentation route, not a fictitious runtime sink.
+Post-join source ordering explains why presentation cannot hold retirement.
+
+Expected change30–70 test lines in existing permissions.rs and these records;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new paths0,
+scope45/45. Two source/counterexample reviews precede Root D/R qualification.
+Retention-end truthfulness is an ownership policy, not evidence of remote
+nonexecution. Current final support table/gates and full R25 remain open.
+
+### Forwarding candidate — automatic review hold
+
+The R07 forwarding proposal was stopped by automatic review during the
+read-only acceptance-agent turn, before implementation authorization. Preserve
+its refusal and available planning evidence; do not retry, rephrase or relocate
+the candidate under another requirement. No source change or semantic test
+result follows. This joins the existing stopped correlation/restart candidates;
+it does not stop independent process or diagnostic work. Full goal unchanged.
+
+## Process mailbox pressure and refused assignment — pre-edit (2026-11-21)
+
+The initial current-thread host choice below is superseded: actual d21's child
+fails before binding, and the selected Node::open_node contract rejects every
+non-MultiThread host before SDK opening. Its parent40s watchdog supplies no
+domain acceptance. Failed-child retention and stage observations now preserve
+that boundary; neither changing a timeout nor an SDK bug is claimed.
+
+Use the supported multithread runtime with exactly one worker. Move the actual
+affine ApplicationClient into ONE joined worker task whose entire body is the
+three synchronous try_send calls with no await/blocking/handoff; return the same
+client and all three originals/results to Work. The Counter's ordinary spawned
+task cannot poll between those calls on that one worker. Merely changing the
+runtime flavor while keeping the prefix on block_on's main thread would NOT
+establish this schedule. Return/reuse the same client for the original Full
+retry, conserving its sender identity and sole receive authority. No extra
+sender, actor, protocol, wrapper, runtime owner or API is selected. All existing
+Reads2/3, remote Read4, joined cleanup, source-cut and timing oracles remain.
+The original failed source/log/program and unsuccessful stages retain their
+epochs. This is a test-host correction to satisfy the owning API, not a product
+runtime change or an explanation of the unrelated original05ec watchdogs.
+
+R23 already has actual two-program TLS success, response/client pressure,
+allowed/denied Stop and processed-before-reply loss. Plan55023b4a isolates the
+missing actor-mailbox pressure and natural adverse exit without repeating those
+journeys. Current signed41376/Runtime0.6/Engine0.4, root locke5fd83cd has no
+patches: Behavior/Actors031 own Counter.stop_on_shutdown and Actions;
+Communication0.1.7 owns bounded Full/Closed and exact original recovery;
+Address0.3 owns exact endpoints, private Observe owns joined facts, Timers0.2
+owns timers, SDK1.10.10 owns actual TLS Sessions. Current ApplicationSender
+try_send delegates directly to the exact endpoint; ApplicationScope's existing
+mailbox_capacity selects actor capacity. No dependency contract is changed.
+
+Use only existing processes/pressure.rs and processes.rs. A test-owned receiver
+executes the unchanged ordinary Counter and existing three Export lanes on a
+single-thread runtime at actual actor capacity2. Withhold the ordinary shipping
+caller's assignment until pressure is observed. In one synchronous Work poll,
+two actual Increment sends fill the mailbox and the third returns its original
+Full. No actor can drain between these calls. Then ordinary FIFO Read observes2;
+retry that same retained original exactly once, Read observes3. Only then may
+the ordinary separate shipping caller receive its configuration and perform
+actual TLS Increment/Read4/Stop. Both actual process reaps and joined cleanup
+precede the first complete pressure aggregate. The first Read prevents a false
+pass where an admitted third command skips retry but still ends at4.
+
+Sensitivity omits only this receiver's selected mailbox_capacity2, using the
+existing default. The third send then admits and first Read becomes3, which
+must fail after complete native/process acquisition. This is configuration
+sensitivity, not a mutation of Communication internals. It proves native actor
+mailbox Full/recovery followed by real remote continuation, not that a remote
+Get itself encountered Full. No new actor/Hold message or public-example
+instrumentation is permitted; test-controlled children run only through their
+exact parent, using the existing isolated process-test pattern.
+
+Separately, the unchanged shipping Serve publishes its actual Binding, then
+receives assignment EOF. Existing configure returns Configuration refusal;
+joined Node cleanup and main return actual Exit1 with the bounded cause and
+empty stdout. This is natural post-binding assignment refusal, never a signal,
+crash/restart or timeout-as-cause. A Root-only temporary Err exit-disposition
+cut in the already-charged main owner must expose Exit0 instead; restore the
+complete owner before original success controls. No fault is authorized yet.
+
+Forecast360–550 test lines across these two charged owners and current records;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new paths0,
+cumulative45/45. All original cases/assertions remain intact. Author and
+independent source/counterexample reviews precede Root's shared debug/optimized
+execution. No full R23/NET1 or delivery claim follows from this selected plan.
+
 ## Deployment and nesting qualification (2026-11-21)
 
 Executed sourceed1061aa/731 inputs on signed1a02/Runtime0.6 passes format and

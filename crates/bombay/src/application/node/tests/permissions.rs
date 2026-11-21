@@ -14,7 +14,11 @@ use bombay::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment
 use core::ops::AsyncFn;
 use serde::Serialize;
 use std::cell::{BorrowError, Cell, Ref, RefCell};
+use std::error::Error;
+use std::io::{self, Write};
 use std::num::NonZeroUsize;
+use std::ptr;
+use std::str;
 use std::sync::{Mutex, MutexGuard, TryLockError};
 use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
@@ -190,10 +194,83 @@ async fn borrowed_permission() {
     cleanup.expect("actual Application cleanup joins");
     closed.expect("actual Node Session close succeeds");
     let (origin, native) = native.expect("the complete original Counter root remains");
+    let actor = origin.address();
     let _counter = completed_actor(origin, native);
     let report = report.expect("the actual root report remains independent");
     let notifications = notifications.expect("both actual notification receipts remain");
     let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+    let [request] =
+        <[_; 1]>::try_from(requests).unwrap_or_else(|_| panic!("one actual request is retained"));
+    let (key, raw, verified, input, native, encoding, protection, publications, refusals, panics) =
+        request
+            .try_into_parts()
+            .unwrap_or_else(|_| panic!("the actual request releases its producer loans"));
+    let cause: &BorrowError = refusals
+        .0
+        .as_ref()
+        .expect("the original typed native permission cause remains inspectable");
+    // Presentation starts only after actual join; no writer can hold retirement.
+    let original_cause = ptr::from_ref(cause);
+    let original_pair = (raw.0.as_ptr(), raw.1.as_ptr());
+    let receipt = verified.as_ref().unwrap().as_ref().unwrap();
+    let (authority, sequence) = recorded::identity(receipt);
+    let original_authority = ptr::from_ref(authority);
+    let scope = recorded::projection(receipt);
+    let declared: ReadRequest<CounterOperation> = serde_json::from_slice(&raw.0).unwrap();
+    let runtime = session.zid().to_string();
+    let present = |mut diagnostic: &mut [u8]| {
+        let result = write!(
+            diagnostic,
+            "command={:?}; request={sequence}; deployment={}; caller={}; protocol={}; runtime={}; actor={}; permission={cause}",
+            scope.operation,
+            authority.deployment,
+            authority.caller,
+            authority.protocol,
+            scope.bombay.runtime_generation,
+            scope.bombay.actor_generation
+        );
+        (result, diagnostic.len())
+    };
+    let (failed, _) = present(&mut []);
+    let mut diagnostic = [0_u8; 512];
+    let (written, remaining) = present(&mut diagnostic);
+    let text = str::from_utf8(&diagnostic[..diagnostic.len() - remaining]).unwrap();
+    let native_text = cause.to_string();
+    let expected = format!(
+        "command=Read; request={}; deployment={}; caller={}; protocol={}; runtime={runtime}; actor={}; permission={native_text}",
+        declared.bombay.request_sequence,
+        binding.deployment,
+        binding.caller,
+        binding.protocol,
+        actor.0
+    );
+    let failed_kind = failed.as_ref().err().map(io::Error::kind);
+    let written = written.as_ref().map_err(io::Error::kind).copied();
+    let retained_cause = refusals.0.as_ref().map(ptr::from_ref);
+    let retained_pair = (raw.0.as_ptr(), raw.1.as_ptr());
+    let retained_authority = ptr::from_ref(recorded::identity(receipt).0);
+    let native_source = cause.source();
+    assert_eq!(
+        (
+            failed_kind,
+            written,
+            text,
+            retained_cause,
+            retained_pair,
+            retained_authority,
+            recorded::identity(receipt)
+        ),
+        (
+            Some(io::ErrorKind::WriteZero),
+            Ok(()),
+            expected.as_str(),
+            Some(original_cause),
+            original_pair,
+            original_authority,
+            (&binding, declared.bombay.request_sequence)
+        )
+    );
+    assert!(native_source.is_none());
     assert_eq!(report.retirement(), RetirementAssessment::Established);
     assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
     assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
@@ -202,16 +279,6 @@ async fn borrowed_permission() {
     assert!(matches!(bound, Some(Ok(_))));
     assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
     assert!(diagnostics.is_empty() && ending.is_err() && shutdown.is_ok() && session.is_closed());
-    let [request] =
-        <[_; 1]>::try_from(requests).unwrap_or_else(|_| panic!("one actual request is retained"));
-    let (key, raw, verified, input, native, encoding, protection, publications, refusals, panics) =
-        request
-            .try_into_parts()
-            .unwrap_or_else(|_| panic!("the actual request releases its producer loans"));
-    let _cause: &BorrowError = refusals
-        .0
-        .as_ref()
-        .expect("the original typed native permission cause remains inspectable");
     assert!(key.is_none());
     assert_eq!(raw.0, original.protected);
     assert_eq!(raw.1, original.proof);
