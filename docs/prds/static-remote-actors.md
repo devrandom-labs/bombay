@@ -791,7 +791,7 @@ is preserved; no old Runtime0.5 proof is adopted. Test-only lint successors
 preserve bodies/oracles except equivalent Option branching and typed empty
 vector equality; their source reviews9ca97 and final combined execution remain
 separate. Existing tests, assertions and deadlines stay intact. Initial E0716,
-SDK capacity, parent/event-contract and SendProduct syntax refusals ran no
+SDK capacity, parent event contract and named send-effect syntax refusals ran no
 accepted semantic regression and remain preserved as such.
 
 ## R09/AUTH-03 bounded delegation — decision and pre-edit record
