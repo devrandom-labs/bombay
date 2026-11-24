@@ -1,10 +1,11 @@
 //! Two ordinary programs use real TLS and one bounded assignment each.
-use bombay::remote::Metadata;
+use bombay::remote::{Metadata, json::Limits};
 use serde_json::json;
 use std::env;
 use std::fs::{File, Permissions};
 use std::future::poll_fn;
 use std::io::{self, Read};
+use std::num::NonZeroUsize;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process::{self, Child, Command, Output, Stdio};
@@ -656,4 +657,59 @@ fn assignment_eof_returns_failure_after_the_actual_serve_binding() {
             assert_ne!(binding.runtime, "");
             assert!(closed.is_ok());
         });
+}
+
+#[tokio::test]
+async fn controlled_assignment_end_refuses_after_the_original_binding() {
+    let serving = Binding {
+        role: Role::Serve,
+        runtime: "controlled-serving-runtime".into(),
+        actor: 11,
+    };
+    let caller = Binding {
+        role: Role::Call,
+        runtime: "controlled-caller-runtime".into(),
+        actor: 17,
+    };
+    let configured = provision(&caller, &serving, ReplyProof::Matching).unwrap();
+    let limits = Limits {
+        input_bytes: NonZeroUsize::new(8192).unwrap(),
+        proof_bytes: NonZeroUsize::new(32).unwrap(),
+        token_bytes: NonZeroUsize::new(1024).unwrap(),
+        nesting: NonZeroUsize::new(8).unwrap(),
+        parser_states: NonZeroUsize::new(32).unwrap(),
+    };
+
+    for assigned in [None, Some(configured.as_slice())] {
+        let (owner, controller) = tokio::io::duplex(8192);
+        let (owner_input, owner_output) = tokio::io::split(owner);
+        let (controller_input, mut controller_output) = tokio::io::split(controller);
+        let configure =
+            deployment::configure(&serving, BufReader::new(owner_input), owner_output, &limits);
+        let provide = async {
+            let mut input = BufReader::new(controller_input.take(8193));
+            let mut published = Vec::new();
+            input.read_until(b'\n', &mut published).await.unwrap();
+            if let Some(assignment) = assigned {
+                controller_output.write_all(assignment).await.unwrap();
+            }
+            controller_output.shutdown().await.unwrap();
+            published
+        };
+        let (result, published) = tokio::time::timeout(Duration::from_secs(5), async {
+            tokio::join!(configure, provide)
+        })
+        .await
+        .expect("the controlled assignment and its actual output both settle");
+
+        assert!(published.len() <= 8192);
+        assert_eq!(published.last(), Some(&b'\n'));
+        let actual: Binding = serde_json::from_slice(&published).unwrap();
+        assert_eq!(actual, serving);
+        match (assigned, result) {
+            (None, Err(deployment::Refusal::Configuration)) => {}
+            (Some(_), Ok(assignment)) => assert_eq!(assignment.caller(), &caller),
+            _ => panic!("EOF refuses the assignment while the complete assignment remains usable"),
+        }
+    }
 }

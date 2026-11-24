@@ -614,18 +614,23 @@ qualification records retain the individual source and build profiles.
 | `actor_mailbox_pressure_recovers_across_real_counter_programs` retains the capacity-two Full original and observes Read 2, retry, native Read 3 and ordinary TLS Read 4. | `full_append_retries_the_same_message_after_capacity_returns` holds actual native capacity, preserves the same original during Full, and observes its single admission after capacity returns. Its revoked companion observes the preserved original refused after rechecking authority. |
 | `denied_stop_preserves_a_live_counter_in_a_separate_program` preserves a readable actor. `matching_stop_retires_the_same_separate_counter` acquires the actual retirement receipt. | `send_permission_cannot_retire_an_actor` observes an authenticated send-only Stop refusal before native control, successful permitted Read and owner Stop. Joined retirement is acquired from that exact target. |
 | `processed_increment_without_publication_is_uncertain` observes receiver processing and ordinary caller exit 2. | The passing C-10 scenario withholds actual reply publication after native processing, retains the caller's exact originals and terminal empty response lists, and observes later independent progress. The caller's processed-receipt list stays empty for those originals. |
-| `assignment_eof_returns_failure_after_the_actual_serve_binding` observes assignment EOF, the application error and exit 1. | The process test itself fixes this chronology by closing the original assignment stream after Binding. An independent scheduler scenario with the same classification remains open. |
+| `assignment_eof_returns_failure_after_the_actual_serve_binding` observes assignment EOF, the application error and exit 1. | `controlled_assignment_end_refuses_after_the_original_binding` uses the same assignment reader. Its controller compares the exact framed Binding, then closes its write end. The owning reader returns the exact configuration refusal. Supplying a complete assignment at the same point yields a usable assignment for the configured caller. |
 
-Each entry maps the shared semantic observation. The independent exit
-classification and broader R24 scheduling acceptance remain open.
+Each entry maps the shared semantic observation. The broader R24 scheduling
+acceptance and combined R23 delivery gates remain open.
 
 The selected exit-classification fixture uses the existing deployment
 assignment reader over a bounded duplex stream. Its controller first reads
 the exact published Binding, then closes its write end or supplies a complete
 existing assignment. The paired results must be the owning configuration
 refusal and usable assignment respectively. The existing OS-process test owns
-the final diagnostic and exit status. This candidate uses the already charged
-`processes.rs` test owner and changes zero production lines, types or dependencies.
+the final diagnostic and exit status. Both named tests passed under pinned Nix
+in debug and optimized builds. Formatting and strict package Clippy passed.
+The independent review added the original controller's exact frame bound to
+the controlled observation. Source and logs are in
+`acceptance-current/process-assignment`. The already charged `processes.rs`
+test owner adds 57 lines and removes one import line. Production lines, public
+types and dependencies remain at zero.
 
 ## Bounded diagnostic route — selected pre-edit record (2026-11-21)
 
