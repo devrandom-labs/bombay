@@ -1,5 +1,18 @@
 # Static remote actors and typed admission
 
+## Admission, pressure, and retirement delivery (2026-11-24)
+
+PR #445 merged to main at 15:15:45 UTC as `1dfb22d7a277ee5ab2fdae68366bb409f2f76860`.
+All eight checks passed on the final head `063d8970`. Its tested preview and
+the merge have the same tree `389bc9a33f1523c8dd35849034413b83bf77877f`.
+[Merged PR](https://github.com/devrandom-labs/bombay/pull/445)
+[Passing Nix CI](https://github.com/devrandom-labs/bombay/actions/runs/45392080906/job/138438140064)
+
+The delivered witnesses cover pending close, joined retirement, bounded
+admission and request custody, reply pressure, reconnect, mixed Runtime 0.5/0.6
+communication, failed initialization, and Stop authority. The broader
+R01–R25, AUTH1, and NET1 acceptance remains open.
+
 ## Router recovery and drain expiry — C-08 (2026-11-24)
 
 One existing Node retirement test owner will combine the four events around

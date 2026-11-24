@@ -1,3 +1,7 @@
+Remote Actors delivery (2026-11-24). PR #445 merged as `1dfb22d7` after all
+eight checks passed. Full R01–R25, AUTH1, and NET1 acceptance remains open.
+See the [delivery record](../prds/static-remote-actors.md#admission-pressure-and-retirement-delivery-2026-11-24).
+
 Remote Actors C-03 verification (2026-11-24). The concrete rotation,
 provider-loss, revocation and recovery case passes debug and release, formatting
 and strict Clippy. Both defect checks expose the additional revoked native
