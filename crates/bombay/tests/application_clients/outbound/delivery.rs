@@ -2,13 +2,15 @@
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Step, Stopped, User};
 use bombay::prelude::Application;
-use bombay::remote::{Client, ClientLimits};
+use bombay::remote::{Attempt, Client, ClientLimits};
 use bombay::remote::{Export, ExportLimits, Metadata, RefusalRetention, reply};
 use bombay::{ActorFailureAssessment, ApplicationScope, MailAddr, RetirementAssessment};
+use futures_util::future::{Either, join};
 use std::cell::Cell;
 use std::cell::RefCell;
 use std::num::NonZeroUsize;
 use std::time::{Duration, Instant};
+use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 
 use super::super::ledger::{LedgerCommand, MailLedger};
@@ -21,6 +23,614 @@ use providers::{
 };
 use reader::{Reader, ReaderReply};
 use requester::{CounterProtectedMeaning, CounterRequests, CounterServiceInput, Scope};
+
+#[path = "../../../../../examples/remote-counter/src/deployment.rs"]
+#[expect(
+    dead_code,
+    reason = "this consumer exercises the application's configured compatibility policy; the actual program owns assignment IO and its finite provider"
+)]
+mod deployment;
+use deployment::{Incompatibility, RequiredTransport, compatible};
+
+#[test]
+fn configured_compatibility_accepts_the_supported_pair() {
+    check_compatibility(1, 1, "read-record-test-v1", RequiredTransport::Tls, None);
+}
+
+#[test]
+fn configured_compatibility_refuses_an_unknown_wire_version() {
+    check_compatibility(
+        2,
+        1,
+        "read-record-test-v1",
+        RequiredTransport::Tls,
+        Some(Incompatibility::Wire {
+            required: 2,
+            actual: 1,
+        }),
+    );
+}
+
+#[test]
+fn configured_compatibility_refuses_an_unknown_schema_version() {
+    check_compatibility(
+        1,
+        2,
+        "read-record-test-v1",
+        RequiredTransport::Tls,
+        Some(Incompatibility::Schema {
+            required: 2,
+            actual: 1,
+        }),
+    );
+}
+
+#[test]
+fn configured_compatibility_refuses_a_different_provider_profile() {
+    check_compatibility(
+        1,
+        1,
+        "read-scheduled-test-v1",
+        RequiredTransport::Tls,
+        Some(Incompatibility::Profile {
+            required: "read-scheduled-test-v1".into(),
+            actual: "read-record-test-v1".into(),
+        }),
+    );
+}
+
+#[test]
+fn configured_compatibility_refuses_required_shared_memory() {
+    check_compatibility(
+        1,
+        1,
+        "read-record-test-v1",
+        RequiredTransport::TlsAndSharedMemory,
+        Some(Incompatibility::Transport {
+            required: RequiredTransport::TlsAndSharedMemory,
+        }),
+    );
+}
+
+#[expect(
+    clippy::large_futures,
+    reason = "the finite two-Node test keeps its measured 20 KiB concrete future on the runtime thread stack, matching the existing delivery test"
+)]
+fn check_compatibility(
+    wire: u64,
+    schema: u64,
+    profile: &str,
+    transport: RequiredTransport,
+    refusal: Option<Incompatibility>,
+) {
+    Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the existing two-worker runtime is available")
+        .block_on(async {
+            tokio::time::timeout(
+                Duration::from_secs(10),
+                compatibility(wire, schema, profile, transport, refusal),
+            )
+            .await
+            .expect("the actual compatibility consumer and both native cleanups finish");
+        });
+}
+
+#[expect(
+    clippy::large_futures,
+    clippy::too_many_lines,
+    clippy::result_large_err,
+    clippy::await_holding_refcell_ref,
+    reason = "one real two-Node trace retains caller input, typed incompatibility, protected originals and both native outcomes before independent oracles"
+)]
+async fn compatibility(
+    wire: u64,
+    schema: u64,
+    profile: &str,
+    transport: RequiredTransport,
+    refusal: Option<Incompatibility>,
+) {
+    let maximum = NonZeroUsize::new(4).unwrap();
+    let records = &RefCell::new(Vec::<(Scope, ProtectedMessage)>::new());
+    let claims = &RefCell::new(None::<Metadata>);
+    let caller_identity = &RefCell::new(None::<String>);
+    let encoded = &RefCell::new(Vec::new());
+    let constructed = &Cell::new(0);
+    let verified = &Cell::new(0);
+    let priming = RefCell::new(None);
+    let (started, observed) = oneshot::channel();
+    let started = RefCell::new(Some(started));
+    let receiver = Application::new(Counter::new().stop_on_shutdown())
+        .open_node(protocol::configuration(
+            "tls/localhost:0",
+            &protocol::EndpointRole::Receiver,
+        ))
+        .await
+        .unwrap_or_else(|_| panic!("the real compatible receiver opens"));
+    let address = protocol::listener_address(receiver.listen_addresses().await);
+    let receiver_id = receiver.runtime_id();
+    let export = Export::new(
+        "bombay/outbound/compatibility",
+        ExportLimits {
+            refusals: RefusalRetention::Retain,
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes: &[u8]| serde_json::from_slice::<ReadRequest>(bytes),
+        reply(
+            |request: ReadRequest| match request.operation {
+                CounterOperation::Read => {
+                    constructed.set(constructed.get() + 1);
+                    Ok::<_, ReadRequest>(CounterMessage::Read)
+                }
+            },
+            |receipt: &recorded::Receipt, original: &User<MailAddr, u64>| {
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &recorded::projection(receipt).0.bombay,
+                    kind: Purpose::ReadReply,
+                    operation: CounterOperation::Read,
+                    value: &original.message,
+                })
+                .map(Vec::into_boxed_slice)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            verified.set(verified.get() + 1);
+            recorded::verify(
+                &ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                },
+                records,
+            )
+            .await
+        },
+        async |bytes: &[u8], receipt: &recorded::Receipt| {
+            let parsed: ReadReply =
+                serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+            if parsed.bombay != recorded::projection(receipt).0.bombay
+                || parsed.kind != Purpose::ReadReply
+                || parsed.operation != CounterOperation::Read
+            {
+                return Err(VerificationError::Invalid);
+            }
+            recorded::protect(bytes, receipt, records).await
+        },
+        |left, right| recorded::projection(left).1 == recorded::projection(right).1,
+        |receipt: &recorded::Receipt, runtime: &str, target: MailAddr| {
+            let actual = recorded::projection(receipt).0;
+            if claims.borrow().as_ref() == Some(&actual.bombay)
+                && actual.kind == Purpose::Request
+                && actual.operation == CounterOperation::Read
+                && actual.bombay.runtime_generation.as_ref() == runtime
+                && actual.bombay.actor_generation == target.0
+            {
+                Ok(())
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        },
+        |receipt: &recorded::Receipt, runtime: &str, target: MailAddr| {
+            let actual = recorded::projection(receipt).0;
+            if claims.borrow().as_ref() == Some(&actual.bombay)
+                && actual.bombay.runtime_generation.as_ref() == runtime
+                && actual.bombay.actor_generation == target.0
+            {
+                Ok(())
+            } else {
+                Err(VerificationError::Invalid)
+            }
+        },
+    );
+    let mut receiver = receiver.exports(export, async |application| {
+        let target = application.root().established_recipient();
+        let target_address = application
+            .actor_address(&target)
+            .expect("the actual receiving Counter");
+        let mut counter = application
+            .client::<CounterValue>()
+            .expect("independent ordinary Counter client");
+        let increment = counter.send(CounterMessage::Increment).await;
+        let admission = counter
+            .send(CounterMessage::Read(counter.recipient()))
+            .await;
+        let original = counter.receive().await;
+        *priming.borrow_mut() = Some((increment, admission, original));
+        let published = started
+            .borrow_mut()
+            .take()
+            .expect("one startup publication")
+            .send((target_address, application.lifecycle(), counter));
+        published.unwrap_or_else(|_| panic!("the independent caller retains startup receiving"));
+        Ok::<_, VerificationError>(target)
+    });
+    let outgoing = async {
+        let (target, lifecycle, mut counter) =
+            observed.await.expect("the receiver is actually primed");
+        let scope = ApplicationScope::new();
+        let requests = scope.external::<CounterRequests>().unwrap();
+        let mut logical = logical_scope();
+        logical.identity.binding.actor_generation = target.0;
+        let reader = Reader {
+            service: requests.recipient(),
+            scope: logical,
+            replies: Vec::new(),
+        };
+        let caller = scope
+            .with_root(
+                reader.with_deadline(Some(Instant::now() + Duration::from_secs(1)), |_| {
+                    Step::Stop(Stopped)
+                }),
+            )
+            .open_node(protocol::configuration(
+                &address,
+                &protocol::EndpointRole::Caller,
+            ))
+            .await
+            .unwrap_or_else(|_| panic!("the real configured caller opens"));
+        let caller_id = caller.runtime_id();
+        *caller_identity.borrow_mut() = Some(caller_id.clone());
+        let mut configured = metadata(ProviderProfile::Recorded, caller_id.clone(), receiver_id);
+        configured.actor_generation = target.0;
+        *claims.borrow_mut() = Some(configured);
+        let client = Client::new(
+            requests,
+            "bombay/outbound/compatibility",
+            ClientLimits {
+                concurrent_requests: maximum,
+                retained_requests: maximum,
+                retained_responses: maximum,
+            },
+            limits(),
+            Duration::from_secs(20),
+            move |original: &User<MailAddr, CounterServiceInput>,
+                  runtime: &str,
+                  target: MailAddr| {
+                if original.from != target || caller_identity.borrow().as_deref() != Some(runtime) {
+                    return Err(VerificationError::Invalid);
+                }
+                match original.message {
+                    CounterServiceInput::Verify(sequence)
+                        if sequence == logical.identity.sequence =>
+                    {
+                        let bytes = serde_json::to_vec(&ReadRequestRef {
+                            bombay: claims
+                                .borrow()
+                                .as_ref()
+                                .expect("configured receiver declarations"),
+                            kind: Purpose::Request,
+                            operation: CounterOperation::Read,
+                        })
+                        .map_err(VerificationError::Declaration)?
+                        .into_boxed_slice();
+                        encoded.borrow_mut().push(bytes.to_vec());
+                        Ok(Some(bytes))
+                    }
+                    CounterServiceInput::ProtectedConsumed {
+                        correlation,
+                        purpose,
+                    } if correlation == logical.identity.sequence
+                        && purpose == requester::CounterProofPurpose::ReadReply =>
+                    {
+                        Ok(None)
+                    }
+                    _ => Err(VerificationError::Invalid),
+                }
+            },
+            async move |bytes: &[u8], _: &User<MailAddr, CounterServiceInput>| {
+                recorded::protect_request(
+                    bytes,
+                    claims
+                        .borrow()
+                        .as_ref()
+                        .expect("the actual configured claims"),
+                    logical,
+                    records,
+                )
+                .await
+            },
+            async |bytes: &[u8], proof: &[u8]| {
+                recorded::verify(
+                    &ProtectedMessage {
+                        protected: bytes.into(),
+                        proof: proof.into(),
+                    },
+                    records,
+                )
+                .await
+            },
+            move |receipt: &recorded::Receipt,
+                  bytes: &[u8],
+                  original: &User<MailAddr, CounterServiceInput>| {
+                let parsed: ReadReply =
+                    serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+                let (protected, actual) = recorded::projection(receipt);
+                if protected.bombay != parsed.bombay
+                    || claims.borrow().as_ref() != Some(&parsed.bombay)
+                    || protected.kind != Purpose::ReadReply
+                    || parsed.kind != Purpose::ReadReply
+                    || parsed.operation != CounterOperation::Read
+                    || actual != logical
+                    || !matches!(original.message, CounterServiceInput::Verify(sequence) if sequence == logical.identity.sequence)
+                {
+                    return Err(VerificationError::Invalid);
+                }
+                Ok(ReaderReply {
+                    scope: actual,
+                    meaning: CounterProtectedMeaning::ReadReply(parsed.value),
+                })
+            },
+            move |_: &User<MailAddr, CounterServiceInput>, _: &str, _: MailAddr| {
+                compatible(
+                    claims
+                        .borrow()
+                        .as_ref()
+                        .expect("the trusted configured destination"),
+                    wire,
+                    schema,
+                    profile,
+                    transport,
+                )
+            },
+            move |receipt: &recorded::Receipt,
+                  original: &User<MailAddr, CounterServiceInput>,
+                  runtime: &str,
+                  target: MailAddr| {
+                let (protected, actual) = recorded::projection(receipt);
+                if original.from == target
+                    && caller_identity.borrow().as_deref() == Some(runtime)
+                    && actual == logical
+                    && claims.borrow().as_ref() == Some(&protected.bombay)
+                    && protected.kind == Purpose::ReadReply
+                {
+                    Ok(())
+                } else {
+                    Err(VerificationError::Invalid)
+                }
+            },
+        );
+        let mut caller = caller.exports(client, async |application| {
+            Ok::<_, bombay::remote::ExportError>(application.root().established_recipient())
+        });
+        let outcome = caller
+            .run()
+            .await
+            .unwrap_or_else(|_| panic!("the configured caller starts normally"));
+        let terminal = caller
+            .into_parts()
+            .unwrap_or_else(|_| panic!("the actual caller closes"));
+        let admission = counter
+            .send(CounterMessage::Read(counter.recipient()))
+            .await;
+        let observed = counter.receive().await;
+        let shutdown = lifecycle.shutdown();
+        let retirement = lifecycle.retirement().await;
+        (
+            target, outcome, terminal, admission, observed, shutdown, retirement,
+        )
+    };
+    let (receiving, outgoing) = join(receiver.run(), outgoing).await;
+    let receiving = receiving.unwrap_or_else(|_| panic!("the real receiver ran"));
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+        receiver
+            .into_parts()
+            .unwrap_or_else(|_| panic!("all native receiver owners joined"));
+    let (work, report, native, notifications, ()) = receiving.into_parts();
+    let (_, cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the receiver has genuine Work absence"));
+    let report = report.expect("the receiver retirement report");
+    let (origin, native) = native.expect("the actual receiver state");
+    let _counter = completed_actor(origin, native);
+    let notifications = notifications.expect("both receiver publications");
+    notifications
+        .termination
+        .expect("receiver termination publication");
+    notifications
+        .retirement
+        .expect("receiver retirement publication");
+    let (_, _, startup, withdrawn, diagnostics, rows) = export.into_parts();
+    let receiver_bound = bound.expect("the receiver bound");
+    let (target, caller_outcome, terminal, admission, observed, shutdown, retirement) = outgoing;
+    let (
+        client,
+        caller_bound,
+        caller_closed,
+        caller_polling,
+        caller_disposal,
+        caller_withdrawal_polling,
+        caller_withdrawal_disposal,
+    ) = terminal;
+    let (work, caller_report, native, notifications, ()) = caller_outcome.into_parts();
+    let (_, caller_cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the Reader has genuine Work absence"));
+    let (origin, native) = native.expect("the actual Reader state");
+    let caller_address = origin.address();
+    let retained = completed_actor(origin, native);
+    let reader = retained.base();
+    let notifications = notifications.expect("both caller publications");
+    notifications
+        .termination
+        .expect("caller termination publication");
+    notifications
+        .retirement
+        .expect("caller retirement publication");
+    let (source, _, started, withdrawn_client, joined, _, requests, routes) = client.into_parts();
+    let caller_target = caller_bound
+        .expect("the caller bound")
+        .expect("the caller association");
+    let (listener, visible, listener_withdrawal) = routes;
+    let (increment, before_admission, before) =
+        priming.into_inner().expect("the priming originals remain");
+    let before = before.expect("the independent initial Counter Read");
+    let after = observed.expect("the independent final Counter Read");
+    let (expected_replies, expected_activity): (&[CounterProtectedMeaning], (usize, usize, usize)) =
+        match refusal.as_ref() {
+            Some(_) => (&[], (0, 0, 0)),
+            None => (&[CounterProtectedMeaning::ReadReply(1)], (1, 1, 1)),
+        };
+    assert_eq!(
+        (
+            reader.replies.as_slice(),
+            (verified.get(), constructed.get(), rows.len()),
+            (before.from, before.message),
+            (after.from, after.message),
+        ),
+        (
+            expected_replies,
+            expected_activity,
+            (target, 1),
+            (target, 1)
+        ),
+        "configured ({wire}, {schema}, {profile}, {transport:?}) expected refusal={refusal:?}"
+    );
+    assert!(cleanup.is_ok() && caller_cleanup.is_ok() && closed.is_ok() && caller_closed.is_ok());
+    assert!(
+        polling.is_none()
+            && disposal.is_none()
+            && withdrawal_polling.is_none()
+            && withdrawal_disposal.is_none()
+    );
+    assert!(
+        caller_polling.is_none()
+            && caller_disposal.is_none()
+            && caller_withdrawal_polling.is_none()
+            && caller_withdrawal_disposal.is_none()
+    );
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert_eq!(caller_report, Some(report));
+    assert_eq!(retirement, report);
+    assert!(shutdown.is_ok() && admission.is_ok());
+    assert!(receiver_bound.is_ok());
+    assert!(
+        matches!(startup, Some(Ok(())))
+            && matches!(withdrawn, Some(Ok(())))
+            && diagnostics.is_empty()
+    );
+    assert!(
+        matches!(started, Some(Ok(())))
+            && matches!(withdrawn_client, Some(Ok(())))
+            && matches!(joined, Some(Ok(())))
+    );
+    assert!(matches!(listener, Some(Ok(()))) && matches!(listener_withdrawal, Some(Ok(()))));
+    assert!(increment.is_ok() && before_admission.is_ok());
+    assert_eq!((before.from, before.message), (target, 1));
+    assert_eq!((after.from, after.message), (target, 1));
+    let mut requests = requests.into_iter();
+    let (
+        original,
+        failure,
+        encoding,
+        protection,
+        permission,
+        capacity,
+        attempt,
+        callback_refusal,
+        responses,
+        callback_eof,
+        protection_panics,
+        operation_panics,
+        completed,
+    ) = requests.next().expect("the actual initial Reader request");
+    assert_eq!(original.from, caller_address);
+    assert!(matches!(original.message, CounterServiceInput::Verify(23)));
+    assert!(
+        failure.is_none() && capacity.is_none(),
+        "configured ({wire}, {schema}, {profile}) request failure={failure:?}, capacity={capacity:?}, completed={completed:?}"
+    );
+    assert!(
+        protection_panics.0.is_none()
+            && protection_panics.1.is_none()
+            && protection_panics.2.is_none()
+    );
+    assert!(
+        operation_panics.0.is_none()
+            && operation_panics.1.is_none()
+            && operation_panics.2.is_none()
+    );
+    if let Some(expected) = refusal {
+        assert_eq!(permission.as_ref(), Some(&expected));
+        assert!(encoding.is_none() && protection.is_none());
+        assert!(
+            matches!(attempt, Attempt::Unattempted)
+                && callback_refusal.is_none()
+                && callback_eof.is_none()
+        );
+        let remaining = requests.next();
+        assert!(responses.is_empty() && remaining.is_none());
+        assert!(encoded.borrow().is_empty() && records.borrow().is_empty() && rows.is_empty());
+        assert_eq!((verified.get(), constructed.get()), (0, 0));
+        assert_eq!(reader.replies, [] as [CounterProtectedMeaning; 0]);
+    } else {
+        assert!(permission.is_none() && matches!(attempt, Attempt::Returned(Ok(()))));
+        assert!(callback_refusal.is_none() && callback_eof.is_some());
+        assert!(matches!(encoding, Some(Ok(Some(_)))) && matches!(protection, Some(Ok(_))));
+        assert!(matches!(visible, Some(Ok(()))));
+        assert_eq!((verified.get(), constructed.get(), rows.len()), (1, 1, 1));
+        assert_eq!(
+            reader.replies.as_slice(),
+            [CounterProtectedMeaning::ReadReply(1)]
+        );
+        assert_eq!(encoded.borrow().len(), 1);
+        let records = records.borrow();
+        assert_eq!(records.len(), 2);
+        assert_eq!(
+            records[0].1.protected.as_ref(),
+            encoded.borrow()[0].as_slice()
+        );
+        assert_eq!(records[0].1.proof.as_ref(), [7, 11]);
+        assert_eq!(records[1].1.proof.as_ref(), [13, 17]);
+        let [response] = <[_; 1]>::try_from(responses)
+            .unwrap_or_else(|_| panic!("one actual checked native reply remains"));
+        let native_bytes = response.payload().flatten().copied().collect::<Vec<_>>();
+        let native_proof = response
+            .proof()
+            .expect("the actual native reply proof")
+            .flatten()
+            .copied()
+            .collect::<Vec<_>>();
+        let (cause, wire, shape, verified, decoded, permission, panics) = response.into_parts();
+        let wire = wire.expect("the exact protected reply remains");
+        let receipt = verified
+            .expect("the real reply provider returned")
+            .unwrap_or_else(|_| panic!("the real reply verified"));
+        assert!(cause.is_none() && matches!(shape, Some(Ok(()))) && permission.is_none());
+        assert!(panics.0.is_none() && panics.1.is_none() && panics.2.is_none());
+        assert!(matches!(
+            decoded,
+            Some(Ok(Either::Right(Attempt::Returned(Ok(())))))
+        ));
+        assert_eq!(wire.0.as_ref(), native_bytes.as_slice());
+        assert_eq!(wire.1.as_ref(), native_proof.as_slice());
+        assert_eq!(wire.0.as_ref(), records[1].1.protected.as_ref());
+        assert_eq!(wire.1.as_ref(), records[1].1.proof.as_ref());
+        assert_eq!(recorded::projection(&receipt).1, reader.scope);
+        let acknowledgment = requests
+            .next()
+            .expect("the real Reader acknowledges its reply");
+        assert!(matches!(
+            acknowledgment.0.message,
+            CounterServiceInput::ProtectedConsumed {
+                correlation: 23,
+                purpose: requester::CounterProofPurpose::ReadReply
+            }
+        ));
+        assert!(
+            matches!(acknowledgment.2, Some(Ok(None)))
+                && matches!(acknowledgment.6, Attempt::Unattempted)
+        );
+        let remaining = requests.next();
+        assert!(remaining.is_none());
+    }
+    drop((source, caller_target));
+}
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[expect(

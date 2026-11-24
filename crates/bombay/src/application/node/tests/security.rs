@@ -9,6 +9,7 @@ use crate::remote::{
 use crate::{ActorFailureAssessment, Application, MailAddr, RetirementAssessment};
 use futures_util::future::Either;
 use std::cell::RefCell;
+use std::fs;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -51,6 +52,11 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
         };
         endpoint.certificate = CredentialSource::File(foreign.join("localhost-certificate.pem"));
         endpoint.private_key = CredentialSource::File(foreign.join("localhost-private-key.pem"));
+        let wrong_roots_path = foreign.join("root-ca.pem");
+        let wrong_roots = fs::read(&wrong_roots_path)
+            .expect("the existing independent deployment CA is available");
+        let mut wrong_roots_connection = configuration(&address, &EndpointRole::Caller);
+        wrong_roots_connection.deployment_roots = CredentialSource::File(wrong_roots_path);
         let originals = |network: &Network| {
             let NetworkLayout::Peer {
                 connect: Some(endpoint),
@@ -83,6 +89,7 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
             )
         };
         let foreign_originals = originals(&foreign_connection);
+        let wrong_roots_originals = originals(&wrong_roots_connection);
         let connect = async |network: &Network| {
             let mut native_configuration = network.to_configuration().unwrap();
             // Private fixture policy: await one actual Peer connection attempt.
@@ -194,6 +201,7 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
             let connect = &connect;
             let connection = &connection;
             let foreign_connection = &foreign_connection;
+            let wrong_roots_connection = &wrong_roots_connection;
             async move {
                 let target = application.root().established_recipient();
                 let actor = application.actor_address(&target).unwrap();
@@ -279,6 +287,13 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
                         Either::Right((peer, closed))
                     }
                 };
+                let wrong_roots_open = match connect(wrong_roots_connection).await {
+                    Err(cause) => Either::Left(cause),
+                    Ok(peer) => {
+                        let closed = peer.close().await;
+                        Either::Right((peer, closed))
+                    }
+                };
                 // No Get is manufactured when native open yields no Session.
                 let mut local = application.client::<CounterValue>().unwrap();
                 let admitted = local.send(CounterMessage::Read(local.recipient())).await;
@@ -296,6 +311,7 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
                     actor,
                     before,
                     foreign_open,
+                    wrong_roots_open,
                     admitted,
                     value,
                     incremented,
@@ -327,6 +343,7 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
             actor,
             before,
             foreign_open,
+            wrong_roots_open,
             admitted,
             value,
             incremented,
@@ -337,6 +354,39 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
         ) = observations;
         let expected_local = Some(User::new(actor, 0));
         let foreign_originals_after = originals(&foreign_connection);
+        let wrong_roots_originals_after = originals(&wrong_roots_connection);
+        let NetworkLayout::Peer {
+            connect: Some(expected),
+            listen: None,
+        } = &connection.layout
+        else {
+            panic!("the matched caller remains a connect-only Peer");
+        };
+        let NetworkLayout::Peer {
+            connect: Some(actual),
+            listen: None,
+        } = &wrong_roots_connection.layout
+        else {
+            panic!("the wrong-root caller remains a connect-only Peer");
+        };
+        let (
+            CredentialSource::File(expected_certificate),
+            CredentialSource::File(expected_key),
+            CredentialSource::File(actual_certificate),
+            CredentialSource::File(actual_key),
+            CredentialSource::File(actual_roots),
+        ) = (
+            &expected.certificate,
+            &expected.private_key,
+            &actual.certificate,
+            &actual.private_key,
+            &wrong_roots_connection.deployment_roots,
+        )
+        else {
+            panic!("both callers retain their supplied credential files");
+        };
+        let retained_roots = fs::read(actual_roots)
+            .expect("the original independent deployment CA remains available");
         cleanup.expect("actual application cleanup joins");
         closed.expect("actual listening Node connection closes");
         startup
@@ -355,6 +405,13 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
                 Either::Right(peer)
             }
         };
+        let wrong_roots_open = match wrong_roots_open {
+            Either::Left(cause) => Either::Left(cause),
+            Either::Right((peer, closed)) => {
+                closed.expect("an unexpected wrong-root Session is actually closed");
+                Either::Right(peer)
+            }
+        };
         assert_eq!(report.retirement(), RetirementAssessment::Established);
         assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
         assert!(notes.termination.is_ok() && notes.retirement.is_ok());
@@ -367,6 +424,15 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
         assert!(local_tail.is_none());
         assert_eq!(actor, origin.address());
         assert_eq!(foreign_originals, foreign_originals_after);
+        assert_eq!(wrong_roots_originals, wrong_roots_originals_after);
+        assert_eq!(actual.addresses, expected.addresses);
+        assert_eq!(actual_certificate, expected_certificate);
+        assert_eq!(actual_key, expected_key);
+        assert_eq!(
+            wrong_roots_connection.max_retained_queries,
+            connection.max_retained_queries
+        );
+        assert_eq!(retained_roots, wrong_roots);
         assert_ne!(before.1, after.1);
         let registered = requests.borrow();
         let [request_before, request_after] = registered.as_slice() else {
@@ -474,6 +540,10 @@ async fn foreign_client_is_refused_while_the_listener_remains_usable() {
         assert!(
             matches!(&foreign_open, Either::Left(_)),
             "the actual foreign client acquired a native Session"
+        );
+        assert!(
+            matches!(&wrong_roots_open, Either::Left(_)),
+            "a caller with the wrong server trust roots acquired a native Session"
         );
     })
     .await

@@ -1,13 +1,17 @@
 //! Actual held-reply pressure across two independent public Nodes and OS processes.
 use super::bounded_output;
-use super::{Program, ReplyProof, counter, deployment, network, protocol, provision};
+use super::{
+    Mode, Program, ProgramRole, ReplyProof, counter, deployment, network, protocol, provision,
+};
 use bombay::actors::ActorExt;
 use bombay::behavior::{BehaviorBase, Step, Stopped, User};
 use bombay::prelude::*;
 use bombay::remote::{
-    Attempt, Client, ClientLimits, Export, ExportLimits, RefusalRetention, json, reply,
+    Attempt, Client, ClientLimits, Export, ExportLimits, RefusalRetention, json, reply, stop,
 };
-use bombay::{ActorFailureAssessment, ApplicationScope, RetirementAssessment};
+use bombay::{
+    ActorFailureAssessment, ApplicationScope, MailboxCapacity, RetirementAssessment, TrySendError,
+};
 use counter::{Counter, CounterMessage, CounterValue};
 use deployment::{Binding, Deployment, Operation, Purpose, Receipt, Role};
 use futures_util::future::Either;
@@ -29,6 +33,7 @@ use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::unix::{OwnedReadHalf, OwnedWriteHalf};
 use tokio::net::{UnixListener, UnixStream};
+use tokio::runtime::Builder as RuntimeBuilder;
 use tokio::sync::oneshot;
 
 #[path = "../../../../crates/bombay/tests/protected_counter/custody.rs"]
@@ -36,6 +41,11 @@ mod custody;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 enum Control {
+    MailboxReady {
+        before: Option<(u64, u64)>,
+        after: Option<(u64, u64)>,
+        returned: Option<Operation>,
+    },
     Held {
         response: Box<[u8]>,
         proof: Box<[u8]>,
@@ -1053,4 +1063,622 @@ async fn queued_requests_resume_after_held_reply_and_borrowed_wait() {
     assert_eq!(caller_name, 1);
     assert!(receiver_stdout.contains("test result: ok. 1 passed; 0 failed; 0 ignored;"));
     assert!(caller_stdout.contains("test result: ok. 1 passed; 0 failed; 0 ignored;"));
+}
+
+#[test]
+#[ignore = "executed only by the exact-named actor mailbox pressure parent"]
+fn full_counter_recovers_before_the_shipping_caller() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .expect("the supported host has one worker for the indivisible mailbox prefix")
+        .block_on(mailbox_receiver());
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "actual mailbox admissions, original retry, remote operations and every native owner remain retained through cleanup"
+)]
+async fn mailbox_receiver() {
+    let address =
+        env::var("BOMBAY_COUNTER_PRESSURE_ADDRESS").expect("the parent's native endpoint");
+    let certificates = PathBuf::from(
+        env::var_os("BOMBAY_COUNTER_PRESSURE_CERTIFICATES").expect("actual TLS credentials"),
+    );
+    let socket = PathBuf::from(
+        env::var_os("BOMBAY_COUNTER_PRESSURE_ASSIGNMENT").expect("the private assignment socket"),
+    );
+    let identity = RefCell::new(None::<Deployment>);
+    let (handoff, control) = oneshot::channel();
+    let handoff = RefCell::new(Some(handoff));
+    let node = Application::new(Counter::new().stop_on_shutdown())
+        .mailbox_capacity(MailboxCapacity::new(2).expect("two actual actor slots"))
+        .open_node(network::configuration(address, &certificates, Role::Serve))
+        .await
+        .unwrap_or_else(|(_, _, cause)| panic!("the ordinary Counter Node opens: {cause:?}"));
+    let runtime = node.runtime_id();
+    let current = |receipt: &Receipt, runtime: &str, target: MailAddr| {
+        let identity = identity.borrow();
+        let configured = identity
+            .as_ref()
+            .ok_or(Refusal::NotConfigured)?
+            .metadata(receipt.operation())
+            .map_err(|cause| Refusal::Deployment { cause })?;
+        if receipt.metadata() == configured
+            && configured.runtime_generation.as_ref() == runtime
+            && configured.actor_generation == target.0
+        {
+            Ok(())
+        } else {
+            Err(Refusal::Scope)
+        }
+    };
+    let maximum = NonZeroUsize::new(3).unwrap();
+    let export = Export::new(
+        protocol::KEY,
+        ExportLimits {
+            refusals: RefusalRetention::Retain,
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: maximum,
+            diagnostics: maximum,
+        },
+        limits(),
+        |bytes: &[u8]| serde_json::from_slice::<protocol::Request>(bytes),
+        (
+            reply(protocol::increment, protocol::processed),
+            (
+                reply(protocol::read, protocol::value),
+                stop(protocol::stop, protocol::stopped),
+            ),
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            identity
+                .borrow()
+                .as_ref()
+                .ok_or(Refusal::NotConfigured)?
+                .verify(Purpose::Request, bytes, proof)
+                .map_err(|cause| Refusal::Deployment { cause })
+        },
+        async |bytes: &[u8], receipt: &Receipt| {
+            let response: protocol::Response =
+                serde_json::from_slice(bytes).map_err(|cause| Refusal::Json { cause })?;
+            if response.bombay != *receipt.metadata()
+                || response.kind != Purpose::Reply
+                || response.operation != receipt.operation()
+            {
+                return Err(Refusal::Scope);
+            }
+            identity
+                .borrow()
+                .as_ref()
+                .ok_or(Refusal::NotConfigured)?
+                .protect(Purpose::Reply, bytes)
+                .map_err(|cause| Refusal::Deployment { cause })
+        },
+        |left: &Receipt, right: &Receipt| {
+            left.operation() == right.operation() && left.metadata() == right.metadata()
+        },
+        &current,
+        &current,
+    );
+    let mut node = node.exports(export, async |application| {
+        let target = application.root().established_recipient();
+        let actor = application
+            .actor_address(&target)
+            .expect("the actual Counter is certified");
+        let actual = Binding {
+            role: Role::Serve,
+            runtime,
+            actor: actor.0,
+        };
+        let stream = UnixStream::connect(&socket)
+            .await
+            .expect("the parent accepts the actual binding");
+        let (input, mut output) = stream.into_split();
+        let mut input = BufReader::new(input);
+        let configured = deployment::configure(&actual, &mut input, &mut output, &limits()).await?;
+        *identity.borrow_mut() = Some(configured);
+        let published = handoff
+            .borrow_mut()
+            .take()
+            .expect("one owning control handoff")
+            .send((input, output));
+        published.unwrap_or_else(|_| panic!("the actual Work retains its control stream"));
+        Ok::<_, deployment::Refusal>(target)
+    });
+    let outcome = node
+        .run_with(|application| async move {
+            let (input, mut output) = control
+                .await
+                .expect("the original binding reader remains owned");
+            let actor = application.root().address();
+            let reader = application
+                .client::<CounterValue>()
+                .unwrap_or_else(|_| panic!("the actual FIFO client opens"));
+            // Work runs on block_on's thread; the actual actor shares the single
+            // worker with this joined prefix. No await or blocking call occurs
+            // in that worker poll, so the actor cannot drain between these sends.
+            // The ordinary caller still has no assignment or remote request.
+            let (mut reader, first, second, overflow) = tokio::spawn(async move {
+                let first = reader.try_send(CounterMessage::Increment);
+                let second = reader.try_send(CounterMessage::Increment);
+                let overflow = reader.try_send(CounterMessage::Increment);
+                (reader, first, second, overflow)
+            })
+            .await
+            .expect("the finite native mailbox prefix is actually joined");
+            let first_read = reader.send(CounterMessage::Read(reader.recipient())).await;
+            let before = reader.receive().await;
+            let retry = match overflow {
+                Err(TrySendError::Full(original @ CounterMessage::Increment)) => {
+                    Either::Right(reader.send(original).await)
+                }
+                original => Either::Left(original),
+            };
+            let second_read = reader.send(CounterMessage::Read(reader.recipient())).await;
+            let after = reader.receive().await;
+            let returned = match &retry {
+                Either::Right(_) => Some(Operation::Increment),
+                Either::Left(_) => None,
+            };
+            let notice = Control::MailboxReady {
+                before: before
+                    .as_ref()
+                    .map(|original| (original.from.0, original.message)),
+                after: after
+                    .as_ref()
+                    .map(|original| (original.from.0, original.message)),
+                returned,
+            };
+            let notified = write_control(&mut output, &notice).await;
+            // The separate shipping caller now owns Increment/Read/Stop; Work never
+            // shuts the Counter down merely to manufacture a successful process exit.
+            let retirement = application.retirement().await;
+            reader.close_admission();
+            let mut tail = Vec::new();
+            let eof = loop {
+                match reader.receive().await {
+                    Some(original) => tail.push(original),
+                    original @ None => break original,
+                }
+            };
+            let control_closed = output.shutdown().await;
+            (
+                actor,
+                first,
+                second,
+                first_read,
+                before,
+                retry,
+                second_read,
+                after,
+                notice,
+                notified,
+                retirement,
+                tail,
+                eof,
+                reader,
+                input,
+                control_closed,
+            )
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Counter Work executes"));
+    let (export, bound, closed, poll, disposal, withdrawal_poll, withdrawal_disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("all Node owners return after joined retirement"));
+    let (work, report, native, notes, ()) = outcome.into_parts();
+    let (
+        (
+            actor,
+            first,
+            second,
+            first_read,
+            before,
+            retry,
+            second_read,
+            after,
+            notice,
+            notified,
+            retirement,
+            tail,
+            eof,
+            _reader,
+            _input,
+            control_closed,
+        ),
+        cleanup,
+    ) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the actual remote Stop and complete Work return"));
+    let (inputs, declarations, declared, withdrawn, diagnostics, rows) = export.into_parts();
+    drop((inputs, declarations));
+    let rows = rows
+        .into_iter()
+        .map(|row| {
+            row.try_into_parts().unwrap_or_else(|_| {
+                panic!("every original request returns from its native producer")
+            })
+        })
+        .collect::<Vec<_>>();
+    // Acquisition of all lifecycle and native originals precedes this complete
+    // pressure oracle. The omitted capacity cut genuinely yields before=3.
+    let returned = match &retry {
+        Either::Right(_) => Some(Operation::Increment),
+        Either::Left(_) => None,
+    };
+    assert_eq!(
+        (before.as_ref(), after.as_ref(), returned),
+        (
+            Some(&User::new(actor, 2)),
+            Some(&User::new(actor, 3)),
+            Some(Operation::Increment)
+        )
+    );
+    assert!(first.is_ok() && second.is_ok() && first_read.is_ok() && second_read.is_ok());
+    assert!(matches!(retry, Either::Right(Ok(()))));
+    assert!(notified.is_ok() && control_closed.is_ok() && tail.is_empty() && eof.is_none());
+    assert!(matches!(
+        notice,
+        Control::MailboxReady {
+            before: Some((_, 2)),
+            after: Some((_, 3)),
+            returned: Some(Operation::Increment)
+        }
+    ));
+    cleanup.expect("the actual application cleanup joins");
+    closed.expect("the real receiving Session closes");
+    assert!(
+        poll.is_none()
+            && disposal.is_none()
+            && withdrawal_poll.is_none()
+            && withdrawal_disposal.is_none()
+    );
+    assert!(
+        matches!(bound, Some(Ok(_)))
+            && matches!(declared, Some(Ok(())))
+            && matches!(withdrawn, Some(Ok(())))
+    );
+    assert_eq!(diagnostics.len(), 0);
+    let report = report.expect("the original native Counter report remains");
+    assert_eq!(retirement, report);
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    let notes = notes.expect("both original notifications remain");
+    notes.termination.expect("termination publication succeeds");
+    notes.retirement.expect("retirement publication succeeds");
+    let (origin, native) = native.expect("the original Counter custody remains");
+    assert_eq!(origin.address(), actor);
+    let _counter = custody::completed_actor(origin, native);
+    assert_eq!(rows.len(), 3);
+    let configured = identity.borrow();
+    let configured = configured
+        .as_ref()
+        .expect("the exact finite deployment remains");
+    let mut operations = Vec::new();
+    for (
+        key,
+        raw,
+        verified,
+        decoded,
+        native,
+        encoding,
+        protection,
+        publications,
+        refusals,
+        panics,
+    ) in rows
+    {
+        let verified = verified
+            .expect("actual verification returns")
+            .unwrap_or_else(|_| panic!("the configured pair authenticates"));
+        let operation = verified.operation();
+        operations.push(operation);
+        let grant = configured
+            .metadata(operation)
+            .expect("the original operation grant remains");
+        let expected_request = protocol::request(grant, operation)
+            .unwrap_or_else(|_| panic!("the actual request encodes"));
+        let expected_proof = configured
+            .protect(Purpose::Request, &expected_request)
+            .unwrap_or_else(|_| panic!("the original request proof remains"));
+        assert_eq!(raw, (expected_request, expected_proof));
+        assert_eq!(verified.metadata(), grant);
+        assert!(key.is_some() && decoded.is_none());
+        assert!(
+            matches!(refusals, (None, None, None))
+                && matches!(panics, (None, None, None, None, None, None))
+        );
+        let encoding = encoding
+            .expect("actual encoding returns")
+            .unwrap_or_else(|_| panic!("the native result encodes"));
+        let protection = protection
+            .expect("actual proof returns")
+            .unwrap_or_else(|_| panic!("the native result is protected"));
+        let expected_value = match operation {
+            Operation::Increment => protocol::Value::Processed(101),
+            Operation::Read => protocol::Value::Read(4),
+            Operation::Stop => protocol::Value::Stopped,
+        };
+        let expected_reply = protocol::response(grant, operation, expected_value)
+            .unwrap_or_else(|_| panic!("the exact native response encodes"));
+        assert_eq!(encoding, expected_reply);
+        let expected_proof = configured
+            .protect(Purpose::Reply, &encoding)
+            .unwrap_or_else(|_| panic!("the whole actual reply is registered"));
+        assert_eq!(protection.as_ref(), expected_proof.as_ref());
+        assert!(matches!(publications.as_slice(), [Ok(())]));
+        match (operation, native.expect("the actual native lane remains")) {
+            (
+                Operation::Increment,
+                Either::Left((constructor, client, admission, received, tail)),
+            ) => {
+                assert!(
+                    constructor.is_none()
+                        && matches!(client, Attempt::Returned(Ok(_)))
+                        && matches!(admission, Attempt::Returned(Ok(())))
+                );
+                let received = received
+                    .expect("native receive completed")
+                    .expect("the actual processing User remains");
+                assert_eq!(
+                    (received.from, received.message.request_sequence),
+                    (actor, 101)
+                );
+                assert!(matches!(tail.as_slice(), [None]));
+            }
+            (
+                Operation::Read,
+                Either::Right(Either::Left((constructor, client, admission, received, tail))),
+            ) => {
+                assert!(
+                    constructor.is_none()
+                        && matches!(client, Attempt::Returned(Ok(_)))
+                        && matches!(admission, Attempt::Returned(Ok(())))
+                );
+                assert_eq!(received, Some(Some(User::new(actor, 4))));
+                assert!(matches!(tail.as_slice(), [None]));
+            }
+            (Operation::Stop, Either::Right(Either::Right((admission, stopped)))) => {
+                assert!(matches!(admission, Attempt::Returned(Ok(()))));
+                assert_eq!(stopped, Some(report));
+            }
+            _ => panic!("the actual native leaf must match the authenticated operation"),
+        }
+    }
+    operations.sort_unstable();
+    assert_eq!(
+        operations,
+        [Operation::Increment, Operation::Read, Operation::Stop]
+    );
+}
+
+fn mailbox_configuration(caller: &Binding, receiver: &Binding) -> io::Result<Vec<u8>> {
+    let original = provision(caller, receiver, ReplyProof::Matching)?;
+    let mut configured: serde_json::Value =
+        serde_json::from_slice(&original).map_err(io::Error::other)?;
+    let records = configured["records"]
+        .as_array_mut()
+        .ok_or_else(|| io::Error::other("the actual pair catalog remains an array"))?;
+    let mut changed = 0;
+    for record in records {
+        let bytes: Vec<u8> =
+            serde_json::from_value(record["protected"].clone()).map_err(io::Error::other)?;
+        let claims: serde_json::Value = serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+        let operation: Operation =
+            serde_json::from_value(claims["operation"].clone()).map_err(io::Error::other)?;
+        let purpose: Purpose =
+            serde_json::from_value(claims["kind"].clone()).map_err(io::Error::other)?;
+        if (operation, purpose) == (Operation::Read, Purpose::Reply) {
+            let response: protocol::Response =
+                serde_json::from_slice(&bytes).map_err(io::Error::other)?;
+            let response =
+                protocol::response(&response.bombay, Operation::Read, protocol::Value::Read(4))
+                    .map_err(io::Error::other)?;
+            record["protected"] = serde_json::to_value(response).map_err(io::Error::other)?;
+            changed += 1;
+        }
+    }
+    if changed != 1 {
+        return Err(io::Error::other(
+            "exactly one real Read response is configured",
+        ));
+    }
+    let mut configured = serde_json::to_vec(&configured).map_err(io::Error::other)?;
+    configured.push(b'\n');
+    Ok(configured)
+}
+
+#[test]
+#[expect(
+    clippy::too_many_lines,
+    reason = "two actual process reaps and pressure originals precede the first complete domain oracle"
+)]
+fn actor_mailbox_pressure_recovers_across_real_counter_programs() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the parent owns its ordinary native runtime")
+        .block_on(async {
+            let directory = Builder::new()
+                .prefix("counter-mailbox-")
+                .permissions(Permissions::from_mode(0o700))
+                .tempdir()
+                .expect("the parent owns a private directory");
+            eprintln!("counter mailbox trace: {}", directory.path().display());
+            let socket = directory.path().join("mailbox.sock");
+            let certificates = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+            let trace = tokio::time::timeout(Duration::from_secs(40), async {
+                let listener = UnixListener::bind(&socket)?;
+                let port = {
+                    let reservation = TcpListener::bind(("localhost", 0))?;
+                    reservation.local_addr()?.port()
+                };
+                let address = format!("localhost:{port}");
+                let output = directory.path().join("mailbox.stdout");
+                let diagnostics = directory.path().join("mailbox.stderr");
+                let child = Command::new(env::current_exe()?)
+                    .args([
+                        "--ignored",
+                        "--exact",
+                        "pressure::full_counter_recovers_before_the_shipping_caller",
+                    ])
+                    .env("BOMBAY_COUNTER_PRESSURE_ADDRESS", &address)
+                    .env("BOMBAY_COUNTER_PRESSURE_CERTIFICATES", &certificates)
+                    .env("BOMBAY_COUNTER_PRESSURE_ASSIGNMENT", &socket)
+                    .stdin(Stdio::null())
+                    .stdout(File::create(&output)?)
+                    .stderr(File::create(&diagnostics)?)
+                    .spawn()?;
+                let mut receiver = Program {
+                    child,
+                    output,
+                    diagnostics,
+                };
+                let receiver_pid = receiver.child.id();
+                eprintln!("counter mailbox receiver binding pending: {receiver_pid}");
+                let (receiver_binding, mut receiver_control, mut receiver_input) =
+                    binding(&listener).await?;
+                eprintln!("counter mailbox receiver binding acquired");
+                let mut caller = Program::start(
+                    ProgramRole::Call(Duration::from_secs(20)),
+                    Mode::Test,
+                    &address,
+                    &certificates,
+                    &socket,
+                    directory.path(),
+                )?;
+                let caller_pid = caller.child.id();
+                let (caller_binding, caller_control, mut caller_input) = binding(&listener).await?;
+                eprintln!("counter mailbox caller binding acquired");
+                let configuration = mailbox_configuration(&caller_binding, &receiver_binding)?;
+                receiver_input.write_all(&configuration).await?;
+                receiver_input.flush().await?;
+                // The caller remains unconfigured until actual Full and both
+                // native FIFO Reads are acquired by the receiver Work.
+                eprintln!("counter mailbox pressure pending");
+                let pressure = read_control(&mut receiver_control).await;
+                caller_input.write_all(&configuration).await?;
+                caller_input.shutdown().await?;
+                receiver_input.shutdown().await?;
+                eprintln!("counter mailbox shipping caller released");
+                let caller_output = caller.finish().await?;
+                eprintln!("counter mailbox shipping caller reaped");
+                let receiver_kill = if caller_output.status.success() {
+                    None
+                } else {
+                    Some(receiver.child.kill())
+                };
+                let receiver_output = receiver.finish().await?;
+                Ok::<_, io::Error>((
+                    receiver_pid,
+                    caller_pid,
+                    receiver_binding,
+                    caller_binding,
+                    pressure,
+                    receiver_output,
+                    caller_output,
+                    receiver_kill,
+                    caller_control,
+                ))
+            })
+            .await;
+            let removed = match &trace {
+                Ok(Ok((_, _, _, _, _, receiver, caller, _, _)))
+                    if receiver.status.success() && caller.status.success() =>
+                {
+                    Either::Left(directory.close())
+                }
+                _ => {
+                    let retained = directory.keep();
+                    eprintln!(
+                        "counter mailbox failed trace retained: {}",
+                        retained.display()
+                    );
+                    for name in [
+                        "mailbox.stdout",
+                        "mailbox.stderr",
+                        "call.stdout",
+                        "call.stderr",
+                    ] {
+                        let path = retained.join(name);
+                        if path.is_file() {
+                            match bounded_output(&path) {
+                                Ok(bytes) => eprintln!(
+                                    "counter mailbox {name}: {}",
+                                    String::from_utf8_lossy(&bytes)
+                                ),
+                                Err(cause) => {
+                                    eprintln!("counter mailbox {name} unavailable: {cause}");
+                                }
+                            }
+                        }
+                    }
+                    Either::Right(retained)
+                }
+            };
+            let (
+                receiver_pid,
+                caller_pid,
+                receiver_binding,
+                caller_binding,
+                pressure,
+                receiver_output,
+                caller_output,
+                receiver_kill,
+                _caller_control,
+            ) = trace
+                .expect("the complete process trace is finite")
+                .expect("both programs are actually reaped");
+            if let Either::Left(removed) = removed {
+                removed.expect("both process owners are reaped before private directory removal");
+            }
+            // First complete parent law oracle; inverse observations reach this
+            // AFTER both actual reaps, not a premature child-success assertion.
+            assert_eq!(
+                (pressure.as_ref().ok(), caller_output.stdout.as_slice()),
+                (
+                    Some(&Control::MailboxReady {
+                        before: Some((receiver_binding.actor, 2)),
+                        after: Some((receiver_binding.actor, 3)),
+                        returned: Some(Operation::Increment)
+                    }),
+                    b"counter value: 4\ncounter stopped\n".as_slice()
+                )
+            );
+            assert_ne!(receiver_pid, caller_pid);
+            assert_ne!(receiver_pid, process::id());
+            assert_ne!(caller_pid, process::id());
+            assert_ne!(receiver_binding.runtime, caller_binding.runtime);
+            assert_eq!(receiver_binding.role, Role::Serve);
+            assert_eq!(caller_binding.role, Role::Call);
+            assert!(receiver_kill.is_none());
+            assert!(
+                receiver_output.status.success(),
+                "receiver stdout: {}\nreceiver stderr: {}",
+                String::from_utf8_lossy(&receiver_output.stdout),
+                String::from_utf8_lossy(&receiver_output.stderr)
+            );
+            assert!(
+                caller_output.status.success(),
+                "caller stderr: {}",
+                String::from_utf8_lossy(&caller_output.stderr)
+            );
+            assert_eq!(caller_output.stderr.as_slice(), b"");
+            let receiver_stdout =
+                String::from_utf8(receiver_output.stdout).expect("the libtest output is UTF8");
+            assert_eq!(
+                receiver_stdout
+                    .matches(
+                        "test pressure::full_counter_recovers_before_the_shipping_caller ... ok"
+                    )
+                    .count(),
+                1
+            );
+            assert!(receiver_stdout.contains("test result: ok. 1 passed; 0 failed; 0 ignored;"));
+        });
 }

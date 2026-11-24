@@ -17,11 +17,13 @@ use crate::{
 };
 use core::future::Future;
 use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::task::{Context, Poll, Waker};
 use futures_util::FutureExt;
 use std::cell::{Cell, RefCell};
 use std::num::NonZeroUsize;
+use std::pin::pin;
 use std::time::Duration;
+use tokio::runtime::Builder;
 use tokio::sync::oneshot;
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
@@ -49,13 +51,32 @@ impl Drop for HeldProtection<'_> {
     }
 }
 
+enum WithdrawalObservation {
+    Awaited,
+    Surrendered,
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn requested_export_withdraws_without_stopping_its_sibling() {
+    export_withdrawal(WithdrawalObservation::Awaited).await;
+}
+
+#[test]
+fn surrendered_withdrawal_observer_keeps_native_result_and_sibling_progress() {
+    let runtime = Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the withdrawal observation runs on the existing two-worker host");
+    runtime.block_on(export_withdrawal(WithdrawalObservation::Surrendered));
+}
+
 #[expect(
     clippy::too_many_lines,
     clippy::await_holding_refcell_ref,
     reason = "one causal withdrawal trace retains actual native/provider/application originals; its configured receipt table stays immutable during verification"
 )]
-async fn requested_export_withdraws_without_stopping_its_sibling() {
+async fn export_withdrawal(observation: WithdrawalObservation) {
     Box::pin(tokio::time::timeout(Duration::from_secs(40), async {
         let records = RefCell::new(Vec::<ProtectedMessage>::new());
         let binding = Binding {
@@ -201,11 +222,15 @@ async fn requested_export_withdraws_without_stopping_its_sibling() {
                 .consolidation(ConsolidationMode::None).timeout(Duration::from_secs(5))
                 .await.expect("first native query starts before the isolation cutoff");
             pending_protection.await.expect("first protection actually returned Pending");
-            let withdrawal_result = withdraw().await;
-            let first_matching = first_querier.matching_status().await;
-            let sibling_matching = sibling_querier.matching_status().await;
-            let first_inspection = first_querier.undeclare().await;
-            let sibling_inspection = sibling_querier.undeclare().await;
+            let withdrawal_result = match &observation {
+                WithdrawalObservation::Awaited => Poll::Ready(withdraw().await),
+                WithdrawalObservation::Surrendered => {
+                    let mut operation = pin!(withdraw());
+                    let mut context = Context::from_waker(Waker::noop());
+                    operation.as_mut().poll(&mut context)
+                }
+            };
+            // The whole started observer has left scope before native owner progress.
             let mut first_replies = Vec::new();
             let first_ending = loop {
                 match first_receiving.recv_async().await {
@@ -213,6 +238,10 @@ async fn requested_export_withdraws_without_stopping_its_sibling() {
                     Err(ending) => break ending,
                 }
             };
+            let first_matching = first_querier.matching_status().await;
+            let sibling_matching = sibling_querier.matching_status().await;
+            let first_inspection = first_querier.undeclare().await;
+            let sibling_inspection = sibling_querier.undeclare().await;
             // Retain native refusal, including immediate Get failure in the adverse control.
             let submitted = connection.get("bombay/withdrawal/sibling")
                 .allowed_destination(Locality::SessionLocal)
@@ -245,7 +274,7 @@ async fn requested_export_withdraws_without_stopping_its_sibling() {
                 .expect("Work shares actual cleanup observation").now_or_never();
             let shutdown = application.shutdown();
             (
-                creation_admission, actors, requests, addresses, withdrawal_result, first_replies, first_ending,
+                observation, creation_admission, actors, requests, addresses, withdrawal_result, first_replies, first_ending,
                 submitted, sibling_replies, sibling_ending, first_admission, first_value,
                 sibling_admission, sibling_value, session_open, cleanup_pending, shutdown,
                 first_matching, sibling_matching, first_inspection, sibling_inspection,
@@ -257,7 +286,7 @@ async fn requested_export_withdraws_without_stopping_its_sibling() {
         let (observations, cleanup) = work.try_into_completed()
             .unwrap_or_else(|_| panic!("real Work completes before joined cleanup extraction"));
         let (
-            creation_admission, actors, requests, addresses, withdrawal_result, first_replies, first_ending,
+            observation, creation_admission, actors, requests, addresses, withdrawal_result, first_replies, first_ending,
             submitted, sibling_replies, sibling_ending, first_admission, first_value,
             sibling_admission, sibling_value, session_open, cleanup_pending, shutdown,
             first_matching, sibling_matching, first_inspection, sibling_inspection,
@@ -292,7 +321,14 @@ async fn requested_export_withdraws_without_stopping_its_sibling() {
             (false, true),
             "withdrawal must remove only the first native declaration",
         );
-        assert!(matches!(withdrawal_result, Some(Ok(()))));
+        match observation {
+            WithdrawalObservation::Awaited => {
+                assert!(matches!(&withdrawal_result, Poll::Ready(Some(Ok(())))));
+            }
+            WithdrawalObservation::Surrendered => {
+                assert!(withdrawal_result.is_pending(), "the whole pending observer was surrendered");
+            }
+        }
         assert!(first_replies.is_empty());
         assert_eq!(first_ending.to_string(), "receiving on a closed channel");
         let received = sibling_replies[0].result();

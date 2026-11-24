@@ -1,6 +1,7 @@
 //! Two ordinary programs use real TLS and one bounded assignment each.
 use bombay::remote::Metadata;
 use serde_json::json;
+use std::env;
 use std::fs::{File, Permissions};
 use std::future::poll_fn;
 use std::io::{self, Read};
@@ -13,6 +14,7 @@ use tempfile::Builder;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixListener;
 use tokio::net::unix::OwnedWriteHalf;
+use tokio::runtime::Builder as RuntimeBuilder;
 
 #[path = "../../counter/src/counter.rs"]
 #[expect(
@@ -79,6 +81,26 @@ impl Program {
         socket: &Path,
         directory: &Path,
     ) -> io::Result<Self> {
+        Self::start_with(
+            Path::new(env!("CARGO_BIN_EXE_bombay-example-remote-counter")),
+            role,
+            mode,
+            address,
+            certificates,
+            socket,
+            directory,
+        )
+    }
+
+    fn start_with(
+        executable: &Path,
+        role: ProgramRole,
+        mode: Mode,
+        address: &str,
+        certificates: &Path,
+        socket: &Path,
+        directory: &Path,
+    ) -> io::Result<Self> {
         let name = match role {
             ProgramRole::Serve => "serve",
             ProgramRole::Call(_) => "call",
@@ -89,7 +111,7 @@ impl Program {
         };
         let output = directory.join(format!("{name}.stdout"));
         let diagnostics = directory.join(format!("{name}.stderr"));
-        let mut command = Command::new(env!("CARGO_BIN_EXE_bombay-example-remote-counter"));
+        let mut command = Command::new(executable);
         command
             .arg(name)
             .arg(mode)
@@ -240,11 +262,50 @@ fn provision(caller: &Binding, receiver: &Binding, proof: ReplyProof) -> io::Res
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn separate_programs_increment_read_and_stop_through_real_tls() {
+    let current = Path::new(env!("CARGO_BIN_EXE_bombay-example-remote-counter"));
+    exchange(current, current).await;
+}
+
+#[test]
+fn published_runtime_pairs_increment_read_and_stop_through_real_tls() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the finite software-version matrix owns its runtime")
+        .block_on(async {
+            let variable = if cfg!(debug_assertions) {
+                "BOMBAY_REMOTE_COUNTER_050_DEBUG"
+            } else {
+                "BOMBAY_REMOTE_COUNTER_050_RELEASE"
+            };
+            let legacy = env::var_os(variable).map_or_else(
+                || panic!("required published Runtime 0.5 fixture {variable} is missing"),
+                PathBuf::from,
+            );
+            let current = Path::new(env!("CARGO_BIN_EXE_bombay-example-remote-counter"));
+            for (caller, receiver) in [
+                (legacy.as_path(), legacy.as_path()),
+                (legacy.as_path(), current),
+                (current, legacy.as_path()),
+                (current, current),
+            ] {
+                eprintln!(
+                    "Counter caller={} receiver={}",
+                    caller.display(),
+                    receiver.display()
+                );
+                exchange(caller, receiver).await;
+            }
+        });
+}
+
 #[expect(
     clippy::too_many_lines,
     reason = "the complete two-program trace keeps real exits and cleanup before its independent domain oracles"
 )]
-async fn separate_programs_increment_read_and_stop_through_real_tls() {
+async fn exchange(caller_executable: &Path, receiver_executable: &Path) {
     let directory = Builder::new()
         .prefix("counter-")
         .permissions(Permissions::from_mode(0o700))
@@ -256,7 +317,8 @@ async fn separate_programs_increment_read_and_stop_through_real_tls() {
     let trace = tokio::time::timeout(Duration::from_secs(40), async {
         let listener = UnixListener::bind(&socket)?;
         let address = "localhost:0".to_owned();
-        let mut receiver = Program::start(
+        let mut receiver = Program::start_with(
+            receiver_executable,
             ProgramRole::Serve,
             Mode::Test,
             &address,
@@ -278,7 +340,8 @@ async fn separate_programs_increment_read_and_stop_through_real_tls() {
         }
         // Binding occurs after the server's actual Node open. The native Client
         // owns subsequent Queryable visibility; this test adds no matching loop.
-        let mut caller = Program::start(
+        let mut caller = Program::start_with(
+            caller_executable,
             ProgramRole::Call(Duration::from_secs(20)),
             Mode::Test,
             &address,
@@ -534,4 +597,63 @@ async fn wrong_caller_reply_proof_reports_uncertain_read_without_stopping_server
     assert!(!receiver_output.status.success());
     assert_eq!(receiver_output.stdout.as_slice(), b"");
     // Parent-forced server exit is NOT clean Node/Session shutdown evidence.
+}
+
+#[test]
+fn assignment_eof_returns_failure_after_the_actual_serve_binding() {
+    RuntimeBuilder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the ordinary process controller runtime opens")
+        .block_on(async {
+            let directory = Builder::new()
+                .prefix("counter-assignment-eof-")
+                .permissions(Permissions::from_mode(0o700))
+                .tempdir()
+                .expect("a private assignment directory");
+            let socket = directory.path().join("assignment.sock");
+            let certificates = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../docs/prds/static-remote-actors/transport-custody/certificates");
+            let trace = tokio::time::timeout(Duration::from_secs(40), async {
+                let listener = UnixListener::bind(&socket)?;
+                let mut receiver = Program::start(
+                    ProgramRole::Serve,
+                    Mode::Test,
+                    "localhost:0",
+                    &certificates,
+                    &socket,
+                    directory.path(),
+                )?;
+                let receiver_pid = receiver.child.id();
+                let (binding, mut assignment) = assignment(&listener).await?;
+                let address = receiver.listener_address()?;
+                // Actual published Binding precedes actual EOF. This is not a
+                // signal, killed process, actor crash or invented failure cause.
+                let closed = assignment.shutdown().await;
+                let output = receiver.finish().await?;
+                Ok::<_, io::Error>((receiver_pid, binding, address, closed, output))
+            })
+            .await;
+            let removed = directory.close();
+            let (receiver_pid, binding, address, closed, output) = trace
+                .expect("the natural assignment refusal is finite")
+                .expect("the actual process is reaped");
+            removed.expect("the actual native child is reaped before path removal");
+            // Main disposition sensitivity must reach this after normal exit.
+            let diagnostic =
+                format!("counter listening: {address}\ncounter deployment was refused\n");
+            assert_eq!(
+                (
+                    output.status.code(),
+                    output.stdout.as_slice(),
+                    output.stderr.as_slice()
+                ),
+                (Some(1), b"".as_slice(), diagnostic.as_bytes())
+            );
+            assert_ne!(receiver_pid, process::id());
+            assert_eq!(binding.role, Role::Serve);
+            assert_ne!(binding.runtime, "");
+            assert!(closed.is_ok());
+        });
 }

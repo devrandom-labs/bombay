@@ -156,6 +156,50 @@
           '';
         };
         cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        counter050Source = pkgs.fetchFromGitHub {
+          owner = "devrandom-labs";
+          repo = "bombay";
+          rev = "940f77eb4674592b80e9987f8e2c008d35b47128";
+          hash = "sha256-cWAVcCz1XuoN/9vZqBvFp9DOHIZ3GudB4JtVhamPuDQ=";
+        };
+        counter050 =
+          profile:
+          let
+            arguments = {
+              src = counter050Source;
+              pname = "bombay-remote-counter-runtime-0.5";
+              version = "0.5.0";
+              strictDeps = true;
+              CARGO_PROFILE = profile;
+              cargoExtraArgs = "--locked -p bombay-example-remote-counter --bin bombay-example-remote-counter";
+              doCheck = false;
+              env = {
+                CARGO_PROFILE_DEV_DEBUG = "0";
+                CARGO_PROFILE_TEST_DEBUG = "0";
+                CARGO_INCREMENTAL = "0";
+              };
+            };
+          in
+          craneLib.buildPackage (
+            arguments
+            // {
+              cargoArtifacts = craneLib.buildDepsOnly arguments;
+              doInstallCargoArtifacts = false;
+              postInstall = ''
+                mkdir -p "$out/share/runtime-0.5"
+                cp "$cargoBuildLog" "$out/share/runtime-0.5/build.jsonl"
+                cargo metadata --locked --format-version 1 > "$out/share/runtime-0.5/metadata.json"
+                rustc --version --verbose > "$out/share/runtime-0.5/rustc.txt"
+                cargo --version > "$out/share/runtime-0.5/cargo.txt"
+              '';
+            }
+          );
+        counter050Debug = counter050 "dev";
+        counter050Release = counter050 "release";
+        counter050Paths = {
+          BOMBAY_REMOTE_COUNTER_050_DEBUG = "${counter050Debug}/bin/bombay-example-remote-counter";
+          BOMBAY_REMOTE_COUNTER_050_RELEASE = "${counter050Release}/bin/bombay-example-remote-counter";
+        };
         minimumCargoArtifacts = minimumCraneLib.buildDepsOnly (
           commonArgs // { cargoExtraArgs = "--locked ${diagnosticCargoArgs}"; }
         );
@@ -218,6 +262,9 @@
             // {
               inherit src;
               inherit cargoArtifacts;
+              env = commonArgs.env // {
+                inherit (counter050Paths) BOMBAY_REMOTE_COUNTER_050_RELEASE;
+              };
               cargoTestExtraArgs = "--workspace --all-targets";
             }
           );
@@ -341,6 +388,9 @@
             // {
               inherit src;
               inherit cargoArtifacts;
+              env = commonArgs.env // {
+                inherit (counter050Paths) BOMBAY_REMOTE_COUNTER_050_DEBUG;
+              };
               nativeBuildInputs = [
                 pkgs.cargo-llvm-cov
                 pkgs.jq
@@ -479,6 +529,12 @@
               buildPhaseCargoCommand = ''
                 cargo test --locked -p bombay-example-counter
                 cargo run --locked -p bombay-example-counter
+                cargo check --locked -p bombay-rs --no-default-features --lib
+                cargo tree --locked -p bombay-rs --no-default-features --edges normal > local-tree.log
+                if grep -F 'bombay-zenoh' local-tree.log; then
+                  echo "local-only runtime unexpectedly enables the remote SDK" >&2
+                  exit 1
+                fi
               '';
             }
           );
@@ -486,6 +542,7 @@
             commonArgs
             // {
               inherit cargoArtifacts;
+              env = commonArgs.env // counter050Paths;
               # Both roles require an assignment operator; package tests own
               # their real subprocess exchange and cleanup.
               buildPhaseCargoCommand = ''
@@ -683,6 +740,7 @@
 
         devShells.default = craneLib.devShell {
           checks = self.checks.${system};
+          env = counter050Paths;
           packages = with pkgs; [
             toolchain
             fenix.packages.${system}.rust-analyzer

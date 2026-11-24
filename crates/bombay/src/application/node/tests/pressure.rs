@@ -1,13 +1,15 @@
 //! Cold admission retains native Full through capacity and authority changes.
 use super::protocol::{
     Binding, EndpointRole, ProtectedMessage, ProviderProfile, Purpose, ReadReply, ReadReplyRef,
-    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits, metadata,
-    recorded,
+    ReadRequest, ReadRequestRef, VerificationError, configuration, current_scope, limits,
+    listener_address, metadata, recorded,
 };
 use super::{LedgerCommand, MailLedger, Receipts};
 use crate::RetirementOutcome;
 use crate::application::{Application, MailboxCapacity};
-use crate::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, submission};
+use crate::remote::{
+    Attempt, Export, ExportError, ExportLimits, Metadata, RefusalRetention, submission,
+};
 use crate::{
     ActorFailureAssessment, ActorRetirement, Completion, MailAddr, RetirementAssessment,
     TrySendError,
@@ -19,8 +21,10 @@ use std::num::NonZeroUsize;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
-use tokio::sync::oneshot;
+use tokio::sync::mpsc::channel;
+use tokio::sync::{Semaphore, oneshot};
 use tokio::time::timeout;
+use zenoh::handlers::FifoChannel;
 use zenoh::query::ConsolidationMode;
 use zenoh::sample::Locality;
 
@@ -59,6 +63,581 @@ enum Refusal {
         reason = "preserve the original JSON failure rather than replacing an unselected typed cause"
     )]
     Json(serde_json::Error),
+}
+
+#[test]
+fn held_verifiers_bound_excess_requests_before_recovering_capacity() {
+    let runtime = Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("the existing native test host opens");
+    runtime.block_on(async {
+        timeout(Duration::from_secs(40), verifier_capacity())
+            .await
+            .expect("a watchdog supplies no capacity, progress or cleanup evidence");
+    });
+}
+
+#[expect(
+    clippy::too_many_lines,
+    clippy::await_holding_refcell_ref,
+    reason = "one finite native trace retains complete input, admission and cleanup facts; its registered proof table is immutable throughout provider verification"
+)]
+async fn verifier_capacity() {
+    const EXCESS_QUERIES: usize = 3;
+    const HEALTH: &str = "bombay/verifier-health";
+    let registered = RefCell::new(Vec::<ProtectedMessage>::new());
+    let verified = RefCell::new(Vec::<ProtectedMessage>::new());
+    let claims = RefCell::new(None::<Metadata>);
+    let active = Cell::new(0);
+    let peak = Cell::new(0);
+    let invalid = Cell::new(0);
+    let release = Semaphore::new(0);
+    let (entered, mut entries) = channel(2);
+    let binding = Binding {
+        deployment: "two-node-read-study",
+        caller: "caller",
+        controller: "owner",
+        actor: "ledger",
+        host: "receiver",
+        protocol: "ledger",
+        target_assignment: "ledger",
+        logical_session: 1,
+    };
+    let current = |receipt: &recorded::Receipt<Append>, runtime: &str, target: MailAddr| {
+        let scope = recorded::projection(receipt);
+        let actual = claims.borrow();
+        let actual = actual
+            .as_ref()
+            .expect("the certified target supplied its metadata");
+        if scope.kind == Purpose::Request
+            && scope.bombay.runtime_generation.as_ref() == runtime
+            && scope.bombay.actor_generation == target.0
+            && scope.bombay.caller_session == actual.caller_session
+            && scope.bombay.authority_generation == actual.authority_generation
+        {
+            Ok(())
+        } else {
+            Err(Refusal::Scope)
+        }
+    };
+    let maximum = NonZeroUsize::new(4).unwrap();
+    let export = Export::new(
+        "bombay/verifier-capacity",
+        ExportLimits {
+            queued_queries: maximum,
+            retained_queries: maximum,
+            retained_requests: NonZeroUsize::new(2).unwrap(),
+            diagnostics: maximum,
+            refusals: RefusalRetention::Discharge,
+        },
+        limits(),
+        |bytes| {
+            let request: ReadRequest<Append> =
+                serde_json::from_slice(bytes).map_err(Refusal::Json)?;
+            if request.kind != Purpose::Request {
+                return Err(Refusal::Scope);
+            }
+            Ok(request.operation)
+        },
+        submission(
+            |Append(original)| Ok::<_, Append>(move || LedgerCommand::Append(original)),
+            |receipt: &recorded::Receipt<Append>,
+             native: &Attempt<Result<(), TrySendError<LedgerCommand>>>| {
+                if !matches!(native, Attempt::Returned(Ok(()))) {
+                    return Err(Refusal::Native);
+                }
+                let scope = recorded::projection(receipt);
+                serde_json::to_vec(&ReadReplyRef {
+                    bombay: &scope.bombay,
+                    kind: Purpose::Admitted,
+                    operation: &scope.operation,
+                    value: &(),
+                })
+                .map(Vec::into_boxed_slice)
+                .map_err(Refusal::Json)
+            },
+        ),
+        async |bytes: &[u8], proof: &[u8]| {
+            let original = ProtectedMessage {
+                protected: bytes.into(),
+                proof: proof.into(),
+            };
+            let position = verified.borrow().len();
+            verified.borrow_mut().push(ProtectedMessage {
+                protected: original.protected.clone(),
+                proof: original.proof.clone(),
+            });
+            active.set(active.get() + 1);
+            peak.set(peak.get().max(active.get()));
+            if position < 2 {
+                let published = entered.send(position).await;
+                published.expect("Work observes each actual held provider");
+                let permit = release.acquire().await.expect("Work owns the release");
+                permit.forget();
+            }
+            let result = recorded::verify::<Append>(&original, &registered.borrow(), binding).await;
+            if matches!(&result, Err(VerificationError::Invalid)) {
+                invalid.set(invalid.get() + 1);
+            }
+            active.set(active.get() - 1);
+            result
+        },
+        async |bytes: &[u8], receipt: &recorded::Receipt<Append>| {
+            let reply: ReadReply<(), Append> =
+                serde_json::from_slice(bytes).map_err(Refusal::Json)?;
+            let scope = recorded::projection(receipt);
+            if reply.bombay != scope.bombay
+                || reply.operation != scope.operation
+                || reply.kind != Purpose::Admitted
+            {
+                return Err(Refusal::Scope);
+            }
+            Ok(Box::<[u8]>::from([127, 131]))
+        },
+        |left, right| recorded::identity(left) == recorded::identity(right),
+        &current,
+        &current,
+    );
+    let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+    let native_queries = NonZeroUsize::new(2 + EXCESS_QUERIES + 1 + 1).unwrap();
+    network.max_retained_queries = native_queries;
+    let node = Application::new(MailLedger {
+        entries: Vec::new(),
+    })
+    .open_node(network)
+    .await
+    .unwrap_or_else(|_| panic!("the actual bounded-verifier Node opens"));
+    let runtime = node.runtime_id();
+    let session = node.session.clone();
+    let address = listener_address(node.listen_addresses().await);
+    let mut outgoing = configuration(&address, &EndpointRole::Caller);
+    outgoing.max_retained_queries = native_queries;
+    let caller = zenoh::open(outgoing.to_configuration().unwrap())
+        .await
+        .expect("the actual TLS caller opens");
+    let caller_id = caller.zid().to_string();
+    let health = session
+        .declare_queryable(HEALTH)
+        .allowed_origin(Locality::Remote)
+        .with(FifoChannel::new(1))
+        .await
+        .expect("the same receiving Session owns the independent health declaration");
+    let (configured, inputs) = oneshot::channel();
+    let mut node = node.exports(export, async |application| {
+        let target = application.root().established_recipient();
+        let mut actual = metadata(
+            ProviderProfile::Recorded,
+            "ledger",
+            caller_id.clone(),
+            runtime.clone(),
+        );
+        actual.actor_generation = application.actor_address(&target).unwrap().0;
+        let mut originals = Vec::new();
+        for (sequence, payload) in (1..=4).zip([101_u8, 103, 109, 113]) {
+            actual.request_sequence = sequence;
+            let protected = serde_json::to_vec(&ReadRequestRef {
+                bombay: &actual,
+                kind: Purpose::Request,
+                operation: &Append(Box::from([payload])),
+            })
+            .unwrap()
+            .into_boxed_slice();
+            registered.borrow_mut().push(ProtectedMessage {
+                protected: protected.clone(),
+                proof: Box::from([137_u8, payload]),
+            });
+            let proof = match sequence {
+                1 | 2 => Box::from([139_u8, payload]),
+                _ => Box::from([137_u8, payload]),
+            };
+            originals.push(ProtectedMessage { protected, proof });
+        }
+        *claims.borrow_mut() = Some(actual);
+        let published = configured.send(originals);
+        published.unwrap_or_else(|_| panic!("Work awaits the four actual protected inputs"));
+        Ok::<_, Never>(target)
+    });
+    let outcome = node
+        .run_with(|application| {
+            let session = &session;
+            let caller = &caller;
+            let active = &active;
+            let verified = &verified;
+            let release = &release;
+            async move {
+                let originals = inputs.await.unwrap();
+                let mut discovery = Vec::new();
+                for key in ["bombay/verifier-capacity", HEALTH] {
+                    let querier = caller.declare_querier(key).await.unwrap();
+                    let matching = querier
+                        .matching_listener()
+                        .with(FifoChannel::new(2))
+                        .await
+                        .unwrap();
+                    let initial = querier.matching_status().await.unwrap();
+                    let matched = if initial.matching() {
+                        initial
+                    } else {
+                        loop {
+                            let status = matching.recv_async().await.unwrap();
+                            if status.matching() {
+                                break status;
+                            }
+                        }
+                    };
+                    let listener_closed = matching.undeclare().await;
+                    let querier_closed = querier.undeclare().await;
+                    discovery.push((matched, listener_closed, querier_closed));
+                }
+                let mut held = Vec::new();
+                for original in &originals[..2] {
+                    let incoming = caller
+                        .get("bombay/verifier-capacity")
+                        .allowed_destination(Locality::Remote)
+                        .payload(original.protected.to_vec())
+                        .attachment(original.proof.to_vec())
+                        .consolidation(ConsolidationMode::None)
+                        .timeout(Duration::from_secs(30))
+                        .await
+                        .expect("the held native query starts");
+                    held.push(incoming);
+                }
+                let first = entries.recv().await;
+                let second = entries.recv().await;
+                let original = &originals[2];
+                let mut overflow = Vec::new();
+                for _ in 0..EXCESS_QUERIES {
+                    let incoming = caller
+                        .get("bombay/verifier-capacity")
+                        .allowed_destination(Locality::Remote)
+                        .payload(original.protected.to_vec())
+                        .attachment(original.proof.to_vec())
+                        .consolidation(ConsolidationMode::None)
+                        .timeout(Duration::from_secs(30))
+                        .await
+                        .expect("each excess native query starts");
+                    let mut replies = Vec::new();
+                    let ending = loop {
+                        match incoming.recv_async().await {
+                            Ok(original) => replies.push(original),
+                            Err(cause) => break Err::<(), _>(cause),
+                        }
+                    };
+                    overflow.push((replies, ending));
+                }
+                let receiving = caller
+                    .get(HEALTH)
+                    .allowed_destination(Locality::Remote)
+                    .payload(vec![149_u8])
+                    .consolidation(ConsolidationMode::None)
+                    .timeout(Duration::from_secs(30))
+                    .await
+                    .expect("the independent remote health Query starts while consumers wait");
+                let query = health
+                    .recv_async()
+                    .await
+                    .expect("the native health callback progresses");
+                let health_input = query
+                    .payload()
+                    .map(|payload| payload.to_bytes().into_owned());
+                let health_published = query.reply(HEALTH, vec![151_u8]).await;
+                drop(query);
+                let mut health_replies = Vec::new();
+                let health_end = loop {
+                    match receiving.recv_async().await {
+                        Ok(original) => health_replies.push(original),
+                        Err(cause) => break Err::<(), _>(cause),
+                    }
+                };
+                let saturated = (active.get(), verified.borrow().len());
+                let live = (
+                    session.zid().to_string(),
+                    caller.zid().to_string(),
+                    session.is_closed(),
+                    caller.is_closed(),
+                );
+                release.add_permits(2);
+                let mut refused = Vec::new();
+                for incoming in held {
+                    refused.push(incoming.recv_async().await);
+                }
+                let original = &originals[3];
+                let permitted = caller
+                    .get("bombay/verifier-capacity")
+                    .allowed_destination(Locality::Remote)
+                    .payload(original.protected.to_vec())
+                    .attachment(original.proof.to_vec())
+                    .consolidation(ConsolidationMode::None)
+                    .timeout(Duration::from_secs(30))
+                    .await
+                    .expect("the later permitted native query starts");
+                let permitted_reply = permitted.recv_async().await;
+                let permitted_end = permitted.recv_async().await;
+                let mut ordinary = application
+                    .client::<Receipts>()
+                    .unwrap_or_else(|_| panic!("the independent Ledger client allocates"));
+                let admission = ordinary
+                    .send(LedgerCommand::Read(ordinary.recipient()))
+                    .await;
+                let reply = ordinary.receive().await;
+                let health_closed = health.undeclare().await;
+                let caller_closed = caller.close().await;
+                (
+                    originals,
+                    first,
+                    second,
+                    overflow,
+                    saturated,
+                    refused,
+                    permitted_reply,
+                    permitted_end,
+                    admission,
+                    reply,
+                    discovery,
+                    (
+                        health_input,
+                        health_published,
+                        health_replies,
+                        health_end,
+                        health_closed,
+                    ),
+                    live,
+                    caller_closed,
+                )
+            }
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the real Node execution and cleanup return"));
+    let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) = node
+        .into_parts()
+        .unwrap_or_else(|_| panic!("Node retains its actual close and export"));
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let (
+        (
+            originals,
+            first,
+            second,
+            overflow,
+            saturated,
+            refused,
+            permitted_reply,
+            permitted_end,
+            admission,
+            reply,
+            discovery,
+            (health_input, health_published, health_replies, health_end, health_closed),
+            live,
+            caller_closed,
+        ),
+        cleanup,
+    ) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("Work retains its complete native observations"));
+    cleanup.expect("the Application cleanup task joins");
+    closed.expect("the real Node Session closes");
+    let (origin, native) = native.expect("the original Ledger retirement remains");
+    let report = report.expect("the original root report remains");
+    let notifications = notifications.expect("both notification receipts remain");
+    let (_, _, startup, withdrawal, diagnostics, rows) = export.into_parts();
+    let ActorRetirement::Retained {
+        custody,
+        outcome: RetirementOutcome::Completed { completion, .. },
+    } = native
+    else {
+        panic!("the exact original Ledger state survives joined retirement");
+    };
+    let rows = rows
+        .into_iter()
+        .map(|request| {
+            request
+                .try_into_parts()
+                .unwrap_or_else(|_| panic!("all request producer loans ended"))
+        })
+        .collect::<Vec<_>>();
+    let excess = overflow
+        .iter()
+        .map(|(replies, _)| {
+            replies
+                .iter()
+                .map(|reply| {
+                    reply
+                        .result()
+                        .as_ref()
+                        .ok()
+                        .map(|sample| sample.payload().to_bytes().into_owned())
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let healthy = health_replies
+        .iter()
+        .map(|reply| {
+            reply
+                .result()
+                .as_ref()
+                .ok()
+                .map(|sample| sample.payload().to_bytes().into_owned())
+        })
+        .collect::<Vec<_>>();
+    let admissions = rows
+        .iter()
+        .map(|row| {
+            let admitted =
+                row.4
+                    .as_ref()
+                    .and_then(|(_, sender, admission)| match (sender, admission) {
+                        (Attempt::Returned(Ok(sender)), Attempt::Returned(Ok(()))) => {
+                            Some(sender.address())
+                        }
+                        _ => None,
+                    });
+            (row.1.0.as_ref(), row.1.1.as_ref(), admitted)
+        })
+        .collect::<Vec<_>>();
+    let final_origins = custody
+        .behavior
+        .entries
+        .iter()
+        .map(|(origin, _)| *origin)
+        .collect::<Vec<_>>();
+    let final_payloads = custody
+        .behavior
+        .entries
+        .iter()
+        .map(|(_, payload)| payload.as_ref())
+        .collect::<Vec<_>>();
+    // Retain real extra replies, native admissions and actor payloads before count assertions.
+    assert_eq!(
+        (
+            excess,
+            saturated,
+            healthy,
+            health_input.as_deref(),
+            health_end.is_err(),
+            admissions,
+            reply
+                .as_ref()
+                .map(|read| (read.from, read.message.as_slice())),
+            final_payloads
+        ),
+        (
+            vec![Vec::new(); EXCESS_QUERIES],
+            (2, 2),
+            vec![Some(vec![151_u8])],
+            Some([149_u8].as_slice()),
+            true,
+            vec![(
+                originals[3].protected.as_ref(),
+                originals[3].proof.as_ref(),
+                custody.behavior.entries.first().map(|(sender, _)| *sender)
+            )],
+            Some((origin.address(), final_origins.as_slice())),
+            vec![[113_u8].as_slice()]
+        )
+    );
+    health_published.expect("the original health Query reply publishes before verifier release");
+    health_closed.expect("the independent native health declaration withdraws");
+    caller_closed.expect("the actual TLS caller closes independently");
+    assert!(caller.is_closed());
+    assert_ne!(live.0, live.1);
+    assert_eq!(live, (runtime, caller_id, false, false));
+    assert_eq!(discovery.len(), 2);
+    for (matched, listener_closed, querier_closed) in discovery {
+        assert!(matched.matching());
+        listener_closed.expect("the matching listener withdraws");
+        querier_closed.expect("the matching querier withdraws");
+    }
+    assert_eq!(report.retirement(), RetirementAssessment::Established);
+    assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+    assert!(matches!(bound, Some(Ok(_))));
+    assert!(matches!(startup, Some(Ok(()))) && matches!(withdrawal, Some(Ok(()))));
+    assert!(polling.is_none() && disposal.is_none());
+    assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    assert!(session.is_closed() && admission.is_ok());
+    assert_eq!(completion, Completion::Stopped);
+    assert_eq!((first, second), (Some(0), Some(1)));
+    assert_eq!(
+        saturated,
+        (2, 2),
+        "the excess Query cannot enter a third verifier"
+    );
+    assert_eq!((peak.get(), active.get()), (2, 0));
+    assert_eq!(invalid.get(), 2);
+    assert_eq!(overflow.len(), EXCESS_QUERIES);
+    assert!(
+        overflow
+            .iter()
+            .all(|(replies, ending)| replies.is_empty() && ending.is_err())
+    );
+    assert_eq!(refused.len(), 2);
+    assert!(refused.iter().all(Result::is_err));
+    let verifications = verified.borrow();
+    assert_eq!(verifications.len(), 3);
+    for expected in &originals[..2] {
+        assert!(
+            verifications[..2]
+                .iter()
+                .any(|actual| actual.protected == expected.protected
+                    && actual.proof == expected.proof)
+        );
+    }
+    assert_eq!(verifications[2].protected, originals[3].protected);
+    assert_eq!(verifications[2].proof, originals[3].proof);
+    assert!(matches!(
+        diagnostics.as_slice(),
+        [
+            ExportError::RetentionCapacity,
+            ExportError::RetentionCapacity,
+            ExportError::RetentionCapacity
+        ]
+    ));
+    assert_eq!(custody.behavior.entries.len(), 1);
+    assert_eq!(custody.behavior.entries[0].1.as_ref(), [113]);
+    let read = reply.expect("the independent local Ledger Read returns");
+    assert_eq!(read.from, origin.address());
+    assert_eq!(read.message, [custody.behavior.entries[0].0]);
+    let admitted = permitted_reply.expect("the later valid request actually replies");
+    let result = admitted.result();
+    let admitted = result.as_ref().expect("native admission publishes success");
+    let proof = admitted
+        .attachment()
+        .expect("the native reply retains its actual proof")
+        .to_bytes();
+    assert_eq!(proof.as_ref(), [127, 131]);
+    let bytes = admitted.payload().to_bytes();
+    let admitted: ReadReply<(), Append> = serde_json::from_slice(&bytes).unwrap();
+    let expected: ReadRequest<Append> = serde_json::from_slice(&originals[3].protected).unwrap();
+    assert_eq!(admitted.bombay, expected.bombay);
+    assert_eq!(admitted.operation, expected.operation);
+    assert_eq!(admitted.kind, Purpose::Admitted);
+    assert!(permitted_end.is_err());
+    let [request] = <[_; 1]>::try_from(rows)
+        .unwrap_or_else(|_| panic!("only the keyed admitted request remains retained"));
+    let (key, raw, verification, input, native, encoded, protected, published, refusals, panics) =
+        request;
+    assert!(key.is_some());
+    assert_eq!(raw.0, originals[3].protected);
+    assert_eq!(raw.1, originals[3].proof);
+    let receipt = verification.expect("the actual provider returned").unwrap();
+    assert_eq!(recorded::projection(&receipt).bombay, expected.bombay);
+    assert!(input.is_none() && matches!(refusals, (None, None, None)));
+    assert!(matches!(panics, (None, None, None, None, None, None)));
+    let (unsent, sender, admission) = native.expect("the one actual Append was attempted");
+    assert!(unsent.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+    let Attempt::Returned(Ok(sender)) = sender else {
+        panic!("the native sender remains");
+    };
+    assert_eq!(sender.address(), custody.behavior.entries[0].0);
+    encoded
+        .expect("the actual native result was encoded")
+        .unwrap();
+    let proof = protected.expect("the actual reply was protected").unwrap();
+    assert_eq!(proof.as_ref(), [127, 131]);
+    assert_eq!(published.len(), 1);
+    assert!(published.iter().all(Result::is_ok));
 }
 
 #[test]

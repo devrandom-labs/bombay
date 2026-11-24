@@ -1,10 +1,1711 @@
 # Static remote actors and typed admission
 
+## Send-only Stop qualification (2026-11-21)
+
+Actual4f47efd1/731 passes formatting, strict optimized all-target remote Clippy
+with warnings and both mandatory supplementary denies, and the exact new
+application_clients case EACH debug/optimized. Independent healthyf397667b,
+final source-fault/restorationdfbeaaf4 and Root third code review1d2667b3 pass.
+
+One immutable full-authenticated-Binding policy grants Sender Increment401/Read
+and Owner Read/Stop. Actual sender Increment401 and Read403 establish useful
+rights/native Counter1. Otherwise-current authentic sender Stop407 is refused
+by operation membership. The same actual target then returns local User1;
+sibling Users1/2 bracket actual owner Stop409, whose original native admission
+and Established/NoFailuresFound report remain. Four native Query streams are
+fully drained; actual replies1/1/0/1 and all unexpected originals survive through
+Node/Application/Peer cleanup before the first borrowed aggregate. A contrary
+retired target retains its actual nonwaiting Full/Closed original without an
+impossible receive. Same-policy owner admission/report defeats always-denying
+lifecycle. These are declared fake-provider rights, not production cryptography.
+
+Omitting ONLY the three-line operation-membership refusal makes EACH build fail
+the first complete equality at consumer.rs408: Counter User becomes absent,
+owner admission absent, sibling Users1/2 remain, and the acquired report still
+says Established/NoFailuresFound. The metadata/provider/target checks, source
+values and oracle are unchanged. This is a finite native-effect contradiction,
+not a timeout/setup error or a refusal-tag-only check. Later negative tags,
+original/custody and cleanup-success assertions are unexecuted/uncredited; the
+raw pre-oracle cleanup predicates do not confer those later assertions' credit.
+
+Whole consumer and all731 bytes/modes restore exactly before ORIGINAL healthy
+artifact controls EACH build pass. These are saved programs, not fresh healthy
+compilation. Both physical test targets are subsequently restored to original
+healthy bytes after preserving mutants and two fresh unused scans; dependency
+artifacts are not relabelled newly compiled. Four completed copies are gzip-only
+with full decoded hashes and two unused scans before unlink,433252745bytes
+logical file-size reduction, not exclusive APFS/global free-space savings. Raw
+copy paths are retired, never replayed/recreated. Shared unfinished dependencies,
+current valid programs, exact source/packages/raw and required old fixtures stay.
+
+The initial fixture incorrectly returned a child's message recipient. Actual
+E0277/three same Target diagnostics at a498 executed zero tests. The existing
+child EstablishedActor supplies the required installed lifecycle; retaining and
+returning that original capability fixes the handoff without new API/plumbing.
+Unused topology-declared Entity families need no installation: explicit ()
+installation/native contracts apply. No irrelevant family service was added.
+The next2854 strict gate stopped only on assert_is_empty, also zero tests;
+len()==0 preserves the same empty-Ledger oracle and prints the actual count.
+Both narrow corrections were independently reviewed; all failed epochs remain
+preserved. The final source qualifies only after actual strict0/runtime results.
+
+Current retained change is tests+569/-3/net566 in existing consumer.rs;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0,
+45approved/allcharged. The formatted size exceeds the200–350 forecast honestly.
+Every old body/assertion reconstructs byte-exact; imports and the new journey
+are the only additions. Local metadata scope support composes from the existing
+operation-independent wire::current and uniform pre-decode request check plus
+original scope negatives/Stop positives; no repeated Stop Cartesian matrix or
+OtherActor fault is claimed. Records live in acceptance-current/stop. The final
+checkpoint changes only these two task records from actual4f47; other729 inputs
+remain byte/mode-identical, not a new runtime execution.
+
+This closes the selected incoming send-only Stop composition locally, not full
+R11/AUTH1/NET1 or delivery. AUTH1's separate local implementation needs no live
+Zenoh prerequisite; its current-source ID/AUTH map/gates and reviewed delivery
+remain. The isolated C03 rotation/provider-loss source is reviewed but unexecuted;
+its scope includes same-actor progress, not a sibling. SDKscope47 approval is
+still pending; no extra owner/profile/lock edit is inferred. Original automatic
+holds, original05ec unknown cause, all remaining R24/resource/full-goal clauses,
+combined28/Nextest/minimum/CI/distillation and normal recorded merges remain.
+Requirement states and reciprocal dependency edges are unchanged.
+
+## Initialization-to-export qualification and support reconciliation (2026-11-21)
+
+Actual frozen1be4d0d1/731 passes formatting, strict optimized all-target remote
+Clippy with warnings and both mandatory supplementary denies, and the two exact
+startup cases EACH in debug and optimized builds. Independent healthy review
+2d2297bc and final source-fault/restoration review5fe3a793 pass. Root's third
+source/counterexample review retains their same scoped conclusions.
+
+The existing StartupCounter at MAX returns its real CounterError::Overflow
+before any Actions. Its actual original value0/countMAX survives with
+InitializationRejected, uninvoked binding and Work, zero startup notices and
+zero native declaration/request receipts. The same concrete composition from0
+must really initialize once, emit its startup User1, bind/declare and serve a
+protected Read0; its native User retains value0/initializations1. Actual Node
+close, Application cleanup, native root custody/report and both notification
+receipts remain separate acquired facts. These are existing owning types and
+public composition, not a new failing actor, placeholder export or accessor.
+
+The only temporary source fault adds the actual native declaration before the
+Application startup gate in Node::run_with. EACH build then fails the first
+post-cleanup equality at retirement.rs381: actual original0/MAX with all callback
+counts0 but Some(Ok) declaration versus required None. This is a real declaration
+receipt, not a timeout or native setup refusal; final withdrawal cannot erase
+that durable original. Later negative assertions are unexecuted/uncredited.
+Whole Node and all731 inputs are restored exactly before the four ORIGINAL
+healthy-artifact controls: both cases EACH build pass again. Those are saved
+original programs, not fresh healthy compilation. Mutant programs remain fully
+preserved; both current target programs were restored byte-exact after two fresh
+unused scans each. Dependency artifacts are not relabelled newly compiled.
+
+The retained software delta is tests+411/-1/net410 in the already-charged
+retirement.rs; raw author+275/-1/net274 and forecast180–260 remain distinguishable.
+Production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0;
+scope45/45 remains fully charged. Four completed program copies are gzip-only
+with full decoded-byte/SHA restoration and two fresh unused scans before unlink.
+Logical retained-file size falls902269377bytes; this is not exclusive APFS or
+global free-space savings. Their raw paths are retired, never replayed/recreated.
+Unfinished shared dependencies/current valid targets, exact inputs/packages/raw
+and old-version fixtures remain protected. Records and source archives live in
+acceptance-current/readiness. Only these two task records differ from executed
+1be4 at the final checkpoint; other729 bytes/modes are identical.
+
+This closes the selected failed-initialization/native-export law locally. Valid
+static grants, target certification, exact withdrawal and closed endpoint facts
+retain their own owning proofs. No same-name replacement/old-generation promise,
+dynamic advertisement or stopped restart candidate is recreated; full R16,
+current combined checks, CI and reviewed delivery remain open.
+
+### Selected pressure, availability and scenario evidence
+
+Read-only reviews6f1a22f0 and e657d788 reconcile current selected requirements
+without inventing duplicate services or a second runtime:
+
+- **R19:** Query pressure34807f9f and Reply pressureaef93e57 retain actual held
+  consumers, finite admission/retention and independent same-Session health.
+  Owning callbacks use nonwaiting transfer; selected Drop/overflow configuration
+  is explicit. Telemetry and bulk streams are unselected application classes,
+  not missing new services. No universal CPU fairness, global allocation or
+  arbitrary stalled-Behavior claim follows.
+- **R21:** Availability is the composition of actual committed startup, certified
+  bound target, native declaration, authenticated configured scope, actual
+  permitted command admission and selected exact withdrawal/retirement. Native
+  matching is route visibility only. R16 supplies startup ordering; current
+  admission/provider/withdrawal owners supply distinct remaining facts. The
+  actual two-deployment same-name isolation proof5a1a231c remains independent.
+  Static endpoints/discovery omissions and disabled recovery caches are explicit;
+  no advertisement, resolver, recovery-history service or matching authority is
+  added by this composition.
+
+R23/SIM09 asks equivalent semantic scenarios and their real-process mapping;
+it does not require one shared interpreter or a duplicate local Application.
+SIM07's oracle remains independent of the implementation. The accepted process
+child already schedules three synchronous sends in one joined worker poll,
+preventing actor drain during that prefix. Literal2/3/4 observations and exact
+Full(original) recovery are independent of the capacity implementation. Do not
+extend or relabel schedule.rs's separate replay/expiry/revocation event model.
+
+| Selected scenario | Deterministic semantic facts and actual process projection |
+| --- | --- |
+| Ordinary success | Typed admission and processed Increment precede actual Read1; transport enqueue alone is not processing. Separate TLS programs and real encoding are required. |
+| Mailbox pressure | Two admitted originals; Full retains the third without a fold; Read2; retry that SAME original once; Read3; ordinary separate TLS Increment/Read4/authorized Stop; both real reaps. |
+| Denied Stop | Actual pre-native provider proof refusal and independently readable Counter; denial is not target death. The authenticated send-only permission composition remains pending. |
+| Authorized Stop | Exact target control acceptance, termination and joined-retirement-derived completion remain distinct; unrelated sibling progress is independent. |
+| Lost reply | Independently processed Increment1 plus withheld publication yields caller Uncertain Increment/exit2; no nonexecution claim or fresh-ID automatic retry. |
+| Assignment EOF | Real Binding publication then configure EOF produces typed Configuration refusal and shipping exit1. This is process/configuration policy, not an actor crash or Counter transition. |
+
+The scoped source-bound native/provider/retirement receipts justify each
+projection. Current5d56f0a4 retains the pressure/EOF source faults and restorations;
+existing ordinary/loss/Stop proofs retain their original source epochs. This is
+not a new runtime execution, proof that remote Get met actor Full, a shared-state
+shortcut, or full R24's independent network-fault campaign.
+
+### Command-scoped uncertainty and support boundary
+
+Read-only c7c5d15a maps the selected post-join inspection route without adding a
+new diagnostic test or service. The actual loss child retains exact Increment101
+bytes/proof, trusted configured grant/provider identity, native processed User101
+and independent Read1 while publication is absent. Its parent retains caller
+Uncertain Increment/exit2 and both reaps. Client stores the original User, actual
+encoded/protected request before issuing Get. Native Get/response outcomes are
+acquired afterward; the unchanged post-join consuming handoff preserves all of
+these originals beside the validated Deployment. Existing extraction tests cover that handoff. These compose the
+configured-authority/Increment101 inspection route even with NO authenticated
+reply receipt. Configured authority is not proof of delivery/completion, and the
+separately known receiver processing does not upgrade the caller's uncertainty.
+
+The loss parent does not itself extract caller Client rows: this is actual-entry
+plus structural-retention evidence with separately tested extraction, not a new
+combined runtime assertion. Its six owning sources match the retained outcome
+reconciliation. Current-wide execution of existing parents/children remains
+required. The separate WriteZero presentation law is permission refusal only;
+it is not relabelled uncertainty. Diagnostic records end with owner disposal;
+thereafter record unavailable/outcome unknown unless independently established.
+No TTL/history/tombstone/telemetry API or raw-private-payload logging is selected.
+
+| Support fact | Exact current selection and evidence limit |
+| --- | --- |
+| Runtime and native owners | Runtime0.6/Engine0.4, Behavior/Actors0.31/Macros0.16, Address0.3/Communication0.1.7/private Observe/Timers0.2; unpatched locke5fd83cd. |
+| Transport | SDK1.10.10/config1.10.2/protocol1.10.1/transport1.10.4, TLS with declared fake provider profile; real localhost Peer subprocesses and separately scoped Router reconnect. Fake evidence is not a production cryptographic identity proof. |
+| Software compatibility | Four actual Runtime0.5/Core030 and Runtime0.6/Core031 caller/receiver pairs in both builds; explicit unsupported-version/feature refusals; no negotiation or downgrade. |
+| Platform | Actual Unix/local secure-process evidence; configuration-only address/IPv6 getters are not executable platform certification. No Windows/container/Kubernetes/WAN claim. |
+| Resources and delivery | Finite logical bytes and joined owner results keep their scopes. Whole enabled SDK task/declaration baseline, held candidates and final source/native/CI/distillation/reviewed merge remain open. |
+
+No requirement state or reciprocal dependency edge changes. R11's one genuine
+send-only Stop composition remains next; operation-independent shared metadata
+guards do not justify a repeated Stop Cartesian matrix. R18's reviewed numeric
+observation route needs two additional owners and a separately labelled profile;
+the scope47 question is PENDING, not approval or an edit. Original R03/R04/R07/R24
+automatic holds, original05ec unknown cause and every other full-goal obligation
+remain intact. This local checkpoint does not claim AUTH1/NET1 or Goal completion.
+
+## Send-only permission must not authorize Stop — pre-edit (2026-11-21)
+
+R11 model reviewa98ce99c narrows e2af's proposal to ONE current-Node SendOnly
+journey in the already-charged node_exports/consumer.rs. Shared wire::current is
+operation-independent and is called uniformly before decoding/selection; existing
+metadata negatives plus actual Stop positives compose for that metadata domain.
+Do not add OtherActor, a repeated Cartesian matrix or a second metadata fault.
+Current Runtime0.6/Core031/unpatched locke5fd owners and source contracts remain
+unchanged; author preparation confirms existing native TrySend and Stop products.
+
+Use the existing Creator/Counter/sibling/Ledger, Export lanes and actual TLS Peer.
+Immutable full authenticated Binding rows grant Sender[Increment401,Read] and
+Owner[Read,Stop]; choose a row by full nominal authenticated Binding equality,
+keep wire::current checks, then check the actual operation's membership. Four
+actual Gets retain sender Increment401/Read403, denied Stop407 and owner Stop409.
+After denial acquire actual nonwaiting target Read: receive only when admission
+really succeeds, otherwise preserve Full/Closed original and Unattempted receive.
+Independent sibling progress1/2 and same-policy owner Stop/report prevent an
+always-denying lifecycle path from passing. Preserve every native/provider/raw
+row and acquire complete parent/Node/Peer cleanup before the first borrowed
+aggregate; never unwrap contradictory mutant Stop facts before that oracle.
+
+Root's later intended fault omits ONLY this new operation-membership refusal.
+All metadata/provider/same-request checks and domain/test values remain unchanged.
+Actual bad Stop must retire the target and expose its missing/closed native Read
+at the first post-cleanup oracle, finitely in both builds. Restore the full owner
+then run original healthy controls. No actor crash/restart, forwarding, reply
+substitution, new actor/type/wrapper/API/dependency/framework or stopped task is
+selected. Original consumer tests and their assertions stay byte-exact.
+
+Forecast200–350 formatted test lines in this single existing owner plus these
+records; actual delta must be measured. Production+0/-0/net0, publicAPI+0types/
+-0types, dependencies/new source paths0, scope45/45. Two source/counterexample
+reviews precede Root's sole compiler and source fault; no execution credit yet.
+
+## Failed initialization must leave no ready export — pre-edit (2026-11-21)
+
+R16 planc918bcec maps the existing sequence: Driver pure initialization and
+settlement precede local startup publication; Application awaits that actual
+startup before Node binding, whole-product preflight and native declaration.
+Existing local rejection, binding refusal and target-preflight witnesses keep
+their scopes, but do not by themselves execute failed INIT plus zero native
+exports in the same Node trace. Current signed0432/Runtime0.6/Engine0.4,
+Behavior/Actors031/Macros016, Address03/Communication017/private Observe/
+Timers02/SDK1.10.10 use unchanged unpatched locke5fd83cd and these same owners.
+
+Reuse ONLY existing retirement.rs StartupCounter/protocol/error and normal
+Node/Export/provider/application composition on its supported multithread host.
+Initializations MAX causes its actual checked arithmetic to return existing
+CounterError::Overflow before Actions; independently require original MAX state,
+exact InitializationRejected cause, uninvoked binder/Work and no native
+declaration receipt. Initializations0 is the positive control: actual startup1,
+binding and declaration plus a real protected Read. Do not invent a new failing
+actor, placeholder exporter, public accessor or runtime. Preserve complete
+native results and actual cleanup before comparing independent facts.
+
+Public extraction may lawfully return the same unbound Node on failed startup;
+the owning private test can inspect its existing fields without a new API.
+Root's later intended sensitivity calls the existing native declare BEFORE the
+startup gate in already-charged node.rs; the failed-init case must then expose
+the actual Some(Ok) declaration despite absent binder/Work. Restore the full
+owner and actual healthy controls. No source fault is applied or authorized to
+the author. No replacement/restart or dynamic advertisement is selected.
+
+Forecast180–260 test lines in the single charged retirement.rs plus these
+records; production+0/-0/net0, publicAPI+0types/-0types, dependencies/new paths0,
+scope45/45. Author/independent source and counterexample reviews precede Root's
+debug/optimized execution. Current local law qualification is not full R16 or
+merged delivery; stopped candidates and all original obligations remain intact.
+
+## Process pressure and diagnostic qualification (2026-11-21)
+
+Current executed source6f30d7b8/731 on signed41376/Runtime0.6 passes formatting
+and strict optimized two-package all-target Clippy with warnings and both
+mandatory supplementary denies. Actual diagnostic, mailbox, assignment-EOF and
+ordinary process cases EACH pass debug and optimized execution. Independent
+healthy review532281b2 and final inverse/restoration review5d56f0a4 pass.
+
+The supported MultiThread1 test host runs its three synchronous sends in one
+actually joined worker task, returning the same affine client and original
+results. Actual capacity2 produces Full, native Reads2/3 and the exact original
+retry; only afterward does the ordinary separate shipping caller perform TLS
+Increment/Read4/Stop. Both process exits and native cleanup results are acquired
+before the complete parent equality. Removing only capacity2 exposes real
+Read3/3 and no returned Full original in EACH profile, failing that equality at
+pressure.rs1641 while shipping Read4 remains unchanged. The child independently
+fails its native User3-versus2 oracle. This proves native actor-mailbox pressure
+and subsequent remote continuation, not a remote Get itself encountering Full.
+
+The ordinary Serve actually opens/listens and publishes its Binding before
+assignment EOF. It returns exit1, empty stdout and the exact bounded deployment
+refusal. Changing only main's Err disposition to success exposes actual exit0
+with identical diagnostics in EACH profile, failing processes.rs646. Ordinary
+success controls still pass under that cut. This is natural assignment refusal,
+not actor crash/restart or a signal used as a cause.
+
+Every cut restores its complete owner/all731 inputs. Main's original physical
+shipping binaries are also restored before six saved-original process controls:
+mailbox, assignment and ordinary success EACH profile pass. Those are original
+artifact executions, not fresh compilation. Four actual negative runs fail
+their first complete parent equality; later negative assertions are unexecuted
+and uncredited. Nested child harness outcomes remain distinct from the root
+harness header/final summary; raw logs and retained child files are preserved.
+
+The diagnostic case uses a real empty standard writer's WriteZero and a fixed
+512-byte successful public-field presentation AFTER actual joined cleanup.
+Original raw-pair/cause/authority references and independently configured
+command/runtime/actor context remain intact. The native BorrowError is a
+zero-sized standard cause: its address identifies the retained field relation,
+not a unique allocation. Its prose is delegated to the actual original standard
+Display, under dispute review7b856948; the earlier hardcoded older text failure
+remains failed/uncredited. No private payload/proof or opaque receipt is logged.
+This case is permission refusal, not uncertain delivery; existing uncertainty
+proofs keep their source scopes. Retention/after-disposal policy below adds no
+history service or inference of nonexecution. Final support reconciliation and
+full R25 remain open.
+
+Initial current-thread fixtures could not satisfy the existing Node host
+precondition; original watchdog failures remain failed, not SDK bug evidence.
+The corrected host/prefix reviews1d4d36c8/483586ba preserve the same client,
+domain values and watchdog. Root's first failed-log reader rejected the Nix tmp
+prefix before reading; kept child files DID remain and were copied/rehashed.
+No disappearance or original05ec cause is inferred. Evidence is in the existing
+acceptance-current/process-diagnostics records, including all prior refusals.
+
+Retained software is tests+766/-12/net754 across three existing owners;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0.
+This adds verification capability, not code reduction. Scope45/45 remains fully
+charged. Twelve completed executable copies are now gzip-only after complete
+restoration hashes and two fresh empty lsof scans each; logical retained-file
+size falls801325064bytes. This is not exclusive APFS/global free space. Raw copy
+paths are retired, never replayed/recreated. Unfinished shared dependencies and
+current valid target outputs, exact sources/packages/raw/.d and old-version
+fixtures remain protected. No new obsolete worktree exists.
+
+Full R01–R25/AUTH1/NET1, remaining readiness/authority/resource/network/support
+clauses, combined gates, distillation, submitted-head CI/review and normal
+recorded merge remain open. No source fault, live compiler or delivered-state
+claim remains from this local batch.
+
+## Bounded diagnostic route — selected pre-edit record (2026-11-21)
+
+Under the existing delegated recommendation policy, select the existing
+scope-owned post-join inspection route recommended in46c2fad6. Keep concrete
+original commands and their trusted configured/provider authority context in
+the existing finite Client/Export/Request rows. Inspect only after acquiring
+the actual joined outcomes. Retention ends when the actual owner is disposed;
+afterward report diagnostic record unavailable and outcome unknown unless
+separately established. No TTL, historical lookup, tombstone, task, callback,
+public type, arbitrary-label metric or telemetry service is selected. Ordinary
+payload-hiding Debug and conditional Error/source remain the existing contract.
+Inspection of a private original is deliberate local access, never safe-to-log
+serialization. This selects the bounded route; it is not execution evidence.
+
+Current41376/locke5fd83cd still selects Runtime0.6/Engine0.4, Behavior/Actors031,
+Address0.3/Communication0.1.7/private Observe/Timers0.2/SDK1.10.10 without patches.
+No owner or dependency contract changes. Existing request/cancellation and
+lost-reply evidence supplies actual uncertainty provenance in its source scope;
+do not relabel a permission refusal as uncertain delivery. The charged
+permissions.rs journey supplies exact acquired command/authority context,
+original typed refusal and joined results for a small presentation-failure law.
+After joining, format through standard io::Write on a finite empty byte slice:
+acquire actual WriteZero outside assertions, then independently inspect the same
+original facts. A sufficient fixed slice supplies the successful public-field
+control. Retain the existing privacy/native-cause oracles and source-mapped
+negative evidence without another source-disconnection campaign. This is a
+failure of the selected real presentation route, not a fictitious runtime sink.
+Post-join source ordering explains why presentation cannot hold retirement.
+
+Expected change30–70 test lines in existing permissions.rs and these records;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new paths0,
+scope45/45. Two source/counterexample reviews precede Root D/R qualification.
+Retention-end truthfulness is an ownership policy, not evidence of remote
+nonexecution. Current final support table/gates and full R25 remain open.
+
+### Forwarding candidate — automatic review hold
+
+The R07 forwarding proposal was stopped by automatic review during the
+read-only acceptance-agent turn, before implementation authorization. Preserve
+its refusal and available planning evidence; do not retry, rephrase or relocate
+the candidate under another requirement. No source change or semantic test
+result follows. This joins the existing stopped correlation/restart candidates;
+it does not stop independent process or diagnostic work. Full goal unchanged.
+
+## Process mailbox pressure and refused assignment — pre-edit (2026-11-21)
+
+The initial current-thread host choice below is superseded: actual d21's child
+fails before binding, and the selected Node::open_node contract rejects every
+non-MultiThread host before SDK opening. Its parent40s watchdog supplies no
+domain acceptance. Failed-child retention and stage observations now preserve
+that boundary; neither changing a timeout nor an SDK bug is claimed.
+
+Use the supported multithread runtime with exactly one worker. Move the actual
+affine ApplicationClient into ONE joined worker task whose entire body is the
+three synchronous try_send calls with no await/blocking/handoff; return the same
+client and all three originals/results to Work. The Counter's ordinary spawned
+task cannot poll between those calls on that one worker. Merely changing the
+runtime flavor while keeping the prefix on block_on's main thread would NOT
+establish this schedule. Return/reuse the same client for the original Full
+retry, conserving its sender identity and sole receive authority. No extra
+sender, actor, protocol, wrapper, runtime owner or API is selected. All existing
+Reads2/3, remote Read4, joined cleanup, source-cut and timing oracles remain.
+The original failed source/log/program and unsuccessful stages retain their
+epochs. This is a test-host correction to satisfy the owning API, not a product
+runtime change or an explanation of the unrelated original05ec watchdogs.
+
+R23 already has actual two-program TLS success, response/client pressure,
+allowed/denied Stop and processed-before-reply loss. Plan55023b4a isolates the
+missing actor-mailbox pressure and natural adverse exit without repeating those
+journeys. Current signed41376/Runtime0.6/Engine0.4, root locke5fd83cd has no
+patches: Behavior/Actors031 own Counter.stop_on_shutdown and Actions;
+Communication0.1.7 owns bounded Full/Closed and exact original recovery;
+Address0.3 owns exact endpoints, private Observe owns joined facts, Timers0.2
+owns timers, SDK1.10.10 owns actual TLS Sessions. Current ApplicationSender
+try_send delegates directly to the exact endpoint; ApplicationScope's existing
+mailbox_capacity selects actor capacity. No dependency contract is changed.
+
+Use only existing processes/pressure.rs and processes.rs. A test-owned receiver
+executes the unchanged ordinary Counter and existing three Export lanes on a
+single-thread runtime at actual actor capacity2. Withhold the ordinary shipping
+caller's assignment until pressure is observed. In one synchronous Work poll,
+two actual Increment sends fill the mailbox and the third returns its original
+Full. No actor can drain between these calls. Then ordinary FIFO Read observes2;
+retry that same retained original exactly once, Read observes3. Only then may
+the ordinary separate shipping caller receive its configuration and perform
+actual TLS Increment/Read4/Stop. Both actual process reaps and joined cleanup
+precede the first complete pressure aggregate. The first Read prevents a false
+pass where an admitted third command skips retry but still ends at4.
+
+Sensitivity omits only this receiver's selected mailbox_capacity2, using the
+existing default. The third send then admits and first Read becomes3, which
+must fail after complete native/process acquisition. This is configuration
+sensitivity, not a mutation of Communication internals. It proves native actor
+mailbox Full/recovery followed by real remote continuation, not that a remote
+Get itself encountered Full. No new actor/Hold message or public-example
+instrumentation is permitted; test-controlled children run only through their
+exact parent, using the existing isolated process-test pattern.
+
+Separately, the unchanged shipping Serve publishes its actual Binding, then
+receives assignment EOF. Existing configure returns Configuration refusal;
+joined Node cleanup and main return actual Exit1 with the bounded cause and
+empty stdout. This is natural post-binding assignment refusal, never a signal,
+crash/restart or timeout-as-cause. A Root-only temporary Err exit-disposition
+cut in the already-charged main owner must expose Exit0 instead; restore the
+complete owner before original success controls. No fault is authorized yet.
+
+Forecast360–550 test lines across these two charged owners and current records;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new paths0,
+cumulative45/45. All original cases/assertions remain intact. Author and
+independent source/counterexample reviews precede Root's shared debug/optimized
+execution. No full R23/NET1 or delivery claim follows from this selected plan.
+
+## Deployment and nesting qualification (2026-11-21)
+
+Executed sourceed1061aa/731 inputs on signed1a02/Runtime0.6 passes format and
+strict optimized remote package all-target Clippy, with warnings and both
+mandatory supplementary denies. Actual Application consumer tests pass one
+deployment case and three nesting cases EACH debug/optimized profile. Healthy
+independent review6e796162 and final inverse/restoration review5a1a231c pass.
+The pre-edit records below retain the selected laws, owners and limitations.
+
+Both deployment routes are matched simultaneously. The same exact key and
+stable names authenticate local and foreign-deployment originals independently;
+the separate local placement comparison rejects the latter. Acquired native
+Users after both cleanup chains are(1,1). Removing only that comparison yields
+actual(2,2), failing the first complete state oracle in both profiles. No
+separate constructor-call counter, discovery authority or new namespace is
+claimed; the native admission and processed User trace supplies the observation.
+
+The same authenticated depth3 Ledger Append succeeds at nesting3 and original8,
+and refuses at2 before provider/decoder/native admission. Native query EOF
+precedes the sole terminal Ledger Read; normal joined cleanup precedes its
+state oracle. Passing only nesting+1
+to the existing Query check yields actual sender/entries([sender],1) instead
+of([],0), failing the first complete state oracle in both profiles; both legal
+controls still pass. No parser/global/SDK heap bound follows from the absent
+domain decode-allocation cell. The public extraction tuple stores this
+ExportError in its THIRD slot; the initial first-slot compiler refusal ran no
+tests and was corrected against the actual owning API, without changing a law.
+
+Each cut restores the complete owner and all731 healthy inputs before original
+healthy-artifact controls: deployment1PASS and nesting3PASS per profile.
+Those controls are actual saved-binary executions, not fresh recompilation.
+Later inverse assertions are unexecuted and uncredited. Source snapshots,
+archives, raw outcomes, exact restored modes and independent reviews remain in
+acceptance-current/admissions. No source fault remains applied. The first
+external selector missed the consumer namespace and selected zero tests; that
+metadata refusal has no runtime credit. Correct actual named selection then
+executed the unchanged tests. A concrete Box::pin stores the existing large
+joined future without type erasure, new runtime state or payload copies.
+
+Retained software delta: tests+605/-55/net550 across the two existing owners;
+production+0/-0/net0, publicAPI+0types/-0types, dependencies/new source paths0.
+This is added verification capability, not code reduction. Scope45/45 remains
+fully charged. R15 reconciliation below selects no additional mechanism.
+Six completed executable copies are now gzip-only after full restored-byte
+hash checks and two empty lsof scans per path. Retained-file size falls by
+634929494bytes; two obsolete mutant target paths remove264437280bytes
+separately. Shared/cloned blocks make these figures non-additive; no exclusive
+disk-space claim follows. Raw executable copy paths are retired and must not
+be recreated/replayed. Unfinished dependencies, exact inputs, packages, raw
+logs and required old-version fixtures remain protected.
+Full R02/R21 and remaining R01–R25/AUTH1/NET1, combined checks, distillation,
+exact submitted-head CI/review and normal merged delivery remain open.
+
+## Logical nesting before admission — pre-edit record (2026-11-21)
+
+R02's existing fixed vectors, parser limits, strict metadata, authenticated
+original bytes and fragmented size/allocation witnesses remain intact. Plan
+1e32945a identifies one missing composition: a schema-valid, exact-pair-authentic
+Ledger Append of logical depth3 must be refused by the actual Export when
+configured nesting is2, before verification, domain decoding or admission.
+Current1a02/Runtime0.6/Engine0.4/Core031 and unpatched locke5fd83cd select the
+existing json-event-parser0.2.3, json::check, Query producer, Scheduled provider,
+typed submission lane, MailLedger and ordinary Node/peer retirement owners.
+The actual Query check stores ExportError::Json with json::Error::Nesting before
+provider entry. Limits is the existing Copy product; no parser/API change.
+
+Reuse the existing concrete pretty Append host in charged node_exports/bytes.rs
+with explicit NonZeroUsize nesting and an existing typed expected outcome. Keep
+the original nesting8 case and every original successful assertion. Add the
+same Append at exact3 as a legal control, and at2 as the one-level excess case.
+This schema has no depth2 Append. Do not add another encoding or an early
+Ledger Read: Read terminates MailLedger. Drain actual native query EOF first;
+one final independent terminal Read and normal joined cleanup precede the
+empty-Ledger oracle. An erroneously accepted Append and its extra native reply
+must reach that oracle rather than a premature missing-refusal assertion.
+
+The refused row must retain the exact native input/proof and typed Nesting
+cause; provider/decoder/constructor/admission/publication remain absent and
+the existing decoder-allocation cell stays None. This proves no domain payload
+decode allocation, not zero parser/global/SDK heap. Existing independent
+oversized materialization measurements are not repeated or broadened.
+
+The intended already-charged Query owner sensitivity changes only the passed
+Limits.nesting to limits.nesting.saturating_add(1), preserving all other
+fields/checks, bytes/proof, provider, scope and replay policy. The depth3 Append
+then executes at configured2 and must fail the first independent empty-state
+oracle after cleanup; exact3 and original8 controls still pass. Restore the
+whole Query owner and all other inputs before original healthy controls.
+
+Expected retained edits: existing bytes.rs and these records; temporary cut:
+existing remote/export/query.rs. Forecast120–220 test lines; production+0/-0/
+net0, public types+0/-0, dependencies/new paths0, cumulative45/45. Parameterize
+the one existing host only, without a new wrapper/type/generic framework or
+changing original successful expected values. Two source reviews precede
+acceptance. Root combines this independent test with same-name isolation into
+one frozen application_clients build per profile after all writers release.
+No new cryptographic representation, allocator, stopped correlation/restart
+candidate, full R02/NET1 closure or delivered-state claim is selected.
+
+## Same-name deployment isolation — pre-edit record (2026-11-21)
+
+R21 still needs two live deployments with identical stable actor/host/protocol
+names and the same exact export key. Existing overlap uses different keys in
+one deployment, where actual runtime/target refusal masks this question.
+This is the selected Bombay placement policy, not a new actor-model law.
+Read-only plan304a32a0 verifies current1a02/Runtime0.6/Engine0.4, locked
+Behavior/Actors0.31, Macros0.16, Address0.3, Communication0.1.7, Timers0.2,
+private Observe and SDK1.10.10/TLS; locke5fd83cd has no patches. Existing
+Application/Node binding, Export, typed reply lanes, nominal provider Receipt,
+configured Binding and ordinary native Counter own the complete journey.
+
+The smallest regression uses two actual Nodes and two directed peers. Each
+peer connects only to its receiver, with the same key and stable names across
+deployments. Both routes become matched before requests start. Each receiver
+gets one authenticated own-deployment Increment and one separately
+authenticated foreign-deployment Increment whose actual runtime, target,
+caller and other scope fields are valid for that receiver. A finite trusted
+catalog selects the original by exact bytes/proof before invoking the existing
+Recorded verifier; no receipt is manufactured from claims. Its nominal Binding
+comes from recorded::identity, independently of untrusted metadata.
+
+Existing wire::current checks authenticated fields and the actual receiver.
+A separate local comparison rejects a trusted binding from another configured
+deployment with existing wire::Refusal::Scope. These are independent facts:
+authentication does not establish local placement. Both constructor lanes stay
+outside Behavior folds. Acquire all replies/refusals and both genuine cleanup
+chains before comparing independent FIFO Counter Read Users: healthy(1,1).
+Temporarily omitting only this local placement guard must expose(2,2) at that
+first complete effect oracle; extra replies must remain retained until then.
+Restore the entire test owner exactly before positive controls.
+
+Expected edits: existing charged node_exports/overlap.rs plus these existing
+records. Forecast350–500 test lines before formatting; production+0/-0/net0,
+public types+0/-0, dependencies0/new paths0, cumulative45/45. Reuse existing
+wire/protocol/peer code unchanged; preserve every existing named overlap law.
+An ordinary concrete async closure may share the two actual journeys, returning
+owned results for the joint oracle; no new wrapper/type/trait or generic test
+framework is selected. Root alone formats/compiles after author/source reviews.
+Discovery/recovery services and recovery caches remain explicitly omitted;
+matching supplies route availability, not hosting authority or durable history.
+No new advertisement, namespace format, ACL, SDK policy or stopped
+correlation/restart work is selected. Full R21/NET1 and delivery remain open.
+
+### Approved ordering scope — reconciliation
+
+Independent reconciliationa5097e53 maps R15 to the existing approved decision:
+request sequence identifies a request; it promises no FIFO across independent
+requests or links. A causal caller waits for the prior processing reply before
+submitting dependent work. Existing overlap compares the unsorted actual emitted
+sequence and retains a held request's late reply beside independent fresh work;
+same-actor Router reconnect preserves the acknowledged Read sequence(1,2,2)
+without another replay admission or initialization. These witnesses map the
+selected ordering promises, so no new ordering mechanism/campaign is selected.
+Their original source/execution epochs stay explicit; this reconciliation is
+not fresh1a02 runtime execution. Current combined gates and delivery remain
+separate. Independent correlation substitutions and restart work retain their
+existing stops and cannot be moved into R15 to bypass them.
+
+## Current compatibility and reply-pressure qualification (2026-11-21)
+
+The full R01–R25/AUTH1/NET1 goal remains active. Scope is now45-of-approved45,
+including the restored Client source cut. This is local scoped qualification,
+with remaining resource/fault/diagnostic evidence and final combined gates,
+minimization, reviewed PR/CI and normal merge still open.
+
+**R05:** actual Runtime0.5/Core030/Engine0.3 and current0.6/Core031/Engine0.4
+programs pass all four caller/receiver pairs in debug and optimized builds.
+Each performs the complete Increment, Read1 and joined Stop journey. Immutable
+old source940f77eb, both executables/profiles and complete locked graphs are
+verified and persistently rooted (2ad8). The shared private deployment policy
+passes five real Application cases per profile: supported TLS and separate
+unknown-wire/schema/profile/required-SHM refusals before native admission.
+
+Omitting only the three version/profile guards yields exactly three failures;
+omitting only the SHM refusal yields exactly one. The first post-cleanup
+aggregate observes actual checked ReadReply1 and native activity1/1/1 instead
+of none/0/0/0, with independent Counter state1 before and after. Supported
+controls still pass. Both full-owner restorations match all731 original inputs;
+saved original healthy binaries pass all five cases again per profile.
+Independent execution reviewd3ba1993 closes this selected R05 law; restoration
+executions are not fresh Cargo compilations. Later negative assertions are
+unexecuted and earn no credit. No negotiation, downgrade, new wire format,
+serialized field, CLI or transport support was added.
+
+**R19 Reply:** the original held-request control and valid TLS burst pass both
+profiles. Four identical authenticated A replies arrive while the first verifier
+is held; same-Session health149/151/EOF progresses, then B completes. Healthy
+delivery is Users0/1 and one original response per row. Raising only the actual
+callback semaphore from declared R1 to R2 produces Users0/0/1 and two identical
+A payload/proof originals at the first post-cleanup aggregate, in both profiles.
+The original Single control still passes. Client45282b54 and all731 inputs are
+restored exactly, and both original healthy cases pass again per profile.
+Healthy review974f6b03 and final independent inverse/restoration reviewaef93e57
+pass. Later negative closure/refusal/custody assertions are unexecuted. This
+proves selected Reply retention/callback progress, not an SDK task baseline or
+whole R19 acceptance.
+
+Executed source7c11aa1f passes formatting and strict optimized Clippy for both
+owning packages/all targets, with both mandatory supplementary denies. Initial
+compile/lint refusals ran no semantic tests and remain separate; narrow
+equivalent corrections are independently revieweda170a7a0/2e42faa9. Private
+example production is+67/-4/net63; tests+505/-76/net429; Nix+58/-0. Production
+library bodies/public types/dependencies are unchanged, with no new framework.
+No untracked input exists; documents are measured separately. This adds
+verification capability and is not code reduction or merged delivery.
+
+Source archives, raw outcomes, original binaries, restoration and review
+records remain in the existing compatibility and r19 acceptance records.
+The earlier dated stages below keep their original source/execution boundaries.
+
+## Retained payload bytes — change record (2026-11-21)
+
+R14 still needs a joint byte observation for retained requests, unread input,
+an actual blocked sender and acquired-but-unconsumed replies. Count limits
+alone do not supply that evidence. Source audite347775b and model plan6daf4dee
+use current5941/Runtime0.6, Behavior/Actors0.31, Communication0.1.7 and the
+unchanged SDK1.10.10/TLS profile; root locke5fd83cd has no patches. Existing
+Client request/response owners, Communication mailbox, opaque Recorded
+receipt, native reply ingress and ordinary sender futures own the work.
+
+The proposed finite profile has four immutable valid source originals.
+Actual effective mailbox capacity is2: A/B fill it, then C/D both become
+Pending before A is acquired and source admission closes. C's already
+acquired sender fills the released slot; unread B/C and pending D coexist
+with the acquired A row. Peak pending producers is2, then1, without spawning
+producer tasks. Exact originals remain owned through consumer disposal;
+closing admission alone is not their settlement barrier.
+
+One actual native request receives two identical valid replies. Capture both
+a held-verifier observation and the retained originals after normal cleanup,
+before extraction. Borrow available payload/proof lengths and owned receipt
+text; label inaccessible queue/submission terms as conservative finite-frame
+allowances. Keep provider/provisioning/oracle buffers separate and bounded.
+No logical length sum is a unique allocation, allocator peak or global SDK
+heap measurement, and no generic aggregate-byte API is selected.
+
+The intended sensitivity changes only the already-charged Client semaphore
+from R1 to R2. With exactly two replies, total native bytes are conserved:
+one accepted plus one refused becomes two accepted and no refusal. The
+counterexample must expose extra acquired wire/proof, receipt-text and queued
+User bytes at the first complete post-cleanup aggregate. It must not invent
+native-byte growth, assume callback ordering or fail first on a missing tag.
+
+Expected retained edits: existing client/tests/limits.rs and these existing
+records only; temporary cut: existing client.rs, followed by full restoration.
+Forecast tests+300–400 lines, production+0/-0/net0, public types+0/-0,
+dependencies0 and new paths0; cumulative scope remains45/45. Preserve every
+old named law and oracle. Independent model/source reviews precede acceptance;
+actual healthy/inverse/restored debug and optimized execution remains pending.
+This is the existing manual-request component frontier, not a new proof of
+the separate production Serve acquisition guard. Full R14 remains open.
+
+### Scoped byte and cancellation qualification
+
+Current Runtime0.6/Core031 sourcee5b3673e (731 inputs, limits1a9ce9d0)
+passes the new retained-payload witness in debug and optimized builds. Both
+existing Recorded/Scheduled cold Node cases also pass in each profile, closing
+their current-version execution gap without adding another cancellation test.
+The earlier R06/R13 source reconciliation13af559d retains the precise
+post-processing borrowed-wait cancellation and original-custody scope.
+Formatting and strict optimized remote all-target Clippy pass, including
+warnings and both mandatory extra denies. Independent healthy reviewa132d69c
+rechecks raw outcomes, toolchain, exact source archive and both executables.
+
+The actual already-charged Client semaphore cut R1-to2 fails this witness in
+both profiles at its first complete post-cleanup aggregate. Actual retained
+wire bytes are890 versus445, receipt-owned text230 versus115, and queued User
+payload16 versus8. Native payload custody remains890: accepted/refused890/0
+versus the healthy445/445 split. All four source originals retain their exact
+allocations/bytes through row, unread-prefix and pending-sender settlement.
+Held observations legitimately differ: the excess native reply is queued in
+debug but still arriving in optimized execution. Both fail from the terminal
+byte/ownership observations, without a callback-arrival timing fence.
+
+Client45282b54 and all731 inputs are restored exactly. The original preserved
+healthy executables then pass one actual test per profile; those controls are
+executions of the original artifacts, not fresh restoration compilations.
+Independent final reviewe9bfcd1d accepts these bounded results. Assertions
+after the inverse's first failure are unexecuted: typed refusal/cleanup-result
+success in that later tail is not negative-run evidence. All cleanup calls
+precede the terminal census, and no original is consumed merely to reduce it.
+
+Retained library production+0/-0/net0, public types+0/-0, dependencies0 and
+new paths0. Formatted test delta is+887/-2/net885, above the pre-edit forecast;
+the same already-approved owner remains within45/45. The additional private
+product groups coexisting byte observations only; it supplies no runtime
+observer, allocator, registry, wrapper or aggregate-byte API. Existing named
+test bodies/oracles remain byte-exact apart from module imports. Original
+compiler/lint/format refusals and equivalent corrections retain separate
+source records; passing successors do not erase them. Full R14, conditional
+SDK resource evidence, remaining original requirements and final combined
+gates/minimization/CI/reviewed delivery remain open.
+
+## Earlier scoped implementation and remaining acceptance (2026-11-20)
+
+The full R01–R25/AUTH1/NET1 scope remains active. Current main integration is
+PR444/d98 with Runtime0.6/Engine0.4, selected Behavior/Actors0.31@3a4e,
+Macros0.16, Address0.3, Communication0.1.7, Timers0.2, private Observe and
+SDK1.10.10. Tokio1.53.3/rustix1.1.6 and external checksums remain locked without
+patches. Selected complete Behavior instructions aa5c and actual provider,
+request, native admission, startup and retirement owners govern this work.
+No new production body, public type, dependency or runtime policy is retained.
+
+Four missing bounded witnesses now have actual healthy/inverse/restored
+execution in debug and optimized builds, with independent execution reviews:
+
+- **R09 verifier capacity**, review63451268: two actual held verifier futures,
+  one refused excess Query, then valid progress after invalid pressure ends.
+  The owning threshold inverse admits actual count(2,3) instead of(2,2), and
+  fails after cleanup. This is not arbitrary CPU fairness or cache/delegation.
+- **R05 configured compatibility**, review6141c04f: supported native Read and
+  separate typed wire/schema/provider-profile refusals retain original caller
+  input and independent unchanged receiver state. One comparator inverse
+  reaches all three exact mismatch oracles after cleanup. This is trusted
+  configured preflight; peer-version exchange/required features remain open.
+- **R11 held target startup**, reviewbf68e09b: genuine target termination
+  precedes settlement of its held startup resource; retirement and Stop reply
+  remain pending while its same-parent sibling increments/reads1. Release
+  yields native joined retirement, original child/readiness and notifications.
+  Removing only receiving.await produces actual premature QueryEOF after
+  cleanup in both builds. Later native-custody assertions are unexecuted in
+  that inverse; they pass in healthy/restored runs. SessionLocal does not
+  establish two public Applications or a full SDK-task baseline.
+- **R11 joined failure**, reviewf2f6957d: the same target releases its real
+  resource and then panics with its original allocation. Target and parent
+  independently retain Established/FailuresFound, the sibling progresses,
+  and the exact native cause survives. Erasing only the parent's failure
+  assessment at Node's actual result handoff fails after cleanup in both
+  profiles; the successful startup control still passes. Exact restoration
+  and saved original healthy executables pass both cases again.
+
+Exact originals and qualified artifacts remain in acceptance-current under
+verifier-capacity, compatibility and remote-retirement-law. Restored artifact
+runs are actual executions, not fresh Cargo compilation. Original source scope
+is preserved; no old Runtime0.5 proof is adopted. Test-only lint successors
+preserve bodies/oracles except equivalent Option branching and typed empty
+vector equality; their source reviews9ca97 and final combined execution remain
+separate. Existing tests, assertions and deadlines stay intact. Initial E0716,
+SDK capacity, parent event contract and named send-effect syntax refusals ran no
+accepted semantic regression and remain preserved as such.
+
+## R09/AUTH-03 bounded delegation — decision and pre-edit record
+
+Delegated choice selects a concrete application-owned test-provider policy,
+not a direct-only waiver. Actual Mnesis Context leaves tenant representation
+to applications; it grants no authority. This application explicitly assigns
+independent tenant shop to its exact certified Counter export. Tenant is not
+inferred from deployment, controller, runtime or a path. No Selo production
+credential/delegation contract or cryptographic signing is claimed.
+
+Reuse actual Export verification/current-permission callbacks, opaque concrete
+receipts, the coherent retained Ref guard, existing Counter and normal native
+cleanup. Two authenticated provider-owned grant edges narrow root authority
+through broker to caller independently in tenant/protocol/actor/operation.
+Each scope has at most3 unique members; this delegated profile requires exactly
+2 links. Immutable configured evidence is shared through existing Rc ownership;
+no provider receipt cache exists (cache0). Replay retention remains separate.
+Current issuer status/generation, exact parent and issuer continuity, root
+anchor, exact target/purpose and local Instant deadline are checked before the
+existing nonwaiting native attempt. No await splits permission from admission.
+
+The source-only proposal/model review1ebdf450 requires an exact26-query census
+per provider with derived test capacities: six real native replies and20
+pre-admission refusals. Eight otherwise-lawful broadenings isolate both grant
+edges and four scope dimensions. Direct/overdepth and both root/leaf anchor
+controls isolate their corresponding guard. Root and broker rotation must
+refuse old credentials, accept freshly authenticated current credentials on
+the same stable target, and keep the old credentials stale. Revoke/restore with
+fresh requests also observes recovery without a negative cache. A complete
+post-cleanup native trace precedes per-row tag assertions; grouped inverses
+must reveal every corresponding actual illegal admission/reply, not just tags.
+
+Only already-charged node/tests/permissions.rs and these existing records may
+change. Forecast up to900 test lines, production+0/-0/net0, public API+0/-0,
+dependencies0. Reuse actual requester operation variants and preserve original
+wire/proof/receipt custody; this predecode refusal owns no fabricated native
+User. Source reviews e0148193/954851bf and Root full-source review now pass; Root
+integration preserves the whole old permissions owner byte-exact. Actual
+source55a passes all11 selected cases per profile (7 library/4 public consumer),
+including26 real Queries per provider, six native replies and20 distinct
+pre-admission refusals. Eight private policy omissions produce all26 native
+replies per provider in both builds:80 forbidden admissions observed after
+cleanup. Exact source restoration and four actual original-healthy-artifact
+executions pass all11 cases per profile again. Independent execution review
+d2e53aaa preserves the native-aggregate failure boundary and unexecuted later
+inverse assertions. These artifact executions are not fresh recompilation.
+A final source successor only moves two observation collections outside
+assertions, leaving every native operation/guard/first failure unchanged;
+current fmt and strict remote package Clippy with both denies pass (1ba3bee4).
+No new final-source runtime execution is invented. Current R08 freshness/capacity obligations,
+all other unproved clauses and final AUTH1/NET1 delivery remain open.
+
+Historical 3df scoped change record, including untracked inventory (none): six
+tracked paths, four owning test files plus this PRD and backlog status.
+Production: +0/-0/net0. Tests: +2932/-9/net2923. Public API: +0/-0.
+This adds verification capability; it is not source reduction or full feature
+delivery. Exact path deltas are retained in scoped-final-change-record.json.
+
+R09 local semantic acceptance now passes for the declared deterministic
+compositions, independently reviewed in r09-local-acceptance-composition.json
+(465654d1). This composes the actual live capacity/recovery and bounded grant
+proofs with fixed input/parser/trust-source bounds and cache0. Invalid-pressure
+recovery uses Discharge; exhausted Retain history deliberately refuses new
+work and has no unpromised liveness guarantee. R08's selected independent
+provider consumers remain separate. Current-source combined CI and reviewed
+merge are still required; this does not mark R09/NET1 merged.
+
+Cumulative scope remains40-of-explicitly-approved40, including restored owner
+cuts; no refund. Any41st path requires its explicit checkpoint. Full combined
+gates, final minimization, exact-head review/CI and recorded merge remain
+required after coherent implementation. No local witness marks the PRD merged.
+
+## R11 joined failure — pre-edit record (2026-11-20)
+
+The held-startup positive establishes delayed retirement and sibling progress,
+but has no actual target-owned runtime failure. Reuse that same trace with a
+closed Ready/Panicked startup choice. After release, the real startup drops
+its semaphore permit and panics with its original readiness allocation. Existing
+startup interpretation and joined task custody must retain that exact cause.
+The target and parent reports must independently establish retirement and known
+failure presence; the Stop request must retain that same target report while
+the unrelated sibling still processes its independent increment/Read.
+
+Only already-charged retirement.rs and these existing records change; forecast
+80–120 additional test lines, production +0/-0/net0, public API +0/-0 and
+dependencies0. Keep the original successful Ready assertions. Reuse the same
+finite watchdogs, pure parent, ActorExt composition, native Stop and joined
+cleanup. A temporary cut in already-charged Node will erase only the acquired
+parent report's failure assessment at the actual application-result handoff:
+the healthy Ready control must pass and the real failure case must reject the
+altered parent report after cleanup. The Stop declaration's separate report
+assignment lives in an uncharged file; no cut or transport proof is invented
+there, and query.rs is not its owner.
+Exact restoration and debug/optimized controls remain required. This is no
+NotEstablished/inability, two-Application or full SDK-task proof. The separate
+40-to-45-file checkpoint remains unanswered; no new path is authorized.
+
+### Scoped execution and source restoration
+
+Exact731-input source5fa6 passes both named cases in debug and optimized builds,
+formatting and strict release remote lib/tests Clippy with warnings and both
+mandatory supplementary denies. Reviewed Node.run_with handoff840 erasure
+source21d0 produces one healthy control PASS and one intended parent-report
+failure per profile after complete cleanup; the earlier exact target
+FailuresFound assertion has already passed. All assertions after that parent
+failure, including original-payload and final Stop custody, are unexecuted in
+the inverse. They execute in the healthy and restored controls. Node81d702ad
+and all731 inputs are restored exactly. Restored controls execute the actual
+saved original healthy binaries; they are not new Cargo recompilation.
+Independent six-run reviewf2f6957d verifies raw results, source, preserved
+binaries and extracted source archive. No library change is retained.
+
+R08 reconciliation3da63c40 removes an invented prerequisite: the accepted
+profile explicitly chooses finite lookup and scheduled oneshot providers;
+it does not require two cryptographic or parser algorithms. Their historical
+Application classification/revocation/expiry proofs and the new AUTH03
+stable-binding rotation controls supply the scoped laws. Current provider
+sources differ from those historical hashes, so current combined tests, CI
+and reviewed delivery remain required. Historical campaign JSONs are absent;
+neither historical inversions nor original-source outcomes are relabelled as
+fresh current-source execution. No new provider or runtime harness is selected.
+
+## R12/R18 automatic reconnect — pre-edit record (2026-11-20)
+
+Existing replay traces keep one connection throughout. The missing witness is
+real connection loss/restoration with the same living receiver Node, caller
+Session, exact actor and replay history. Use the existing RouterClient profile
+on both clients. Replace only an independently owned native TLS Router at its
+actual bound address with unchanged credentials; neither Application nor
+client Session is recreated. Selected SDK1.10.10 Client closed_session already
+retries its configured endpoints, so no reconnect API or retry policy is added.
+Acquire actual old-Router Delete and new-Router Put on both clients, actual TLS
+links and fresh matching before sending the explicitly selected replay.
+
+Reuse Runtime0.6/Engine0.4, Behavior/Actors0.31, Address0.3,
+Communication0.1.7, private Observe, Timers0.2 and unchanged locked SDK features
+transport_tls/unstable; no patches or dependency changes. Existing Network,
+ApplicationScope, actor facade, ActorExt shutdown, Export reply, recorded
+receipt, native event listener and exact request custody own each boundary.
+Before/after native events are not SDK task counts or all callback quiescence.
+
+A private test counter makes initialization observable through pure state and
+a typed startup Action to an already established external endpoint. Collect
+the entire startup-notice prefix after joined cleanup and retain native count1;
+no channel, Cell or callback runs in its fold. Process one protected Increment
+and acquire its acknowledgement plus independent Read1. During the broken
+connection, an explicit local operation progresses to2. Replaying the identical
+acknowledged bytes/proof/identity after automatic reconnection must reuse the
+original reply, retain no second native attempt and leave independent Read2.
+This is no uncertain retry under a fresh identity, caller-session retirement,
+actor-host restart, durable recovery or stopped-task retry.
+
+Only already-charged retirement.rs and existing PRD/status records may change;
+forecast450–650 test lines, production +0/-0/net0, public API +0/-0,
+dependencies0 and cumulative40/40. Two focused sensitivities stay in charged
+owners: omit query.rs canonical reuse to produce real native Increment3; then
+duplicate the test actor's actual typed initialization output and observe two
+delivered startup notices. The latter checks initialization-effect sensitivity,
+not an invented production transport-to-initialization route. Both profiles,
+exact restoration and complete cleanup precede law assertions. Model/source
+research and two independent counterexample reviews precede execution. The
+separate45-file approval remains unanswered; no new path is authorized.
+
+The first formatted draft exceeds its forecast: retirement.rs +769/-5/net764
+test lines before the final exact-link assertion (+770/-5/net765 afterward).
+Both source/counterexample
+reviews pass against82a0483b and preserve the complete original test suffix;
+their small hardening finding binds every TLS snapshot to its actual old/new
+Router identity. No production/API/dependency or file-scope expansion follows
+from the larger test trace. Selected SDK removes its links before Delete and
+inserts the new link before Put, so no extra observation wait is invented.
+
+The original61ceb test passes debug and optimized (d73dd1e8/25b70b09).
+Strict Clippy first refuses exactly one manual-let-else and two measured finite
+future sizes31264/20728; the equivalent pattern rewrite and scoped finite-test
+expectations pass corrected Clippy2c7abb84 with both mandatory denies intact.
+No action, value, policy or deadline changes; original positive execution stays
+at61ceb. Independent review2f006f4f qualifies this semantic successor while
+retaining the requirement for fresh final combined-source CI.
+
+To observe both faults without masking either, the existing startup-prefix
+equality joins the first complete post-cleanup native/business aggregate.
+Its expected facts are unchanged and compared once, by borrowing. One compound
+two-owner cut may then exercise both profiles: accept its intended failure only
+if the first raw assertion shows two real protected native processing Users,
+final value3 instead of2, AND two actual startup Users instead of1. Exit101
+alone supplies no proof. These are orthogonal effects; record one compound
+sensitivity, not two separately isolated executions. Exact restoration and
+saved original healthy-artifact positives remain required. No new production
+reconnect guard or runtime-init bug is inferred from the initialization control.
+
+The actual compound run now fails in both profiles at that complete aggregate:
+each raw result contains two successful native processing Users, final Read3
+instead of2, and two delivered startup Users instead of1, with initialization
+state still1. Both whole source owners and all731 inputs restore exactly.
+The actual saved original61 healthy executables then pass again in both builds.
+Independent final-execution-review16f64ed9 rehashes all six raw outcomes, both
+original executables and the complete compound archive. This is scoped semantic
+acceptance with explicit source-equivalence qualification, not fresh joint-source
+positive Cargo execution, full R12/R18 acceptance or delivery. Final combined
+checks remain required.
+
+## R12 distinct identity at full retention — pre-edit record (2026-11-20)
+
+The existing quota test repeats one registered identity after its first canonical
+row fills retention. It does not pair a full row with a distinct otherwise-valid
+identity. Extend only the already-charged public consumer quota.rs: register331
+and332 independently using the existing provider, admit331 with request limit1,
+and require332 to yield RetentionCapacity before another verifier, constructor
+or native Read. The paired request-limit2 control must admit both exact originals
+and acquire two real native Read replies and two distinct canonical keys.
+Query/protection capacities remain2; no eviction or sequence allocator is added.
+
+Reuse the selected locked owners above, existing Export retention and query
+loop, recorded provider identity, Peer::quota and joined Node/Application
+cleanup. Provider identity includes the sequence; current permission checks
+the authority, actor, runtime, caller and deadline without restricting it to331.
+Keep the existing repeat and original-cause refusal cases. Compare all retained
+rows, original bytes/proofs, verified sequences and native Users together after
+cleanup, before per-row checks. Omitting only the owning request-limit rejection
+must expose both real native Users and both original rows in the full case;
+an early row-count panic is not sensitivity proof. Healthy/negative/restored
+debug and optimized outcomes and two reviews remain required.
+
+Forecast100–150 added test lines, production +0/-0/net0, public API +0/-0,
+dependencies0. Only quota.rs plus the existing PRD/status records may change;
+cumulative scope stays40/approved40. This closes only the distinct-identity
+capacity pairing, not caller retirement, actor restart, durable deduplication,
+the full SDK-task baseline or the complete R12/NET1 acceptance.
+
+Formatted quota.rs measures tests +322/-119/net203, exceeding that forecast;
+the existing complete trace is reused rather than copied. Source review first
+required plain test functions for the two new entrypoints and conservation of
+the original first-query versus second-query reply census. Both are corrected
+before execution: the first complete aggregate includes first replies, actual
+Some replies and additional replies independently. Original two test entrypoints
+and all original cause/native/cleanup assertions remain. Production/API/deps0,
+no new path; this is net-positive verification code, not simplification.
+
+Actual sourceef46 now passes all four quota cases in debug and optimized builds,
+format checking and strict optimized caller Clippy with both mandatory denies.
+The owning rejection omission admits both331 and332: both profiles fail at the
+first complete post-cleanup aggregate with two actual native Read Users, two
+original byte/proof pairs, two verifier/constructor calls and one reply on each
+query. The room control still passes. Exact whole-query/all731 restoration and
+actual saved originalef46 executable replays pass all four cases/profile again.
+Independent final-execution-review74d3e1ec rehashes all six outcome logs, both
+executables and complete healthy/inverse source archives. Later full-case
+negative assertions are unexecuted; their healthy/restored controls pass.
+This closes the selected distinct-identity capacity pairing locally, with
+combined-source checks, full R12 and reviewed delivery still open.
+
+Local checkpointd1b1 complete delta against integratione2fb15a1: seven tracked paths,
+five owning test files and the two existing requirement records; no untracked
+files. Production +0/-0/net0; tests +4029/-131/net3898; public API +0/-0.
+The reconnect/quota checkpoint adds tests +1099/-124/net975 since3df, not a
+production capability or code reduction. All locks, manifests, production
+owners and SDK features remain exact. Cumulative file charge stays40/approved40.
+
+## R19 selected Query pressure — pre-edit record (2026-11-20)
+
+Existing verifier-capacity evidence stalls two real asynchronous Export
+consumers and acquires one excess Query EOF before release. Extend only the
+already-charged pressure.rs trace with three excess Queries and an independent
+health Query/reply/EOF on the same receiving Session while both verifiers remain
+held. Use a distinct actual TLS caller Session, the existing Caller credentials
+and the receiver's actual bound address. Bind both native IDs into the existing
+metadata and acquire real matching before Gets. Remote destination/origin rules
+exclude SessionLocal fallback. Keep all originals, every excess reply/EOF,
+later permitted append and final native Ledger state through joined cleanup.
+The health callback never invokes a Behavior;
+Work owns its reply and normal declaration withdrawal. No runtime task, wrapper,
+public capability, scheduler, telemetry service or test-controlled sleep is added.
+
+Reuse the exact locked owners and current recorded provider. Export query and
+diagnostic capacities stay4, retained request rows2. Derive native query budget7
+from two held, three excess, one independent health and one later valid request
+so an earlier transport limit cannot mask the selected Export law. Healthy
+expectation is two held verifiers, three explicit retention refusals, independent
+native health progress before release, then only the permitted113 append.
+The existing request-limit threshold inverse must allow the otherwise-valid109
+through and expose its actual pre-release reply and final native Ledger state
+plus the actual final Read User at a complete post-cleanup aggregate. A counter/tag alone is not
+proof. Preserve all original refusal-cause, exact byte/proof and cleanup checks.
+
+Forecast60–100 net additional test lines; production/API/dependencies0, one
+already-charged test owner plus existing records, cumulative40/40. This is the
+finite selected Query-class/verification-stalled-consumer witness, not arbitrary
+CPU fairness, a blocked Behavior executor, reply flooding or full R19. Model,
+counterexample reviews and focused healthy/inverse/restored D/R remain required.
+Do not reuse the separate append_after_full fixture: its deliberate synchronous
+actor-executor block cannot provide independent sibling progress.
+
+Pre-edit source veto: the shared Ledger Read is terminal. The proposed early
+Read would stop the target and invalidate later recovery, so it is rejected
+before any implementation. Keep the original terminal Read at the end; no new
+actor or changed Ledger law is introduced merely to produce an extra witness.
+This pressure trace proves independent native callback progress, not actor
+processing before release. Reusing the real TLS profile strengthens the earlier
+SessionLocal-only pressure boundary without adding a second networking owner.
+
+The formatted pressure draft measures tests +231/-29/net202, exceeding its
+forecast; production/API/dependencies remain0. All three excess requests are
+fully drained and retained before release, not concurrent reply flooding.
+Source review also replaces an expected-value index into possibly empty actual
+Ledger state with an optional source relationship, so an empty-state defect
+reaches the complete oracle instead of panicking during expectation construction.
+Actual caller and receiver IDs are compared as distinct after cleanup. Focused
+compilation and strict linting precede the expensive debug/optimized executions.
+
+Actual source9d825 passes the complete TLS-pressure trace in debug and optimized
+builds, strict remote library/tests Clippy with both mandatory denies, and fmt.
+The one owning request-threshold2-to3 cut admits109: both profiles fail at the
+first complete post-cleanup aggregate with its actual pre-release admitted
+reply, both native admissions and original requests3/4, final Read User and
+native Ledger payloads109/113, while the independent health exchange still
+completes. Exact whole-query/all731 restoration and saved original9d artifact
+replays pass again in both profiles. Independent six-run review34807f9f verifies
+both complete source archives, actual binaries, outcomes and failure boundary.
+The negative awaits health withdrawal/caller close but does not reach their
+success assertions or the later original custody tail; only positive/restored
+executions credit those values. This closes the selected finite TLS Query
+pressure witness locally, not reply flooding, full R19, SDK baselines or delivery.
+
+Complete current local delta against integratione2fb15a1 remains seven tracked
+paths, five owning test files plus these two requirement records, no untracked
+files: production +0/-0/net0, tests +4233/-133/net4100, public API +0/-0.
+The change remains net-positive verification code, with all production owners,
+locks, SDK features and dependency edges unchanged; cumulative charge40/40.
+
+## R05 actual software-version matrix — approved change record (2026-11-20)
+
+Joel explicitly approved expansion to45 changed paths. Use three new R05 owners:
+deployment.rs, processes.rs and flake.nix. The supported matrix and limits are
+recorded here; the existing example README remains accurate because the CLI,
+assignment contract, fixed schema1, provider profile and ordinary Nix commands
+do not change. This saves the fifth slot for the actual client.rs callback
+capacity inversion beside its owning limits test. No46th path is authorized.
+
+Test the real published Runtime0.5/Core030/Engine0.3 and Runtime0.6/Core031/
+Engine0.4 programs in all four caller/receiver pairs, debug and optimized.
+Each actual TLS exchange performs Increment, Read1 and joined Stop. Preserve
+one fixed wire/schema1; unknown wire/schema and required SHM are explicit typed
+incompatibilities before actor admission, with independent unchanged receiver
+state and normal two-Node cleanup. No adaptation, downgrade, retry or second
+wire format is introduced. Required support is the selected TLS profile; SHM
+remains unselected. This is configured compatibility, not authority from claims.
+
+Reuse the existing deployment/assignment owner, concrete request/reply DTOs,
+process guards, Node and admission ports. Old source is pinned published commit
+940f77eb with its unchanged manifest/lock; no personal checkout or current-source
+overlay. Reuse selected Fenix/Crane buildDepsOnly/buildPackage for actual old
+debug/release binaries, required runtime env paths and only the real consumers.
+Missing fixture is an explicit failure, never a skip or Cargo invocation from
+Rust tests. Default local builds remain SDK-free; no Cargo/flake lock changes,
+new dependency, public library type or runtime framework is planned.
+
+Forecast private example production net40–80, Nix70–120 and tests60–120 lines.
+Existing main/outbound consumer/PRD/status owners are already charged. The
+three new R05 paths plus the two reply-pressure owners use exactly the five
+approved slots. Exact selected lock/contracts and old/package source checks
+remain in compatibility records; actual executables/graphs and all matrix
+outcomes still require verification before any acceptance or delivery claim.
+
+## R19 retained Reply pressure — approved change record (2026-11-21)
+
+The owning client limits test now pairs its original held-request control with
+a valid TLS Reply burst. Use the existing Client, native callback and concrete
+response verifier: hold the first verified response, publish four exact valid A
+copies, acquire independent health on the same Client Session, then release and
+acquire ordinary B. Retained response count is1, pending request count1, native
+query budget2; target capacity3 allows the intended R1-to2 source cut to expose
+all actual Users0/0/1 instead of an earlier target-Full error. Healthy expects
+Users0/1 and exactly one original response per request.
+
+Response.original owns its native sample and count permit through retirement
+until public extraction. The final actual callback refusal is therefore acquired
+while that first response still owns its charge. A pre-release snapshot is only
+an optional observation: independent health is not an ordering fence for all
+other Reply callbacks. No busy polling, sleeps, copied callback, correlation
+field substitutions or stopped R04 candidate is introduced. First post-cleanup
+oracles retain every delivered User, native response byte/proof and health/gate
+fact; later oracles retain original exact refusal, request and closure facts.
+
+User-approved45 scope charges client/tests/limits.rs at41, R05 deployment and
+processes at42–43, and flake.nix at44. Only the actual client.rs callback-budget
+inverse remains reserved45; retained production/API/dependencies0 for this
+reply witness. The new test uses an ordinary runtime entrypoint, preserving the
+original control. Source review83ffe8a0 passes; actual focused debug/optimized,
+inversion/restoration and final execution review remain open. This is Reply
+retention and callback progress, not permission/correlation replacement or
+actor processing before release.
+
+## R20 selected TLS evidence reconciliation (2026-11-21)
+
+Reviewd9452eab reconciles existing wrong-server-root and foreign-credential
+native refusals beside usable protected controls. It compares every old guarded
+input, relevant consumed native guards/fixtures and lock-checksummed SDK source;
+external package blocks stay exact. Only workspace Runtime0.5-to0.6 and
+Engine0.3-to0.4 labels change in those locks. The original4eda root-selection
+falsifier remains at its original0.5/Core031 epoch; fresh55a0.6 positives are
+separate. This is applicability qualification, never a new0.6 negative run.
+
+The selected constructor creates only TLS endpoints, restricts protocols toTLS,
+requires mutual authentication/name checks and disables public-PKI fallback.
+Together with actual bad-root/foreign-credential native errors before protected
+admission, this proves the chosen fixed-profile failure routes do not silently
+fall back to insecure traffic. No additional plaintext mode or Cartesian
+credential campaign is selected by the literal R20 requirement. TLS protects
+each connection; an intermediary terminating a TLS hop can see metadata,
+payload and proof. The finite identity provider supplies no end-to-end secrecy.
+That limit already belongs to the accepted profile and is preserved here.
+Remaining work is final combined-source qualification/minimization/CI/reviewed
+delivery, not a newly demonstrated missing transport implementation.
+
+## Actual main integration — PR444 (2026-11-20)
+
+Local scoped checkpoint59550a1b preserves the two retained tests and their
+qualified0.5 source. Actual Runtime mainPR444/d98db0aa is now being integrated
+with that checkpoint. Its ten release metadata/document paths import Engine0.4
+and Runtime0.6; every Rust/AGENTS/SDK/Nix/workflow byte stays unchanged. Nine
+incoming paths remain exact upstream; backlog status keeps both the upstream
+DX1 delivery row and this goal's independent records/edges. No new Root
+production body, public type, effect, runtime policy or dependency is invented.
+The selected registry Core/Actors0.31 and Macros0.16, Address, Communication,
+Observe, Timers, SDK and all external checksum/edge choices remain unchanged.
+The complete selected Behavior instructions and exact published031 VCS/checksums
+were rechecked during resume.
+
+This is actual-main source integration, not new execution, registry publication
+or adoption of later Core032. Prior healthy/inverse/restored-replay/strict-lint
+receipts retain their0.5 graph. Fresh combined qualification remains open and the
+user-selected implementation-first/broad-checks-last workflow still applies.
+Both stopped-task notices/candidates remain preserved and unaccepted. Full
+R01–R25/AUTH1/NET1 and final source/CI/minimization/delivery requirements remain.
+
+## Current continuation — explicit user reactivation (2026-11-20)
+
+The user reactivated the EXISTING full R01–R25/AUTH1/NET1 Goal; the actual
+controller independently reports active. No new/reduced goal, safeguard change
+or retry/rephrasing of the two automatically stopped tasks was used. Their exact
+notices, partial/candidate sources and unresolved review findings remain archived;
+those candidate owners are restored to HEAD and remain unaccepted.
+
+The retained R18 started-withdrawal observer and R20 wrong-server-root edits now
+have healthy debug/optimized executions, both intended post-cleanup source-cut
+failures in both profiles, exact owner restoration and new actual positive
+executions after restoration. The last positives deliberately reused physically
+verified original healthy binaries through pinned Nix; they are fresh libtest
+executions, not fresh Cargo recompilation, Nextest, leak or whole-gate evidence.
+All Rust/fixtures/manifests/lock/toolchain match their original healthy inputs;
+only two unconsumed historical Markdown records differ. Independent final audit
+4eda962c verifies named outcomes, source/binary hashes, actual failure stages and
+limits, including unexecuted withdrawal-tail assertions in inverse runs.
+Focused release Runtime remote lib+tests Clippy27311 additionally exits0 with
+warnings and BOTH mandatory supplementary lints denied, on all731 unchanged
+checkpoint inputs. No full workspace/Nix acceptance follows from that scope.
+
+This local checkpoint adds tests+116/-10/net106; production+0/-0/net0 and public
+types+0/-0. Historical cumulative charge remains39-of-approved40, including two
+restored temporary owner paths. No complete R18/R20/NET1 delivery is claimed.
+Full combined implementation, final minimization, authoritative gates/CI and
+reviewed merge remain open. Preserve the earlier source qualifications below.
+
+Actual Runtime main has meanwhile advanced to PR444/d98db0aa (Engine0.4 and
+Runtime0.6 release metadata). Its ten paths contain no Rust/AGENTS/SDK/Nix change;
+selected Core/Actors0.31 and external checksums stay unchanged. Import that actual
+main separately after preserving this qualified0.5 graph; do not relabel these
+executions as0.6 qualification or infer registry publication from a merge.
+
+## Current implementation batch — remaining acceptance (2026-11-20)
+
+**Source-safe checkpoint, 2026-11-20T12:45:33Z:** the actual Goal controller
+reports `blocked` after two delegated automatic safety-review refusals for
+possible cybersecurity risk. The original full objective is preserved; no reset,
+resume, safeguard change or new goal was attempted. Only the R18 withdrawal and
+R20 server-root test edits below remain. Their three selected cases pass debug
+and optimized, and both independently reviewed source cuts fail at their intended
+post-cleanup assertions in both profiles. Both production owners are restored
+byte-exact. Positive replay after restoration, strict lint and full combined
+acceptance remain open; these are not full R18/R20/NET1 delivery claims.
+
+The R04 partial imports and complete R03/R24 candidate were preserved with exact
+patches/review findings outside the working tree, then those own unaccepted
+files were restored to HEAD. No candidate test ran; the proposed laws remain
+open. Current cache is unfinished and preserved; all Root compiler/observer
+handles are terminal. Source/evidence authority is the existing Remote Actors
+RESTART handoff and common Git acceptance-current records. Historical pre-edit
+estimates below are plans, not retained implementations or passing outcomes.
+
+
+Joel selected finishing the remaining implementation in coherent batches, with
+focused regressions during development and full verification on the combined
+result. The premature broad run on a813/source3e7 was intentionally stopped,
+parent130, after five successful check commands; this is neither a semantic
+failure nor full-native acceptance. Exact completed results, roots and logs stay
+source-specific. Three independent current inventories under common Git
+`remote-retirement/acceptance-current/{identity,lifecycle,network}.json` separate
+actual missing clauses from delivered work and explicit deferrals. Literal R01,
+R10 and the selected R17 profile are delivered; do not implement them again.
+AUTH1 remains independently eligible for local work, and NET1 still needs its
+compatible delivery. Real cryptographic provider correctness remains SELO1.
+
+**Pre-edit change record — started withdrawal observer surrender:** R18 still
+lacks a real native witness for dropping the whole started withdrawal wait
+while its existing Node owner completes withdrawal. The unbound test supplies
+completion manually, while the existing native sibling test awaits the result;
+neither establishes this cut. Reuse the full real two-export/three-child journey
+in existing `application/node/tests/retirement/withdrawal.rs`, preserving its
+named awaited control and all original actor, request, reply, terminal, cleanup
+and notification oracles. Add a separately selectable plain-Rust test for whole
+observer surrender, using the existing two-worker runtime construction.
+
+The real cold `take_withdrawal` operation is first polled inside a lexical
+`pin!` scope; retain the actual Poll until after cleanup, then let that scope
+destroy the entire future. Pending is required for this selected cut; an early
+Ready value is preserved and rejected as the wrong observation. Actual first
+query EOF precedes matching-status inspection, allowing the existing Node to
+consume its intent before inspection. Both paths still require first-declaration
+removal, real sibling remote increment/read1 before final owner cleanup, and
+the owner's retained original withdrawal result. No manual completion replaces
+that native result. Native success is not callback/task quiescence.
+
+Expected scope reuses an already charged test file within the prior37 paths,
+approximately35–55 new test lines, production+0/-0/
+net0 and public types+0/-0. A private closed observation choice separates awaited
+and surrendered controls; one shared ordinary async test journey avoids copying
+the complete oracle. No runtime state, wrapper API, dependency, SDK or policy is
+added. Exact selected Core/Actors0.31 and the other owner contracts remain those
+verified in8baf805c; `Export::take_withdrawal`, existing Observe publication and
+Node-owned native declaration retirement remain the sole owners.
+
+Before execution, review the changed test twice. Then run its healthy debug and
+optimized cases with the original awaited control. The intended owning-source
+inverse replaces only request publication with `drop(authority)` and executes
+only the new case: the first native declaration must incorrectly remain matched,
+while unrelated sibling work still succeeds. That actual isolation oracle must
+fail after cleanup; the unchanged40-second watchdog is not inversion credit.
+Restore the exact owner before positive replays. Keep all5-second native query
+limits, values and existing checks unchanged. Broader SDK baselines, reconnect,
+other acceptance rows and final integration remain independent obligations.
+
+**Pre-edit change record — correlation batch:** R04 lacks independent executed
+substitutions of deployment, caller, caller session, controller, actor, host,
+protocol, grant issuer, runtime generation, actor generation, authority generation,
+request sequence, purpose and operation. Reuse the real Counter/Node-owned Client,
+MessageAdapter, nominal provider records and independent effect/acknowledgment
+ledgers in existing `tests/application_clients/outbound/overlap.rs`. Every wrong
+scope must have a separately configured trusted record and actually succeed at
+proof verification before correlation refuses it. Wire/schema compatibility is
+not correlation credit. Include an exact matching control and an unrelated
+request that progresses while the selected request remains unsettled. Preserve
+the actual Response originals and observe verification success, exact permission
+refusal, absent decode/admission and no wrong acknowledgment after unconditional
+cleanup. Collect all row observations before final semantic assertions.
+
+Expected growth450–650 test lines in that one existing owner, production/API0,
+within the prior37 charged paths with the withdrawal case. No framework,
+generic adapter, actor contract or dependency is added. The intended inverse
+omits wrong-context checks in the actual test-owned CurrentReply policy and any
+redundant decoder context checks that would mask the same omission, preserving
+proof verification, framing, cleanup and unrelated progress. The new batch must
+then expose the wrong-settlement vector in both profiles. Restore exact source
+before positive replays. Neither an early verifier failure nor a timeout supplies
+correlation-denial credit. Existing overlap/campaign tests and values remain intact.
+
+**Pre-edit change record — wrong server trust root:** R20's existing real native
+security trace already covers valid protected Reads, foreign client credentials,
+listener survival and mTLS omission sensitivity. The32 TLS combinations are not
+32 independent security-negative cases. In existing `node/tests/security.rs`, add
+one caller with the foreign deployment root and otherwise identical valid caller
+credentials and localhost target. Use the unmodified production Network mapping;
+retain the actual native refusal, original wrong-root inputs, valid before/after
+Reads, exact protected-row/admission counts and complete cleanup. Close an
+unexpectedly acquired Session before rejecting that result. The matching control
+restores only the intended root and actually connects/reads; setup failure or a
+watchdog cannot substitute for an observed trust refusal. No insecure fallback
+or new hostname/deployment platform requirement is selected.
+
+Expected growth60–120 test lines, one existing file, production/API/types0,
+within the prior37 charged paths across this batch. Fresh Git census proves all
+three test owners and the later real-process lost-reply owner were already in
+the delivered35-path repair; do not repeatedly charge the same files. Keep the
+recorded37 total, without refunding older temporary work. The planned temporary
+inversions in `remote/export/mod.rs` and `remote/network.rs` add two actual paths:
+maximum39-of-approved40 for this batch, as recorded in `acceptance-current/scope.json`.
+No retained production mapping or API change is selected. Temporarily substitute
+the known-good root at the owning production Network mapping with the wrong-root
+caller and all oracles unchanged. That must acquire and close the actual Session
+before the refusal oracle fails. Restore the exact owner before positive replays.
+This supplies new trust-selection source-inversion evidence, not a production
+repair. Review both new tests twice before focused D/R;
+the complete suite waits for the final combined implementation. Any additional
+path or actual production/API design requires its own concrete scope review.
+
+**Pre-edit change record — real crash and stale exact target:** extend only the
+existing process owner `examples/remote-counter/tests/processes/lost_reply.rs`.
+The delivered loss control acquires graceful cleanup; it is not a receiver crash.
+A new trace must fence actual Increment processing with an independent local
+Read1, then kill and reap that exact owned receiver while its ordinary caller
+retains Uncertain(Increment). The killed process earns no joined-cleanup credit.
+Restart at the same endpoint with independently observed fresh runtime bindings.
+Retain the exact old protected bytes/proof and historical assignment, not a
+reserialized command or a new request identity. No native Session escapes into
+the application-facing process package.
+
+The test-owned fresh receiver separately validates predecessor configuration
+against the ACTUAL saved old binding and current configuration against its fresh
+binding, using existing Deployment::configure. Verification may return either
+existing nominal Receipt; it must not fabricate one or relabel old authority as
+current. The unchanged current-scope policy compares that predecessor receipt to
+the fresh grant/runtime/actor. Require verified old evidence, typed scope refusal,
+no request key/decoded input/native admission and an independent local Read0
+BEFORE releasing the fresh ordinary caller. Then fresh Increment/Read/Stop must
+produce value1 and actual joined fresh cleanup. Preserve old and fresh original
+rows so deduplication cannot conceal an illicit stale increment. No durable
+replay ledger, global uniqueness or complete R03/R24 claim follows.
+
+Reuse existing test-only bounded IPC, process ownership, finite assignments,
+protocol Caller/Requests and public Client. No new framework, public type,
+production body, transport dependency or timing policy. Expected one already
+charged source file, approximately350–650 test lines; existing loss case and its
+oracles remain. Keep current cumulative37 plus two planned temporary owner cuts
+=39 of approved40 paths. The intended test-application source inverse supplies
+permit-all ONLY at this receiver's current-request callback; proof verification,
+reply policy, raw framing, cleanup and fresh caller remain unchanged. The actual
+wrong stale Increment must fail the retained Read0/row oracle after cleanup in
+both profiles, then exact restoration must pass. Timeouts, unverified stale
+bytes, fresh effects alone or exit status without old-row custody are not the
+selected refusal proof. Review all changed tests twice before execution.
+
+## Current qualification — Core 0.31 integration (2026-11-20)
+
+The existing full R01–R25/AUTH1/NET1 goal was explicitly resumed. Clean signed
+local integration `69db401f`, tree `dc75a8dc`, has parents `bf49e2ea` and actual
+PR443/main `3057b955`. That delivered main has tree `ad863911`. All17 upstream paths are
+preserved;16 are byte-exact upstream and backlog status preserves both owners'
+changes. The retained `unwind.rs`, Node production and original retirement
+oracles are unchanged. Independent source review196ef910 records the complete
+731-file provenance and the ordinary Core0.31 reply syntax. No Root adapter,
+production body, public type, policy or SDK change is selected.
+
+Fresh selected contracts are Behavior/Actors0.31.0 at published `3a4e1eeb`,
+Macros0.16.0, Address0.3.0, Communication0.1.7, Timers0.2.0, private Observe,
+SDK1.10.10/config1.10.2, Tokio1.53.3 and rustix1.1.6, without patch overrides.
+The complete selected Behavior AGENTS is read. Behavior still owns pure Actions,
+ordered births and typed settlements; Actors owns template/reply policy;
+Address owns leases; Communication owns exact delivery/refusal custody; Observe
+owns publication/waiting; Timers owns generation-safe scheduling; Bombay owns
+Application/Node retirement and SDK interpretation. The imported directory
+defaults to existing exact replies; logical callers choose existing
+`logical_replies()`/`MixedReplies`. This Counter's established-recipient path
+needs no syntax change. Archive/source and relevant API/test/document checks
+are recorded under common Git `remote-retirement/after-close/node-native-timeout/`
+`scheduler/pattern/native/investigation/diagnostic/retained/main443`.
+
+**Qualification change record:** only this PRD and backlog status are reconciled
+after actual-main integration. All test bodies and production stay unchanged.
+Retained scope remains three paths, tests+476/-2/net474, production+0/-0/net0,
+public types+0/-0 and cumulative37-of-explicitly-approved40. First freeze the
+complete source and close the fresh contract/source reviews; then compile and
+execute the component and actual Node case separately in debug and optimized
+profiles, using the existing pinned-Nix commands, one Cargo job and unchanged
+inputs, oracles, native defaults and watchdogs. Stop and classify the first
+failed command. The normal native gates retain their own concurrency policy.
+
+Source `bf49e2ea`/0cf0, before Core0.31 integration, already passes all six focused
+commands and independent paired audite3602060. Its unchanged normal remote-debug
+owner also completed0 at2026-11-20T04:25:49Z:564 actual named passes/12 harnesses,
+32 fixtures (5 compile passes/27 denials), six guard echoes and configured
+Clippy/docs0. Independent0df237c8 and author7d2eb7db bind the full731 canonical
+inputs/663 selected inputs, raw19190723B/d1d1 and physicalv7m/hxf/NAR96/root.
+These remain source-specific evidence; zero outcomes are adopted for the
+combined Core0.31 source. All old execution handles are retired. Both focused
+executables were removed after2736 preserved inputs and fresh empty liveness
+checks;511852544B net owned allocation was reclaimed once, unfinished dependencies
+remain protected. Original05ec failed await/cause stays UNKNOWN; neither this
+successful epoch nor the earlier diagnostic supplies a production-fix claim.
+
+Current-source focused qualification, native28/authoritative flake, independent
+Nextest, exact hosted checks, final minimization and reviewed delivery remain
+open. Actual SDK task joining, resource baselines, reconnect, later R18 cuts and
+full R01–R25/AUTH1/NET1 remain unproved. The dated source boundaries below are
+historical; they do not override the selected Core0.31 contract above.
+
+## Current continuation — native Node close error (2026-11-19)
+
+The full goal is active. Signed local integration `b8366977` imports actual
+main `6d0c5fae` (PR442), whose four release paths change metadata and the Runtime
+self-version to0.5.0 without changing Rust bodies or selected dependencies.
+Behavior/Actors0.30.0, Macros0.16.0 and SDK1.10.10 remain selected; the separate
+DevX Core0.31 adoption is not imported. Earlier release and verification
+statements below retain their original source and time.
+
+**Change record, established before implementation:** prove R18's conservation
+of an acquired Application outcome beside a genuine native close error through
+one real Counter/Node case. Reuse the existing Counter, Export, binding,
+QueryCompletion and joined root/notification owners. Expected scope is three
+existing files: this PRD, backlog status and owning `application/node/tests/unwind.rs`.
+No production body, public type, runtime field, dependency or policy is added.
+The initial test estimate was approximately280 lines; the retained test delta,
+including the component and independent progress regression, is+476/-2/net474.
+Production+0/-0/net0; public types+0/-0; cumulative scope37-of-approved40.
+
+The useful Counter Work keeps its original allocation, sender/value1, root,
+report/notifications, binding and both export dispositions. Healthy close and a
+real default-ten-second native timeout are separate controls. The latter keeps
+`NodeCloseError::Native` and the exact error allocation through consuming
+extraction; panic slots remain absent. Both controls release the held callback
+before final assertions. The existing forty-second watchdog and native defaults
+remain unchanged. CallbackDrop announces destruction beginning; repeated close
+does not prove task joining or a resource baseline.
+
+The first source failed E0505 before execution: an uncompleted Work can retain
+the closure and its borrowed gates. Consuming that actual carrier before gate
+reclamation resolved the test lifetime without Clone, a new owner or policy.
+Isolated source7823 then passed actual Node debug/optimized controls, actual
+native-cause loss and acquired-outcome loss inversions, and exact restored
+positives. Receipt490ea2de preserves those source identities. Restored immutable
+executable replays are actual runs, not fresh Cargo compilations. No production
+repair was selected.
+
+### Test executor isolation — focused correction verified
+
+Final model review found a fixture defect: its raw synchronous receives occupied
+the SDK's shared Net worker (default one), blocking an existing concurrent
+refusal/retirement journey. Raw sourcebf7521cd reproduces the existing ten-second
+peer watchdog and an independent held-callback progress failure in both profiles.
+Only the first control executes in those failed runs. Independent receiptf7b71aa9
+binds their731 inputs, source archive, actual binaries and original logs.
+
+The corrected component runs that existing real journey on an owned thread and
+requires its successful retirement before releasing the primary callback. It
+preserves an actual peer failure or observer deadline with its late outcome,
+releases before late waiting, and joins before assertions. The fifteen-second
+observer leaves the existing peer ten-second watchdog and query/close defaults
+unchanged. Only the two new callback receives use selected Tokio's supported
+`task::block_in_place`; the callback remains held and tracked while unrelated
+work can run. Two ordinary `#[test]` functions use the already imported Builder
+with the same two-worker runtime, avoiding newly generated function-local imports.
+Existing test bodies remain byte-identical.
+
+Frozen sourcebd053789 passes all six normal Cargo commands: compilation plus
+component and actual Node execution in each debug/optimized profile. Each case
+passes once with464 filtered/zero ignored and both internal close controls.
+Independent paired audit3c3f8f96, model04064e23 and surfacebd44095c close the
+focused fixture issue. The later successor changes only the new Node body's
+indentation and these current records; prior executions keep their source identity.
+No custody seam, assertion, deadline or production owner changes. The source7823
+custody inversions remain exact-epoch support rather than new-source executions.
+
+Owning strict release workspace Clippy on signed5308/source0265 refused one
+unnested or-pattern in the new test. Nesting it preserves exactly the same three
+non-native alternatives and unchanged native allocation arm; no oracle or value
+changes. The failed raw is retained; corrected owning qualification remains open.
+
+**Pre-edit diagnostic change record:** current native parent99145/source05ec
+failed remote-debug with463 library passes and two unchanged15-second native
+Allow watchdogs at access.rs635. The original stalled await is unreported; the
+same cases passed earlier coverage, which does not explain this failure. Raw
+908863c4 and independent failure auditd2cb2375 retain the original epoch.
+Coverage reported four floors but its output is unavailable; no JSON/NAR or
+coverage-owner acceptance is claimed. No production repair is selected.
+
+Plans0c253a31/d8ad45ce justify sparse test-only entered/completed messages around
+actual access awaits and callback holds, using current permission/grant, health
+marker and monotonic time. No stage field, helper, type, synchronization or policy
+is added. Expected scope is four existing files: access.rs, unwind.rs, this PRD
+and backlog status, bringing cumulative scope to37-of-approved40. Expected test
+growth is approximately90 lines; production+0/-0/net0, public types+0/-0. All
+assertions, ACL/grant inputs,15/40-second watchdogs,60-second explicit Queries,
+default native close/query times and Net1 stay unchanged. Two source reviews and
+formatting precede one marked normal concurrent remote-debug run. This is stage
+observation, not a retry offered as a fix; counterfactuals follow the actual
+failed stage. Preserve all prior exact-source proofs and unfinished inputs.
+
+The marked normal remote-debug run on signed7da8/source25e completed0, with
+564 named passes across12 harnesses,32 compiler fixtures and the six separate
+guard echoes. Configured debug Clippy and warnings-denied docs also completed.
+Its trace does not reproduce the failed overlap: all four access journeys
+finished before either new callback entered, by at least10.507570959 seconds.
+The original failed await remains unknown; a successful marked run is not a fix.
+
+**Pre-edit overlap change record:** plan7c56c18b selects one bounded diagnostic
+cohort. Reuse the existing Allow-plus-grant test wrapper through test-private
+`pub(super)` visibility and invoke it on the component's existing owned peer
+thread instead of the SessionLocal refusal journey. No new helper, type, state,
+production body or public API is added. Expected Rust delta is approximately
++6/-4 in the same access/unwind owners; four existing paths and cumulative
+37-of-approved40 remain unchanged. Keep every original ACL/grant assertion,
+result channel, late recovery, release, native cleanup, join and deadline.
+Actual wait-enter/access-start/access-finish/wait-return markers must witness
+the overlap. Run the exact existing Allow wrapper alone afterward even if the
+held cohort fails. That fresh-process control resets the shared SDK pool, so
+it cannot establish holding as the sole cause of the original failure. This
+cohort starts the peer before primary close; simultaneous close is unproved.
+Source reviews precede execution; no production repair or timeout change is
+selected. Inspect this cohort before selecting the absent-grant counterpart.
+
+The first Allow-plus-grant cohort on signedf41f/source04f passes both held
+controls and its ordinary unheld control. Actual trace encloses the complete
+TLS journey inside each callback wait; independent auditdd6ab499 closes this
+bounded observation. It establishes a healthy schedule, not the original cause.
+
+**Pre-edit absent-grant counterpart:** under the same plan7c56c18b, replace
+only the selected peer with the existing Allow-without-grant wrapper and move
+the test-private visibility to that wrapper. Expected Rust delta+3/-3/net0;
+production/API0, the same four paths/cumulative37-of-approved40. Its original
+absent-grant assertions, all controls, deadlines and result/cleanup/join order
+remain intact. Freeze and review this separate source, then execute its held
+case and unconditional ordinary unheld control. Earlier source/results remain
+separate. No wider acceptance or production repair follows from either cohort.
+
+The absent-grant cohort on signed46264/source3d398 also passes debug compilation,
+both held native controls and the ordinary unheld case. Each named test passes
+once with464 filtered; independent audit47c9ad0e binds the complete real TLS
+journeys inside callback waits. Both comparisons retain their own sources and
+the original unexplained05ec failure. Normal package cleanup preserved2733
+generated inputs and reclaimed425877504 bytes of owned allocation after evidence
+preservation; unfinished dependencies remain. No executable replay is retained.
+
+**Pre-edit active-close diagnostic record:** plan a1ed278e selects the existing
+Allow-without-grant peer with BeforeClose unchanged. Only AfterTimeout first
+polls the existing native close future, preserves its actual Pending/Ready fact,
+and drives pending close together with peer observation through supported
+`future::join`. Keep an unexpected Ready original through cleanup before
+rejection; never repoll it or fabricate a peer. Completion markers belong inside
+each future. Preserve all original deadlines, native results, late peer custody,
+release, cleanup and join. Expected test growth35–65 lines in existing unwind.rs
+plus these two records; production/API/types+0, cumulative37-of-approved40.
+Reuse the SDK's existing pinned future and FutureExt, without another box,
+helper or lifecycle model. Actual source reviews precede the next execution;
+the exact ordinary unheld control still runs even if the diagnostic fails.
+Native Pending or timeout does not establish SDK joining or the original cause.
+
+The active-close diagnostic on signed05b524/source d017 passes debug compilation
+and both named commands. Audit e4d84d10 confirms the exact pending/ACL/close
+window: the complete TLS journey takes0.53557s and its successful observation
+precedes native close completion by9.4674s. The original05ec failed await and
+cause remain unknown. Selected hook/libtest FIFO2 reconstruction puts those
+failures before new callback-test dispatch; this is a configuration-derived
+inference, not captured original runtime environment or callback timestamps.
+
+**Pre-edit minimization disposition:** review511fefcf selects restoration of
+access.rs/private visibility and the original concurrent SessionLocal refusal-
+panic peer. Temporary TLS substitutions must not replace that regression.
+Remove only newly added progress messages; preserve the older close-cut record
+and every original test/oracle. Retain actual first-Pending-before-peer and
+concurrent close/peer driving on AfterTimeout, with original early-Ready custody
+and cleanup. Expected test reduction exceeds240 lines; production/API/types0,
+three retained files and cumulative37-of-approved40. Measure the full result.
+Fresh source reviews, focused debug/optimized controls and the unchanged normal
+failed remote-debug owner follow. A pass qualifies only the new source; no old
+cause/fix claim, altered timeout, test-thread policy, skip or retry loop is
+selected. A new failure returns to its actual evidence before further work.
+
+The retained draft restores access.rs exactly to main/private467c and the
+original refusal-panic peer. It removes289 test lines from the diagnostic
+source, leaving only unwind.rs and the two existing records changed against
+main. The stronger adverse pending-close exercise remains. All ten temporary
+close messages and both logging-only inspect adapters are removed; the older
+close-cut message remains. Current formatting passes. Earlier source-specific
+passes remain historical; fresh retained-source verification is still required.
+
+Current required native gates, independent Nextest, hosted delivery and normal
+reviewed merge remain open. Full R18/R01–R25/AUTH1/NET1, SDK joining, resource
+baselines and whole-operation withdrawal surrender remain unfinished. Evidence
+is retained in common Git `remote-retirement/after-close/node-native-timeout`;
+pre-edit plans, failed sources and exact inputs remain in their source archives.
+
 ## Session close — current main qualification (2026-11-19)
 
-**State: active (original source qualified; actual-main integration gates open).**
-Actual main is PR440 merge07f233e3/tree650681ab, with physical/API parents
-030767c0+cf913 verified after the fresh09:42 no-hold acknowledgment. It is now
+**Delivery: merged for close-future polling only. Full R18 remains active.**
+[PR441](https://github.com/devrandom-labs/bombay/pull/441) merged normally at
+2026-11-19T18:07:26Z as `feae6524f897e4dd7e072d2336bb849f258af028`.
+Its tree `8d1aa1ec9b0637c762a6e3e27f1d678f62d6d52d` exactly equals accepted
+signed `609eebac`; API and physical Git confirm parents07f233e3+609eebac.
+The fresh BEFORE notice, actual DevX no-hold acknowledgment and immediate
+head/base/rules/check/review guards preceded the normal merge; no bypass.
+
+Accepted source26ce/731 inputs passes all28 native owners and authoritative
+flake0, all8 exact-head hosted contexts and28 bounded Linux log scopes.
+Independent standalone Nextest reconciles1035 ordinary passes/123 binaries/
+1041 registrations/the same6 controlled skips/zeroLEAK. Native and Linux
+coverage and optimized workspace executions independently reconcile1035 passes,
+123 harnesses,154 fixtures and3 benchmark invocations. Linux remote D/R each
+reconcile562 passes/12 harnesses/32 fixtures/six separate guard echoes;
+selected Rust1.96 local114/138 fixtures and remote4/12 pass. Eight official
+ZIP digests,526 payload files and16 original seed bytes are verified;
+Driver2048 and four Observe1024 bounded campaigns complete, Miri is skipped.
+Native physical evidence is separate from Linux logs: no Linux NAR, coverage
+JSON, export or hidden ActorExecution negative payload was downloaded. CodeQL,
+selected-caller and finite-campaign limits remain in the exact receipts.
+The original inode-only auxiliary-binary wrapper refusal remains preserved;
+actual test command0 and independent unchanged-content acceptance are distinct.
+No test, expected value, timeout, retry policy or CI job was changed or rerun
+for a reader correction.
+
+Common Git `close/qualification/integration-main440/final-acceptance.json`
+SHA7351f794 and `delivery.json` SHA2d1d5730 bind the complete scope and chronology.
+The old merged checkout was normally removed after exact731-input archive/raw
+commit/ref/bundle preservation, two audited idle-shell hangup exits and fresh
+empty liveness checks. One clean source-only continuation remains on actual
+feae6524; no material net checkout saving is claimed. The separate completed
+Cargo cache removal reclaimed7.12249GiB after3087 input files were preserved.
+This delivery is unreleased: last verified Runtime0.4.0 excludes both this
+close-error repair and PR440's Entity interface. No dependency adoption,
+publication or full R18/AUTH1/NET1 completion follows from this merge.
+
+The qualification and pre-edit records below retain their original source and
+time. Their pending gates describe those checkpoints, not current delivery.
+Qualification started from PR440 merge07f233e3/tree650681ab, with physical/API
+parents030767c0+cf913 verified after the fresh09:42 no-hold acknowledgment. It was
 merged locally for separate qualification. Entity's native child failures are
 derived as `Vec<Terminal::Failure>`; transparent `EntityRetirement<D>` names
 the existing complete joined result, while activation errors retain their three
@@ -32,9 +1733,9 @@ audit. CodeQL and finite-campaign limits remain explicit. Common Git evidence:
 `close/qualification/original-final-acceptance.json` SHAda2e98d5,
 `hosted/linux-acceptance.json` SHAd74858c0 and fuzz receiptSHAae85bfec. All730
 original bytes/modes, source archive, signed raw commit/ref/bundle and required
-payloads remain preserved. The local main07f integration has no credited
-combined-source execution yet; its inventory/native/hosted/delivery gates are
-open. Original ac046 and upstream cf913 results are not combined outcomes.
+payloads remain preserved. The main07f integration's fresh combined-source gates
+and PR441 delivery are closed above. Original ac046 and upstream cf913 results remain separate;
+they were not adopted as combined outcomes.
 
 The earlier f040 native28/flake0 and standalone1034 results used main98885;
 they remain proofs for that source, not acceptance of actual release main.
@@ -67,8 +1768,8 @@ cumulative36-of-approved40 surface. The combined snapshot has731 inputs; PR440's
 28 upstream paths are already delivered and recorded separately from this diff.
 There are no untracked source files. This is added failure preservation, not a
 production code reduction. Original ac046 qualification is closed as above;
-actual-main combined-source gates and reviewed PR441 delivery remain open. Native
-close error/timeout induction, construction/disposal/cancellation, SDK task
+actual-main combined-source gates and reviewed PR441 delivery are closed above.
+Native close error/timeout induction, construction/disposal/cancellation, SDK task
 joining, quiescence/resources, reconnect and full R18/AUTH1/NET1 remain unproved.
 The full PRD scope, dependency edges and step order are unchanged.
 
@@ -114,6 +1815,86 @@ outcome transfer or those oracles would require fresh runtime counterexamples.
 Original ac046 native/Nextest/hosted gates subsequently closed with their exact
 source scopes above. Actual-main integration and delivery remain open. No old
 compiler, runtime or publication proof is relabeled as combined execution.
+
+## Native close timeout — prerequisites and probe (2026-11-19)
+
+**State: active; native component qualified, real Node outcome proof pending.**
+Continue R18 after PR441's delivered polling-panic preservation. The next
+independent fact is a genuine SDK close error, currently covered only by a
+synthetic native-error carrier test. Selected close returns unit internally;
+its ordinary error is the existing ten-second deadline. Transport sub-errors
+are discharged by the SDK and cannot be invented as Node error cases.
+
+Fresh lock/archive/source checks on clean43240610/mainfeae select
+Behavior/Actors0.30.0 at628649da and complete775-line instructions,
+Macros0.16.0, Address0.3.0, Communication0.1.7, Timers0.2.0, private Observe,
+SDK1.10.10 atc34eb350, Tokio1.53.3 and rustix1.1.6; no patch/feature/adoption.
+The selected primitive, Entity, Node, native callback/task and Driver owners,
+APIs, tests and normative R18 row were inspected. Common Git `after-close`
+receipts locked-contracts2adb3852, owner-contracts798c5779,
+sdk-contracts46f46c37 and remaining-acceptance2f6db1e1 retain the exact map,
+source identities and remaining gaps. Core0.31 remains outside this selection.
+
+**Frozen pre-edit plan:** establish native reachability using a real session-local Queryable/Get,
+retained Query and the actual Session-tracked query-timeout callback. The
+callback hands out its original native Reply before a releasable test gate.
+Observe that entry before closing. A healthy control completes the callback
+before close; an adverse control holds it until the unchanged native ten-second
+close deadline returns its actual error. Keep default query timing and callback
+wait policy; hidden timeout/background-close setters require unselected internal
+features and are excluded. Release the gate unconditionally, observe callback
+exit and dispose owned query/declaration/session before assertions. An aborted
+controller must disconnect the gate before native owner destruction. The
+existing forty-second fixture watchdog applies independently to each control.
+
+This is a native component probe, not a new actor-model law or a Node fix.
+Compare complete actual reply, close/panic and cleanup observations. Healthy
+close must succeed; the held control must return the real SDK timeout, not an
+outer watchdog or fabricated error. Only after this route executes may a real
+Counter/Application test check coexisting outcome and native cause, with its
+own source inversion. Repeated close success and is_closed cannot certify
+joining after the interrupted first close. TaskTracker waiting is distinct from
+JoinError custody; complete task/declaration baselines and reconnect stay open.
+
+Pre-edit scope: existing Node unwind test and these existing PRD/status paths;
+production+0/-0/net0, tests approximately+120, public types+0/-0. Reuse selected
+native operations and existing test channels; no runtime state, wrapper, SDK
+feature, actor protocol or interpreter is added. Node's nine fields and
+seven-position extraction are unchanged. One private two-choice test input may
+name when the native callback completes; no semantic boolean or second runtime
+transition authority. All paths remain within the approved cumulative36-of40.
+Both test reviews and focused debug/optimized controls precede acceptance; no
+current execution, failure or cleanup baseline is inferred from source.
+
+### Native timeout — focused component result
+
+The exact native component now passes in Rust1.99 debug and optimized builds:
+one named case per profile,463 filtered,zero ignored, with two semantic
+controls inside that case. Both controls retain the actual Query and original
+Timeout Reply before close. The healthy control observes callback return and
+SDK CallbackDrop destruction beginning before successful close. The held control
+returns the actual default-ten-second SDK close error, independently of the
+outer fixture watchdog; polling does not panic. Both release the gate and
+finish their explicit cleanup before assertions. The notifier does not certify
+complete field/task destruction, and repeated close success is not joining proof.
+
+Author and independent plan/source/counterexample reviews, pinned formatting,
+all four compile/execution commands, both physical executable hashes and all731
+source bytes/modes reconcile. The tested source is e81480a6/test6e7bb7fc;
+these later result records do not relabel that execution. Actual `/tmp` and
+`/private/tmp` spelling caused one independent reader refusal; exact Cargo/runtime
+spelling plus physical bytes/size/mode resolved it without rerunning Rust.
+Common Git `after-close/native-timeout/acceptance.json` SHAe237ee58 and
+execution audit4db50917 retain the complete limits, raw results and source archive.
+
+All component controllers are complete and retired. Normal default and release
+Bombay-package cleanup followed1,991 generated-input preservation and repeated
+empty liveness checks, reclaiming512,315,392B net. Approximately1.62GiB of
+unfinished dependency artifacts remains for the next genuine Node regression.
+There is no production or public API change. Actual Application outcome plus
+native cause, owning-source inversions, full gates and reviewed delivery of
+this new test remain pending; SDK task/resource/reconnect and full R18/AUTH1/NET1
+remain open. No new Node model is selected from this component result.
 
 ## Node outcome during Session close — regression record (2026-11-18)
 

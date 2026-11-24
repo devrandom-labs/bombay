@@ -1,10 +1,249 @@
+Remote Actors Stop qualification2026-11-21: actual source4f47 passes exact
+send-only/ownerStop case EACH build, format and strict Clippy bothdenies0.
+Membership-only source fault fails first complete native-effect aggregate in
+EACH build; fullsource restores and original-artifact controls pass. Independent
+f397667b/dfbeaaf4 and third1d2667b3 accepted; production/API/deps0, tests+569/-3,
+scope45/45. The [owning record](../prds/static-remote-actors.md#send-only-stop-qualification-2026-11-21)
+retains zero-test compiler epochs, negative-tail and source/executable scopes.
+C03 source is isolated/unexecuted; SDK47 approval pending. Remaining full-goal
+clauses/current combined gates/CI/reviewed delivery and reciprocal edges unchanged.
+
+Remote Actors current2026-11-21: actual failed initialization now leaves zero
+ready native exports; genuine initialized protectedRead control passes EACH
+build. Early-declaration source fault fails intended finite first aggregate in
+EACH build, exact whole-owner/source restoration and four original-artifact
+controls pass; independent2d2297bc/5fe3a793 accepted. Production/API/dependencies0,
+tests+411/-1/net410, fully charged45/45. Current support reconciliation maps
+selected Query/Reply pressure, explicit availability facts, complete real-process
+semantic traces and command-scoped uncertainty without duplicate runtime/tests.
+The [owning record](../prds/static-remote-actors.md#initialization-to-export-qualification-and-support-reconciliation-2026-11-21)
+preserves source/negative/structural-evidence limits. R11 send-only composition,
+R18 extra-owner/profile approval, original stopped candidates and full combined
+checks/distillation/CI/reviewed delivery remain open. Scope47 is pending, not
+approved. No requirement-state or reciprocal dependency-edge changes.
+
 # Backlog status and dependencies
 
+Historical pre-edit readiness2026-11-21: planc918 selected one missing failed-INIT/no-
+native-export Node composition and its real ready/Read control. Existing
+StartupCounter MAX Overflow supplies the failure without a new actor/type/API;
+only charged retirement.rs and records are selected. Production/dependencies0,
+scope45/45. No replacement/restart/advertisement work; execution/full R16 and
+original dependency edges remain open.
+
+Remote Actors process/diagnostic qualification2026-11-21: actual source6f30/731
+passes all four selected cases EACH debug/optimized, format and strict Clippy.
+Capacity omission exposes actual native Read3/no Full versus2/Full despite
+unchanged shippingRead4; main Err-disposition cut exposes exit0versus1 with
+the same natural assignment refusal. Both cuts fail intended first parent
+equalities in both profiles, whole source/shipping binaries restore and saved
+healthy controls pass. Independent532281b2/5d56f0a4 retain original source scopes
+and unexecuted-negative-tail limits in the owning
+[qualification](../prds/static-remote-actors.md#process-pressure-and-diagnostic-qualification-2026-11-21).
+Selected post-join finite inspection also survives actual standard WriteZero;
+retention ends at owner disposal, unavailable/unknown afterward. Permission
+refusal is not uncertain delivery. Tests add754net lines; production/API/deps0,
+scope45/45. Completed copies gzip-only,801325064B logical file reduction.
+Full R23/R25, support/remaining clauses and combined CI/delivery remain open. R07's
+read-only forwarding proposal was stopped by automatic review before code;
+preserve without retry/relocation, alongside existing held candidates. This
+does not alter independent work or original requirement/dependency edges.
+
+Existing response pressure, Stop and lost-reply witnesses remain separate from
+the new actor-mailbox/native-pressure-plus-remote-continuation scope. No public
+example controls/new actor/crash-restart work or dependency-edge change occurs.
+
+Remote Actors deployment/nesting2026-11-21: sourceed106/731 passes deployment1
+and nesting3 cases EACH debug/optimized, format and strict all-target Clippy.
+Actual separate placement-guard and Query-nesting cuts fail the intended native
+state oracles in both profiles; whole-source restorations and original healthy
+artifact controls pass. Independent reviews6e796162/5a1a231c retain the exact
+source, zero-selection/compiler refusals and unexecuted-negative-tail limits in
+the owning [qualification](../prds/static-remote-actors.md#deployment-and-nesting-qualification-2026-11-21).
+Tests add550net lines; production/API/dependencies/new source paths0, scope45/45.
+R15 reconciliationa509 maps the approved no-global-FIFO profile to existing
+finite traces; no new ordering mechanism. Full R02/R21/remaining requirements,
+combined gates/distillation/CI/reviewed merge and existing dependency edges
+remain open. Stopped obligations and original source/execution epochs remain
+separate.
+
+Remote Actors retained-payload checkpoint2026-11-21: new finite byte witness
+and the two existing cold cancellation cases pass current0.6/Core031 debug
+and optimized execution; format and strict optimized all-target Clippy pass.
+The actual R1-to2 Client cut produces the intended extra wire/receipt/User
+bytes in both profiles; exact restoration and original healthy controls pass.
+Independent reviewse9bfcd1d/a132d69c retain byte units, source custody and
+unexecuted-negative-tail limits in the owning
+[qualification record](../prds/static-remote-actors.md#scoped-byte-and-cancellation-qualification).
+Production library/API/dependencies remain unchanged, scope45/45. Full R14,
+remaining R01–R25/AUTH1/NET1 and combined gates/distillation/CI/reviewed delivery
+remain open; no requirement state or reciprocal dependency edge changes.
+
+Remote Actors current2026-11-21: selected R05 local compatibility passes all
+four actual Runtime0.5/0.6 caller/receiver pairs and five configured refusal
+cases per debug/optimized profile. Actual guard omissions detect forbidden
+native Read activity; exact restorations and original healthy controls pass,
+independently reviewedd3ba1993. The valid TLS Reply burst also passes both
+profiles and detects an actual R1-to2 callback-budget cut through an extra User
+and original response; source restoration and healthy controls pass, with final
+independent reviewaef93e57 accepted. The owning
+[qualification record](../prds/static-remote-actors.md#current-compatibility-and-reply-pressure-qualification-2026-11-21)
+retains the source and negative-assertion limits. Scope45 is fully charged.
+Private example policy adds63 net lines; production library/API/dependencies
+stay unchanged. Full R01–R25/AUTH1/NET1 and remaining resource/fault/diagnostic
+evidence, final combined gates/minimization/CI/reviewed delivery remain active.
+Requirement states and reciprocal dependency edges are unchanged.
+
+Earlier scoped record2026-11-20: actual0.6 verifier-capacity, configured
+compatibility and held-startup Stop witnesses have scoped six-run independent
+reviews6345/6141/bf68. Bounded delegation healthy/inverse/restored D/R and
+independent reviewd2e53 now pass. R09 local semantic acceptance465654d1 closes
+for declared profiles, pending current-source CI/reviewed merge; Discharge
+recovery differs from exhausted Retain custody. Full R05/R11 and AUTH1/NET1
+remain open; production/API/dependencies0 and dependency edges stay unchanged.
+R11's additional genuine joined-startup failure now has healthy, intended
+parent-report erasure and restored debug/optimized controls independently
+acceptedf2f6957d; the original native cause and separate failure assessment
+survive cleanup. R08 reconciliation3da63c40 requires no new provider algorithm:
+current-source combined qualification and reviewed delivery remain open.
+Actual same-Session automatic Router reconnection now preserves acknowledged
+replay, actor progress and one startup notice; compound sensitivity/restored
+controls are independently accepted16f64ed9 at their explicit source epochs.
+The distinct valid-identity retention pair also passes four healthy/restored
+cases per profile and the intended guard-only full-budget failure beside a
+successful room control (74d3e1ec). These are local R12/R18 clause proofs;
+the full rows, combined gates and delivery remain open. No production/API/
+dependency change, prerequisite completion or reciprocal-edge change is inferred.
+R19 now also has a real TLS Query-pressure witness: three excess queries while
+two verifiers stay held, independent same-receiver health reply before release,
+and retained native actor facts. Healthy/inverse/restored D/R and independent
+review34807f9f close that selected clause; reply flooding, full R19 and combined
+delivery remain open. No new production/API/dependency or requirement-edge change.
+
+Remote Actors actual-main integration2026-11-20: local scoped checkpoint59550a1b
+preserves its0.5 proofs; actualPR444/maind98 metadata is imported separately,
+Engine0.4/Runtime0.6 with all Rust/SDK/Nix unchanged. Keep the upstream DX1 row
+and this goal's own records/edges. No old outcome is relabelled combined-source
+acceptance; fresh final qualification and full original scope remain open.
+
+Remote Actors resumed by explicit user action2026-11-20: actual Goal ACTIVE,
+original full scope/dependency edges unchanged. Retained withdrawal/server-root
+tests have healthy+intended-negative D/R and restored original-binary positive
+executions; independent execution review4eda962c and focused strict Clippy0.
+These are scoped local proofs, not full rows/native/CI/merge. Two stopped tasks
+remain archived/unaccepted, without safeguard changes or retries. Preserve the
+qualified0.5 graph, then integrate actual Runtime mainPR444/d98 metadata separately.
+The blocked checkpoint below is historical at its stated time.
+
+Remote Actors checkpoint 2026-11-20T12:45:33Z: actual Goal controller reports
+`blocked` after automatic safety review stopped two delegated tasks. Full original
+scope/requirement states/dependency edges are unchanged. Two retained test edits
+have healthy D/R and intended D/R fault outcomes; both temporary production cuts
+are restored. Restoration positives/full combined gates remain open. Correlation
+and crash/restart candidates are preserved outside the tree and unaccepted source
+restored, not delivered. No Root builder live; unfinished cache/source/evidence
+are protected in the existing Remote Actors handoff.
+
+## Current implementation batching (2026-11-20)
+
+Joel selected coherent remaining implementation batches with focused regressions,
+then full verification on the combined result. The premature a813 native run was
+intentionally stopped after five successful commands; two scopes are independently
+accepted, without full-native credit or a semantic failure from cancellation.
+The [current batch record](../prds/static-remote-actors.md#current-implementation-batch--remaining-acceptance-2026-11-20)
+separates delivered R01/R10/fixed-profile R17 from real gaps and explicit deferrals.
+The first missing R18 law is whole started withdrawal-observer surrender with
+actual owner completion and sibling progress, reusing existing native owners.
+Fresh Git census proves the selected test owners are already charged in the
+prior37-path scope; two planned temporary owner inversions bring this batch to
+at most39-of-approved40. Production/API0. No requirement status or dependency
+edge changes from preparation.
+
+## Current Remote Actors qualification (2026-11-20)
+
+The existing full goal was explicitly resumed. Actual PR443/main3057b955 is
+imported locally by signed69db401f; Behavior/Actors0.31.0 at3a4e1eeb is now
+selected with unchanged Macros0.16/Address0.3/Communication0.1.7/Timers0.2/
+private Observe/SDK1.10.10/Tokio1.53.3/rustix1.1.6, without patch overrides.
+The [owning current record](../prds/static-remote-actors.md#current-qualification--core-031-integration-2026-11-20)
+records fresh contract/ownership verification and source review196ef910. All17
+upstream paths and both status histories are preserved; original retained tests
+and Node production are unchanged. Existing exact replies need no R18 adapter.
+Only this PRD/status reconciliation follows integration: production/API0,
+tests+476/-2/net474, three retained paths/cumulative37-of-approved40.
+
+Before integration, bf49/source0cf passed six focused commands/pairede3602060
+and the unchanged normal remote-debug owner:564passes/12harnesses/32fixtures/
+sixguards/configuredClippy+docs0, independent0df237c8/author7d2eb7db. Those
+outcomes stay source-specific, not combined-Core0.31 acceptance. Old processes
+are retired; removed executables stay removed, unfinished dependencies/evidence
+protected. Original05ec failed await/cause remains UNKNOWN; no fix is claimed.
+Fresh combined-source focused D/R precedes full native/flake/Nextest/hosted/
+minimization/delivery. R18/AUTH1/NET1 and wider requirements remain unfinished
+at their existing statuses and reciprocal dependency edges; no full completion inferred.
+
+## Prior native-close source boundaries (historical)
+
+The full Remote Actors goal is active. Signed local integrationb8366977 imports
+actual PR442/main6d0c5fae with Runtime self-version0.5.0 and unchanged selected
+Behavior/Actors0.30.0/Macros0.16.0/SDK1.10.10. The current
+[Node native-error regression](../prds/static-remote-actors.md#current-continuation--native-node-close-error-2026-11-19)
+now preserves useful acquired Counter/Application results beside a genuine
+default native close timeout in both profiles. Isolated source7823 custody
+inverses/restorations remain source-specific at490ea2de.
+
+The fixture's shared-worker defect is also resolved in focused execution:
+rawbf7521cd fails the independent concurrent-retirement law in both profiles;
+correctedbd053789 passes component and actual Node controls debug/optimized.
+All six normal Cargo commands0, independent paired3c3f8f96/model04064e23/
+surfacebd44095c close that earlier bounded correction. Its two supported blocking
+handoffs and equivalent explicit test runtimes remain; existing test bodies,
+watchdogs, native defaults and custody oracles stay intact. The current retained
+draft restores its original refusal-panic peer and adds actual pending-close
+concurrency on the adverse path. Temporary access tracing/test visibility and ten
+close progress messages are removed. Production/API0, tests+476/-2/net474 across
+three retained paths and cumulative37-of-approved40. Fresh focused controls,
+current wider gates, independent Nextest and reviewed delivery
+remain open. Full R18/R01–R25/AUTH1/NET1 and SDK joining/resource baselines remain
+unfinished; requirement states and reciprocal dependencies are unchanged.
+
+The current normal native batch failed in two existing native Allow cases at
+their unchanged15-second watchdog. The failed await is not yet known. Independent
+failure/source plans permit only test progress diagnostics before another normal
+concurrent gate; no production change, deadline increase or serialization is
+selected. Scope becomes37-of-approved40 if the access diagnostics are retained.
+Reported coverage floors lack a physical output and receive no owner credit.
+
+The marked remote-debug diagnostic passed564 cases/12 harnesses/32 fixtures,
+but all four access journeys finished before the new callbacks entered. It
+does not explain the original timeout. The owning PRD now selects one test-only
+Allow-plus-grant overlap cohort using the existing peer thread and unchanged
+deadlines/oracles, followed unconditionally by its ordinary unheld control.
+No production repair, dependency change or wider acceptance is selected.
+The first Allow-plus-grant pair passed with actual witnessed overlap in both
+native close controls, independently auditeddd6ab499. A separate unchanged
+Allow-without-grant journey is now selected for the same bounded comparison;
+original failure cause and full native qualification remain open.
+The absent-grant pair also passed with witnessed overlap, audit47c9ad0e. Both
+are bounded debug observations; no repair or full native acceptance is inferred.
+The next recorded diagnostic tests actual pending native close beside that same
+access journey. Completed package cleanup removed0.396629GiB net owned allocation;
+exact inputs/evidence and unfinished dependencies remain preserved.
+The active-close cohort also passes with witnessed progress before close
+completion (e4d84d10). Temporary TLS probes are now being removed; the permanent
+fixture restores its original concurrent refusal-panic peer and retains the
+stronger pending-close exercise. Original05ec cause remains unknown. Exact
+minimized-source debug/optimized tests and normal failed-owner qualification
+remain required; no wider gate or full R18 acceptance is inferred.
+
 R18's [Node outcome during Session close](../prds/static-remote-actors.md#session-close--current-main-qualification-2026-11-19)
-is active on actual main07f233e3, the normal PR440 merge now integrated locally
-for fresh qualification. Its transparent Entity retirement result and derived
+merged through [PR441](https://github.com/devrandom-labs/bombay/pull/441) as
+feae6524 at2026-11-19T18:07:26Z, tree8d1aa1ec equal to accepted609e. API and
+physical Git parents07f233e3+609eebac match; fresh no-hold acknowledgment and
+immediate normal guards preceded merge. Full R18 remains active. PR440's
+transparent Entity retirement result and derived
 native failures are imported without a dependency/SDK or Node-law change.
-Published Runtime0.4.0 contains Node7 but excludes the current close-error repair.
+The earlier Runtime0.4.0 publication contains Node7 but excludes this later close-error repair.
 The bounded repair preserves the acquired real Counter/Application outcome and
 exact native/poll-panic originals through one typed NodeCloseError and one reused
 close policy, without new lifecycle state or extraction position. Three scoped
@@ -23,11 +262,29 @@ contracts remain unchanged. Original signedac046/base030 qualification is closed
 native28/flake0, standalone1034 ordinaryPASS/zeroLEAK/same6, all8 hosted and28
 bounded Linux scopes,8 officialZIPs/506 payload files and16 original seed bytes.
 Original source/ref/bundle/evidence remain preserved; those outcomes and peer
-cf913 outcomes are not combined-source proof. Fresh main07f integration gates
-and reviewed PR441 delivery remain open, with Linux hidden-artifact/NAR,
-CodeQL and finite-campaign limits retained in the owning PRD.
+cf913 outcomes are not combined-source proof. Fresh combined731-source
+native28/flake0, all8 hosted/scopedLinux28 and
+separate Nextest1035/123binaries/1041names/same6/zeroLEAK now pass. Coverage and
+optimized workspace independently reconcile1035/123/154fixtures/3bench targets.
+All8 official ZIPs/526 payload files/16original seeds and bounded Driver2048/
+fourObserve1024 are verified; Miri is skipped. Linux hidden-artifact/NAR/JSON,
+CodeQL and selected-minimum/finite-campaign limits remain in the owning PRD.
+Acceptance7351f794 and delivery2d1d5730 bind source, checks, reviews and merge.
+The old merged worktree was preserved and normally removed; one clean source-only
+continuation remains. The earlier7.12249GiB Cargo cache removal is not counted again.
 Native close errors/timeouts, disposal/cancellation, SDK joining, resource/
 reconnect guarantees, full R18 and full AUTH1/NET1 remain open.
+
+The next [native close-timeout component](../prds/static-remote-actors.md#native-close-timeout--prerequisites-and-probe-2026-11-19)
+has fresh locked-owner verification on mainfeae. Its real SDK component now
+passes one named case/two semantic controls per current debug/optimized profile:
+healthy close succeeds; the held actual query-timeout callback yields the
+unchanged native ten-second close error. Source/binary/raw bindings and both
+reviews close at e237ee58, without SDK joining or Node-outcome credit. Completed
+package cleanup reclaimed0.47713GiB net after1,991 generated inputs; unfinished
+dependency artifacts remain for the genuine Node proof. No Node repair, SDK
+feature or dependency change is selected; whole-operation withdrawal surrender
+remains a separate pending cut.
 
 R18's [withdrawal notification during finalization](../prds/static-remote-actors.md#withdrawal-notification-during-finalization--prerequisites-and-change-record-2026-11-17)
 merged through [PR438](https://github.com/devrandom-labs/bombay/pull/438) as
