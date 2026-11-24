@@ -1,5 +1,83 @@
 # Static remote actors and typed admission
 
+## Saturated admission during shutdown — C-04 prefix (2026-11-24)
+
+The existing Counter witness observes mailbox pressure and retry before
+shutdown. C-04 additionally requires a previously pending send to settle
+after shutdown begins. Use the existing StartupCounter, capacity-two mailbox,
+single actor worker and original Application and Node lifecycle authorities.
+Hold the worker long enough to admit two distinct commands and poll the third
+ordinary send once. Request shutdown while the worker is held, then release
+the worker and acquire the processed replies, unread mailbox custody, refused
+original and both cleanup outcomes. Compare the complete partition to the
+three original commands and independently check the retained Counter state.
+
+The focused case passed in debug and optimized builds through pinned Nix.
+Formatting and optimized all-target Clippy passed with both mandatory extra
+lints denied. Removing the capacity-two fixture setting made the third send
+ready before release. Both defect runs reached the pending/refusal assertion
+after native cleanup and failed there. The original fixture was restored
+byte for byte and both saved healthy programs then passed. The complete
+partition and the Counter state were checked separately from the test's wait
+limits. Source, logs and program hashes are in
+`acceptance-current/c04-saturation-shutdown`.
+
+The reviewed fixture changes one test owner. This batch adds zero production
+lines, public types or dependencies. The two isolated SDK verification owners
+consume the final two approved file slots. The separately held stale-reply
+and later-generation portion of C-04 remains open.
+
+## SDK resource baseline on real TLS (2026-11-24)
+
+The approved instrumented SDK test uses the selected SDK Session source at
+`c34eb350` and an isolated verification lock with Tokio 1.53.3 and rustix
+1.1.6. The workspace profile adds its development features and
+`tokio_unstable`. Its patch touches only the Session unit-test owner and
+verification lock. Bombay's production lock and runtime dependencies retain
+their published versions and features.
+
+Both debug and optimized builds observed a live TLS listener and two
+transport endpoints, a held callback, a live query timeout task and acquired
+query capacity. Normal close returned native listener/transport counts from
+`(1, 1, 0, 1)` to `(0, 0, 0, 0)`. The Session close-owned registries cleared;
+the tests verify task and blocking-work counts against the prior baseline
+across deduplicated runtime handles. The SDK's existing rescue ran only after
+the original post-close measurements.
+
+In both profiles, an omitted runtime-close control retained
+`(1, 1, 0, 1)` before rescue and failed the complete resource assertion.
+The full source was restored byte for byte and both original executables
+passed again. The exact patch, feature graph, numeric snapshots and logs are
+in `acceptance-current/sdk-baseline`. Standard SDK controls and the other
+R18 boundary and combined-source obligations retain their separate scope.
+
+## Local AUTH1 acceptance map (2026-11-24)
+
+The local exit gate covers the selected deterministic providers through an
+ordinary Application. The networking exit gate separately owns actual gateway
+forwarding, transport authentication and actor-host restart. Earlier ordinary
+Application evidence remains attached to its source revision. The current
+acceptance delivery still needs its combined checks, review and recorded merge.
+
+| Requirements | Local witness and scope |
+| --- | --- |
+| ID-01, ID-02, AUTH-02 | The configured assignment and protected Counter tests keep a stable deployment/controller/name separate from host, runtime incarnation, actor generation and authority. Checked issuance keeps the original on exhaustion. The local replay tests retain old assignments and observe native closure. The network restart witness remains separate. |
+| ID-03, ID-04 | `permission_admission` and `authority_admission` use actual typed request and result effects. Those tests exercise both recorded lookup and scheduled oneshot transfer. The historical private-issuance and Deserialize denials and current `remote_surface` tests cover the respective typed boundaries. |
+| ID-05, ID-06, ID-07, ID-11 | The two local Application consumers distinguish invalid, stale and unavailable evidence. The provider and protected Counter cases exercise scoped host/time checks, old and new generations and the original causes. C-03 covers the selected rotation, unavailability, revocation and delayed-receipt chronology through an actual Node. |
+| ID-08 | Configured deployment, purpose and caller travel with the private verified receipt in the local providers. The Node's same-name deployment case separately exercises isolation of native effects over the transport. |
+| ID-09, AUTH-06 | The local provenance check retains the verified original caller. Secure-channel identity and command authority have distinct owners. The held end-to-end forwarding acceptance belongs to NET1. |
+| ID-10, AUTH-03 | Existing queue and request bounds preserve the original inputs. R09's live-two and Discharge proof observes progress after invalid pressure, and the delegation cases preserve scope and current authority through tenant/protocol/actor/operation refusal. Retain history exhaustion follows its finite custody policy. |
+| ID-12 | The actual example uses explicit test evidence and refuses a production-required configuration without a provider. The downstream production identity provider remains SELO1 work. |
+| AUTH-01, AUTH-07 | The protected Counter selects operation permission separately from identity and preserves concrete denials. Native lifecycle cases retain the actual accepted Stop and joined report with original actor/task outcomes. The remote send-only Stop test is a separate NET1 contribution. |
+| AUTH-04, AUTH-08 | Both `lookup_permission_is_rechecked_after_actual_capacity_pressure` and `scheduled_permission_is_rechecked_after_actual_capacity_pressure` exercise a real Full retry. The protected Counter profiles retain expiry, revocation, unavailable evidence and the original outcomes. The admission point takes the coherent permission/time decision before a nonwaiting attempt. |
+| AUTH-05 | `counter_retains_live_binding_replay` and `arithmetic_retains_live_binding_replay` preserve duplicate, conflict, capacity refusal, checked exhaustion and original custody with the two deterministic provider implementations. Same-session reconnect and later-incarnation replay are separate network obligations. |
+
+Use the exact source and retained witnesses in the existing qualification
+sections and `acceptance-current/auth1-delivery-remaining.json`. The focused
+local consumers and production example qualification receive current-source
+credit only when those named cases pass. AUTH1 and NET1 states and reciprocal
+dependency edges remain as recorded in the backlog.
+
 ## Rotation, provider loss and current revocation — verified (2026-11-24)
 
 The selected C-03 test now runs through an actual Node and its native

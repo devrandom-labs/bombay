@@ -8,7 +8,7 @@ use super::protocol::{
 };
 use super::{Counter, CounterMessage};
 use crate::actors::ActorExt;
-use crate::application::{Application, ApplicationScope, WorkOutcome};
+use crate::application::{Application, ApplicationScope, MailboxCapacity, WorkOutcome};
 use crate::local::endpoint::ExtractLocalEndpoint;
 use crate::proxy::{ProxyControl, ProxyDiagnostic, ProxyOutcome, StableProxy};
 use crate::remote::{
@@ -30,7 +30,9 @@ use behavior::{
     User, UserEvent,
 };
 use behavior_actors::{Exit, ShutdownRejection, ShutdownRequested, StopOnShutdown};
+use core::future::{Future, poll_fn};
 use core::pin::pin;
+use core::task::Poll;
 use futures_util::FutureExt;
 use serde::{Deserialize, Serialize};
 use std::cell::{Cell, RefCell};
@@ -38,7 +40,7 @@ use std::mem::take;
 use std::num::NonZeroUsize;
 use std::panic::panic_any;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, mpsc};
 use std::time::{Duration, Instant};
 use tokio::runtime::Builder;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, oneshot};
@@ -140,6 +142,270 @@ impl StartupCounter {
             }
         }
     }
+}
+
+#[test]
+fn shutdown_conserves_saturated_counter_admissions_and_the_pending_original() {
+    Builder::new_multi_thread()
+        .worker_threads(1)
+        .enable_all()
+        .build()
+        .expect("the supported Node host has a single actor worker")
+        .block_on(async {
+            tokio::time::timeout(Duration::from_secs(15), saturated_counter_shutdown())
+                .await
+                .expect("the watchdog supplies no shutdown or delivery evidence");
+        });
+}
+
+#[expect(
+    clippy::too_many_lines,
+    reason = "one causal witness retains original sends, reply Users, unread commands and separate cleanup results"
+)]
+async fn saturated_counter_shutdown() {
+    let scope = ApplicationScope::new()
+        .mailbox_capacity(MailboxCapacity::new(2).expect("two actual actor mailbox slots"));
+    let mut startups = scope.external::<StartupCounterStarted>().unwrap();
+    let started = startups.recipient();
+    let mut node = scope
+        .with_root(
+            StartupCounter {
+                value: 0,
+                initializations: 0,
+                started: started.clone(),
+            }
+            .stop_on_shutdown(),
+        )
+        .open_node(configuration("tls/localhost:0", &EndpointRole::Receiver))
+        .await
+        .unwrap_or_else(|(_, _, cause)| panic!("the actual Node opens: {cause:?}"));
+    let session = node.session.clone();
+    let outcome = node
+        .run_with(|application| async move {
+            let startup = startups.receive().await;
+            let first = application.client::<CounterProcessed>().unwrap();
+            let second = application.client::<CounterProcessed>().unwrap();
+            let third = application.client::<CounterProcessed>().unwrap();
+            let issued = [
+                (601, first.address(), first.recipient()),
+                (607, second.address(), second.recipient()),
+                (613, third.address(), third.recipient()),
+            ];
+            let [first_command, second_command, third_command] =
+                issued.each_ref().map(|(request_sequence, _, reply_to)| {
+                    StartupCounterMessage::Increment {
+                        request_sequence: *request_sequence,
+                        reply_to: reply_to.clone(),
+                    }
+                });
+            let (release_worker, worker_release) = mpsc::channel();
+            let (announce_worker, worker_entered) = oneshot::channel();
+            let worker = tokio::spawn(async move {
+                let announced = announce_worker.send(());
+                let release = worker_release.recv_timeout(Duration::from_secs(5));
+                (announced, release)
+            });
+            let entered = worker_entered.await;
+            // Work runs on the block_on thread. The sole actor worker cannot
+            // drain a message until Work releases it, including during shutdown.
+            let first_admission = first.try_send(first_command);
+            let second_admission = second.try_send(second_command);
+            let (
+                before_release,
+                after_release,
+                shutdown,
+                repeated,
+                early_retirement,
+                released,
+                worker,
+            ) = {
+                let mut sending = pin!(third.send(third_command));
+                let before_release =
+                    poll_fn(|context| Poll::Ready(sending.as_mut().poll(context))).await;
+                let shutdown = application.shutdown::<Here>();
+                let repeated = application.shutdown::<Here>();
+                let early_retirement = application.retirement().now_or_never();
+                let released = release_worker.send(());
+                let worker = worker.await;
+                let after_release = match &before_release {
+                    Poll::Pending => Some(sending.await),
+                    Poll::Ready(_) => None,
+                };
+                (
+                    before_release,
+                    after_release,
+                    shutdown,
+                    repeated,
+                    early_retirement,
+                    released,
+                    worker,
+                )
+            };
+            let termination = application.termination().await;
+            let retirement = application.retirement().await;
+            let mut replies = Vec::new();
+            for mut client in [first, second, third] {
+                client.close_admission();
+                let mut users = Vec::new();
+                let eof = loop {
+                    match client.receive().await {
+                        Some(original) => users.push(original),
+                        original @ None => break original,
+                    }
+                };
+                replies.push((client.address(), client.recipient(), users, eof));
+            }
+            startups.close_admission();
+            let mut startup_tail = Vec::new();
+            let startup_eof = loop {
+                match startups.receive().await {
+                    Some(original) => startup_tail.push(original),
+                    original @ None => break original,
+                }
+            };
+            (
+                (startup, startup_tail, startup_eof),
+                issued,
+                (entered, released, worker),
+                (
+                    first_admission,
+                    second_admission,
+                    before_release,
+                    after_release,
+                ),
+                (
+                    shutdown,
+                    repeated,
+                    early_retirement,
+                    termination,
+                    retirement,
+                ),
+                replies,
+            )
+        })
+        .await
+        .unwrap_or_else(|_| panic!("the actual Node and Application run"));
+    let closed = node.close().await;
+    let (work, report, native, notifications, ()) = outcome.into_parts();
+    let ((startups, issued, worker, admissions, lifecycle, replies), cleanup) = work
+        .try_into_completed()
+        .unwrap_or_else(|_| panic!("the complete Work observations survive cleanup"));
+    let (origin, native) = native.expect("the original joined root returns");
+    let notifications = notifications.expect("both original notification receipts return");
+    let ActorRetirement::Retained {
+        custody,
+        outcome:
+            RetirementOutcome::Completed {
+                completion: Completion::Stopped,
+                ..
+            },
+    } = native
+    else {
+        panic!("the completed retirement retains original counter and unread mailbox");
+    };
+
+    cleanup.expect("Application cleanup joins");
+    closed.expect("the real Node Session closes");
+    assert!(session.is_closed());
+    assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+    let (entered, released, worker) = worker;
+    let (announced, worker_release) = worker.expect("the actual actor worker hold joins");
+    assert!(entered.is_ok() && announced.is_ok() && released.is_ok() && worker_release.is_ok());
+    let (shutdown, repeated, early_retirement, termination, retirement) = lifecycle;
+    assert_eq!(shutdown, Ok(()));
+    assert_eq!(repeated, Err(ShutdownRejection::AlreadyStopping));
+    assert!(early_retirement.is_none());
+    assert_eq!(termination, Ok(Exit::Normal));
+    assert_eq!(report, Some(retirement));
+    assert_eq!(retirement.retirement(), RetirementAssessment::Established);
+    assert_eq!(
+        retirement.failures(),
+        ActorFailureAssessment::NoFailuresFound
+    );
+    assert_eq!(origin.address(), MailAddr::APPLICATION_ROOT);
+    assert_eq!(
+        startups,
+        (Some(User::new(origin.address(), 1)), Vec::new(), None)
+    );
+
+    let (first_admission, second_admission, before_release, after_release) = admissions;
+    assert!(first_admission.is_ok() && second_admission.is_ok());
+    let pending = matches!(&before_release, Poll::Pending);
+    let ((Poll::Pending, Some(third)) | (Poll::Ready(third), None)) =
+        (before_release, after_release)
+    else {
+        panic!("the ordinary send returns exactly once");
+    };
+    let third_admissions = match third {
+        Ok(()) => 1,
+        Err(refused) => {
+            let StartupCounterMessage::Increment {
+                request_sequence,
+                reply_to,
+            } = refused.into_message()
+            else {
+                panic!("the original refused command remains an Increment");
+            };
+            assert_eq!((request_sequence, &reply_to), (issued[2].0, &issued[2].2));
+            0
+        }
+    };
+    let mut accounted = [0; 3];
+    let mut processed = 0;
+    assert_eq!(replies.len(), issued.len());
+    for (index, (address, reply_to, users, eof)) in replies.into_iter().enumerate() {
+        let (request_sequence, expected_address, expected_reply) = &issued[index];
+        assert_eq!((&address, &reply_to), (expected_address, expected_reply));
+        assert!(eof.is_none());
+        for original in users {
+            assert_eq!(
+                original,
+                User::new(
+                    origin.address(),
+                    CounterIncremented {
+                        request_sequence: *request_sequence,
+                    },
+                ),
+            );
+            accounted[index] += 1;
+            processed += 1;
+        }
+    }
+    for original in custody.user {
+        let StartupCounterMessage::Increment {
+            request_sequence,
+            reply_to,
+        } = original.message
+        else {
+            panic!("each unread original is an issued Increment");
+        };
+        let index = issued
+            .iter()
+            .position(|(expected_sequence, sender, expected_reply)| {
+                (*expected_sequence, *sender, expected_reply)
+                    == (request_sequence, original.from, &reply_to)
+            })
+            .expect("unread custody preserves the complete original User");
+        accounted[index] += 1;
+    }
+    let counter = custody.behavior.base();
+    assert_eq!((counter.value, counter.initializations), (processed, 1));
+    assert_eq!(&counter.started, &started);
+    assert!(
+        custody.control.is_empty()
+            && custody.descendants.is_empty()
+            && custody.child_failures.is_empty()
+    );
+    assert!(
+        custody.capability_failures.is_empty()
+            && custody.additional_failures.is_empty()
+            && custody.retirement_failures.is_empty()
+    );
+    assert_eq!(accounted, [1, 1, third_admissions]);
+    assert!(
+        pending && third_admissions == 0,
+        "the third ordinary send must be Pending under capacity two and return its original after shutdown"
+    );
 }
 
 #[test]
