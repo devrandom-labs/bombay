@@ -2651,3 +2651,978 @@ async fn replay_after_retirement() {
     assert!(matches!(first.9, (None, None, None, None, None, None)));
     assert!(matches!(second.9, (None, None, None, None, None, None)));
 }
+
+#[path = "../../../../../../examples/remote-counter/src/deployment.rs"]
+#[expect(
+    dead_code,
+    reason = "the campaign reuses the compatibility policy from the example's complete deployment module"
+)]
+mod campaign_deployment;
+mod campaign {
+    use super::campaign_deployment::{Incompatibility, RequiredTransport, compatible};
+    use super::{
+        Binding, Counter, CounterMessage, CounterProcessed, CounterValue, EndpointRole,
+        HeldCounterStartup, ProtectedMessage, ProviderProfile, Purpose, ReadReplyRef, ReadRequest,
+        ReadRequestRef, ReconnectOperation, StartupCompletion, VerificationError, current_scope,
+        limits, metadata, reconnect_router, recorded, router_client,
+    };
+    use crate::actors::ActorExt;
+    use crate::application::ApplicationScope;
+    use crate::diagnostic::DiagnosticDisposition;
+    use crate::lifecycle::ActorDrainPolicy;
+    use crate::remote::{Attempt, Export, ExportLimits, Metadata, RefusalRetention, reply};
+    use crate::supervisor::roster::{
+        self, FailureReaction, FixedLifecycle, FixedLifecycleEvent, FixedSupervisor,
+        FixedSupervisorEvent, Recovery,
+    };
+    use crate::worker::{OrderedRoles, StartupLimit, WorkerSubmission};
+    use crate::{ActorFailureAssessment, Completion, MailAddr, RetirementAssessment};
+    use behavior::{
+        ActiveTurn, Behavior, BehaviorActed, BehaviorBase, EstablishedDelivery,
+        EstablishedRecipient, InitializationTurn, ItemSettlement, MessageProtocol, Never,
+        SettledItem, Step, delegate_transition, initialize,
+    };
+    use behavior_actors::composition::replies::ExactReplies;
+    use behavior_actors::{TimerElapsed, TimerScheduled};
+    use futures_util::FutureExt;
+    use std::cell::{Cell, OnceCell, RefCell};
+    use std::convert::Infallible;
+    use std::iter;
+    use std::num::NonZeroUsize;
+    use std::sync::Arc;
+    use std::time::{Duration, Instant};
+    use tokio::runtime::Builder;
+    use tokio::sync::{Semaphore, oneshot};
+    use zenoh::handlers::FifoChannel;
+    use zenoh::query::ConsolidationMode;
+    use zenoh::sample::SampleKind;
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum CounterRole {
+        Serving,
+        Held,
+    }
+
+    type CounterLifecycle =
+        MessageProtocol<MailAddr, FixedLifecycle<CounterRole, Counter, HeldCounterStartup>>;
+    type Supervisor = FixedSupervisor<
+        CounterRole,
+        Counter,
+        HeldCounterStartup,
+        Never,
+        Infallible,
+        EstablishedRecipient<CounterLifecycle>,
+        ExactReplies,
+        ExactReplies,
+    >;
+
+    #[derive(Debug)]
+    enum CampaignGuard {
+        Incompatible(Incompatibility),
+        Verification(VerificationError),
+    }
+
+    type DrainElapsed = MessageProtocol<MailAddr, TimerElapsed>;
+
+    #[derive(behavior_macros::SendProduct)]
+    struct DrainEffects<SupervisorSends, ElapsedSends> {
+        supervisor: SupervisorSends,
+        elapsed: ElapsedSends,
+    }
+
+    // The actual supervisor still decides when its drain expires. The test adds
+    // one typed send so Work can release the held resource at that exact point.
+    struct DrainingCounters {
+        supervisor: Supervisor,
+        first_schedule: Option<TimerScheduled>,
+        first_elapsed_stop: Option<TimerElapsed>,
+        elapsed: EstablishedRecipient<DrainElapsed>,
+    }
+
+    impl BehaviorBase for DrainingCounters {
+        type Base = Self;
+        fn base(&self) -> &Self {
+            self
+        }
+    }
+
+    impl Behavior for DrainingCounters {
+        type Protocol = <Supervisor as Behavior>::Protocol;
+        type Event = <Supervisor as Behavior>::Event;
+        type Sends =
+            DrainEffects<<Supervisor as Behavior>::Sends, Vec<EstablishedDelivery<DrainElapsed>>>;
+        type Ph = <Supervisor as Behavior>::Ph;
+        type Error = <Supervisor as Behavior>::Error;
+        type Birth = <Supervisor as Behavior>::Birth;
+
+        fn init(&mut self, _: InitializationTurn) -> BehaviorActed<Self> {
+            initialize(&mut self.supervisor).map(|actions| {
+                actions.map_sends(|supervisor| DrainEffects {
+                    supervisor,
+                    elapsed: Vec::new(),
+                })
+            })
+        }
+
+        fn transition(&mut self, _: ActiveTurn, event: Self::Event) -> BehaviorActed<Self> {
+            let elapsed = match &event {
+                FixedSupervisorEvent::RestartElapsed(elapsed) => Some(*elapsed),
+                _ => None,
+            };
+            if let FixedSupervisorEvent::RestartScheduleSettled(SettledItem::Attempted(
+                ItemSettlement::Accepted(scheduled),
+            )) = &event
+            {
+                self.first_schedule.get_or_insert(*scheduled);
+            }
+            let actions = delegate_transition(&mut self.supervisor, event)?;
+            let mut notice = Vec::new();
+            if let (Some(elapsed), Step::Stop(_)) = (elapsed, &actions.become_)
+                && self.first_elapsed_stop.is_none()
+            {
+                self.first_elapsed_stop = Some(elapsed);
+                notice.push(EstablishedDelivery::new(self.elapsed.clone(), elapsed));
+            }
+            Ok(actions.map_sends(|supervisor| DrainEffects {
+                supervisor,
+                elapsed: notice,
+            }))
+        }
+    }
+
+    bombay::topology! {
+        draining_counters {
+            root: DrainingCounters { Proxy => proxy; }
+            proxy { Worker => worker; }
+            worker {}
+        }
+    }
+
+    #[test]
+    #[expect(
+        clippy::large_futures,
+        reason = "the finite local watchdog retains the measured combined-test future on the test stack"
+    )]
+    fn incompatibility_router_loss_and_unavailable_provider_precede_real_drain_expiry() {
+        let stage = Cell::new("bind TLS Router");
+        let host = Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .unwrap();
+        host.block_on(async {
+            tokio::time::timeout(Duration::from_secs(90), combined_failures(&stage))
+                .await
+                .unwrap_or_else(|_| {
+                    panic!("combined retirement fixture stalled at {}", stage.get())
+                });
+        });
+    }
+
+    #[expect(
+        clippy::too_many_lines,
+        reason = "one causal trace retains the original provider, transport, actor and retirement outcomes"
+    )]
+    #[expect(
+        clippy::large_futures,
+        reason = "Node Work retains the original finite campaign observations until the complete native join"
+    )]
+    #[expect(
+        clippy::result_large_err,
+        reason = "the standard reply selector returns the original typed request on refusal"
+    )]
+    async fn combined_failures(stage: &Cell<&str>) {
+        const COUNTER: &str = "bombay/campaign/draining-counter";
+        let sequences = [607_u64, 613, 617, 619];
+        let (router, address) = reconnect_router("tls/localhost:0").await;
+        let old_router = router.zid().to_string();
+        stage.set("open caller Session");
+        let caller = zenoh::open(
+            router_client(&address, &EndpointRole::Caller)
+                .to_configuration()
+                .unwrap(),
+        )
+        .await
+        .expect("one caller Session connects to the actual TLS Router");
+        let caller_id = caller.zid().to_string();
+        let scope = ApplicationScope::new();
+        let mut lifecycle = scope.external::<CounterLifecycle>().unwrap();
+        let mut processed = scope.external::<CounterProcessed>().unwrap();
+        let mut values = scope.external::<CounterValue>().unwrap();
+        let mut elapsed = scope.external::<DrainElapsed>().unwrap();
+        let resources = Arc::new(Semaphore::new(2));
+        let (serving_reached, serving_observed) = oneshot::channel();
+        let (serving_release, serving_released) = oneshot::channel();
+        let (held_reached, held_observed) = oneshot::channel();
+        let (held_release, held_released) = oneshot::channel();
+        let mut serving = Some(HeldCounterStartup {
+            reached: serving_reached,
+            release: serving_released,
+            resource: resources.clone().try_acquire_owned().unwrap(),
+            readiness: [31, 37].into(),
+            completion: StartupCompletion::Ready,
+        });
+        let mut held = Some(HeldCounterStartup {
+            reached: held_reached,
+            release: held_released,
+            resource: resources.clone().try_acquire_owned().unwrap(),
+            readiness: [41, 43].into(),
+            completion: StartupCompletion::Ready,
+        });
+        let released_serving = serving_release.send(());
+        let supervisor: Supervisor = roster::new(
+            move |role: &CounterRole| {
+                let startup = match role {
+                    CounterRole::Serving => serving.take(),
+                    CounterRole::Held => held.take(),
+                }
+                .expect("each original initial role owns one startup plan");
+                Ok::<_, Infallible>(WorkerSubmission::with_startup(Counter::new(), startup))
+            },
+            OrderedRoles::new(CounterRole::Serving, [CounterRole::Held]).unwrap(),
+            roster::Config {
+                startup: StartupLimit::new(2).unwrap(),
+                recovery: Recovery::temporary(),
+                failure: FailureReaction::StopSupervisor,
+                shutdown: ActorDrainPolicy::RetireActorGraphAfter {
+                    deadline: Duration::from_millis(20),
+                },
+                diagnostics: DiagnosticDisposition::terminate(),
+            },
+        )
+        .publish_lifecycle(lifecycle.recipient())
+        .build()
+        .unwrap_or_else(|_| panic!("both actual initial Counter submissions remain owned"));
+        let root = DrainingCounters {
+            supervisor,
+            first_schedule: None,
+            first_elapsed_stop: None,
+            elapsed: elapsed.recipient(),
+        }
+        .stop_on_shutdown();
+        let maximum = NonZeroUsize::new(sequences.len()).unwrap();
+        let mut network = router_client(&address, &EndpointRole::Receiver);
+        network.max_retained_queries = maximum;
+        let node = scope
+            .with_topology(root, draining_counters::Topology::new())
+            .open_node(network)
+            .await
+            .unwrap_or_else(|_| panic!("the real supervisor Node connects to the Router"));
+        let runtime = node.runtime_id();
+        let session = node.session.clone();
+        let receiver_events = session
+            .info()
+            .transport_events_listener()
+            .history(true)
+            .with(FifoChannel::new(8))
+            .await
+            .unwrap();
+        let caller_events = caller
+            .info()
+            .transport_events_listener()
+            .history(true)
+            .with(FifoChannel::new(8))
+            .await
+            .unwrap();
+        let records = OnceCell::<Vec<ProtectedMessage>>::new();
+        let reply_records = RefCell::new(Vec::<ProtectedMessage>::new());
+        let configured_claims = RefCell::new(Vec::<Metadata>::new());
+        let prepared = RefCell::new(None);
+        let readiness = RefCell::new(None);
+        let (provider_response, provider_receiving) =
+            oneshot::channel::<recorded::Receipt<ReconnectOperation>>();
+        let provider_receiving = RefCell::new(Some(provider_receiving));
+        let binding = Binding {
+            deployment: "two-node-read-study",
+            caller: "caller",
+            controller: "owner",
+            actor: "campaign-counter",
+            host: "receiver",
+            protocol: "campaign-counter",
+            target_assignment: "same-serving-initial-child",
+            logical_session: 601,
+        };
+        let deadline = Instant::now() + Duration::from_secs(90);
+        let current =
+            |receipt: &recorded::Receipt<ReconnectOperation>, runtime: &str, target: MailAddr| {
+                let scope = recorded::projection(receipt);
+                let configured = configured_claims.borrow();
+                let actual = configured
+                    .iter()
+                    .find(|claims| claims.request_sequence == scope.bombay.request_sequence)
+                    .ok_or(CampaignGuard::Verification(VerificationError::Invalid))?;
+                current_scope(
+                    scope,
+                    actual,
+                    &ReconnectOperation::Increment,
+                    Purpose::Request,
+                    deadline,
+                )
+                .map_err(CampaignGuard::Verification)?;
+                if actual.runtime_generation.as_ref() != runtime
+                    || actual.actor_generation != target.0
+                    || recorded::identity(receipt).0 != &binding
+                {
+                    return Err(CampaignGuard::Verification(VerificationError::Invalid));
+                }
+                // The trusted per-request claims intentionally retain wire=2 for
+                // the incompatible input. No independent equality gate masks this
+                // one application-owned compatibility decision.
+                compatible(
+                    &scope.bombay,
+                    1,
+                    1,
+                    &configured[0].provider_profile,
+                    RequiredTransport::Tls,
+                )
+                .map_err(CampaignGuard::Incompatible)
+            };
+        let export = Export::new(
+            COUNTER,
+            ExportLimits {
+                queued_queries: maximum,
+                retained_queries: maximum,
+                retained_requests: maximum,
+                diagnostics: maximum,
+                refusals: RefusalRetention::Retain,
+            },
+            limits(),
+            |bytes: &[u8]| serde_json::from_slice::<ReadRequest<ReconnectOperation>>(bytes),
+            reply(
+                |request: ReadRequest<ReconnectOperation>| {
+                    Ok::<_, ReadRequest<ReconnectOperation>>(move |reply_to| {
+                        CounterMessage::IncrementAndReply {
+                            request_sequence: request.bombay.request_sequence,
+                            reply_to,
+                        }
+                    })
+                },
+                |receipt: &recorded::Receipt<ReconnectOperation>,
+                 original: &behavior::User<MailAddr, super::CounterIncremented>| {
+                    serde_json::to_vec(&ReadReplyRef {
+                        bombay: &recorded::projection(receipt).bombay,
+                        kind: Purpose::Processed,
+                        operation: &ReconnectOperation::Increment,
+                        value: &original.message.request_sequence,
+                    })
+                    .map(Vec::into_boxed_slice)
+                },
+            ),
+            async |bytes: &[u8], proof: &[u8]| {
+                let request: ReadRequest<ReconnectOperation> =
+                    serde_json::from_slice(bytes).map_err(VerificationError::Declaration)?;
+                if request.bombay.request_sequence == sequences[2] {
+                    let receiving = provider_receiving
+                        .borrow_mut()
+                        .take()
+                        .expect("one real provider response transaction belongs to this input");
+                    return receiving.await.map_err(VerificationError::Unavailable);
+                }
+                recorded::verify::<ReconnectOperation>(
+                    &ProtectedMessage {
+                        protected: bytes.into(),
+                        proof: proof.into(),
+                    },
+                    records
+                        .get()
+                        .expect("binding publishes the original request records once"),
+                    binding,
+                )
+                .await
+            },
+            async |bytes: &[u8], _: &recorded::Receipt<ReconnectOperation>| {
+                let proof: Box<[u8]> = [47, 53].into();
+                reply_records.borrow_mut().push(ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.clone(),
+                });
+                Ok::<_, Never>(proof)
+            },
+            |left, right| recorded::identity(left) == recorded::identity(right),
+            &current,
+            &current,
+        );
+        let mut node = node.exports(export, async |application| {
+            stage.set("serving startup signal");
+            let serving_started = serving_observed.await;
+            stage.set("held startup signal");
+            let held_started = held_observed.await;
+            stage.set("serving lifecycle notification");
+            let original_notice = lifecycle
+                .receive()
+                .await
+                .expect("only the released initial role can become ready");
+            let target = match original_notice.message.event() {
+                FixedLifecycleEvent::Started {
+                    role: CounterRole::Serving,
+                    proxy,
+                } => proxy.clone(),
+                _ => panic!("the unresolved initial role cannot supply a serving capability"),
+            };
+            let serving = target.recipient();
+            let actor = application.actor_address(&serving).unwrap();
+            let mut originals = Vec::new();
+            let mut configured_records = Vec::new();
+            for sequence in sequences {
+                let mut claims = metadata(
+                    ProviderProfile::Recorded,
+                    "campaign-counter",
+                    caller_id.clone(),
+                    runtime.clone(),
+                );
+                claims.actor_generation = actor.0;
+                claims.request_sequence = sequence;
+                if sequence == sequences[1] {
+                    claims.wire_version = 2;
+                }
+                let original = ProtectedMessage {
+                    protected: serde_json::to_vec(&ReadRequestRef {
+                        bombay: &claims,
+                        kind: Purpose::Request,
+                        operation: &ReconnectOperation::Increment,
+                    })
+                    .unwrap()
+                    .into_boxed_slice(),
+                    proof: sequence.to_be_bytes().into(),
+                };
+                configured_records.push(ProtectedMessage {
+                    protected: original.protected.clone(),
+                    proof: original.proof.clone(),
+                });
+                configured_claims.borrow_mut().push(claims);
+                originals.push(original);
+            }
+            records
+                .set(configured_records)
+                .unwrap_or_else(|_| panic!("the one binding publishes one original request table"));
+            *prepared.borrow_mut() = Some((serving, originals));
+            *readiness.borrow_mut() = Some((serving_started, held_started, original_notice));
+            Ok::<_, Never>(target)
+        });
+        let outcome = node
+            .run_with(|application| {
+                let caller = &caller;
+                let router = &router;
+                let session = &session;
+                let address = &address;
+                let prepared = &prepared;
+                let resources = &resources;
+                async move {
+                    let (serving, originals) = prepared.borrow_mut().take().unwrap();
+                    let target = application.actor_address(&serving).unwrap();
+                    stage.set("initial transport events");
+                    let initial = (
+                        receiver_events.recv_async().await.unwrap(),
+                        caller_events.recv_async().await.unwrap(),
+                    );
+                    let links_before = (
+                        session.info().links().await.collect::<Vec<_>>(),
+                        caller.info().links().await.collect::<Vec<_>>(),
+                    );
+                    let querier = caller.declare_querier(COUNTER).await.unwrap();
+                    let matching = querier
+                        .matching_listener()
+                        .with(FifoChannel::new(8))
+                        .await
+                        .unwrap();
+                    stage.set("first export visibility");
+                    let first_matching = loop {
+                        let actual = matching.recv_async().await.unwrap();
+                        if actual.matching() {
+                            break actual;
+                        }
+                    };
+                    let matching_closed = matching.undeclare().await;
+                    let querier_closed = querier.undeclare().await;
+                    let request = async |original: &ProtectedMessage| {
+                        let replies = caller
+                            .get(COUNTER)
+                            .payload(original.protected.to_vec())
+                            .attachment(original.proof.to_vec())
+                            .consolidation(ConsolidationMode::None)
+                            .timeout(Duration::from_secs(20))
+                            .await
+                            .unwrap();
+                        let mut received = Vec::new();
+                        let ending = loop {
+                            match replies.recv_async().await {
+                                Ok(original) => received.push(original),
+                                Err(ending) => break ending,
+                            }
+                        };
+                        (received, ending)
+                    };
+                    let mut read = async || {
+                        let sent = values
+                            .send(&serving, CounterMessage::Read(values.recipient()))
+                            .await;
+                        let original = values.receive().await;
+                        (sent, original)
+                    };
+                    stage.set("first remote request and local Read");
+                    let first = request(&originals[0]).await;
+                    let before = read().await;
+                    stage.set("incompatible request and local Read");
+                    let incompatible = request(&originals[1]).await;
+                    let after_incompatible = read().await;
+                    stage.set("Router close and transport deletion");
+                    let router_closed = router.close().await;
+                    let deleted = (
+                        receiver_events.recv_async().await.unwrap(),
+                        caller_events.recv_async().await.unwrap(),
+                    );
+                    let links_down = (
+                        session.info().links().await.collect::<Vec<_>>(),
+                        caller.info().links().await.collect::<Vec<_>>(),
+                    );
+                    let live_down = (
+                        session.is_closed(),
+                        caller.is_closed(),
+                        session.zid().to_string(),
+                        caller.zid().to_string(),
+                    );
+                    stage.set("disconnected local increment and Read");
+                    let local_increment = processed
+                        .send(
+                            &serving,
+                            CounterMessage::IncrementAndReply {
+                                request_sequence: 621,
+                                reply_to: processed.recipient(),
+                            },
+                        )
+                        .await;
+                    let local_processed = processed.receive().await;
+                    let down = read().await;
+                    stage.set("Router replacement and restored transport events");
+                    let (replacement, rebound) = reconnect_router(address).await;
+                    let new_router = replacement.zid().to_string();
+                    let restored = (
+                        receiver_events.recv_async().await.unwrap(),
+                        caller_events.recv_async().await.unwrap(),
+                    );
+                    let links_after = (
+                        session.info().links().await.collect::<Vec<_>>(),
+                        caller.info().links().await.collect::<Vec<_>>(),
+                    );
+                    let querier = caller.declare_querier(COUNTER).await.unwrap();
+                    let matching = querier
+                        .matching_listener()
+                        .with(FifoChannel::new(8))
+                        .await
+                        .unwrap();
+                    stage.set("restored export visibility");
+                    let last_matching = loop {
+                        let actual = matching.recv_async().await.unwrap();
+                        if actual.matching() {
+                            break actual;
+                        }
+                    };
+                    let last_matching_closed = matching.undeclare().await;
+                    let last_querier_closed = querier.undeclare().await;
+                    // This is actual provider transaction loss. It is not an Invalid
+                    // credential or a manufactured unavailable status.
+                    stage.set("unavailable provider request and local Read");
+                    drop(provider_response);
+                    let unavailable = request(&originals[2]).await;
+                    let after_unavailable = read().await;
+                    stage.set("fresh remote request and local Read");
+                    let fresh = request(&originals[3]).await;
+                    let after_fresh = read().await;
+                    let live_after = (
+                        session.is_closed(),
+                        caller.is_closed(),
+                        session.zid().to_string(),
+                        caller.zid().to_string(),
+                    );
+                    stage.set("close caller and transport listeners");
+                    let receiver_events_closed = receiver_events.undeclare().await;
+                    let caller_events_closed = caller_events.undeclare().await;
+                    let caller_closed = caller.close().await;
+                    let sender = application.sender().unwrap();
+                    stage.set("submit supervisor shutdown");
+                    let shutdown = sender.send(roster::FixedCommand::shutdown()).await;
+                    stage.set("receive the exact elapsed drain notification");
+                    let elapsed_notice = elapsed.receive().await;
+                    let held_at_expiry = resources.available_permits();
+                    let terminated_before_release =
+                        application.lifecycle().termination().now_or_never();
+                    let joined_before_release = application.lifecycle().retirement().now_or_never();
+                    stage.set("release held startup and join retirement");
+                    let released_held = held_release.send(());
+                    let termination = application.lifecycle().termination().await;
+                    let retired = application.lifecycle().retirement().await;
+                    let replayed = application.lifecycle().retirement().await;
+                    stage.set("finish owning Node cleanup");
+                    let permits_after_join = resources.available_permits();
+                    (
+                        originals,
+                        target,
+                        [first, incompatible, unavailable, fresh],
+                        [
+                            before,
+                            after_incompatible,
+                            down,
+                            after_unavailable,
+                            after_fresh,
+                        ],
+                        (
+                            initial,
+                            deleted,
+                            restored,
+                            links_before,
+                            links_down,
+                            links_after,
+                            old_router,
+                            new_router,
+                            rebound,
+                            live_down,
+                            live_after,
+                        ),
+                        (
+                            first_matching,
+                            matching_closed,
+                            querier_closed,
+                            last_matching,
+                            last_matching_closed,
+                            last_querier_closed,
+                        ),
+                        (local_increment, local_processed),
+                        (
+                            router_closed,
+                            caller_closed,
+                            receiver_events_closed,
+                            caller_events_closed,
+                            shutdown,
+                            elapsed_notice,
+                            termination,
+                            held_at_expiry,
+                            terminated_before_release,
+                            joined_before_release,
+                            released_held,
+                            retired,
+                            replayed,
+                            permits_after_join,
+                        ),
+                        replacement,
+                    )
+                }
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the same Node retains the complete combined campaign"));
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+            node.into_parts().unwrap_or_else(|_| {
+                panic!("the Node returns every original close and driver field")
+            });
+        let (work, report, native, notifications, ()) = outcome.into_parts();
+        let (
+            (originals, target, replies, reads, connections, matching, local, closure, replacement),
+            cleanup,
+        ) = work
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("all combined observations survive the actual cleanup"));
+        let replacement_closed = replacement.close().await;
+        let (_, native) =
+            native.expect("the original supervisor and both initial children remain acquired");
+        let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+        let reply_records = reply_records.into_inner();
+        lifecycle.close_admission();
+        let mut remaining_notices = Vec::new();
+        while let Some(original) = lifecycle.receive().await {
+            remaining_notices.push(original);
+        }
+        let (serving_started, held_started, original_notice) = readiness.into_inner().unwrap();
+        let mut started_roles = Vec::new();
+        let mut restarted_roles = Vec::new();
+        for original in iter::once(&original_notice).chain(&remaining_notices) {
+            match original.message.event() {
+                FixedLifecycleEvent::Started { role, .. } => started_roles.push(*role),
+                FixedLifecycleEvent::Restarted { role, .. } => restarted_roles.push(*role),
+                _ => {}
+            }
+        }
+        let mut rows = Vec::new();
+        for request in requests {
+            rows.push(
+                request
+                    .try_into_parts()
+                    .unwrap_or_else(|_| panic!("all native request producers ended")),
+            );
+        }
+        cleanup.expect("the original actor graph joins after resource release");
+        closed.expect("the actual receiving Session closes");
+        replacement_closed.expect("the replacement Router closes after the Node");
+        let (
+            router_closed,
+            caller_closed,
+            receiver_events_closed,
+            caller_events_closed,
+            shutdown,
+            elapsed_notice,
+            termination,
+            held_at_expiry,
+            terminated_before_release,
+            joined_before_release,
+            released_held,
+            retired,
+            replayed,
+            permits_after_join,
+        ) = closure;
+        router_closed.expect("the original transport hop closed");
+        caller_closed.expect("the one caller Session closed");
+        receiver_events_closed.expect("the receiver transport listener was undeclared");
+        caller_events_closed.expect("the caller transport listener was undeclared");
+        let custody = native
+            .custody()
+            .expect("the native body retains the actual deadline observation");
+        let observed = custody.behavior.base();
+        let native_admissions = rows
+            .iter()
+            .map(|row| {
+                let request: ReadRequest<ReconnectOperation> =
+                    serde_json::from_slice(&row.1.0).unwrap();
+                let admitted = row.4.as_ref().and_then(|(_, _, admission, received, _)| {
+                    match (admission, received) {
+                        (Attempt::Returned(Ok(())), Some(Some(original))) => {
+                            Some((original.from, original.message.request_sequence))
+                        }
+                        _ => None,
+                    }
+                });
+                (request.bombay.request_sequence, admitted)
+            })
+            .collect::<Vec<_>>();
+        let actual_values = reads.each_ref().map(|(_, original)| {
+            original
+                .as_ref()
+                .map(|original| (original.from, original.message))
+        });
+        let actual_replies = replies.each_ref().map(|(native, _)| {
+            native
+                .iter()
+                .map(|original| {
+                    let reply = original.result();
+                    reply
+                        .as_ref()
+                        .ok()
+                        .and_then(|sample| {
+                            serde_json::from_slice::<super::ReadReply<u64, ReconnectOperation>>(
+                                &sample.payload().to_bytes(),
+                            )
+                            .ok()
+                        })
+                        .map(|reply| (reply.bombay.request_sequence, reply.value))
+                })
+                .collect::<Vec<_>>()
+        });
+        let timer = match (observed.first_schedule, observed.first_elapsed_stop) {
+            (Some(scheduled), Some(elapsed)) => Some((
+                scheduled.id == elapsed.id,
+                scheduled.generation == elapsed.generation,
+            )),
+            _ => None,
+        };
+        let proxy = custody
+            .descendants
+            .iter()
+            .find(|child| child.origin.address() == target)
+            .expect("the same original serving proxy remains in the actual native graph");
+        let proxy_custody = proxy
+            .retirement
+            .custody()
+            .expect("the actual stable proxy custody remains");
+        let [worker] = proxy_custody.descendants.as_slice() else {
+            panic!("one initial serving Counter is retained; the Router never restarts this actor");
+        };
+        let worker_address = worker.origin.address();
+        let actual = (
+            native_admissions.as_slice(),
+            actual_values,
+            actual_replies,
+            timer,
+            held_at_expiry,
+            joined_before_release.is_some(),
+            permits_after_join,
+            started_roles.as_slice(),
+            restarted_roles.as_slice(),
+        );
+        assert_eq!(
+            actual,
+            (
+                [
+                    (sequences[0], Some((worker_address, sequences[0]))),
+                    (sequences[1], None),
+                    (sequences[2], None),
+                    (sequences[3], Some((worker_address, sequences[3])))
+                ]
+                .as_slice(),
+                [
+                    Some((worker_address, 1)),
+                    Some((worker_address, 1)),
+                    Some((worker_address, 2)),
+                    Some((worker_address, 2)),
+                    Some((worker_address, 3))
+                ],
+                [
+                    vec![Some((sequences[0], sequences[0]))],
+                    vec![],
+                    vec![],
+                    vec![Some((sequences[3], sequences[3]))]
+                ],
+                Some((true, true)),
+                1,
+                false,
+                2,
+                [CounterRole::Serving].as_slice(),
+                &[] as &[CounterRole],
+            )
+        );
+        let elapsed_notice = elapsed_notice.expect("Work received the exact typed drain event");
+        assert_eq!(elapsed_notice.from, MailAddr::APPLICATION_ROOT);
+        assert_eq!(Some(elapsed_notice.message), observed.first_elapsed_stop);
+        assert!(terminated_before_release.is_none());
+        // Every typed rejection is inspected only after the independent complete
+        // native-admission, state, actual-expiry and retirement-frontier oracle.
+        assert!(matches!(
+            &rows[1].8.0,
+            Some(CampaignGuard::Incompatible(Incompatibility::Wire {
+                required: 1,
+                actual: 2
+            }))
+        ));
+        assert!(matches!(
+            &rows[2].2,
+            Some(Err(VerificationError::Unavailable(_)))
+        ));
+        for (row, original) in rows.iter().zip(&originals) {
+            if let Some(CampaignGuard::Verification(cause)) = &row.8.0 {
+                panic!("unexpected current-authority refusal: {cause:?}");
+            }
+            assert_eq!((&row.1.0, &row.1.1), (&original.protected, &original.proof));
+            assert!(matches!(&row.9, (None, None, None, None, None, None)));
+        }
+        assert_eq!(rows.len(), sequences.len());
+
+        for index in [0_usize, 3] {
+            let native_reply = &replies[index].0[0];
+            let reply = native_reply.result();
+            let sample = reply.as_ref().unwrap();
+            let actual = ProtectedMessage {
+                protected: sample.payload().to_bytes().as_ref().into(),
+                proof: sample.attachment().unwrap().to_bytes().as_ref().into(),
+            };
+            let receipt = recorded::verify::<ReconnectOperation>(&actual, &reply_records, binding)
+                .await
+                .unwrap();
+            assert_eq!(recorded::projection(&receipt).kind, Purpose::Processed);
+            assert_eq!(
+                recorded::projection(&receipt).bombay.request_sequence,
+                sequences[index]
+            );
+        }
+        let (
+            initial,
+            deleted,
+            restored,
+            links_before,
+            links_down,
+            links_after,
+            old_router,
+            new_router,
+            rebound,
+            live_down,
+            live_after,
+        ) = connections;
+        for event in [&initial.0, &initial.1] {
+            assert_eq!(event.kind(), SampleKind::Put);
+            assert_eq!(event.transport().zid().to_string(), old_router);
+        }
+        for event in [&deleted.0, &deleted.1] {
+            assert_eq!(event.kind(), SampleKind::Delete);
+            assert_eq!(event.transport().zid().to_string(), old_router);
+        }
+        for event in [&restored.0, &restored.1] {
+            assert_eq!(event.kind(), SampleKind::Put);
+            assert_eq!(event.transport().zid().to_string(), new_router);
+        }
+        assert_ne!(old_router, new_router);
+        assert_eq!(rebound, address);
+        for (links, expected) in [
+            (&links_before.0, &old_router),
+            (&links_before.1, &old_router),
+            (&links_after.0, &new_router),
+            (&links_after.1, &new_router),
+        ] {
+            let [link] = links.as_slice() else {
+                panic!("each live client has one actual TLS Router link");
+            };
+            assert_eq!(link.zid().to_string(), *expected);
+            assert!(
+                link.src().to_string().starts_with("tls/")
+                    && link.dst().to_string().starts_with("tls/")
+            );
+        }
+        assert!(links_down.0.is_empty() && links_down.1.is_empty());
+        assert_eq!(
+            live_down,
+            (false, false, runtime.clone(), caller_id.clone())
+        );
+        assert_eq!(live_after, (false, false, runtime, caller_id));
+        let (
+            first_matching,
+            matching_closed,
+            querier_closed,
+            last_matching,
+            last_matching_closed,
+            last_querier_closed,
+        ) = matching;
+        assert!(first_matching.matching() && last_matching.matching());
+        matching_closed.unwrap();
+        querier_closed.unwrap();
+        last_matching_closed.unwrap();
+        last_querier_closed.unwrap();
+        let (local_increment, local_processed) = local;
+        assert!(local_increment.is_ok());
+        assert_eq!(
+            local_processed
+                .as_ref()
+                .map(|original| (original.from, original.message.request_sequence)),
+            Some((worker_address, 621))
+        );
+        assert!(reads.iter().all(|(sent, _)| sent.is_ok()));
+        assert!(
+            released_serving.is_ok()
+                && serving_started.is_ok()
+                && held_started.is_ok()
+                && released_held.is_ok()
+        );
+        assert!(matches!(
+            original_notice.message.event(),
+            FixedLifecycleEvent::Started {
+                role: CounterRole::Serving,
+                ..
+            }
+        ));
+        assert!(shutdown.is_ok());
+        assert_eq!(termination, Ok(behavior_actors::Exit::Normal));
+        assert_eq!(native.completion(), Some(&Completion::Stopped));
+        assert_eq!(retired, replayed);
+        assert_eq!(retired.retirement(), RetirementAssessment::Established);
+        assert_eq!(retired.failures(), ActorFailureAssessment::NoFailuresFound);
+        assert_eq!(report, Some(retired));
+        let notifications = notifications.unwrap();
+        assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+        assert!(
+            matches!(&bound, Some(Ok(_)))
+                && matches!(&startup, Some(Ok(())))
+                && matches!(&withdrawal, Some(Ok(())))
+        );
+        assert!(
+            diagnostics.is_empty()
+                && polling.is_none()
+                && disposal.is_none()
+                && withdrawal_polling.is_none()
+                && withdrawal_disposal.is_none()
+        );
+        assert!(session.is_closed());
+    }
+}

@@ -1,5 +1,57 @@
 # Static remote actors and typed admission
 
+## Router recovery and drain expiry — C-08 (2026-11-24)
+
+One existing Node retirement test owner will combine the four events around
+one serving Counter. Reject a wire version through the example's existing
+compatibility policy. Close and replace the real TLS Router while local
+work continues on the same actor. Drop one actual provider transaction,
+then accept fresh work after the Router and export are available again.
+Preserve native query custody and independently read the Counter after each
+remote outcome.
+
+Hold the second initial Counter's startup resource while the existing
+finite graph drain is requested. The original timer schedule and matching
+elapsed event must account for the supervisor's stop. Send a typed copy of
+that elapsed event to Work through ordinary Actions. Both parent termination
+and joined retirement must remain pending while the child owns the resource.
+Release it after the timer notice, then acquire both lifecycle facts, the
+original joined graph and all Session outcomes before comparing the complete
+sequence. The first runtime attempt waited for parent termination while still
+holding its child resource and hit the outer watchdog. The correction follows
+the existing Environment retirement order. The outer timeout only bounds the
+test. This scope uses the same live Node and original actor throughout and adds
+zero production lines, public types, dependencies or file owners. Storage
+unavailability remains in MNE1.
+
+The focused run passed in debug and optimized builds under pinned Nix.
+Requests 607 and 619 each produced exactly one native processed result and
+protected reply. The incompatible 613 and unavailable-provider 617 each
+retained their distinct refusal and produced no native admission. The
+independent Reads were `1, 1, 2, 2, 3` from the same worker. The actual
+TimerElapsed notice matched its accepted schedule. At that sampled boundary
+one startup permit remained held and the parent retirement was pending.
+The resource release restored both permits and the original join completed.
+
+An early-release control settled the child before observing the same boundary.
+It preserved the earlier native outcomes in both profiles and failed the
+post-cleanup aggregate at two permits and a ready retirement. After byte-exact
+restoration, both saved healthy executables passed. The independent source
+review retained the ordinary Node and typed Actions path. Its final local
+receipt correction compares the disconnected increment's exact sender and
+sequence instead of checking only whether a receipt exists. This extra
+assertion follows the unchanged aggregate used by the earlier controls. The
+final exact source passed debug, optimized, formatting and strict Clippy.
+It adds 975 lines to the existing test owner. Separate logs and retained
+artifacts preserve each source epoch in `acceptance-current/c08-combined`.
+
+For R21, this is a positive static-hosting trace. The completed serving startup
+supplies the established actor used by Export. Its verified configured scope
+is checked against the same live runtime and target before admission. The
+original declaration and withdrawal outcomes are acquired at cleanup. Transport
+matching supplies route visibility, and the typed lifecycle and protected
+request observations separately supply actor and admission facts.
+
 ## Bounded reply loss and recovery — C-10 (2026-11-24)
 
 Extend the fixed public two-Node Counter journey in its existing outbound
@@ -30,6 +82,16 @@ control are preserved separately. Source and logs are in
 The selected losses occur before publication reaches the network. This
 fixture adds zero production lines, types or dependencies and uses one
 already approved test owner.
+
+For R06, R13 and R25, the same execution acquires both sides' joined results
+for requests 24 and 25. The caller retains the original command, encoded
+bytes and protection, successful native Get and terminal response list with
+zero replies. The receiving rows independently retain the verified configured
+request scope, native processed result and absent publication. The sender's
+knowledge still ends at the acquired caller facts. Together these observations
+exercise the selected post-join inspection route in one TLS journey. The
+separate-process presentation, standalone diagnostic lifetime and remaining
+row obligations keep their own scope.
 
 ## Saturated admission during shutdown — C-04 prefix (2026-11-24)
 
@@ -79,8 +141,15 @@ In both profiles, an omitted runtime-close control retained
 `(1, 1, 0, 1)` before rescue and failed the complete resource assertion.
 The full source was restored byte for byte and both original executables
 passed again. The exact patch, feature graph, numeric snapshots and logs are
-in `acceptance-current/sdk-baseline`. Standard SDK controls and the other
-R18 boundary and combined-source obligations retain their separate scope.
+in `acceptance-current/sdk-baseline`.
+
+The SDK's existing timeout-callback custody test also passed once in each
+build profile with the instrumentation compiler flags unset. It observes the
+originals destroyed before capacity can be reused after callback unwind.
+The initial filter selected zero tests and was replaced with the exact
+`query_retirement` test path before counting either run. This control uses
+the same isolated verification lock. The remaining R18 boundaries and
+combined-source qualification retain their separate scope.
 
 ## Local AUTH1 acceptance map (2026-11-24)
 
@@ -531,6 +600,32 @@ Full R01–R25/AUTH1/NET1, remaining readiness/authority/resource/network/suppor
 clauses, combined gates, distillation, submitted-head CI/review and normal
 recorded merge remain open. No source fault, live compiler or delivered-state
 claim remains from this local batch.
+
+### Process outcomes and controlled scenarios — R23
+
+The process tests supply separate OS identities, published bindings and
+ordinary application results. The controlled scenarios below supply the
+matching native or application fact at its owning boundary. Their original
+qualification records retain the individual source and build profiles.
+
+| Real process witness | Corresponding controlled observation |
+| --- | --- |
+| `separate_programs_increment_read_and_stop_through_real_tls` exchanges Increment 101, Read 1 and Stop. | `scheduled_duplicates_and_authority_changes_preserve_native_admission` observes delivery, successful verification, native admission and the independent Counter read in a fixed order. The processed receipt and Read distinguish domain effect from transport delivery. |
+| `actor_mailbox_pressure_recovers_across_real_counter_programs` retains the capacity-two Full original and observes Read 2, retry, native Read 3 and ordinary TLS Read 4. | `full_append_retries_the_same_message_after_capacity_returns` holds actual native capacity, preserves the same original during Full, and observes its single admission after capacity returns. Its revoked companion observes the preserved original refused after rechecking authority. |
+| `denied_stop_preserves_a_live_counter_in_a_separate_program` preserves a readable actor. `matching_stop_retires_the_same_separate_counter` acquires the actual retirement receipt. | `send_permission_cannot_retire_an_actor` observes an authenticated send-only Stop refusal before native control, successful permitted Read and owner Stop. Joined retirement is acquired from that exact target. |
+| `processed_increment_without_publication_is_uncertain` observes receiver processing and ordinary caller exit 2. | The passing C-10 scenario withholds actual reply publication after native processing, retains the caller's exact originals and terminal empty response lists, and observes later independent progress. The caller's processed-receipt list stays empty for those originals. |
+| `assignment_eof_returns_failure_after_the_actual_serve_binding` observes assignment EOF, the application error and exit 1. | The process test itself fixes this chronology by closing the original assignment stream after Binding. An independent scheduler scenario with the same classification remains open. |
+
+Each entry maps the shared semantic observation. The independent exit
+classification and broader R24 scheduling acceptance remain open.
+
+The selected exit-classification fixture uses the existing deployment
+assignment reader over a bounded duplex stream. Its controller first reads
+the exact published Binding, then closes its write end or supplies a complete
+existing assignment. The paired results must be the owning configuration
+refusal and usable assignment respectively. The existing OS-process test owns
+the final diagnostic and exit status. This candidate uses the already charged
+`processes.rs` test owner and changes zero production lines, types or dependencies.
 
 ## Bounded diagnostic route — selected pre-edit record (2026-11-21)
 
