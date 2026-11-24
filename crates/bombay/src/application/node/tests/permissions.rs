@@ -1285,6 +1285,7 @@ async fn scheduled_ledger_permissions_survive_cold_queries() {
 }
 
 mod delegation {
+    use super::super::CounterValue;
     use super::super::requester::{CounterOperation as GrantOperation, Permission};
     use super::{
         Binding, Counter, CounterMessage, CounterOperation, EndpointRole, Metadata,
@@ -1304,6 +1305,8 @@ mod delegation {
     use std::time::{Duration, Instant};
     use tokio::runtime::Builder;
     use tokio::sync::oneshot;
+    use zenoh::query::ConsolidationMode;
+    use zenoh::sample::Locality;
 
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     enum Principal {
@@ -2284,5 +2287,486 @@ mod delegation {
             .await
             .expect("all scheduled grants, native replies and joined cleanup finish");
         });
+    }
+
+    #[test]
+    fn delayed_grant_observes_rotation_provider_loss_and_current_revocation() {
+        let runtime = Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+            .unwrap();
+        runtime.block_on(async {
+            tokio::time::timeout(Duration::from_secs(150), delayed_grant_after_rotation())
+                .await
+                .expect("all provider transactions, native replies and joined cleanup finish");
+        });
+    }
+
+    #[expect(
+        clippy::result_large_err,
+        clippy::too_many_lines,
+        clippy::await_holding_refcell_ref,
+        reason = "one finite provider chronology retains immutable authenticated chains, original native inputs and every independent cleanup result"
+    )]
+    async fn delayed_grant_after_rotation() {
+        let retired_sequence = 301;
+        let delayed_sequence = 307;
+        let unavailable_sequence = 311;
+        let fresh_sequence = 313;
+        let sequences = [
+            retired_sequence,
+            delayed_sequence,
+            unavailable_sequence,
+            fresh_sequence,
+        ];
+        let binding = Binding {
+            deployment: "two-node-read-study",
+            caller: "caller",
+            controller: "owner",
+            actor: "counter",
+            host: "receiver",
+            protocol: "counter",
+            target_assignment: "rotating-shop-counter",
+            logical_session: 47,
+        };
+        let authorities = RefCell::new(vec![
+            Authority {
+                principal: Principal::Authority,
+                generation: 1,
+                permission: Permission::Granted,
+            },
+            Authority {
+                principal: Principal::Broker,
+                generation: 1,
+                permission: Permission::Granted,
+            },
+        ]);
+        let root_scope = GrantScope::authority();
+        let evidence = RefCell::new(Evidence::new());
+        let current_claims = RefCell::new(None::<Metadata>);
+        let authenticated_originals = RefCell::new(Vec::new());
+        let decoded = RefCell::new(Vec::new());
+        let constructed = RefCell::new(Vec::new());
+        let (entered, entering) = oneshot::channel();
+        let (release, released) = oneshot::channel();
+        let delayed_provider = RefCell::new(Some((entered, released)));
+        let (provider_response, provider_receiving) = oneshot::channel::<scheduled::Receipt>();
+        let provider_receiving = RefCell::new(Some(provider_receiving));
+        let deadline = Instant::now() + Duration::from_secs(150);
+        // Native timeout captures can outlive individual Query EOF observations.
+        // All preceding owners reserve the complete four-Query inventory.
+        let maximum = NonZeroUsize::new(sequences.len()).unwrap();
+        let current = |receipt: &scheduled::Receipt, runtime: &str, target: MailAddr| {
+            let configured = current_claims.borrow();
+            permitted(
+                &authorities,
+                receipt,
+                scheduled::projection,
+                configured.as_ref().expect("binding precedes declaration"),
+                &root_scope,
+                runtime,
+                target,
+                deadline,
+            )
+        };
+        let export = Export::new(
+            "bombay/permission/rotating-counter",
+            ExportLimits {
+                refusals: RefusalRetention::Retain,
+                queued_queries: maximum,
+                retained_queries: maximum,
+                retained_requests: maximum,
+                diagnostics: maximum,
+            },
+            limits(),
+            |bytes| {
+                let request: DelegatedRequest = serde_json::from_slice(bytes)?;
+                decoded.borrow_mut().push(request.bombay.request_sequence);
+                Ok::<_, serde_json::Error>(request)
+            },
+            reply(
+                |request: DelegatedRequest| {
+                    let constructed = &constructed;
+                    Ok::<_, DelegatedRequest>(move |reply_to| {
+                        constructed
+                            .borrow_mut()
+                            .push(request.bombay.request_sequence);
+                        CounterMessage::Read(reply_to)
+                    })
+                },
+                |_: &scheduled::Receipt, original: &User<MailAddr, u64>| {
+                    serde_json::to_vec(&original.message).map(Vec::into_boxed_slice)
+                },
+            ),
+            async |bytes: &[u8], proof: &[u8]| {
+                let sequence = serde_json::from_slice::<DelegatedRequest>(bytes)
+                    .map_err(VerificationError::Declaration)?
+                    .bombay
+                    .request_sequence;
+                if sequence == unavailable_sequence {
+                    let receiving = provider_receiving
+                        .borrow_mut()
+                        .take()
+                        .expect("one actual response transaction belongs to this request");
+                    return receiving.await.map_err(VerificationError::Unavailable);
+                }
+                let original = ProtectedMessage {
+                    protected: bytes.into(),
+                    proof: proof.into(),
+                };
+                let receipt = scheduled::verify(&original, &evidence.borrow(), binding).await?;
+                let (request, chain) = scheduled::projection(&receipt);
+                authenticated_originals.borrow_mut().push((
+                    sequence,
+                    bytes.as_ptr(),
+                    proof.as_ptr(),
+                    serde_json::to_vec(request).unwrap(),
+                    chain.as_ptr(),
+                ));
+                if sequence == delayed_sequence {
+                    let (entered, released) = delayed_provider
+                        .borrow_mut()
+                        .take()
+                        .expect("the current authenticated receipt has one release owner");
+                    let announced = entered.send(());
+                    announced.expect("Work observes actual authentication before release");
+                    released.await.map_err(VerificationError::Unavailable)?;
+                }
+                Ok(receipt)
+            },
+            async |_: &[u8], _: &scheduled::Receipt| Ok::<_, Never>(Box::<[u8]>::from([13_u8, 17])),
+            scheduled::same_request,
+            &current,
+            &current,
+        );
+        let mut network = configuration("tls/localhost:0", &EndpointRole::Receiver);
+        network.max_retained_queries = maximum;
+        let node = Application::new(Counter::new().stop_on_shutdown())
+            .open_node(network)
+            .await
+            .unwrap_or_else(|_| panic!("the current Counter Node opens"));
+        let runtime = node.runtime_id();
+        let session = node.session.clone();
+        let (configured, receiving) = oneshot::channel();
+        let mut node = node.exports(export, async |application| {
+            let target = application.root().established_recipient();
+            let address = application.actor_address(&target).unwrap();
+            let configured_claims = || {
+                let mut claims = metadata(
+                    ProviderProfile::Scheduled,
+                    "counter",
+                    runtime.clone(),
+                    runtime.clone(),
+                );
+                claims.provider_profile = grant_profile(ProviderProfile::Scheduled).into();
+                claims.actor_generation = address.0;
+                claims
+            };
+            let old_chain = grants(GrantCase::Permitted);
+            let current_chain = grants(GrantCase::AuthorityRotated);
+            let mut originals = Vec::new();
+            for (sequence, chain) in [
+                (retired_sequence, old_chain),
+                (delayed_sequence, Rc::clone(&current_chain)),
+                (unavailable_sequence, Rc::clone(&current_chain)),
+                (fresh_sequence, current_chain),
+            ] {
+                let mut claims = configured_claims();
+                let leaf = chain.last().unwrap();
+                claims.request_sequence = sequence;
+                claims.grant_issuer = leaf.issuer.name().into();
+                claims.authority_generation = leaf.issuer_generation;
+                let original = ProtectedMessage {
+                    protected: serde_json::to_vec(&DelegatedRequest {
+                        bombay: claims,
+                        tenant: "shop".into(),
+                        kind: Purpose::Request,
+                        operation: CounterOperation::Read,
+                    })
+                    .unwrap()
+                    .into_boxed_slice(),
+                    proof: sequence.to_be_bytes().into(),
+                };
+                evidence.borrow_mut().push((
+                    ProtectedMessage {
+                        protected: original.protected.clone(),
+                        proof: original.proof.clone(),
+                    },
+                    chain,
+                ));
+                originals.push(original);
+            }
+            *current_claims.borrow_mut() = Some(configured_claims());
+            let delivered = configured.send(originals);
+            delivered.unwrap_or_else(|_| panic!("Work owns all four original protected requests"));
+            Ok::<_, Never>(target)
+        });
+        let outcome = node
+            .run_with(|application| {
+                let session = &session;
+                let authorities = &authorities;
+                async move {
+                    let originals = receiving
+                        .await
+                        .expect("the actual binding supplies the originals");
+                    authorities.borrow_mut()[0].generation = 2;
+                    let retired = permission_replies(
+                        session,
+                        "bombay/permission/rotating-counter",
+                        &originals[0],
+                    )
+                    .await;
+                    let delayed = session
+                        .get("bombay/permission/rotating-counter")
+                        .allowed_destination(Locality::SessionLocal)
+                        .consolidation(ConsolidationMode::None)
+                        .timeout(Duration::from_secs(5))
+                        .payload(originals[1].protected.to_vec())
+                        .attachment(originals[1].proof.to_vec())
+                        .await
+                        .expect("the delayed native Query begins");
+                    let authentication_observed = entering.await;
+                    // Only this actual provider transaction is lost. The current
+                    // receipt already held by307 is not rewritten as unavailable.
+                    drop(provider_response);
+                    let unavailable = permission_replies(
+                        session,
+                        "bombay/permission/rotating-counter",
+                        &originals[2],
+                    )
+                    .await;
+                    authorities.borrow_mut()[1].permission = Permission::Revoked;
+                    let mut reader = application.client::<CounterValue>().unwrap();
+                    let read = reader.send(CounterMessage::Read(reader.recipient())).await;
+                    let progress = reader.receive().await;
+                    let released = release.send(());
+                    let mut delayed_replies = Vec::new();
+                    while let Ok(reply) = delayed.recv_async().await {
+                        delayed_replies.push(reply);
+                    }
+                    authorities.borrow_mut()[1].permission = Permission::Granted;
+                    let fresh = permission_replies(
+                        session,
+                        "bombay/permission/rotating-counter",
+                        &originals[3],
+                    )
+                    .await;
+                    reader.close_admission();
+                    let mut unread = Vec::new();
+                    while let Some(original) = reader.receive().await {
+                        unread.push(original);
+                    }
+                    let shutdown = application.shutdown();
+                    (
+                        originals,
+                        [retired, delayed_replies, unavailable, fresh],
+                        authentication_observed,
+                        released,
+                        read,
+                        progress,
+                        unread,
+                        shutdown,
+                    )
+                }
+            })
+            .await
+            .unwrap_or_else(|_| panic!("the actual Counter Node enters its host"));
+        let (export, bound, closed, polling, disposal, withdrawal_polling, withdrawal_disposal) =
+            node.into_parts()
+                .unwrap_or_else(|_| panic!("all original Node finalization remains"));
+        let (work, report, native, notifications, ()) = outcome.into_parts();
+        let (
+            (
+                originals,
+                replies,
+                authentication_observed,
+                released,
+                read,
+                progress,
+                unread,
+                shutdown,
+            ),
+            cleanup,
+        ) = work
+            .try_into_completed()
+            .unwrap_or_else(|_| panic!("Work and native Query endings remain acquired"));
+        let (origin, native) = native.expect("the complete original Counter remains");
+        let (_, _, startup, withdrawal, diagnostics, requests) = export.into_parts();
+        let rows = requests
+            .into_iter()
+            .map(|request| {
+                request
+                    .try_into_parts()
+                    .unwrap_or_else(|_| panic!("each actual request releases its producer loans"))
+            })
+            .collect::<Vec<_>>();
+        let mut observed = rows
+            .iter()
+            .map(|row| {
+                let request: DelegatedRequest = serde_json::from_slice(&row.1.0).unwrap();
+                let native = match &row.4 {
+                    None => NativeObservation::Absent,
+                    Some((_, _, Attempt::Returned(Ok(())), Some(Some(original)), _)) => {
+                        NativeObservation::Replied {
+                            from: original.from,
+                            value: original.message,
+                        }
+                    }
+                    Some(_) => NativeObservation::SelectedWithoutReply,
+                };
+                (request.bombay.request_sequence, native)
+            })
+            .collect::<Vec<_>>();
+        observed.sort_by_key(|(sequence, _)| *sequence);
+        let actual_replies = replies
+            .iter()
+            .map(|replies| {
+                replies
+                    .iter()
+                    .map(|reply| {
+                        reply
+                            .result()
+                            .as_ref()
+                            .map(|sample| {
+                                (
+                                    sample.payload().to_bytes().into_owned(),
+                                    sample
+                                        .attachment()
+                                        .map(|proof| proof.to_bytes().into_owned()),
+                                )
+                            })
+                            .map_err(|cause| format!("{cause:?}"))
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        // All real Query endings and cleanup products precede this complete
+        // native/reply oracle. Unexpected307 work is retained, not tag-filtered.
+        let actual = (
+            observed,
+            actual_replies,
+            progress.as_ref().map(|user| (user.from, user.message)),
+        );
+        assert_eq!(
+            actual,
+            (
+                vec![
+                    (retired_sequence, NativeObservation::Absent),
+                    (delayed_sequence, NativeObservation::Absent),
+                    (unavailable_sequence, NativeObservation::Absent),
+                    (
+                        fresh_sequence,
+                        NativeObservation::Replied {
+                            from: origin.address(),
+                            value: 0
+                        }
+                    ),
+                ],
+                vec![
+                    vec![],
+                    vec![],
+                    vec![],
+                    vec![Ok((b"0".to_vec(), Some(vec![13, 17])))]
+                ],
+                Some((origin.address(), 0)),
+            ),
+        );
+        cleanup.expect("actual Application cleanup joins");
+        closed.expect("actual Node Session close completes");
+        let _counter = completed_actor(origin, native);
+        let report = report.expect("the actual native report remains independent");
+        let notifications = notifications.expect("both native notification receipts remain");
+        assert_eq!(report.retirement(), RetirementAssessment::Established);
+        assert_eq!(report.failures(), ActorFailureAssessment::NoFailuresFound);
+        assert!(notifications.termination.is_ok() && notifications.retirement.is_ok());
+        assert!(
+            authentication_observed.is_ok() && released.is_ok() && read.is_ok() && shutdown.is_ok()
+        );
+        assert_eq!(unread.len(), 0);
+        assert_eq!(diagnostics.len(), 0);
+        assert!(matches!(bound, Some(Ok(_))) && matches!(startup, Some(Ok(()))));
+        assert!(matches!(withdrawal, Some(Ok(()))));
+        assert!(polling.is_none() && disposal.is_none());
+        assert!(withdrawal_polling.is_none() && withdrawal_disposal.is_none());
+        assert!(session.is_closed());
+        assert_eq!(rows.len(), sequences.len());
+        let authenticated_originals = authenticated_originals.into_inner();
+        for row in &rows {
+            let declared: DelegatedRequest = serde_json::from_slice(&row.1.0).unwrap();
+            let sequence = declared.bombay.request_sequence;
+            let position = sequences
+                .iter()
+                .position(|actual| *actual == sequence)
+                .unwrap();
+            assert_eq!(row.1.0, originals[position].protected);
+            assert_eq!(row.1.1, originals[position].proof);
+            assert!(row.8.1.is_none() && row.8.2.is_none());
+            assert!(matches!(row.9, (None, None, None, None, None, None)));
+            if sequence == unavailable_sequence {
+                assert!(matches!(
+                    row.2,
+                    Some(Err(VerificationError::Unavailable(_)))
+                ));
+                assert!(row.3.is_none() && row.4.is_none() && row.8.0.is_none());
+                let otherwise_authentic = authenticated(
+                    &originals[position],
+                    &evidence.borrow(),
+                    binding,
+                    ProviderProfile::Scheduled,
+                );
+                assert!(otherwise_authentic.is_ok());
+            } else {
+                let receipt = row.2.as_ref().unwrap().as_ref().unwrap();
+                let (request, chain) = scheduled::projection(receipt);
+                let original = authenticated_originals
+                    .iter()
+                    .find(|original| original.0 == sequence)
+                    .unwrap();
+                assert_eq!(
+                    (row.1.0.as_ptr(), row.1.1.as_ptr()),
+                    (original.1, original.2)
+                );
+                assert_eq!(serde_json::to_vec(request).unwrap(), original.3);
+                assert_eq!(chain.as_ptr(), original.4);
+                match sequence {
+                    actual if actual == retired_sequence => assert!(matches!(
+                        row.8.0,
+                        Some(GrantRefusal::Generation(Principal::Authority))
+                    )),
+                    actual if actual == delayed_sequence => assert!(matches!(
+                        row.8.0,
+                        Some(GrantRefusal::Revoked(Principal::Broker))
+                    )),
+                    actual if actual == fresh_sequence => assert!(row.8.0.is_none()),
+                    _ => unreachable!("all authenticated requests belong to the fixed inventory"),
+                }
+            }
+            assert_eq!(row.7.len(), replies[position].len());
+            assert!(row.7.iter().all(Result::is_ok));
+            if sequence == fresh_sequence {
+                let (constructor, client, admission, received, tail) = row
+                    .4
+                    .as_ref()
+                    .expect("the permitted fresh query reaches the actual native request");
+                let Attempt::Returned(Ok(client)) = client else {
+                    panic!("the actual native reply client remains");
+                };
+                let original = received.as_ref().unwrap().as_ref().unwrap();
+                assert!(constructor.is_none() && matches!(admission, Attempt::Returned(Ok(()))));
+                assert_ne!(client.address(), origin.address());
+                assert_eq!((original.from, original.message), (origin.address(), 0));
+                assert!(matches!(tail.as_slice(), [None]));
+                assert!(matches!(row.5, Some(Ok(_))) && matches!(row.6, Some(Ok(_))));
+            } else {
+                assert!(row.3.is_none() && row.4.is_none() && row.5.is_none() && row.6.is_none());
+                assert_eq!(row.7.len(), 0);
+            }
+        }
+        assert_eq!(authenticated_originals.len(), 3);
+        let decoded = decoded.into_inner();
+        let constructed = constructed.into_inner();
+        assert_eq!(decoded, [fresh_sequence]);
+        assert_eq!(constructed, [fresh_sequence]);
     }
 }

@@ -1,3 +1,18 @@
+Remote Actors C-03 verification (2026-11-24). The concrete rotation,
+provider-loss, revocation and recovery case passes debug and release, formatting
+and strict Clippy. Both defect checks expose the additional revoked native
+reply and both restored controls pass. See the
+[qualification record](../prds/static-remote-actors.md#rotation-provider-loss-and-current-revocation--verified-2026-11-24).
+The 47-file limit includes two separately approved SDK verification files.
+
+Remote Actors C03 pre-edit2026-11-21: one charged permissions.rs composition
+will combine actual evidence rotation, provider transfer loss, known Broker
+revocation, delayed receipt release and fresh recovery. Model3cf accepts existing
+owners/same-actor progress; no newtype/service or stopped-task equivalent.
+Source-only authoring is not execution; Root remains sole compiler. Scope45/45,
+SDK47 separately pending; full clauses/current gates/CI/reviewed delivery open.
+Requirement states and reciprocal dependency edges remain unchanged.
+
 Remote Actors Stop qualification2026-11-21: actual source4f47 passes exact
 send-only/ownerStop case EACH build, format and strict Clippy bothdenies0.
 Membership-only source fault fails first complete native-effect aggregate in

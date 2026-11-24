@@ -1,5 +1,83 @@
 # Static remote actors and typed admission
 
+## Rotation, provider loss and current revocation — verified (2026-11-24)
+
+The selected C-03 test now runs through an actual Node and its native
+SessionLocal query path. It distinguishes old authenticated evidence (301),
+a delayed current receipt denied by the current Broker grant (307), an
+unavailable provider transfer (311), and fresh permitted work that returns
+a native Read and protected reply (313). The same actor answers a local Read
+while the authenticated receipt is held. The test acquires cleanup, retirement
+and original request outcomes before comparing the complete trace.
+
+Formatting and strict Clippy passed. The exact test passes in debug and
+release. A temporary omission in the fixture's revocation check causes the
+complete trace assertion to fail in both builds: 307 produces an extra
+native Read and protected reply while the 301, 311 and 313 outcomes are
+unchanged. The original test source was restored byte for byte. Both saved
+original executables pass on the restored source. The narrow fixture
+correction builds move-only metadata through its existing constructor and
+preserves the reviewed operations and expected trace.
+
+The change adds 484 test lines in the existing permissions owner. It adds no
+production code, public types or dependencies. See
+`acceptance-current/rotation/resumed` for the two healthy logs, two defect
+logs and both restoration controls. The evidence covers the selected
+deterministic provider transaction loss and current authority chronology.
+Network campaign delivery, SDK resource measurement and the full PRD
+acceptance remain open. The two SDK verification files are approved
+separately under the 47-file limit.
+
+## Rotation, provider loss and current revocation — pre-edit (2026-11-21)
+
+The literal selected C03 chronology is still missing from the existing separate
+rotation/revocation/availability cases. Read-only plandb9ab337 and independent
+model3cf492dd select ONE existing permissions.rs/delegation witness using its
+Grant/GrantScope/Principal/Authority/Permission/GrantRefusal and scheduled
+nominal receipts, existing Counter, Export/Node and native Query owners. Exact
+Runtime0.6/Core031/unpatched locke5fd contracts remain unchanged. No new provider,
+crypto algorithm, clock, actor, nominal type, runtime or test framework is needed.
+
+Rotate current Authority generation1 to2. Actual query301 authenticates old
+immutable evidence but current permission refuses Generation(Authority). Query307
+authenticates generation2; hold its actual nominal Receipt in the outer existing
+async verifier before returning it to Runtime. A separate real provider response
+oneshot loses its sender for311, yielding existing Unavailable(RecvError), not
+Invalid. This models that selected provider transaction loss, not an SDK/TLS
+partition or a global service outage. Revoke Broker, acquire actual same-Counter
+local Read progress while307 stays held, then release its SAME Receipt. Runtime's
+current permission must retain Revoked(Broker) with no native307Read/reply.
+Restore Broker and provider transfer; fresh313 through the same binding genuinely
+returns native Read/reply. All four externally issued identities are distinct.
+
+Acquire every original Query/row/native/peer result and all real cleanup BEFORE
+comparing complete sequence-keyed native effects/replies, including unexpected
+307work. Only afterward check exact cause/receipt/chain/raw/panic/cleanup details.
+Runtime has not acquired held307Receipt before the outer verifier returns it;
+unavailability elsewhere cannot erase that already-authenticated immutable fact.
+One actual Revoked-arm omission must expose extra native307Read/reply in BOTH
+builds while old-generation301/unavailable311/fresh313 controls stay lawful.
+Root alone applies that later cut, restores the whole owner and runs healthy
+controls. No stopped forwarding/correlation/actor crash/restart is selected.
+
+Same-root progress is the selected C03 observation; no sibling claim is made.
+The earlier rationale that unused declared Entity families require installation
+was incorrect: Families=() has explicit install/native support. A larger Creator
+fixture remains unnecessary because C03 itself asks no sibling; R11 independently
+checks its actual sibling. Preserve that source correction without changing the
+selected smaller model or inventing another parent actor.
+
+Expected280–400 test lines in ONLY already-charged permissions.rs, plus these
+two task records; production+0/-0/net0, publicAPI+0types/-0types, dependency/new
+source paths0,45approved/allcharged. Actual formatted delta must be measured.
+Every old named case/helper/26-case table and assertion stays byte-exact in the
+healthy implementation except needed module imports. Author and independent
+source/counterexample reviews precede Root's sole compiler. This source-only
+checkout is for parallel authoring; it owns no build. Integrate exact reviewed
+changes into Root before execution, then preserve/remove this obsolete checkout
+once qualification permits. No current combined result/fullR24/delivery claim.
+
+
 ## Send-only Stop qualification (2026-11-21)
 
 Actual4f47efd1/731 passes formatting, strict optimized all-target remote Clippy
