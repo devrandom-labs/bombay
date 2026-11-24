@@ -1,5 +1,36 @@
 # Static remote actors and typed admission
 
+## Bounded reply loss and recovery — C-10 (2026-11-24)
+
+Extend the fixed public two-Node Counter journey in its existing outbound
+overlap test owner. Both Nodes use real TLS, finite query and response slots,
+and their original Application authorities. Hold one successful response and
+enter two other reply operations. Lose those two publications by disposing of
+their independent test permits in reverse order. Check the overtaking reply,
+then release the held original. Repeat only after its actual acknowledgment.
+The two unresolved originals are never submitted again. The next permitted
+request uses a fresh configured authority and an independent Counter read
+checks the total mutation count after all outcomes settle.
+
+Both pinned build profiles passed all six existing overlap cases. In the new
+journey, replies 25 and 24 were withheld in that order. Replies arrived as
+26, 23, 23 and 27, the independent Counter value was 5, and both Nodes joined
+cleanly. Each missing response retained its original caller input through
+the empty terminal response list. The test checked all receiver rows and the
+exact delivered bytes and proofs.
+
+Allowing the two withheld publications through made the early reply list
+`[25, 24, 26]` in both profiles. Each run joined the two Nodes and then failed
+the expected `[26]` assertion. Exact restoration and both original healthy
+programs passed. Formatting and strict optimized test Clippy passed. The
+initial test-local naming diagnostic and a compiler refusal of an untyped
+control are preserved separately. Source and logs are in
+`acceptance-current/c10-repeated-reply-loss`.
+
+The selected losses occur before publication reaches the network. This
+fixture adds zero production lines, types or dependencies and uses one
+already approved test owner.
+
 ## Saturated admission during shutdown — C-04 prefix (2026-11-24)
 
 The existing Counter witness observes mailbox pressure and retry before
@@ -72,11 +103,15 @@ acceptance delivery still needs its combined checks, review and recorded merge.
 | AUTH-04, AUTH-08 | Both `lookup_permission_is_rechecked_after_actual_capacity_pressure` and `scheduled_permission_is_rechecked_after_actual_capacity_pressure` exercise a real Full retry. The protected Counter profiles retain expiry, revocation, unavailable evidence and the original outcomes. The admission point takes the coherent permission/time decision before a nonwaiting attempt. |
 | AUTH-05 | `counter_retains_live_binding_replay` and `arithmetic_retains_live_binding_replay` preserve duplicate, conflict, capacity refusal, checked exhaustion and original custody with the two deterministic provider implementations. Same-session reconnect and later-incarnation replay are separate network obligations. |
 
-Use the exact source and retained witnesses in the existing qualification
-sections and `acceptance-current/auth1-delivery-remaining.json`. The focused
-local consumers and production example qualification receive current-source
-credit only when those named cases pass. AUTH1 and NET1 states and reciprocal
-dependency edges remain as recorded in the backlog.
+The focused current local run passed in both debug and optimized builds:
+six authority admission tests, two permission-after-capacity tests, and four
+remote surface tests, including twelve compiler fixtures. Both deterministic
+provider consumers, both exact replay consumers, and both rechecks after real
+capacity pressure passed by name. Each profile's log is in
+`acceptance-current/auth1-selected`. Those outcomes cover the named local
+scope. The public example and combined delivery retain their own source
+qualification. AUTH1 and NET1 states and reciprocal dependency edges remain
+as recorded in the backlog.
 
 ## Rotation, provider loss and current revocation — verified (2026-11-24)
 
@@ -947,7 +982,7 @@ is preserved; no old Runtime0.5 proof is adopted. Test-only lint successors
 preserve bodies/oracles except equivalent Option branching and typed empty
 vector equality; their source reviews9ca97 and final combined execution remain
 separate. Existing tests, assertions and deadlines stay intact. Initial E0716,
-SDK capacity, parent/event-contract and SendProduct syntax refusals ran no
+SDK capacity, parent event contract and named send-effect syntax refusals ran no
 accepted semantic regression and remain preserved as such.
 
 ## R09/AUTH-03 bounded delegation — decision and pre-edit record

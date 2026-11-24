@@ -141,6 +141,22 @@ async fn overlapping_processed_increments_reuse_the_original_admission() {
     tokio::time::timeout(Duration::from_secs(15), increments(&deliveries))
         .await
         .expect("both real Nodes and their original native queries finish before native expiry");
+
+    // Keep the existing fixed CI entry; this is a second independent pair of
+    // real Nodes. The exhaustive and generated orders still run unchanged.
+    let deliveries = [
+        Delivery::Fresh(24),
+        Delivery::Fresh(25),
+        Delivery::Fresh(26),
+        Delivery::Repeat,
+        Delivery::Fresh(27),
+    ];
+    tokio::time::timeout(
+        Duration::from_secs(15),
+        Box::pin(counter_trace(&deliveries, Some([24, 25]))),
+    )
+    .await
+    .expect("the bounded reply-loss trace and its independent fresh work settle");
 }
 
 fn delivery_orders() -> Vec<Vec<Delivery>> {
@@ -307,16 +323,25 @@ fn generated_delivery_orders_preserve_processed_increments() {
     }
 }
 
+async fn increments(deliveries: &[Delivery]) {
+    counter_trace(deliveries, None).await;
+}
+
 #[expect(
     clippy::too_many_lines,
-    reason = "the fixed public two-Node trace keeps all original inputs, independent Counter Read and joined custody together"
+    reason = "the public two-Node trace keeps all original inputs, the independent Counter Read and joined custody together"
 )]
 #[expect(
     clippy::result_large_err,
     reason = "the owning command selector requires the complete original ReadRequest on rejection"
 )]
-async fn increments(deliveries: &[Delivery]) {
+async fn counter_trace(deliveries: &[Delivery], lost_replies: Option<[u64; 2]>) {
     println!("Client input: {deliveries:?}");
+    if let Some(replies) = lost_replies {
+        println!("Client test publication controls: {replies:?}");
+    }
+    let stable_request = lost_replies.map(|_| 27);
+    let loses_reply = |sequence| lost_replies.is_some_and(|replies| replies.contains(&sequence));
     let fresh = deliveries
         .iter()
         .filter_map(|delivery| match delivery {
@@ -330,9 +355,14 @@ async fn increments(deliveries: &[Delivery]) {
         .iter()
         .filter(|delivery| matches!(delivery, Delivery::Repeat))
         .count();
-    assert!((1..=3).contains(&fresh.len()));
+    if let Some(lost_replies) = lost_replies {
+        assert_eq!(lost_replies, [24, 25]);
+        assert_eq!(fresh, [24, 25, 26, 27]);
+    } else {
+        assert!((1..=3).contains(&fresh.len()));
+        assert_eq!(identities.as_slice(), &[24, 25, 26][..fresh.len()]);
+    }
     assert_eq!(repeats, 1);
-    assert_eq!(identities.as_slice(), &[24, 25, 26][..fresh.len()]);
     let repeat_row = 1 + deliveries
         .iter()
         .position(|delivery| matches!(delivery, Delivery::Repeat))
@@ -348,7 +378,11 @@ async fn increments(deliveries: &[Delivery]) {
         .into_iter()
         .chain(fresh.iter().copied())
         .collect::<Vec<_>>();
-    let expected_acknowledgements = fresh.iter().copied().chain([23, 23]).collect::<Vec<_>>();
+    let expected_acknowledgements = match lost_replies {
+        Some(_) => vec![26, 23, 23, 27],
+        None => fresh.iter().copied().chain([23, 23]).collect(),
+    };
+    let acknowledgement_count = expected_acknowledgements.len();
     let expected_value = u64::try_from(expected_effects.len()).unwrap();
     let query_count = expected_requests.len();
     let address = "tls/localhost:0".to_owned();
@@ -373,6 +407,10 @@ async fn increments(deliveries: &[Delivery]) {
     let released = &RefCell::new(Some(released));
     let reply_policy = &RefCell::new(None::<oneshot::Sender<(Binding, u64)>>);
     let (acknowledged, mut acknowledgements) = mpsc::channel(query_count);
+    let (publication_permits, mut entered_replies) = mpsc::channel(2);
+    let withheld_proofs = &RefCell::new(Vec::new());
+    let withhold_confirmations = &RefCell::new(Vec::new());
+    let current_authority = &Cell::new(None);
     let acknowledgements_sent = &RefCell::new(Vec::new());
     let (configured, configuration_ready) = oneshot::channel();
     let (ready, receiver_ready) = oneshot::channel();
@@ -435,6 +473,9 @@ async fn increments(deliveries: &[Delivery]) {
         if recorded::identity(receipt).0 != &binding
             || runtime != receiver_id
             || expected.actor_generation != target.0
+            || current_authority
+                .get()
+                .is_some_and(|generation| actual.bombay.authority_generation != generation)
         {
             return Err(VerificationError::Invalid);
         }
@@ -537,6 +578,21 @@ async fn increments(deliveries: &[Delivery]) {
                 .await
                 .map_err(VerificationError::Unavailable)?;
             }
+            if loses_reply(original.value) {
+                let (permit, permission) = oneshot::channel::<()>();
+                let (confirmed, confirmation) = oneshot::channel();
+                publication_permits
+                    .try_send((original.value, permit, confirmation))
+                    .unwrap_or_else(|_| {
+                        panic!("two actual reply controls fit the finite test queue")
+                    });
+                let permission = permission.await;
+                withhold_confirmations.borrow_mut().push(confirmed.send(()));
+                if let Err(cause) = permission {
+                    withheld_proofs.borrow_mut().push((original.value, proof));
+                    return Err(VerificationError::Unavailable(cause));
+                }
+            }
             Ok::<_, VerificationError>(proof)
         },
         |left, right| recorded::identity(left) == recorded::identity(right),
@@ -569,6 +625,14 @@ async fn increments(deliveries: &[Delivery]) {
             );
             declared.actor_generation = target_address.0;
             declared.request_sequence = sequence;
+            if lost_replies.is_some() {
+                if sequence == 23 {
+                    current_authority.set(Some(declared.authority_generation));
+                }
+                if Some(sequence) == stable_request {
+                    declared.authority_generation += 1;
+                }
+            }
             claims.borrow_mut().push(declared);
         }
         let reader = application
@@ -752,11 +816,38 @@ async fn increments(deliveries: &[Delivery]) {
         let mut acknowledgements_received = Vec::new();
         let mut fresh_progress = Vec::new();
         let mut policy_observation = None;
+        let mut release = Some(release);
+        let mut released = None;
+        let mut before_release = Vec::new();
+        let mut pending_losses = Vec::new();
+        let mut lost_publications = Vec::new();
         for delivery in deliveries {
             match *delivery {
                 Delivery::Fresh(sequence) => {
+                    if !loses_reply(sequence) {
+                        // Both original response operations are entered before
+                        // dropping their permits. Settle the later one first.
+                        while let Some((sequence, permit, confirmation)) = pending_losses.pop() {
+                            drop(permit);
+                            lost_publications.push((sequence, confirmation.await));
+                        }
+                    }
+                    if Some(sequence) == stable_request {
+                        let configured = claims.borrow();
+                        let claim = configured
+                            .iter()
+                            .find(|claim| claim.request_sequence == sequence)
+                            .expect("the independently configured stable grant remains");
+                        current_authority.set(Some(claim.authority_generation));
+                    }
                     println!("Client await fresh admission {sequence}: {deliveries:?}");
                     submissions.push(sender.send(Either::Left(sequence)).await);
+                    if loses_reply(sequence) {
+                        if let Some(control) = entered_replies.recv().await {
+                            pending_losses.push(control);
+                        }
+                        continue;
+                    }
                     let arrived = loop {
                         println!("Client await fresh acknowledgement {sequence}: {deliveries:?}");
                         match acknowledgements.recv().await {
@@ -775,19 +866,35 @@ async fn increments(deliveries: &[Delivery]) {
                     fresh_progress.push(arrived);
                 }
                 Delivery::Repeat => {
+                    if lost_replies.is_some() {
+                        before_release.clone_from(&acknowledgements_received);
+                        released = release.take().map(|release| release.send(()));
+                        // Only the acknowledged original is issued again.
+                        // The two uncertain commands are never retried.
+                        let initial = acknowledgements.recv().await;
+                        acknowledgements_received.extend(initial);
+                        if initial != Some(23) {
+                            continue;
+                        }
+                    }
                     let (observed, replay_observed) = oneshot::channel();
                     *reply_policy.borrow_mut() = Some(observed);
                     println!("Client await repeat admission: {deliveries:?}");
                     submissions.push(sender.send(Either::Left(23)).await);
                     println!("Client await repeat permission: {deliveries:?}");
                     policy_observation = Some(replay_observed.await);
+                    if lost_replies.is_some() {
+                        let duplicate = acknowledgements.recv().await;
+                        acknowledgements_received.extend(duplicate);
+                    }
                 }
             }
         }
-        let before_release = acknowledgements_received.clone();
-        // Even an observation failure releases the sole first-A provider.
-        let released = release.send(());
-        while acknowledgements_received.len() < query_count {
+        if let Some(release) = release {
+            before_release.clone_from(&acknowledgements_received);
+            released = Some(release.send(()));
+        }
+        while lost_replies.is_none() && acknowledgements_received.len() < acknowledgement_count {
             println!("Client await remaining acknowledgement: {deliveries:?}");
             match acknowledgements.recv().await {
                 Some(correlation) => acknowledgements_received.push(correlation),
@@ -823,6 +930,7 @@ async fn increments(deliveries: &[Delivery]) {
             finished,
             caller_shutdown,
             sender.address(),
+            lost_publications,
         )
     });
     let incoming = receiver.run_with(|_| receiver_finished);
@@ -880,6 +988,7 @@ async fn increments(deliveries: &[Delivery]) {
         finished,
         caller_shutdown,
         work_sender,
+        lost_publications,
     ) = observations;
     let value = value.expect("the independent actual FIFO Counter reply is acquired");
 
@@ -939,13 +1048,33 @@ async fn increments(deliveries: &[Delivery]) {
     assert_eq!(held, Ok(23));
     assert_eq!(
         fresh_progress,
-        fresh.iter().copied().map(Some).collect::<Vec<_>>()
+        fresh
+            .iter()
+            .copied()
+            .filter(|sequence| !loses_reply(*sequence))
+            .map(Some)
+            .collect::<Vec<_>>()
     );
-    assert_eq!(before_release, fresh);
+    match lost_replies {
+        Some([first, second]) => {
+            assert_eq!(before_release, [26]);
+            assert!(
+                matches!(
+                    lost_publications.as_slice(),
+                    [(later, Ok(())), (earlier, Ok(()))]
+                        if (*later, *earlier) == (second, first)
+                ),
+                "the later publication must be lost first: {lost_publications:?}"
+            );
+        }
+        None => {
+            assert!(before_release == fresh && lost_publications.is_empty());
+        }
+    }
     assert_eq!(policy_observation, Some(Ok((binding, 23))));
     assert_eq!(acknowledgements_received, expected_acknowledgements);
     assert!(
-        released.is_ok()
+        matches!(released, Some(Ok(())))
             && receiver_shutdown.is_ok()
             && caller_shutdown.is_ok()
             && finished.is_ok()
@@ -996,7 +1125,17 @@ async fn increments(deliveries: &[Delivery]) {
     }
     let request_origins = request_origins.borrow();
     let claims = claims.borrow();
+    if let Some(sequence) = stable_request {
+        let previous = claims[0].authority_generation;
+        let fresh = claims
+            .iter()
+            .find(|claim| claim.request_sequence == sequence)
+            .expect("the stable request retains its fresh grant");
+        assert_eq!(previous.checked_add(1), Some(fresh.authority_generation));
+        assert_eq!(current_authority.get(), Some(fresh.authority_generation));
+    }
     let reply_protections = reply_protections.borrow();
+    let mut withheld_proofs = withheld_proofs.borrow_mut();
     assert_eq!(request_origins.len(), query_count);
     assert_eq!(constructed.get(), expected_effects.len());
     assert_eq!(
@@ -1054,8 +1193,12 @@ async fn increments(deliveries: &[Delivery]) {
         assert!(key.is_some() && decoded.is_none());
         assert!(matches!(refusals, (None, None, None)));
         assert!(matches!(panics, (None, None, None, None, None, None)));
-        assert_eq!(publications.len(), 1);
-        assert!(publications.iter().all(Result::is_ok));
+        if loses_reply(sequence) {
+            assert_eq!(publications.len(), 0);
+        } else {
+            assert_eq!(publications.len(), 1);
+            assert!(publications.iter().all(Result::is_ok));
+        }
         if index == repeat_row {
             assert!(native.is_none() && encoding.is_none() && protection.is_none());
         } else {
@@ -1067,9 +1210,17 @@ async fn increments(deliveries: &[Delivery]) {
             let Attempt::Returned(Ok(client)) = client else {
                 panic!("native reply client construction succeeds");
             };
-            let protected = protection
-                .expect("actual reply protection remains")
-                .unwrap_or_else(|_| panic!("finite protection succeeds"));
+            let protection = protection.expect("actual reply protection remains");
+            let protected = if loses_reply(sequence) {
+                assert!(matches!(protection, Err(VerificationError::Unavailable(_))));
+                let withheld = withheld_proofs
+                    .iter()
+                    .position(|(correlation, _)| *correlation == sequence)
+                    .expect("the test owns the actual withheld proof");
+                withheld_proofs.remove(withheld).1
+            } else {
+                protection.unwrap_or_else(|_| panic!("finite protection succeeds"))
+            };
             let bytes = encoding
                 .expect("actual encoding remains")
                 .expect("processing receipt encodes");
@@ -1097,10 +1248,13 @@ async fn increments(deliveries: &[Delivery]) {
             );
             assert_eq!((sequence, bytes.as_ptr(), protected.as_ptr()), *snapshot);
             assert_eq!(protected.as_ref(), [13, 17]);
-            produced.push((sequence, bytes, protected));
+            if !loses_reply(sequence) {
+                produced.push((sequence, bytes, protected));
+            }
         }
         incoming_originals.push(raw);
     }
+    assert_eq!(withheld_proofs.len(), 0);
     assert_eq!(reply_addresses.len(), expected_effects.len());
     for (index, address) in reply_addresses.iter().enumerate() {
         for previous in &reply_addresses[..index] {
@@ -1117,7 +1271,7 @@ async fn increments(deliveries: &[Delivery]) {
             && matches!(visible, Some(Ok(())))
             && matches!(listener_withdrawal, Some(Ok(())))
     );
-    assert_eq!(rows.len(), 2 * query_count);
+    assert_eq!(rows.len(), query_count + expected_acknowledgements.len());
     assert_eq!(
         consumed.borrow().as_slice(),
         expected_acknowledgements
@@ -1136,7 +1290,15 @@ async fn increments(deliveries: &[Delivery]) {
             .map(|correlation| (adapter_origin.address(), *correlation, *correlation,))
             .collect::<Vec<_>>()
     );
-    assert_eq!(acknowledgements_sent.borrow().len(), query_count);
+    assert_eq!(
+        acknowledgements_sent.borrow().len(),
+        expected_acknowledgements.len()
+    );
+    assert_eq!(
+        withhold_confirmations.borrow().len(),
+        lost_replies.map_or(0, |replies| replies.len())
+    );
+    assert!(withhold_confirmations.borrow().iter().all(Result::is_ok));
     assert!(acknowledgements_sent.borrow().iter().all(Result::is_ok));
     assert_eq!(held_transfers.borrow().len(), 1);
     assert!(held_transfers.borrow().iter().all(Result::is_ok));
@@ -1178,7 +1340,12 @@ async fn increments(deliveries: &[Delivery]) {
                     .expect("actual acquired proof remains")
                     .unwrap_or_else(|_| panic!("request protects"));
                 assert!(matches!(query, Attempt::Returned(Ok(()))) && eof.is_some());
-                assert_eq!(responses.len(), 1);
+                if loses_reply(sequence) {
+                    assert_eq!(responses.len(), 0);
+                    assert!(completed.is_some());
+                } else {
+                    assert_eq!(responses.len(), 1);
+                }
                 requests.push((sequence, encoding, protection, completed));
                 for response in responses {
                     let raw = response.payload().flatten().copied().collect::<Vec<_>>();
@@ -1276,6 +1443,13 @@ async fn increments(deliveries: &[Delivery]) {
     );
     assert_eq!(requests[0].1, requests[repeat_row].1);
     assert_eq!(requests[0].2, requests[repeat_row].2);
+    if lost_replies.is_some() {
+        println!(
+            "Client deliberate publication losses: {lost_publications:?}; checked replies: {acknowledgements_received:?}; independent counter: {}; current authority: {:?}",
+            value.message,
+            current_authority.get()
+        );
+    }
     let encoded = encoded.borrow();
     let protected = protected.borrow();
     for (index, (sequence, bytes, proof, _completed)) in requests.iter().enumerate() {
