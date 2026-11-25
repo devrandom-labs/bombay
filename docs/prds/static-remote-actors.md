@@ -1,5 +1,265 @@
 # Static remote actors and typed admission
 
+## Router recovery and drain expiry — C-08 (2026-11-24)
+
+One existing Node retirement test owner will combine the four events around
+one serving Counter. Reject a wire version through the example's existing
+compatibility policy. Close and replace the real TLS Router while local
+work continues on the same actor. Drop one actual provider transaction,
+then accept fresh work after the Router and export are available again.
+Preserve native query custody and independently read the Counter after each
+remote outcome.
+
+Hold the second initial Counter's startup resource while the existing
+finite graph drain is requested. The original timer schedule and matching
+elapsed event must account for the supervisor's stop. Send a typed copy of
+that elapsed event to Work through ordinary Actions. Both parent termination
+and joined retirement must remain pending while the child owns the resource.
+Release it after the timer notice, then acquire both lifecycle facts, the
+original joined graph and all Session outcomes before comparing the complete
+sequence. The first runtime attempt waited for parent termination while still
+holding its child resource and hit the outer watchdog. The correction follows
+the existing Environment retirement order. The outer timeout only bounds the
+test. This scope uses the same live Node and original actor throughout and adds
+zero production lines, public types, dependencies or file owners. Storage
+unavailability remains in MNE1.
+
+The focused run passed in debug and optimized builds under pinned Nix.
+Requests 607 and 619 each produced exactly one native processed result and
+protected reply. The incompatible 613 and unavailable-provider 617 each
+retained their distinct refusal and produced no native admission. The
+independent Reads were `1, 1, 2, 2, 3` from the same worker. The actual
+TimerElapsed notice matched its accepted schedule. At that sampled boundary
+one startup permit remained held and the parent retirement was pending.
+The resource release restored both permits and the original join completed.
+
+An early-release control settled the child before observing the same boundary.
+It preserved the earlier native outcomes in both profiles and failed the
+post-cleanup aggregate at two permits and a ready retirement. After byte-exact
+restoration, both saved healthy executables passed. The independent source
+review retained the ordinary Node and typed Actions path. Its final local
+receipt correction compares the disconnected increment's exact sender and
+sequence instead of checking only whether a receipt exists. This extra
+assertion follows the unchanged aggregate used by the earlier controls. The
+final exact source passed debug, optimized, formatting and strict Clippy.
+It adds 975 lines to the existing test owner. Separate logs and retained
+artifacts preserve each source epoch in `acceptance-current/c08-combined`.
+
+For R21, this is a positive static-hosting trace. The completed serving startup
+supplies the established actor used by Export. Its verified configured scope
+is checked against the same live runtime and target before admission. The
+original declaration and withdrawal outcomes are acquired at cleanup. Transport
+matching supplies route visibility, and the typed lifecycle and protected
+request observations separately supply actor and admission facts.
+
+## Bounded reply loss and recovery — C-10 (2026-11-24)
+
+Extend the fixed public two-Node Counter journey in its existing outbound
+overlap test owner. Both Nodes use real TLS, finite query and response slots,
+and their original Application authorities. Hold one successful response and
+enter two other reply operations. Lose those two publications by disposing of
+their independent test permits in reverse order. Check the overtaking reply,
+then release the held original. Repeat only after its actual acknowledgment.
+The two unresolved originals are never submitted again. The next permitted
+request uses a fresh configured authority and an independent Counter read
+checks the total mutation count after all outcomes settle.
+
+Both pinned build profiles passed all six existing overlap cases. In the new
+journey, replies 25 and 24 were withheld in that order. Replies arrived as
+26, 23, 23 and 27, the independent Counter value was 5, and both Nodes joined
+cleanly. Each missing response retained its original caller input through
+the empty terminal response list. The test checked all receiver rows and the
+exact delivered bytes and proofs.
+
+Allowing the two withheld publications through made the early reply list
+`[25, 24, 26]` in both profiles. Each run joined the two Nodes and then failed
+the expected `[26]` assertion. Exact restoration and both original healthy
+programs passed. Formatting and strict optimized test Clippy passed. The
+initial test-local naming diagnostic and a compiler refusal of an untyped
+control are preserved separately. Source and logs are in
+`acceptance-current/c10-repeated-reply-loss`.
+
+The selected losses occur before publication reaches the network. This
+fixture adds zero production lines, types or dependencies and uses one
+already approved test owner.
+
+For R06, R13 and R25, the same execution acquires both sides' joined results
+for requests 24 and 25. The caller retains the original command, encoded
+bytes and protection, successful native Get and terminal response list with
+zero replies. The receiving rows independently retain the verified configured
+request scope, native processed result and absent publication. The sender's
+knowledge still ends at the acquired caller facts. Together these observations
+exercise the selected post-join inspection route in one TLS journey. The
+separate-process presentation, standalone diagnostic lifetime and remaining
+row obligations keep their own scope.
+
+## Saturated admission during shutdown — C-04 prefix (2026-11-24)
+
+The existing Counter witness observes mailbox pressure and retry before
+shutdown. C-04 additionally requires a previously pending send to settle
+after shutdown begins. Use the existing StartupCounter, capacity-two mailbox,
+single actor worker and original Application and Node lifecycle authorities.
+Hold the worker long enough to admit two distinct commands and poll the third
+ordinary send once. Request shutdown while the worker is held, then release
+the worker and acquire the processed replies, unread mailbox custody, refused
+original and both cleanup outcomes. Compare the complete partition to the
+three original commands and independently check the retained Counter state.
+
+The focused case passed in debug and optimized builds through pinned Nix.
+Formatting and optimized all-target Clippy passed with both mandatory extra
+lints denied. Removing the capacity-two fixture setting made the third send
+ready before release. Both defect runs reached the pending/refusal assertion
+after native cleanup and failed there. The original fixture was restored
+byte for byte and both saved healthy programs then passed. The complete
+partition and the Counter state were checked separately from the test's wait
+limits. Source, logs and program hashes are in
+`acceptance-current/c04-saturation-shutdown`.
+
+The reviewed fixture changes one test owner. This batch adds zero production
+lines, public types or dependencies. The two isolated SDK verification owners
+consume the final two approved file slots. The separately held stale-reply
+and later-generation portion of C-04 remains open.
+
+## SDK resource baseline on real TLS (2026-11-24)
+
+The approved instrumented SDK test uses the selected SDK Session source at
+`c34eb350` and an isolated verification lock with Tokio 1.53.3 and rustix
+1.1.6. The workspace profile adds its development features and
+`tokio_unstable`. Its patch touches only the Session unit-test owner and
+verification lock. Bombay's production lock and runtime dependencies retain
+their published versions and features.
+
+Both debug and optimized builds observed a live TLS listener and two
+transport endpoints, a held callback, a live query timeout task and acquired
+query capacity. Normal close returned native listener/transport counts from
+`(1, 1, 0, 1)` to `(0, 0, 0, 0)`. The Session close-owned registries cleared;
+the tests verify task and blocking-work counts against the prior baseline
+across deduplicated runtime handles. The SDK's existing rescue ran only after
+the original post-close measurements.
+
+In both profiles, an omitted runtime-close control retained
+`(1, 1, 0, 1)` before rescue and failed the complete resource assertion.
+The full source was restored byte for byte and both original executables
+passed again. The exact patch, feature graph, numeric snapshots and logs are
+in `acceptance-current/sdk-baseline`.
+
+The SDK's existing timeout-callback custody test also passed once in each
+build profile with the instrumentation compiler flags unset. It observes the
+originals destroyed before capacity can be reused after callback unwind.
+The initial filter selected zero tests and was replaced with the exact
+`query_retirement` test path before counting either run. This control uses
+the same isolated verification lock. The remaining R18 boundaries and
+combined-source qualification retain their separate scope.
+
+## Local AUTH1 acceptance map (2026-11-24)
+
+The local exit gate covers the selected deterministic providers through an
+ordinary Application. The networking exit gate separately owns actual gateway
+forwarding, transport authentication and actor-host restart. Earlier ordinary
+Application evidence remains attached to its source revision. The current
+acceptance delivery still needs its combined checks, review and recorded merge.
+
+| Requirements | Local witness and scope |
+| --- | --- |
+| ID-01, ID-02, AUTH-02 | The configured assignment and protected Counter tests keep a stable deployment/controller/name separate from host, runtime incarnation, actor generation and authority. Checked issuance keeps the original on exhaustion. The local replay tests retain old assignments and observe native closure. The network restart witness remains separate. |
+| ID-03, ID-04 | `permission_admission` and `authority_admission` use actual typed request and result effects. Those tests exercise both recorded lookup and scheduled oneshot transfer. The historical private-issuance and Deserialize denials and current `remote_surface` tests cover the respective typed boundaries. |
+| ID-05, ID-06, ID-07, ID-11 | The two local Application consumers distinguish invalid, stale and unavailable evidence. The provider and protected Counter cases exercise scoped host/time checks, old and new generations and the original causes. C-03 covers the selected rotation, unavailability, revocation and delayed-receipt chronology through an actual Node. |
+| ID-08 | Configured deployment, purpose and caller travel with the private verified receipt in the local providers. The Node's same-name deployment case separately exercises isolation of native effects over the transport. |
+| ID-09, AUTH-06 | The local provenance check retains the verified original caller. Secure-channel identity and command authority have distinct owners. The held end-to-end forwarding acceptance belongs to NET1. |
+| ID-10, AUTH-03 | Existing queue and request bounds preserve the original inputs. R09's live-two and Discharge proof observes progress after invalid pressure, and the delegation cases preserve scope and current authority through tenant/protocol/actor/operation refusal. Retain history exhaustion follows its finite custody policy. |
+| ID-12 | The actual example uses explicit test evidence and refuses a production-required configuration without a provider. The downstream production identity provider remains SELO1 work. |
+| AUTH-01, AUTH-07 | The protected Counter selects operation permission separately from identity and preserves concrete denials. Native lifecycle cases retain the actual accepted Stop and joined report with original actor/task outcomes. The remote send-only Stop test is a separate NET1 contribution. |
+| AUTH-04, AUTH-08 | Both `lookup_permission_is_rechecked_after_actual_capacity_pressure` and `scheduled_permission_is_rechecked_after_actual_capacity_pressure` exercise a real Full retry. The protected Counter profiles retain expiry, revocation, unavailable evidence and the original outcomes. The admission point takes the coherent permission/time decision before a nonwaiting attempt. |
+| AUTH-05 | `counter_retains_live_binding_replay` and `arithmetic_retains_live_binding_replay` preserve duplicate, conflict, capacity refusal, checked exhaustion and original custody with the two deterministic provider implementations. Same-session reconnect and later-incarnation replay are separate network obligations. |
+
+The focused current local run passed in both debug and optimized builds:
+six authority admission tests, two permission-after-capacity tests, and four
+remote surface tests, including twelve compiler fixtures. Both deterministic
+provider consumers, both exact replay consumers, and both rechecks after real
+capacity pressure passed by name. Each profile's log is in
+`acceptance-current/auth1-selected`. Those outcomes cover the named local
+scope. The public example and combined delivery retain their own source
+qualification. AUTH1 and NET1 states and reciprocal dependency edges remain
+as recorded in the backlog.
+
+## Rotation, provider loss and current revocation — verified (2026-11-24)
+
+The selected C-03 test now runs through an actual Node and its native
+SessionLocal query path. It distinguishes old authenticated evidence (301),
+a delayed current receipt denied by the current Broker grant (307), an
+unavailable provider transfer (311), and fresh permitted work that returns
+a native Read and protected reply (313). The same actor answers a local Read
+while the authenticated receipt is held. The test acquires cleanup, retirement
+and original request outcomes before comparing the complete trace.
+
+Formatting and strict Clippy passed. The exact test passes in debug and
+release. A temporary omission in the fixture's revocation check causes the
+complete trace assertion to fail in both builds: 307 produces an extra
+native Read and protected reply while the 301, 311 and 313 outcomes are
+unchanged. The original test source was restored byte for byte. Both saved
+original executables pass on the restored source. The narrow fixture
+correction builds move-only metadata through its existing constructor and
+preserves the reviewed operations and expected trace.
+
+The change adds 484 test lines in the existing permissions owner. It adds no
+production code, public types or dependencies. See
+`acceptance-current/rotation/resumed` for the two healthy logs, two defect
+logs and both restoration controls. The evidence covers the selected
+deterministic provider transaction loss and current authority chronology.
+Network campaign delivery, SDK resource measurement and the full PRD
+acceptance remain open. The two SDK verification files are approved
+separately under the 47-file limit.
+
+## Rotation, provider loss and current revocation — pre-edit (2026-11-21)
+
+The literal selected C03 chronology is still missing from the existing separate
+rotation/revocation/availability cases. Read-only plandb9ab337 and independent
+model3cf492dd select ONE existing permissions.rs/delegation witness using its
+Grant/GrantScope/Principal/Authority/Permission/GrantRefusal and scheduled
+nominal receipts, existing Counter, Export/Node and native Query owners. Exact
+Runtime0.6/Core031/unpatched locke5fd contracts remain unchanged. No new provider,
+crypto algorithm, clock, actor, nominal type, runtime or test framework is needed.
+
+Rotate current Authority generation1 to2. Actual query301 authenticates old
+immutable evidence but current permission refuses Generation(Authority). Query307
+authenticates generation2; hold its actual nominal Receipt in the outer existing
+async verifier before returning it to Runtime. A separate real provider response
+oneshot loses its sender for311, yielding existing Unavailable(RecvError), not
+Invalid. This models that selected provider transaction loss, not an SDK/TLS
+partition or a global service outage. Revoke Broker, acquire actual same-Counter
+local Read progress while307 stays held, then release its SAME Receipt. Runtime's
+current permission must retain Revoked(Broker) with no native307Read/reply.
+Restore Broker and provider transfer; fresh313 through the same binding genuinely
+returns native Read/reply. All four externally issued identities are distinct.
+
+Acquire every original Query/row/native/peer result and all real cleanup BEFORE
+comparing complete sequence-keyed native effects/replies, including unexpected
+307work. Only afterward check exact cause/receipt/chain/raw/panic/cleanup details.
+Runtime has not acquired held307Receipt before the outer verifier returns it;
+unavailability elsewhere cannot erase that already-authenticated immutable fact.
+One actual Revoked-arm omission must expose extra native307Read/reply in BOTH
+builds while old-generation301/unavailable311/fresh313 controls stay lawful.
+Root alone applies that later cut, restores the whole owner and runs healthy
+controls. No stopped forwarding/correlation/actor crash/restart is selected.
+
+Same-root progress is the selected C03 observation; no sibling claim is made.
+The earlier rationale that unused declared Entity families require installation
+was incorrect: Families=() has explicit install/native support. A larger Creator
+fixture remains unnecessary because C03 itself asks no sibling; R11 independently
+checks its actual sibling. Preserve that source correction without changing the
+selected smaller model or inventing another parent actor.
+
+Expected280–400 test lines in ONLY already-charged permissions.rs, plus these
+two task records; production+0/-0/net0, publicAPI+0types/-0types, dependency/new
+source paths0,45approved/allcharged. Actual formatted delta must be measured.
+Every old named case/helper/26-case table and assertion stays byte-exact in the
+healthy implementation except needed module imports. Author and independent
+source/counterexample reviews precede Root's sole compiler. This source-only
+checkout is for parallel authoring; it owns no build. Integrate exact reviewed
+changes into Root before execution, then preserve/remove this obsolete checkout
+once qualification permits. No current combined result/fullR24/delivery claim.
+
+
 ## Send-only Stop qualification (2026-11-21)
 
 Actual4f47efd1/731 passes formatting, strict optimized all-target remote Clippy
@@ -340,6 +600,37 @@ Full R01–R25/AUTH1/NET1, remaining readiness/authority/resource/network/suppor
 clauses, combined gates, distillation, submitted-head CI/review and normal
 recorded merge remain open. No source fault, live compiler or delivered-state
 claim remains from this local batch.
+
+### Process outcomes and controlled scenarios — R23
+
+The process tests supply separate OS identities, published bindings and
+ordinary application results. The controlled scenarios below supply the
+matching native or application fact at its owning boundary. Their original
+qualification records retain the individual source and build profiles.
+
+| Real process witness | Corresponding controlled observation |
+| --- | --- |
+| `separate_programs_increment_read_and_stop_through_real_tls` exchanges Increment 101, Read 1 and Stop. | `scheduled_duplicates_and_authority_changes_preserve_native_admission` observes delivery, successful verification, native admission and the independent Counter read in a fixed order. The processed receipt and Read distinguish domain effect from transport delivery. |
+| `actor_mailbox_pressure_recovers_across_real_counter_programs` retains the capacity-two Full original and observes Read 2, retry, native Read 3 and ordinary TLS Read 4. | `full_append_retries_the_same_message_after_capacity_returns` holds actual native capacity, preserves the same original during Full, and observes its single admission after capacity returns. Its revoked companion observes the preserved original refused after rechecking authority. |
+| `denied_stop_preserves_a_live_counter_in_a_separate_program` preserves a readable actor. `matching_stop_retires_the_same_separate_counter` acquires the actual retirement receipt. | `send_permission_cannot_retire_an_actor` observes an authenticated send-only Stop refusal before native control, successful permitted Read and owner Stop. Joined retirement is acquired from that exact target. |
+| `processed_increment_without_publication_is_uncertain` observes receiver processing and ordinary caller exit 2. | The passing C-10 scenario withholds actual reply publication after native processing, retains the caller's exact originals and terminal empty response lists, and observes later independent progress. The caller's processed-receipt list stays empty for those originals. |
+| `assignment_eof_returns_failure_after_the_actual_serve_binding` observes assignment EOF, the application error and exit 1. | `controlled_assignment_end_refuses_after_the_original_binding` uses the same assignment reader. Its controller compares the exact framed Binding, then closes its write end. The owning reader returns the exact configuration refusal. Supplying a complete assignment at the same point yields a usable assignment for the configured caller. |
+
+Each entry maps the shared semantic observation. The broader R24 scheduling
+acceptance and combined R23 delivery gates remain open.
+
+The selected exit-classification fixture uses the existing deployment
+assignment reader over a bounded duplex stream. Its controller first reads
+the exact published Binding, then closes its write end or supplies a complete
+existing assignment. The paired results must be the owning configuration
+refusal and usable assignment respectively. The existing OS-process test owns
+the final diagnostic and exit status. Both named tests passed under pinned Nix
+in debug and optimized builds. Formatting and strict package Clippy passed.
+The independent review added the original controller's exact frame bound to
+the controlled observation. Source and logs are in
+`acceptance-current/process-assignment`. The already charged `processes.rs`
+test owner adds 57 lines and removes one import line. Production lines, public
+types and dependencies remain at zero.
 
 ## Bounded diagnostic route — selected pre-edit record (2026-11-21)
 
