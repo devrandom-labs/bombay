@@ -1356,6 +1356,25 @@ transferred values, provider allocations, and TLS and runtime overhead.
 See `acceptance-current/r14-receive-backing/deployment-budget-subtotal.json`
 for the formulas and hashes of the locked inputs.
 
+#### Counter connection setup
+
+The listener has two accepted-link queue slots and two native establishment
+slots. Charge one additional handoff and one current TLS listener operation,
+for six incoming owners before registered links. The dial-only role has one
+configured outgoing address for its initial open.
+
+The 4,096-byte batch offer applies after negotiation. For the two incoming
+establishments and one initial outgoing open, allow one native read batch
+and one write batch of up to 65,535 bytes each. These batch allocations
+contribute up to 393,210 bytes in the selected setup scope. Live decoded
+values and TLS allocations have separate lifetimes.
+
+The exact Counter fixture inputs total 8,214 raw credential bytes when the
+trust root is charged once for each role. This counts input lengths. A
+deployment limit also has to bound credential inputs, parsing and TLS
+retention. The SDK reads the configured identity files in full, so the
+fixture lengths supply evidence only for the selected files.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
