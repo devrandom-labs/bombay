@@ -1404,6 +1404,27 @@ observed custody at those points. The deployment subtotal still needs
 the remaining lifetime and allocation terms. The temporary fixture
 change was restored after both runs.
 
+#### Counter outbound staging
+
+The finite Counter provider matches each emitted protected message to
+an enrolled pair. Those pairs pass checks for 8,192 payload bytes and
+32 proof bytes. Charge up to 16,448 bytes of those fields across one
+current Client send and one current Export publication. The retained
+encoding and proof on each application row have their own charge.
+
+The native send stage holds one serialization buffer per priority.
+Across four registered links with eight priorities each, charge up to
+263,168 bytes of Counter payload and proof backing in these stages.
+The calculation counts shared backing through each owner. Remaining
+terms include protocol fields, allocator storage, and links outside
+the registered set.
+
+A local debug trial with valid Counter messages larger than the configured
+4,096-byte batch ended with an uncertain Read. The original small-message
+case passed after a fresh compile. The cause of the uncertain result and
+progress for the larger messages remain open. The temporary test input
+was restored.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
