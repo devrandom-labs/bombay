@@ -1644,6 +1644,30 @@ The source and merge are preserved, and the delivery worktree was removed.
 Publication requires the separate passing run on exact SDK main.
 [SDK main CI](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/45905176380)
 
+##### Published SDK receive budget and adoption
+
+The SDK publisher completed on exact SDK main `229966a0`. All six
+registry downloads match the archive checksums tested on SDK main and
+identify `229966a0` in their VCS metadata. The release contains SDK
+`1.10.11`, Config/plugin trait `1.10.3` and TLS link/link/transport
+`1.10.5`. The verified cohort, receipts and downloaded packages are
+preserved under `sdk-receive-budget/sdk-registry`.
+[SDK publication](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/45911136159)
+
+The adoption uses the two manifest and lock pairs from the
+previous SDK adoption `5fabf813`: `crates/bombay/Cargo.toml` with the
+root lock and the existing transport-custody manifest with its lock.
+Both locked metadata graphs resolve all six crates from the registry.
+The only lock changes are the six versions and checksums in each file,
+all equal to the publisher receipt. Under pinned Nix, the existing
+`registered_session_limit_refuses_an_extra_client_and_releases_capacity`
+test passed once in debug and once in release. It uses real TLS and
+checks capacity refusal, orderly close and replacement. The two raw
+test logs and locked graphs are preserved under `sdk-receive-budget`.
+This adoption changes zero production Rust lines, tests or public types.
+The application still needs a configured receive ceiling and an
+aggregate deployment bound for R14.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
