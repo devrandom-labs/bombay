@@ -1,5 +1,40 @@
 # Static remote actors and typed admission
 
+## Combined remote acceptance delivery (2026-11-25)
+
+PR #447 auto-merged to main at 18:04:47 UTC as
+`2128d83f826863f06b457bfd910711c9e3eb1c4c`. The merge and the tested
+preview `711ea01c` have tree `14f4d8d4d8c4f94ba5f64c597f33be980b08de27`
+and parents `1dfb22d7` and `a6a79ba7`. All eight GitHub checks passed. The
+Linux run passed the flake and completed 2,048 Driver fuzz inputs and four
+1,024-input Observe campaigns. Miri was skipped. The final workflow change
+raised the Nix job limit from 180 to 210 minutes. The test commands and
+assertions were unchanged. The 28 local results with 1,066 workspace test
+passes belong to the earlier application tree `aad78563`.
+[Merged PR](https://github.com/devrandom-labs/bombay/pull/447)
+[Passing Nix CI](https://github.com/devrandom-labs/bombay/actions/runs/45649883972/job/139331181912)
+
+The merge delivers the tested rotation and provider-loss case, shutdown while
+admission is full, Router recovery and drain expiry, reply loss and recovery,
+the additional local admission witnesses, and the original assignment before
+EOF refusal. Linux also ran the public Counter's production-required startup
+refusal and the selected mixed-version exchange. NET1 still requires its
+external prerequisites and the remaining end-to-end witnesses, independent
+network simulation and replay, and final distillation.
+
+## Admission, pressure, and retirement delivery (2026-11-24)
+
+PR #445 merged to main at 15:15:45 UTC as `1dfb22d7a277ee5ab2fdae68366bb409f2f76860`.
+All eight checks passed on the final head `063d8970`. Its tested preview and
+the merge have the same tree `389bc9a33f1523c8dd35849034413b83bf77877f`.
+[Merged PR](https://github.com/devrandom-labs/bombay/pull/445)
+[Passing Nix CI](https://github.com/devrandom-labs/bombay/actions/runs/45392080906/job/138438140064)
+
+The delivered witnesses cover pending close, joined retirement, bounded
+admission and request custody, reply pressure, reconnect, mixed Runtime 0.5/0.6
+communication, failed initialization, and Stop authority. The broader
+R01–R25, AUTH1, and NET1 acceptance remains open.
+
 ## Router recovery and drain expiry — C-08 (2026-11-24)
 
 One existing Node retirement test owner will combine the four events around
@@ -156,19 +191,19 @@ combined-source qualification retain their separate scope.
 The local exit gate covers the selected deterministic providers through an
 ordinary Application. The networking exit gate separately owns actual gateway
 forwarding, transport authentication and actor-host restart. Earlier ordinary
-Application evidence remains attached to its source revision. The current
-acceptance delivery still needs its combined checks, review and recorded merge.
+Application evidence remains attached to its source revision. PR #447 passed
+the combined checks and merged. The local AUTH1 scope is delivered.
 
 | Requirements | Local witness and scope |
 | --- | --- |
 | ID-01, ID-02, AUTH-02 | The configured assignment and protected Counter tests keep a stable deployment/controller/name separate from host, runtime incarnation, actor generation and authority. Checked issuance keeps the original on exhaustion. The local replay tests retain old assignments and observe native closure. The network restart witness remains separate. |
 | ID-03, ID-04 | `permission_admission` and `authority_admission` use actual typed request and result effects. Those tests exercise both recorded lookup and scheduled oneshot transfer. The historical private-issuance and Deserialize denials and current `remote_surface` tests cover the respective typed boundaries. |
-| ID-05, ID-06, ID-07, ID-11 | The two local Application consumers distinguish invalid, stale and unavailable evidence. The provider and protected Counter cases exercise scoped host/time checks, old and new generations and the original causes. C-03 covers the selected rotation, unavailability, revocation and delayed-receipt chronology through an actual Node. |
+| ID-05, ID-06, ID-07, ID-11 | The two local Application consumers distinguish invalid, stale and unavailable evidence under the selected controlled-time policy. `record_proof_rotation_preserves_the_same_live_replay_owner` and its scheduled-provider counterpart keep the same assignment, accept new evidence, reject retired evidence and observe the original Counter state. C-03 also exercises the selected rotation, unavailability, revocation and delayed-receipt chronology through an actual Node. |
 | ID-08 | Configured deployment, purpose and caller travel with the private verified receipt in the local providers. The Node's same-name deployment case separately exercises isolation of native effects over the transport. |
 | ID-09, AUTH-06 | The local provenance check retains the verified original caller. Secure-channel identity and command authority have distinct owners. The held end-to-end forwarding acceptance belongs to NET1. |
-| ID-10, AUTH-03 | Existing queue and request bounds preserve the original inputs. R09's live-two and Discharge proof observes progress after invalid pressure, and the delegation cases preserve scope and current authority through tenant/protocol/actor/operation refusal. Retain history exhaustion follows its finite custody policy. |
+| ID-10, AUTH-03 | `held_verifiers_bound_excess_requests_before_recovering_capacity` verifies two active verifier requests, excess refusal and recovery after invalid pressure. The selected configuration keeps no verification cache. Recorded and scheduled delegation tests preserve scope and current authority through tenant/protocol/actor/operation refusal. Retain history exhaustion follows its finite custody policy. |
 | ID-12 | The actual example uses explicit test evidence and refuses a production-required configuration without a provider. The downstream production identity provider remains SELO1 work. |
-| AUTH-01, AUTH-07 | The protected Counter selects operation permission separately from identity and preserves concrete denials. Native lifecycle cases retain the actual accepted Stop and joined report with original actor/task outcomes. The remote send-only Stop test is a separate NET1 contribution. |
+| AUTH-01, AUTH-07 | The protected Counter selects operation permission separately from identity and preserves concrete denials. The root and child Stop witnesses retain independent native facts and joined reports, including held work and sibling progress. The remote send-only Stop test is a separate NET1 contribution. |
 | AUTH-04, AUTH-08 | Both `lookup_permission_is_rechecked_after_actual_capacity_pressure` and `scheduled_permission_is_rechecked_after_actual_capacity_pressure` exercise a real Full retry. The protected Counter profiles retain expiry, revocation, unavailable evidence and the original outcomes. The admission point takes the coherent permission/time decision before a nonwaiting attempt. |
 | AUTH-05 | `counter_retains_live_binding_replay` and `arithmetic_retains_live_binding_replay` preserve duplicate, conflict, capacity refusal, checked exhaustion and original custody with the two deterministic provider implementations. Same-session reconnect and later-incarnation replay are separate network obligations. |
 
@@ -181,6 +216,31 @@ capacity pressure passed by name. Each profile's log is in
 scope. The public example and combined delivery retain their own source
 qualification. AUTH1 and NET1 states and reciprocal dependency edges remain
 as recorded in the backlog.
+
+### Local AUTH1 delivery (2026-11-25)
+
+The design and owning admission, replay, assignment and bounded custody landed
+in PRs #332, #338, #339, #342, #343 and #345. Provider result conservation and
+borrowed outcome custody landed in #376 and #415. PRs #445 and #447 integrate
+the current cases. The local ownership review (`612a29a2`) maps the complete
+ID and AUTH inventories, and the R08 review (`3da63c40`) binds the selected
+provider and freshness policy. The case owners remain the existing policy,
+Application and Node composition. This closing record adds no interface,
+dependency, test or runtime state.
+
+On the exact PR #447 merge tree, Linux ran all six `authority_admission` cases,
+both `permission_admission` cases, the recorded and scheduled delegation
+cases, the finite verifier-capacity recovery and the public startup refusal.
+The separate protected Counter gate passed both profiles, including both
+live-owner rotations, finite provider classifications, permission/expiry on
+Full, wrong-host and exhausted assignment, and native root and child Stop.
+Historical compiler refusals and defect checks keep their original source
+scope. The combined-delivery receipt and CI link above bind the current run.
+
+The local exit covers the two deterministic provider implementations,
+including the verified caller carried by the local consumer. End-to-end
+forwarding, network replay across restart and secure transport remain NET1
+requirements. Production identity and cryptography remain SELO1 requirements.
 
 ## Rotation, provider loss and current revocation — verified (2026-11-24)
 
