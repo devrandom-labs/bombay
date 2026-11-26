@@ -1669,6 +1669,12 @@ Both ran the capacity test. The Driver campaign ran 2,048 inputs and
 the four Observe campaigns ran 1,024 each. Miri was skipped. The
 delivery receipt records the exact merge, terminal log and eight
 official archive digests.
+
+The separate run on actual main `12c7f008` finished successfully at
+21:09 UTC. All five jobs passed, including Linux Flake Check, 2,048
+Driver inputs and four 1,024-input Observe campaigns. The run metadata
+and lossless Linux log are retained in `registered-capacity/hosted/main-12c7f008`.
+[Post-merge CI](https://github.com/devrandom-labs/bombay/actions/runs/45878268710)
 [Merged PR](https://github.com/devrandom-labs/bombay/pull/452)
 [Linux CI](https://github.com/devrandom-labs/bombay/actions/runs/45856510670/job/140036189960)
 
