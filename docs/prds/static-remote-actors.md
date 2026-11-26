@@ -1492,6 +1492,32 @@ for the unicast receive and retirement paths, the recycling pool and queue,
 and shared slices. The SDK production scope and receive-pressure policy
 remain open.
 
+#### Receive budget exhaustion and request custody
+
+The existing Client reply limit takes effect after native receive has
+produced a `Reply`. Its first overflow retains that exact original for the
+caller. Refusing an allocation before native read has no reply or request
+identity to put in that slot. The SDK's current receive-error path logs the
+cause and starts link retirement. Client records callback EOF separately
+from an acquired response. EOF alone conveys neither the receive cause
+nor whether any particular operation ran.
+
+Keep the native allocation refusal distinct from the Client's typed
+reply overflow. A budget needs a typed outcome at its native owner and
+an observation path for that outcome. Only an acquired authoritative
+reply can resolve work whose remote execution is otherwise uncertain.
+Previously acquired replies must stay with their existing owners and
+retain their backing charges. Budget exhaustion may not silently retry
+work or wait indefinitely for backing on the ordinary receive path.
+
+The first acceptance case should use a small explicit budget under a
+normal TLS configuration. Observe the budget at capacity, the typed
+disposition before any extra allocation, preservation of existing
+acquired outcomes, release after the final backing owner returns it,
+and recovery for fresh work. Include a backing owner whose lifetime
+extends past link retirement. The implementation scope and concrete
+budget values remain subject to the resource gate below.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
