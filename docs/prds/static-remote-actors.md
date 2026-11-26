@@ -1375,6 +1375,21 @@ deployment limit also has to bound credential inputs, parsing and TLS
 retention. The SDK reads the configured identity files in full, so the
 fixture lengths supply evidence only for the selected files.
 
+#### Counter transport retirement
+
+Keep charging each registered transport when the SDK moves it into the
+final close operation. The registry drain takes up to two per role. Its
+list keeps the original owners until each close runs in turn. Up to four
+captured transports across both roles therefore keep the same buffer
+charges as before the move. Charge setup, callbacks and transferred
+values through their own owners.
+
+The optimized Counter passed both process exits and checked both close
+results. The separate capacity test verified that the registry refused an
+extra client and accepted a replacement after closure. Further resource
+evidence must cover setup and retirement outside the captured registry
+and show when their backing allocations are released.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
