@@ -1309,11 +1309,196 @@ Substituting a fixed session cap of two in the owning mapping fails the debug
 getter test and the live test. The Router reports both client identities where
 the original source retains one. Restoring the exact source and replaying the
 saved debug program passes all 14 cases. Formatting and strict release Clippy
-pass. Whole-workspace checks and reviewed delivery remain open.
+pass. See the delivery record below for the whole-workspace and hosted results.
 
 The retained Rust delta is 57 production lines added and four removed. The
 test delta is 174 added and nine removed. No public types or dependencies were
 added. Existing test literals preserve their previous native limits.
+
+#### Transport limits delivery (2026-11-26)
+
+[PR #450](https://github.com/devrandom-labs/bombay/pull/450) auto-merged at
+14:38:30 UTC as `47f6888b`. All eight checks passed on preview `cefad009`.
+The [Linux flake](https://github.com/devrandom-labs/bombay/actions/runs/45817244544/job/139900169029)
+reported 1,069 optimized workspace passes across 123 harnesses and seven
+controlled skips. Driver and Observe fuzz campaigns passed. Miri was skipped.
+The release scheduling job passed after its GitHub time limit increased from
+30 to 45 minutes. Test commands, assertions and watchdogs were unchanged.
+
+Release PR #446 landed while checks ran. The actual merge retains the tested
+Rust sources and adds four Runtime 0.6.1 metadata files from that PR.
+[Main CI](https://github.com/devrandom-labs/bombay/actions/runs/45841069131)
+verifies the combined tree separately. The whole-deployment resource bound
+and remaining NET1 witnesses stay open.
+
+#### Counter resource subtotal
+
+The selected two-process TLS Counter uses one listening address and one
+connecting address. Each role allows two registered transports with a local
+batch offer of 4,096 bytes. A registered transport has eight receive
+priorities and two reliability states per priority. Each state can retain
+32,768 logical fragment bytes. Charging up to one whole receive batch per
+retained byte gives the following conservative backing terms.
+
+| Owner across both roles | Bytes |
+| --- | --- |
+| Registered receive reassembly backing | 8,589,934,592 |
+| Native request fields in three Export rows | 402,653,184 |
+| Native reply fields and first overflow in four Client rows | 1,073,741,824 |
+| Regular send batches and reserved receive pools for registered links | 524,284 |
+| Checked Export and Client field copies | 57,568 |
+| Subtotal | 10,066,911,452 |
+
+The calculation may charge the same backing allocation through several
+owners. It bounds the listed storage families from source. Whole-deployment
+acceptance also needs setup and retiring links, callback and send staging,
+transferred values, provider allocations, and TLS and runtime overhead.
+See `acceptance-current/r14-receive-backing/deployment-budget-subtotal.json`
+for the formulas and hashes of the locked inputs.
+
+#### Counter connection setup
+
+The listener has two accepted-link queue slots and two native establishment
+slots. Charge one additional handoff and one current TLS listener operation,
+for six incoming owners before registered links. The dial-only role has one
+configured outgoing address for its initial open.
+
+The 4,096-byte batch offer applies after negotiation. For the two incoming
+establishments and one initial outgoing open, allow one native read batch
+and one write batch of up to 65,535 bytes each. These batch allocations
+contribute up to 393,210 bytes in the selected setup scope. Live decoded
+values and TLS allocations have separate lifetimes.
+
+The exact Counter fixture inputs total 8,214 raw credential bytes when the
+trust root is charged once for each role. This counts input lengths. A
+deployment limit also has to bound credential inputs, parsing and TLS
+retention. The SDK reads the configured identity files in full, so the
+fixture lengths supply evidence only for the selected files.
+
+#### Counter transport retirement
+
+Keep charging each registered transport when the SDK moves it into the
+final close operation. The registry drain takes up to two per role. Its
+list keeps the original owners until each close runs in turn. Up to four
+captured transports across both roles therefore keep the same buffer
+charges as before the move. Charge setup, callbacks and transferred
+values through their own owners.
+
+The optimized Counter passed both process exits and checked both close
+results. The separate capacity test verified that the registry refused an
+extra client and accepted a replacement after closure. Further resource
+evidence must cover setup and retirement outside the captured registry
+and show when their backing allocations are released.
+
+#### Retained fields at the selected transport limits
+
+The existing retained-payload test passed in debug and optimized builds
+with the selected Counter limits. The SDK reported negotiated 4,096-byte
+batches in both directions. The original assertions still check pending
+sends, the retained request, the accepted and refused replies, and the
+three native close results.
+
+Charge one negotiated batch to each of the six retained native spans in
+this trace. Their conservative allowance is 24,576 bytes. It covers the
+observed custody at those points. The deployment subtotal still needs
+the remaining lifetime and allocation terms. The temporary fixture
+change was restored after both runs.
+
+#### Counter receive dispatch
+
+Each attached ordinary TLS link has one serial receive loop. It reads one
+batch and dispatches each completed message in order on that receive stack.
+Budget 16,384 bytes for the four current receive batches in the selected
+Counter configuration.
+
+Each current decoded message can contain up to 32,768 logical bytes through
+reassembly. A nonempty native payload or proof span can keep a whole 4,096-byte
+batch alive. Charging those spans independently gives a conservative
+512 MiB for native field backing during four simultaneous dispatches. The
+source estimate covers the receive stack. Transferred originals, local timeout
+callbacks, and links in setup or retirement have separate owners. The existing
+4 KiB retained-payload tests verify the small-message custody trace. A live
+aggregate allocation bound remains open.
+
+#### Counter outbound staging
+
+The finite Counter provider matches each emitted protected message to
+an enrolled pair. Those pairs pass checks for 8,192 payload bytes and
+32 proof bytes. Charge up to 16,448 bytes of those fields across one
+current Client send and one current Export publication. The retained
+encoding and proof on each application row have their own charge.
+
+The native send stage holds one serialization buffer per priority.
+Across four registered links with eight priorities each, charge up to
+263,168 bytes of Counter payload and proof backing in these stages.
+The calculation counts shared backing through each owner. Remaining
+terms include protocol fields, allocator storage, and links outside
+the registered set.
+
+A local debug trial with valid Counter messages larger than the configured
+4,096-byte batch ended with an uncertain Read. The original small-message
+case passed after a fresh compile. The cause of the uncertain result and
+progress for the larger messages remain open. The temporary test input
+was restored.
+
+#### SDK capacity boundaries
+
+The locked SDK reserves a recycling pool per link using
+`transport.link.rx.buffer_size`. A receive batch can outlive the read
+through shared payload and proof spans. If all reserved buffers are in
+use, the receive loop can allocate a new batch. The pool size alone
+therefore covers its reserve.
+
+The reassembly setting independently limits one logical receive message.
+The send queue bounds regular batches per priority. The session and
+pending-link settings count entries in their respective stages. Carry
+those charges through ownership transfer and account for active backing
+outside the registry, including retirement. Session link and transport
+snapshots provide registry counts. Allocations held by other owners need
+separate evidence before the deployment byte limit can be accepted.
+
+The locked SDK removes an individual link from the visible list before its
+close awaits notification and task shutdown. The close operation still owns
+that link. Session close takes declarations and queries out of its state and
+joins tracked tasks on the normal path. Bombay uses the ordinary Session
+close, with the SDK's separate callback wait disabled by default. A returned
+timeout leaves close completion unproved. Budget the retiring link through
+its close, and account for backing already handed to another owner until
+that owner's last reference is released.
+
+The TLS Client fixture inventories retained request and reply fields and
+pending originals after both successful Session closes. The separate Export
+fixture observes the native Query leave its row during drain while checked
+copies remain. These observations explain why registry removal, joined
+tasks and final backing release have different endpoints. The locked source
+and observation hashes are in
+`acceptance-current/r14-receive-backing/retirement-custody.json`.
+
+#### Registered capacity after normal close
+
+The existing TLS Router test uses a one-session limit. Exercise the selected
+two-session limit as well. Keep the other admitted client connected while
+the first closes, then verify that one fresh client can occupy the released
+slot. Each capacity checks the actual peer identities before refusal, after
+refusal, after orderly release and after replacement. Allow one spare
+pending link in each case so the pending limit cannot mask the registered
+limit. The control raises only the fixture's two-session setting to three.
+The original oracle must reject the extra admission after cleanup.
+
+The expected edit is in the existing ingress test owner and this PRD.
+Production, public types and dependencies have zero delta. This witness
+qualifies registered-session reuse in the native TLS Router fixture.
+Retiring backing, application limits and any external deployment Router
+budget retain their own gates.
+
+Both cases passed in debug and optimized builds under pinned Nix. The
+temporary three-session setting failed the intended extra-client assertion
+in both profiles after all close calls. The source was restored byte for
+byte. Both previously saved passing executables then passed again.
+Formatting and the two source reviews passed. The ingress test changed
+84 added and 65 removed lines, with zero production, type or dependency
+changes. The archived inputs and result logs are in
+`acceptance-current/r14-receive-backing/registered-capacity`.
 
 #### Verified profiles and inspection limits
 
