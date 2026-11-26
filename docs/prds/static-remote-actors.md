@@ -1596,6 +1596,12 @@ Preserve historical version maps and resume receipts. Add a receive-budget
 selection to the existing package workflow so Cargo verifies the new
 archives together before any merge or publication.
 
+Pinned Cargo metadata on the exact PR source confirms five exact Config
+pins, one from each of the other release candidates. Link commons is a
+shared dependency of this set and does not depend on Config. Its current
+archive stays in the verified dependency graph. The metadata is retained
+as `sdk-aff25-metadata.json` beside the failed CI log.
+
 The proposed scope adds 21 existing paths to the seven SDK paths in
 PR #15. The approval checkpoint is pending.
 
