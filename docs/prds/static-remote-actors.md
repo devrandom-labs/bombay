@@ -1238,6 +1238,59 @@ chosen values and refusal behavior in the supported deployment before
 crediting the aggregate. NET1 uses the selected deterministic providers;
 production KERI integration is downstream.
 
+#### R14 transport limit change record
+
+The current `Network` supplies one native Get limit. The SDK separately owns
+registered transports, pending links, transmit batch size and receive
+reassembly size. Bombay's Client and Export limits act after native acquisition.
+
+Use named, nonzero settings on the existing `Network` input and map them to
+the locked SDK before `Application::open_node` opens the Session. Preserve the
+same TLS and identity policy. Named fields keep the unit next to each value.
+One `Network` remains the ordinary input. Reusing a query count for link or
+byte capacity would conflate unrelated owners. Hard-coded smaller defaults
+would prevent the application from choosing its budget. A second startup path
+would duplicate the existing owner.
+
+The negotiated batch size limits both the regular transmit batch and the
+backing of each established receive batch. The receive pool holds batches
+within its own byte allowance, with room for at least one full batch. Buffers
+still loaned to messages and allocations for active reads remain separate.
+Reassembly limits logical fragment bytes per receive state. Connection setup
+also needs its own allowance. The SDK setting has no checked functional lower
+bound for batch size. Establish the supported range with the finite TLS
+profile before exposing it to applications.
+
+Configured listener and connector addresses also contribute to the budget.
+The SDK can create a startup connector per configured peer address. A client
+retry operation waits for one timer per remaining address and makes one
+connection attempt at a time. The registered-session count alone leaves
+connector work outside the budget, especially during connection replacement.
+The verified Router fixture uses one address. The SDK can accept a reachable
+member of a longer client list, so startup alone cannot certify the entire list.
+
+The ordinary Counter roles each construct one root and open one Session. The
+server owns one Queryable. The client owns one Querier and one matching
+listener with a single status slot. Each export or client request stays in
+its bounded set of futures within application execution, with no new task per
+operation. Charge the root and its cleanup separately from SDK tasks. Each
+declaration stays charged through its own withdrawal result.
+
+The first regression is a `Network` with distinct settings for each owner.
+The original input has no fields for those settings. After introducing the
+fields, the mapping test must fail when that setting is omitted and observe
+the exact SDK field when it is present. The finite TLS capacity tests must
+verify the selected dispositions and normal joined cleanup. Provider, callback
+and Router limits remain separate from these transport fields.
+
+The expected change adds roughly 50 library lines for field documentation and
+mapping. It adds zero public types and dependencies. Existing struct literals
+must supply the new settings. The owner inventory has nine previously unused
+paths, including the existing network tests and example configuration. This
+would take the approved cumulative scope from 48 to 57. The exact owner list
+is in `acceptance-current/r14-receive-backing/transport-limit-change.json`.
+Production edits await approval for that scope.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
