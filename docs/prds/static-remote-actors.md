@@ -1375,6 +1375,15 @@ deployment limit also has to bound credential inputs, parsing and TLS
 retention. The SDK reads the configured identity files in full, so the
 fixture lengths supply evidence only for the selected files.
 
+The locked TLS stack is `bombay-zenoh-link-tls 1.10.4`, `rustls 0.23.46`
+and `tokio-rustls 0.26.4`. Rustls limits its handshake reader separately
+from its application read and write queues. Its write buffer setting
+applies to outgoing plaintext and records. It does not cover handshake
+decoding, inbound storage, certificates, or the application batches that
+outlive read. The queue thresholds and handshake read limits therefore
+remain separate terms from allocated backing. The three archives matched
+the lock, and the inspected rustls and SDK source matched their archives.
+
 #### Counter transport retirement
 
 Keep charging each registered transport when the SDK moves it into the
