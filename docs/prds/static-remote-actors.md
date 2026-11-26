@@ -1390,6 +1390,20 @@ extra client and accepted a replacement after closure. Further resource
 evidence must cover setup and retirement outside the captured registry
 and show when their backing allocations are released.
 
+#### Retained fields at the selected transport limits
+
+The existing retained-payload test passed in debug and optimized builds
+with the selected Counter limits. The SDK reported negotiated 4,096-byte
+batches in both directions. The original assertions still check pending
+sends, the retained request, the accepted and refused replies, and the
+three native close results.
+
+Charge one negotiated batch to each of the six retained native spans in
+this trace. Their conservative allowance is 24,576 bytes. It covers the
+observed custody at those points. The deployment subtotal still needs
+the remaining lifetime and allocation terms. The temporary fixture
+change was restored after both runs.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
