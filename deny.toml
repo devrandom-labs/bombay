@@ -1,20 +1,9 @@
-# cargo-deny configuration. The full CI gate runs `cargo deny check advisories
-# licenses bans` (see .github/workflows/deny.yml): RustSec advisories for the locked
-# dependency tree, and a license allowlist for everything we ship.
-
 [advisories]
-# These scoped maintenance exceptions retain audited immutable dependencies.
-# Native bans below constrain its owning edge and stable versions; any source,
-# version, edge or compiler change reopens the PRD decision. Vulnerabilities stay checked.
-ignore = [
-  { id = "RUSTSEC-2026-0542", reason = "Audited humantime 2.4.0 timestamp uses only via uhlc 0.8.2 and zenoh-util 1.10.1; runtime maintenance risk and reopening conditions: static-remote-actors PRD." },
-  { id = "RUSTSEC-2024-0436", reason = "Audited paste 1.0.15 only via token-cell 2.1.1; see static-remote-actors PRD and owning bans." },
-]
+version = 2
+yanked = "deny"
 
 [licenses]
-# Standard permissive allowlist. Anything outside this set fails the license
-# check and must be either added deliberately (with a note in the PR) or
-# replaced.
+version = 2
 allow = [
   "MIT",
   "Apache-2.0",
@@ -23,36 +12,19 @@ allow = [
   "BSD-3-Clause",
   "ISC",
   "Unicode-3.0",
-  "CDLA-Permissive-2.0",
-  "MPL-2.0",
+  "Unicode-DFS-2016",
   "Zlib",
-  "CC0-1.0",
+  "MPL-2.0",
+  "CDLA-Permissive-2.0",
 ]
-confidence-threshold = 0.8
 
-[licenses.private]
-# The bombay-example-* crates under examples/ are workspace-local demo binaries
-# with `publish = false` — they never ship to crates.io, so the license gate
-# (which exists for what we publish) skips them. Published crates keep full
-# checks.
-ignore = true
-
-# Exact archive/lock custody also remains required: these ranges guard stable versions.
 [bans]
-deny = [
-  # Stable-version and immediate-parent guards; exact source custody is in the PRD.
-  { name = "humantime", wrappers = ["uhlc", "zenoh-util"], reason = "Only the two audited timestamp owners" },
-  { name = "humantime", version = "<2.4.0", reason = "Only the audited timestamp version" },
-  { name = "humantime", version = ">2.4.0", reason = "Reopen timestamp maintenance review before upgrade" },
-  { name = "uhlc", version = "<0.8.2", reason = "Only the audited timestamp owner" },
-  { name = "uhlc", version = ">0.8.2", reason = "Reopen timestamp maintenance review before upgrade" },
-  { name = "zenoh-util", version = "<1.10.1", reason = "Only the audited timestamp owner" },
-  { name = "zenoh-util", version = ">1.10.1", reason = "Reopen timestamp maintenance review before upgrade" },
-  { name = "paste", wrappers = [
-    "token-cell",
-  ], reason = "Only the audited owning edge" },
-  { name = "paste", version = "<1.0.15", reason = "Only the qualified stable macro version" },
-  { name = "paste", version = ">1.0.15", reason = "Reopen maintenance review before upgrade" },
-  { name = "token-cell", version = "<2.1.1", reason = "Only the qualified stable owner" },
-  { name = "token-cell", version = ">2.1.1", reason = "Reopen compatibility review before upgrade" },
-]
+multiple-versions = "allow"
+wildcards = "deny"
+# Wave 1 cards ADP-01 and ADP-02 tighten wrappers so only bombay-axum wraps axum
+# and only bombay-zenoh wraps bombay-zenoh*.
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

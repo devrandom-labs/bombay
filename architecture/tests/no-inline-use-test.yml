@@ -1,0 +1,14 @@
+id: no-inline-use
+valid:
+  - |
+    use std::fmt;
+    fn render() {}
+  - |
+    mod nested {
+        use std::fmt;
+    }
+invalid:
+  - |
+    fn render() {
+        use std::fmt;
+    }

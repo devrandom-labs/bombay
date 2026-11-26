@@ -1,0 +1,4 @@
+#!/bin/sh
+# The step gate is fast and fails first; the full gate follows and waits for its turn.
+bash architecture/step.sh || exit 1
+exec bash architecture/gate.sh

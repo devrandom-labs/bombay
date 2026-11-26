@@ -1,0 +1,5 @@
+# Each entry has three tab-separated columns: file regex, assertion regex with a
+# named decimal count, and source rule. A new entry needs a rule of AGENTS.md
+# as its source. The count must rise by the paths added to the OpenAPI snapshot,
+# with no paths removed.
+\Aapps/server/tests/requests/health\.rs\z	^assert_eq!\([^,]+\["paths"\](\.[a-zA-Z_][a-zA-Z_0-9]*\(\))*\.len\(\),(?<count>[0-9][0-9_]*),?\)$	AGENTS.md, Roles: a step may add the operation that its card names to the OpenAPI expectations

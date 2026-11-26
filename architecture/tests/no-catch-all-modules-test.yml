@@ -1,0 +1,7 @@
+id: no-catch-all-modules
+valid:
+  - 'mod capabilities;'
+invalid:
+  - 'mod utils;'
+  - 'pub mod services;'
+  - 'mod repository;'

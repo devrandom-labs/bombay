@@ -1,0 +1,241 @@
+# Rust syntax used by facts.sh. The report applies names and count thresholds.
+id: primitive
+language: Rust
+rule:
+  any:
+    - kind: parameter
+      inside:
+        kind: parameters
+        inside: {any: [{kind: function_item}, {kind: function_signature_item}]}
+      has:
+        field: pattern
+        any:
+          - {kind: identifier, pattern: $NAME}
+          - {kind: ref_pattern, has: {kind: identifier, pattern: $NAME}}
+    - kind: field_declaration
+      inside:
+        kind: field_declaration_list
+        inside: {kind: struct_item}
+      has: {field: name, pattern: $NAME}
+  has: {field: type, pattern: $TYPE}
+---
+id: column
+language: Rust
+rule:
+  kind: call_expression
+  has:
+    field: function
+    kind: field_expression
+    all:
+      - has:
+          field: value
+          kind: scoped_identifier
+          pattern: $COLUMN
+          has: {field: path, regex: 'Column$'}
+      - has:
+          field: field
+          regex: '^(eq|ne|is_null|is_not_null|is_in|is_not_in|lt|lte|gt|gte)$'
+---
+id: length-comparison
+language: Rust
+utils:
+  length: {kind: call_expression, pattern: '$VALUE.len()'}
+  number: {any: [{kind: integer_literal}, {kind: float_literal}]}
+rule:
+  kind: binary_expression
+  all:
+    - has: {field: operator, regex: '^(==|!=|<=|>=|<|>)$'}
+    - any:
+        - all:
+            - has: {field: left, matches: length}
+            - has: {field: right, matches: number}
+        - all:
+            - has: {field: left, matches: number}
+            - has: {field: right, matches: length}
+---
+id: length-range
+language: Rust
+utils:
+  number: {any: [{kind: integer_literal}, {kind: float_literal}]}
+rule:
+  kind: call_expression
+  any:
+    - pattern: '($LOW..=$HIGH).contains(&$VALUE.len())'
+    - pattern: '($LOW..$HIGH).contains(&$VALUE.len())'
+    - pattern: '(..=$HIGH).contains(&$VALUE.len())'
+    - pattern: '(..$HIGH).contains(&$VALUE.len())'
+    - pattern: '($LOW..).contains(&$VALUE.len())'
+constraints:
+  LOW: {matches: number}
+  HIGH: {matches: number}
+---
+id: state-comparison
+language: Rust
+utils:
+  state-name: {regex: '(?i)(state|status)$'}
+  state:
+    any:
+      - {kind: identifier, matches: state-name}
+      - {kind: field_expression, has: {field: field, matches: state-name}}
+      - kind: scoped_identifier
+        all:
+          - has: {field: name, matches: state-name}
+          - has: {field: path, regex: 'Column$'}
+      - kind: unary_expression
+        regex: '^\*'
+        has: {matches: state}
+      - kind: call_expression
+        all:
+          - has:
+              field: function
+              kind: field_expression
+              all:
+                - has: {field: value, matches: state}
+                - has: {field: field, regex: '^as_str$'}
+          - has: {field: arguments, pattern: {context: 'f()', selector: arguments}}
+  literal:
+    pattern: $LITERAL
+    any: [{kind: string_literal}, {kind: raw_string_literal}]
+  state-arm:
+    kind: match_pattern
+    inside:
+      kind: match_arm
+      field: pattern
+      inside:
+        kind: match_block
+        inside:
+          kind: match_expression
+          has: {field: value, matches: state}
+  arm-literal:
+    inside:
+      any:
+        - all:
+            - matches: state-arm
+            - not: {has: {field: condition, pattern: $LITERAL}}
+        - {kind: or_pattern, matches: arm-literal}
+rule:
+  any:
+    - kind: binary_expression
+      all:
+        - has: {field: operator, regex: '^(==|!=|<=|>=|<|>)$'}
+        - any:
+            - all:
+                - has: {field: left, matches: state}
+                - has: {field: right, matches: literal}
+            - all:
+                - has: {field: left, matches: literal}
+                - has: {field: right, matches: state}
+    - kind: call_expression
+      all:
+        - has:
+            field: function
+            kind: field_expression
+            all:
+              - has: {field: value, matches: state}
+              - has: {field: field, regex: '^(eq|ne|lt|le|lte|gt|ge|gte)$'}
+        - has:
+            field: arguments
+            pattern: {context: 'f($LITERAL)', selector: arguments}
+            has: {any: [{kind: string_literal}, {kind: raw_string_literal}]}
+    - all:
+        - matches: literal
+        - matches: arm-literal
+---
+id: variant
+language: Rust
+rule:
+  kind: enum_variant
+  has: {field: name, pattern: $NAME}
+  inside:
+    kind: enum_variant_list
+    inside:
+      kind: enum_item
+      has: {field: name, pattern: $ENUM}
+---
+id: same-name
+language: Rust
+rule:
+  any: [{kind: struct_item}, {kind: enum_item}, {kind: trait_item}]
+  all:
+    - has: {kind: visibility_modifier, regex: '^pub$'}
+    - has: {field: name, pattern: $NAME}
+---
+id: module
+language: Rust
+rule:
+  kind: mod_item
+  inside: {kind: source_file}
+  all:
+    - has: {kind: visibility_modifier, regex: '^pub$'}
+    - has: {field: name, pattern: $NAME}
+    - not: {has: {field: body, kind: declaration_list}}
+---
+id: module-path
+language: Rust
+utils:
+  crate: {regex: '^(::\s*)?(r#)?[\p{XID_Start}_]\p{XID_Continue}*$'}
+rule:
+  all:
+    - not: {inside: {kind: scoped_use_list, field: list, stopBy: end}}
+    - any:
+        - any: [{kind: scoped_identifier}, {kind: scoped_type_identifier}]
+          all:
+            - has: {field: path, matches: crate, pattern: $CRATE}
+            - has: {field: name, pattern: $NAME}
+        - kind: use_wildcard
+          has: {matches: crate, pattern: $CRATE}
+---
+id: module-group
+language: Rust
+rule:
+  any:
+    - kind: identifier
+    - kind: scoped_identifier
+    - kind: scoped_use_list
+    - kind: use_as_clause
+    - kind: use_wildcard
+  all:
+    - inside: {kind: use_list}
+    - inside:
+        kind: scoped_use_list
+        field: list
+        stopBy: {kind: scoped_use_list}
+        all:
+          - has:
+              field: path
+              regex: '^(::\s*)?(r#)?[\p{XID_Start}_]\p{XID_Continue}*$'
+              pattern: $CRATE
+          - not: {inside: {kind: scoped_use_list, field: list, stopBy: end}}
+---
+id: test-module
+language: Rust
+rule:
+  kind: declaration_list
+  pattern: $BODY
+  inside:
+    kind: mod_item
+    field: body
+    follows:
+      kind: attribute_item
+      has:
+        kind: attribute
+        all:
+          - has: {kind: identifier, regex: '^(r#)?cfg$'}
+          - has:
+              field: arguments
+              kind: token_tree
+              all:
+                - has: {kind: identifier, regex: '^(r#)?test$'}
+                - not:
+                    has:
+                      not:
+                        any:
+                          - {regex: '^(\(|\)|,)$'}
+                          - {kind: 'line_comment, block_comment'}
+                          - {kind: identifier, regex: '^(r#)?test$'}
+      stopBy:
+        not: {any: [{kind: attribute_item}, {kind: line_comment}, {kind: block_comment}]}
+transform:
+  SPACE:
+    replace: {source: $BODY, replace: '[^\n]+', by: ' '}
+fix: '{$SPACE}'

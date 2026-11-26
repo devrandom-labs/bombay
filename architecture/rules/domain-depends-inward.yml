@@ -1,0 +1,16 @@
+id: domain-depends-inward
+language: rust
+severity: error
+message: The domain layer (models) must not depend on HTTP, routing or startup code.
+note: |
+  Source: Clean Architecture dependency rule (Martin, 2017, ch. 22); Evans, DDD (2003),
+  "Layered Architecture"; AGENTS.md "Models own business rules".
+  Fix: move the type into models, or pass plain values from the caller.
+files:
+  - apps/server/src/models/**/*.rs
+rule:
+  any:
+    - kind: scoped_identifier
+      regex: ^crate::(views|controllers|initializers|app|tasks)(::|$)
+    - kind: use_declaration
+      regex: \bcrate::\{[^;]*\b(views|controllers|initializers|app|tasks)\b

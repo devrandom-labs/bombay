@@ -1,0 +1,28 @@
+id: bombay-banned-names
+language: Rust
+severity: error
+message: Name types, traits, and modules with Bombay domain vocabulary; implementation-mechanic names (`Manager`, `Handler`, `Helper`, `Utils`, `Fold`, `Fact`, `Boundary`, `Installation`, `Incarnation`) are forbidden.
+note: |-
+  Source: AGENTS.md and bombay-behavior AGENTS.md; Evans, Domain-Driven Design (2003), ch. 10.
+  Fix: Name the domain role, state, transition, or capability directly.
+files:
+  - crates/bombay-engine/src/**/*.rs
+  - crates/bombay-macros/src/**/*.rs
+  - crates/bombay-observe/src/**/*.rs
+  - crates/bombay-domain-*/src/**/*.rs
+  - crates/bombay-runtime/src/**/*.rs
+  - crates/bombay-zenoh/src/**/*.rs
+  - crates/bombay-axum/src/**/*.rs
+rule:
+  any:
+    - any:
+        - kind: struct_item
+        - kind: enum_item
+        - kind: trait_item
+      has:
+        field: name
+        regex: '(Manager|Handler|Helper|Utils|Thing|Installation|Incarnation)$'
+    - kind: mod_item
+      has:
+        field: name
+        regex: '^(manager|managers|handler|handlers|helper|helpers|util|utils|common|misc)$'

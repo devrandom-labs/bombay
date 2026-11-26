@@ -1,449 +1,56 @@
-# Repository guidelines
+# Working on Bombay
 
-## Behavior engineering discipline
+This file holds every standing rule of this repository. [Patstack](.agents/skills/patstack/SKILL.md) owns the step procedure, and the [project bindings](.agents/project.md) bind its tools, lanes, models, and gates here. [Bombay code rules](.agents/skills/rust-best-practices/references/bombay.md) and the resolved `bombay-behavior` `AGENTS.md` own Rust interface and concurrency discipline.
 
-Before any software-design or implementation work, resolve the exact Behavior
-revision selected by `Cargo.lock` and read that revision's complete `AGENTS.md`.
-Its engineering, modeling, naming, ownership, testability, compiler-friction,
-and verification rules apply repository-wide here as well. Apply Bombay's
-pinned-Nix command requirement when executing its verification commands.
+## Workflow
 
-Keep imports at module scope. Never add an inline `use` inside a function,
-method, block, test, macro arm, or generated body. Do not encode semantic state,
-phase, policy, authority, provenance, or transition choice in a `bool`; use a
-closed sum type. A predicate may return `bool` only when it preserves all domain
-information and answers an ordinary local yes/no question.
+Read Patstack and `.agents/project.md` before editing or reviewing. Load specialist skills only when `.agents/project.md` routes your changed paths to them.
 
-Use idiomatic Rust ownership, algebraic data types, exhaustive matching, and
-standard library data structures to express the domain directly. Compiler
-output may veto a model but may not invent architecture or generic plumbing.
-Check public naming and interface design against the official Rust API
-Guidelines and the selected Behavior instructions before retaining a change.
+### Roles
 
-Every variable, field, function, type, object, module, and filename must use
-Bombay's ubiquitous domain language and reveal what it owns. Vague or
-implementation-mechanic names are forbidden, including `manager`, `handler`,
-`helper`, `utils`, `thing`, `data`, `process`, numbered experiments, and the
-additional prohibited architectural vocabulary in Behavior's `AGENTS.md`.
-Private and test code receive no naming exemption.
+- Joel decides product, scope, stack, authority, and any change to an existing test oracle (`needs-joel`). Decide engineering mechanisms inside the accepted stack and [ADR 0001](docs/adr/0001-layer-bombay-crates.md) yourself and record the reason in the PR.
+- Until 2026-12-05, Codex (`codex exec`) writes production code and tests and runs R2 step reviews in a fresh read-only session that wrote none of the change. Antigravity (`agy`) runs the `harness-owner` daemon (`architecture/owner/session.sh`), Claude Opus `## Design` / crate / layer reviews and R3 councils, Gemini Carbon weekly layer reviews, and fast Hydrogen signal/reuse lookups (`.agents/project.md#models`). After 2026-12-05, `.agents/project.md` switches implementation to Google AI Ultra (`agy`).
+- The author of a change never reviews it. Every card is assigned to `joeldsouzax`.
 
-## Scope and sources of truth
+### Lanes
 
-This is a Rust 2024 workspace for the Bombay Behavior runtime. Production code
-lives in `crates/bombay/src/`; the actor-independent Driver lives in
-`crates/bombay-engine/src/`; root `examples/` contains public-API examples.
-Keep internal mechanism tests in their owning crate.
+Each lane owns disjoint paths in its own worktree (`bombay-worktrees/<lane>`) and Cargo target directory:
 
-Read these documents before changing architecture:
+| Lane | Board Workstreams | Owns |
+| --- | --- | --- |
+| `runtime` | `Runtime`, `Shared` | `crates/bombay-runtime/` (`crates/bombay/src/{actors,application,entity,local}`), `crates/{bombay-engine,bombay-macros,observe-perf}/`, local `examples/*`, `tests/renamed-downstream/` |
+| `domain` | `Domain` | `crates/bombay-observe/`, `crates/bombay-domain-{auth,wire,placement,durable}/` |
+| `adapters` | `Adapters` | `crates/bombay-zenoh/`, `crates/bombay-axum/`, `crates/bombay/src/remote/`, `crates/bombay/src/application/{node,http}*`, `examples/remote-counter/` |
+| `nix` | `DevOps` | `flake.nix`, `flake.lock`, `nix/`, `tools/`, `justfile`, `.githooks/`, `.github/`, `.cargo/`, `.config/`, `crates/mutants-gate/`, `ops/` |
 
-- `docs/prd-backlog/README.md` and `docs/prd-backlog/status.md`: requirements,
-  current blockers, dependencies, and the PRD execution workflow;
-- the selected feature PRD in `docs/prds/`: scope, locked-contract verification,
-  decisions, change record, and acceptance evidence;
-- `docs/runtime-capability-interfaces.md`: capability ownership and the target
-  Environment spine;
-- `docs/module-boundaries.md`: current source ownership;
-- `docs/driver-law.md`: normative Driver semantics;
-- `docs/driver-test-strategy.md`: Driver verification requirements.
+- Edit only your lane's files. Cross-lane findings become cards for the owning lane.
+- Shared files (`Cargo.toml`, `Cargo.lock`, `deny.toml`, `crates/bombay/Cargo.toml`, `crates/bombay/src/lib.rs`, `AGENTS.md`, `README.md`, `docs/user-facing-api.md`, `docs/adr/`, `architecture/`, `.agents/`) change in dedicated single-PR steps that merge before dependent lane work.
 
-Git history preserves retired audit and design records. Existing Bombay code
-and earlier conversation are not architectural authority.
+### Steps, Reviews & Merge
 
-## Architecture
+- [Bombay Project #6](https://github.com/orgs/devrandom-labs/projects/6) is the execution backlog (`bombay` finishes 100% standalone first, followed sequentially by `mnesis-bombay` on Project #10 and `selo` on Project #7).
+- **One step is one PR and one fresh session (<200,000 context tokens).** The GitHub card body, PR body, and code hold all state. **Never append chronological logs or execution ledgers to `docs/prds/` or `docs/prd-backlog/status.md`.**
+- Reuse before code: any new module or `> 150` added `src` lines requires `Reuse: <crate/primitive used, or concrete gap>`.
+- `architecture/step.sh` rejects touched production items that pack tuple parameters (`tuple-parameter-packing`), take 3+ closure parameters (`callback-soup`), declare 3+ single-letter type parameters (`single-letter-generics`), or return unnamed `Result` tuples from `pub fn` (`pub-result-tuple`); rejects rising `unreachable!()` counts in changed test files (`test-unreachable`); and blocks multi-lane diffs without `Lanes:`, rule+code diffs without `Rules:`, assertion removals/edits without `Oracle:`, and increases in book-grounded AST fitness counters (`architecture/design/fitness.sh`) without `Design:`.
+- Any card introducing a domain concept, extracting or restructuring a crate or module, or containing more than one `logic` step requires one holistic upfront `## Design` section (complete Rust struct/enum/Port signatures and `Cargo.toml` dependencies — never interim callback-soup or generic-erasure wrappers) reviewed by read-only Codex (`gpt-6.2-astra`) and `agy` Claude Opus (`claude-opus-5-5-high`) before code begins. Lead and R2/R3 reviewers must read all matched paths in `.agents/project.md#route-by-the-work` and record them under `Skills:` in `.cache/pr.md`.
+- Every step receives an independent fresh-session R2 review; auth, wire, placement fencing, durability, or public API changes receive an R3 Council (`.agents/project.md#models`).
+- A step merges under the serialized merge turn (`~/.cache/bombay/turn.lock`) once its reviewed head passes `just architecture` and `just gate` (`nix flake check`). `.github/workflows/checks.yml` qualifies `main` on push and nightly schedule. Never bypass rules, force-push `main`, or weaken an oracle.
 
-There is one executable composition:
+## Architecture & Behavior Laws (Non-Negotiable)
+
+Follow the 5-layer standalone crate pyramid in [ADR 0001](docs/adr/0001-layer-bombay-crates.md) and [architecture.md](docs/arch/architecture.md):
 
 ```text
-Behavior + Driver
-  inside Environment / ActiveEnvironment
-    + Communication mailbox
-    + Address lease and AddressSpace
-    + Observe activation/termination facts
-    + actor-owned TimerQueue
-    + typed effect-lane interpreters
-    + Bombay-owned task hierarchy
+Layer 0: bombay-behavior (pure Behavior -> Actions algebra)
+Layer 1: bombay-behavior-actors | bombay-engine | bombay-address | bombay-communication | bombay-timers | bombay-observe
+Layer 2a: bombay-domain-{auth,wire,placement,durable} (100% sans-IO pure state machines, clippy.toml + domain-is-pure.yml)
+Layer 2b: bombay-runtime (Local Environment, Entity Directory, Narrow Port Traits, Deterministic SIM Host)
+Layer 3: bombay-zenoh | bombay-axum (single-technology adapters enforced by cargo-deny)
+Layer 4: bombay-rs facade | examples/* | ops/k8s
 ```
 
-Ownership is strict:
-
-- Foundational Behavior owns the deterministic `Behavior -> Actions` algebra,
-  `#[behavior]` generation, closed typed products, and named capability
-  requests. A Bombay `actor` authoring facade, if the macro-last evidence
-  selects one, may only derive syntax into that exact owning expansion; it
-  never owns a second actor contract.
-- The `bombay-behavior-actors` library API owns reusable actor templates and
-  their topology, supervision, shutdown, timing, and terminal-disposition
-  policies. “Behavior Actors” names this owning library layer, not actors that
-  construct or configure other actors at runtime.
-- Communication owns the two-lane mailbox, delivery, backpressure, closure,
-  and exact rejected-payload recovery.
-- Address owns endpoint claim, opaque resolution, and exact lease retirement.
-- Observe owns completion publication and waiting.
-- Timers owns generation-safe scheduling state.
-- Engine owns only the universal causal Driver and affine Environment port.
-- Bombay owns concrete local composition, incarnation tasks, capability
-  interpretation, activation order, and retirement order.
-
-Behaviors contain no I/O, channels, runtime handles, address spaces, clocks, or
-executor tasks. Do not add a second actor trait, effect algebra, mailbox,
-registry, lifecycle framework, supervision policy, timer service, observation
-cell, runtime object, or dynamic capability map. Prefer static composition of
-the owning primitives.
-
-The Behavior fold boundary is absolute:
-
-> Inside a Behavior fold, compute state and return `Actions`; never perform an
-> effect directly. Every communication, creation, lifecycle request, timer
-> request, or observation must be represented in a typed `Actions` lane and
-> interpreted only by the runtime.
-
-An example or test that calls a channel, sender, callback, task, clock,
-observation publisher, or runtime service from `init`, `receive`, or
-`transition` is invalid semantic evidence even if its assertions pass.
-
-Macros are the last resort. For every authoring or composition seam, first
-prototype and compare plain functions, inherent methods, type inference,
-associated types, extension traits, named products, builders, typestate, and
-the other applicable stable Rust mechanisms. Record the alternatives, their
-measured application syntax, compiler diagnostics, static denials, and the
-specific remaining gap in the feature's research and PRD. A macro is
-eligible only when that evidence proves ordinary Rust cannot provide an
-equally direct, statically checked, diagnosable, and maintainable experience.
-DX42 accepts exactly one distilled Bombay actor facade: `#[bombay::actor]`
-turns ordinary state into the exact Behavior-owned actor type and materially
-improves subsequent `ActorExt` template composition. It supplies Bombay's
-fixed address and fold boilerplate, then delegates to the owning Behavior
-macro without defining another actor contract. Any other actor or protocol
-macro present in a research branch or worktree remains only a probe until the
-recorded ordinary-Rust comparison proves its exact residual gap; do not infer
-or retain one merely because Bombay owns the outer application layer.
-
-If that evidence eventually justifies a macro, Bombay may evaluate the Rust
-forms appropriate to the exact seam: attribute and derive procedural macros,
-function-like procedural macros, or `macro_rules!`. Macro availability is not
-an API decision and does not waive the ordinary-Rust experiment requirement.
-
-Macros own syntax and static derivation, never a second semantic
-implementation. Every accepted expansion must lower to the exact selected
-Behavior algebra, Bombay actor templates, and Bombay runtime composition; it
-must preserve concrete protocols, effects, births, errors, authoritative
-facts, and policy inputs. Prefer the macro form with the clearest application
-syntax and diagnostics only after ordinary Rust alternatives have been
-measured and rejected for that exact seam.
-Generated code remains subject to compile-pass, compile-fail, differential,
-hygiene, crate-renaming, expansion, and forbidden-erasure checks. A macro is
-rejected when it hides policy, weakens static denial, introduces runtime
-lookup or type erasure, or duplicates an owning semantic abstraction.
-
-The authoritative-fact conservation law is fundamental:
-
-> Once Bombay obtains an authoritative typed fact, no reusable layer may
-> accidentally erase or misclassify it. Any preservation, transformation, or
-> discharge must be an explicit typed policy.
-
-This does not mean every failure bubbles upward. Restart, retirement, shutdown
-discharge, and exact propagation are distinct static Behavior policies.
-Bombay must preserve the source fact and allow independent typed consumers to
-coexist; it must not cancel one observation because another consumer watches
-the same incarnation, silently collapse provenance, or impose global failure
-propagation in the runtime.
-
-The standard local runtime includes Address, Communication, Observe, and
-Timers. Ordinary users do not choose those adapters. Pluggability belongs at
-typed effect-lane interpreters; whole-Environment replacement is an advanced
-extension and test-host boundary.
-
-With the opt-in `remote` feature, Bombay owns networking inside Application
-construction, execution and retirement. Keep Zenoh configuration, sessions,
-queries, replies, declarations and transport callbacks private, including from
-advanced public APIs. Applications configure and compose Bombay contracts;
-they must not import Zenoh or implement its request loops or cleanup. Public
-errors preserve actual causes through Bombay contracts without SDK-typed fields.
-Internal mechanism tests may inspect the actual transport owners. Public
-examples must use the same transport-independent Application API as users.
-
-## Mandatory feature verification
-
-Before designing, implementing, unblocking, or auditing every Bombay feature:
-
-1. Inspect the exact dependency version selected by `Cargo.lock` and any
-   `[patch]` entry.
-2. Inspect current source, public API/algebra, relevant tests, and relevant
-   documentation for Behavior, Behavior Actors, Address, Communication,
-   Observe, and Timers. Inspect Entity or other neighbors when touched.
-3. Record the feature-specific versions, ownership map, blockers, and
-   dependency edges in the selected PRD before implementation; keep the
-   backlog status index consistent with those prerequisites.
-4. Keep implementation blocked while any dependency contract, protocol
-   consumer, version relationship, or ownership boundary is unverified.
-
-A previous audit does not waive this requirement. A local checkout at a
-different revision is evidence only, never the selected build contract.
-
-## Behavior effect composition
-
-Derive effect handling from the exact locked Behavior and Behavior Actors APIs
-and tests.
-
-- Use named semantic send structs and typed `SendEffects::send`.
-- Use Behavior's existing `InstallBirth`/`DispatchBirth` and closed child
-  products for creation.
-- Do not add positional effect traversal or mutate nested lanes directly.
-- Do not handwrite application `SendEffects`, `SendInput`, `RouteSends`,
-  `ObservesCreations`, or product-routing errors when generic interpretation
-  covers the leaves.
-- Keep only application delivery routers that select genuine external
-  endpoints.
-- Ordinary application state may use the distilled `#[bombay::actor]` facade,
-  which delegates to the owning Behavior macro. Use explicit nominal
-  `Behavior` implementations for advanced or library authoring where that
-  facade does not fit. Bombay owns no reduced `Effect` language and may not
-  implement Behavior semantics independently.
-- Keep `bombay::prelude` application-facing. Foundational `Behavior`,
-  interpreter traits, installation requirements, and structural effect paths
-  remain deliberate imports through `bombay::behavior`; do not restore a glob
-  re-export of the full owner crate into the ordinary prelude.
-
-Actor-template recipes, when selected by the PRD, are derived statically
-dispatched library constructions over existing Behavior Actors templates. They
-are deliberate API composition policy, not new actor-model laws or runtime
-actors. Separate their requirements into:
-
-1. construction law: explicit inputs, fixed wrapper order, and one exact
-   existing concrete output type;
-2. error law: the exact fallibility of the existing construction steps, with
-   no aggregate or erased recipe error;
-3. semantic regression law: differential observable traces against the
-   equivalent manual composition.
-
-Each input governs its designated existing template or effect lane without
-substitution, inference, dropping, or cross-lane consumption. Copying a `Copy`
-value is not itself a violation. Prefer differential tests of initialization
-effects, ordered actions, typed errors, next states, and terminal outcomes over
-private-field inspection. Type inversions need prove only that reordered or
-incomplete compositions have a distinct type or trace, not that every other
-composition is impossible.
-
-Do not introduce new recipe-specific behavior, protocol, effect, runtime,
-registry, type-erasure abstraction, or macro. A named input product is allowed
-only when it truthfully groups coexisting explicit inputs without defaults or
-hidden policy. Existing Behavior Actors types are valid recipe outputs; “no
-new recipe types” never means “no existing Bombay types.” Keep validation with
-the owning input type: a recipe receiving an already validated value must not
-claim or aggregate that value's earlier construction errors.
-
-Audit the entire repository for obsolete composition patterns before claiming
-completion.
-
-Public examples must teach the actor-template path first. Whenever an existing
-behavior is decorated with stash, timer, deadline, receive-timeout, or shutdown
-policy, use the applicable `bombay::actors::ActorExt` method. Use owning
-constructors for standalone roles such as `Machine`, `Task`, supervisors, and
-worker pools because their inputs are semantic policy, not an inner behavior.
-Do not hand-roll a template law inside a domain behavior, retain a competing
-ordinary Bombay spelling, or add a semantically irrelevant wrapper merely to
-exercise the extension trait. Every selected template in an executable example
-must perform its actual policy during the example or its tests.
-
-### Upstream developer experience
-
-Integrating main includes reviewing the developer experience of its new APIs.
-Exercise ordinary caller syntax and failure handling in real consumers, remove
-repeated setup at the owning layer, and keep lower-level capabilities available
-for power users. Preserve all original rejection and retirement values. A
-successful merge or passing feature tests do not complete this review; record
-remaining caller ceremony in the selected PRD rather than accepting it by default.
-
-Zenoh is Bombay's sole internal network transport. Application authors construct
-actors, write business logic and compose actor systems through typed Bombay
-contracts. Keep native Sessions, Queries, SDK configuration and raw connection
-access inside the runtime; power-user layers expose Bombay capabilities rather
-than a transport escape hatch. Existing public SDK surfaces are unfinished
-interface work, not precedent for new APIs. Preserve original transport failures
-and custody internally while simplifying the application surface.
-
-### Public examples are user applications
-
-Examples teach users to construct clean, production-quality applications through
-composition of Bombay's public API. Keep `main` and domain modules focused on
-real configuration, actor construction, capability composition, application
-execution, useful output, and ordinary typed error handling.
-
-Keep local and remote applications in separate example directories. The local
-counter stays in `examples/counter`; the remote counter belongs in
-`examples/remote-counter`, using the crate-owned `remote` feature. Do not hide
-a second application beneath the first example's `src/bin` directory.
-
-Examples are not correctness test harnesses. Keep assertion ledgers, fault
-injection, mutation campaigns, allocation profiling, subprocess verification,
-test-controlled delays, and internal mechanism probes in the owning crate's
-tests or explicitly isolated research. Do not put this machinery in example
-entrypoints or their application modules, including behind `cfg(test)`.
-Tests may execute a public example as a consumer; their assertions and control
-machinery remain in the test target. Production invariants use the appropriate
-typed validation or error contract rather than test assertions in `main`.
-
-Runtime owners handle routine resource lifetimes and retirement ordering.
-Do not make users learn sequences of explicit `drop` calls, borrow-ending
-workarounds, manual notification bookkeeping, or hidden cleanup barriers to
-start and stop an ordinary application. Prefer normal Rust scopes and explicit
-domain lifecycle operations whose completion can be awaited. An advanced
-example may demonstrate deliberate early release only when that ownership
-operation is itself the example's subject and its consequences are explained.
-
-Show the ordinary application composition first. Keep networking, verification,
-admission, replay, and cleanup mechanisms in their owning library layers.
-Provide deliberate lower-level access for power users without requiring every
-ordinary caller to assemble those mechanisms. A short example must still use
-real public capabilities and preserve their correctness contracts. Before
-claiming completion, audit examples against these rules and remove retained
-verification plumbing from user-facing application code.
-
-## Change containment and abstraction budget
-
-Correct architecture does not justify unlimited code growth. Treat source
-size, public surface, and reviewability as design constraints. A typed wrapper
-that merely relocates complexity is not a successful composition.
-
-Keep the requested blocker separate from later cleanup. Complete and verify
-the blocker before editing production code for a broader audit or refactor. An
-audit may add independent tests and identify later work, but it must not grow
-the current production design unless a failing law independently proves that
-the additional machinery is necessary.
-
-Before the first production edit, add a change record to the selected PRD
-containing:
-
-- the exact blocker and the smallest end-to-end failing regression;
-- expected files touched and expected production line delta;
-- public types expected to be added and removed; and
-- the existing owners, interpreters, products, and compositions that will be
-  reused or deleted.
-
-The following are automatic stop thresholds for the cumulative task, not
-targets to evade by splitting commits or PRD items:
-
-- more than 15 changed files;
-- more than 500 net new production lines; or
-- more than three new public types.
-
-When any threshold is reached, stop before further production edits. Report
-the current PRD change record and obtain explicit user authorization for the expanded
-surface. Prior instructions to “finish,” “audit everything,” or “do it
-holistically” do not waive this checkpoint.
-
-Every new wrapper, builder, trait, facade, recipe, or public product must
-answer all of these questions before implementation:
-
-1. What unique semantic state does it own?
-2. What unique event or effect transformation does it implement?
-3. Why can the existing concrete composition not express the law?
-4. What existing production code or caller-side machinery does it delete?
-5. Which concrete use demonstrates that the abstraction belongs here?
-
-Reject an abstraction that only renames a nested type, forwards unchanged
-events or effects, stores another wrapper, hides a structural path, or makes a
-single example look shorter while increasing the total public surface. Start
-with a compile-only, differential, or pure-fold test that attempts the desired
-syntax using existing owning types. Add production machinery only after that
-test isolates the precise compositional gap.
-
-At each logical checkpoint, measure the complete working tree, including
-untracked files, and record:
-
-```text
-production: +A / -B / net C
-tests:      +A / -B / net C
-public API: +N types / -M types
-```
-
-Do not describe a change as cleanup, consolidation, or code reduction when its
-production delta is net-positive. Separate new capability code from deletion
-work so each can be judged honestly. Work in independently reviewable stages;
-do not combine the blocker, a repository-wide redesign, wrapper cleanup, and a
-test expansion into one undifferentiated patch.
-
-## PRD workflow and states
-
-Select work from `docs/prd-backlog/README.md` and its reciprocal dependency
-index in `docs/prd-backlog/status.md`. Every unresolved ID in `Blocked by`
-must name the dependent item in `Unblocks`. Repair inconsistent edges first.
-
-Take a backlog requirement, create or reconcile its PRD in `docs/prds/`,
-complete the PRD's accepted scope and verification, then submit a focused PR
-targeting `main`. Merge through the PR only after required CI checks pass and
-review requirements are satisfied. Record the PR, passing CI and merge commit
-in the PRD and update the backlog status. Do not mark a feature merged from a
-local build, commit, or open PR. Keep incomplete requirements in the backlog.
-
-- `candidate`: PRD preparation and fresh dependency verification remain;
-- `blocked`: an unresolved prerequisite exists;
-- `active`: the PRD records feature-local verification and accepted decisions;
-- `feature-complete`: acceptance gates pass; final minimization is pending;
-- `distilled`: the scoped ownership and interface audit proved the retained
-  composition minimal;
-- `merged`: the reviewed PR merged to `main` with required CI passing.
-
-Never use `done`. Building or passing focused tests is not distillation.
-`merged` records delivery; the PRD also retains its semantic acceptance and
-minimization evidence. Feature verification and change records belong in each
-PRD, rather than a repository-wide chronological ledger.
-
-## Documentation
-
-When a contract changes, audit every tracked document, example, benchmark,
-test, research probe, diagnostic fixture, and public re-export. Update current
-guidance in the same change. Move useful superseded decisions to the historical
-record or delete them; never leave contradictory documents appearing current.
-
-## Development
-
-- Run every Rust, Cargo, example, formatting, lint, and test command through
-  the pinned Nix shell. Never invoke `cargo`, `rustc`, or a built example
-  directly from the host environment.
-- `nix develop -c cargo build --workspace` builds the workspace.
-- `nix develop -c cargo test --workspace` runs unit, integration, and
-  documentation tests.
-- `nix develop -c cargo fmt --all -- --check` checks formatting.
-- `nix develop -c cargo clippy --workspace --all-targets -- -D warnings` runs
-  strict Clippy.
-
-Use Rust 2024 idioms and rustfmt defaults. Prefer explicit behavioral names.
-Avoid `unsafe` unless a measured need and safety proof are documented. Add an
-observable invariant and an inversion test for every new law. Preserve exact
-payloads in typed errors and use flat semantic `thiserror` variants instead of
-nested positional product errors.
-
-Before broadening a semantic change, run its focused regressions in both debug
-and optimized builds. Assertions must be observational only: never place a
-state transition, mutation, ownership transfer, or required function call
-inside `assert!`, `debug_assert!`, or their equality variants. Treat
-`clippy::debug_assert_with_mut_call` and `clippy::let_underscore_must_use` as
-denied. For lifecycle and generation laws, explicitly replay the same fact in
-an optimized test and prove that it cannot be accepted twice.
-
-Review every new or changed test twice before accepting it. The first review
-maps the test to the documented invariant and independent observable outcome.
-The second review checks counterexamples, vacuous assertions, missing outcomes,
-and whether it can pass while the invariant is broken; use an independent
-reviewer when available. Record both reviews and resolve their findings.
-Debug and optimized execution do not replace these reviews. Establish intended
-failing regressions or owning-source inversions before crediting a new law.
-
-A regression is not accepted merely because it passes after the fix. Restore
-or simulate the original defect and establish that the test fails for the
-intended law. Tests must assert complete typed effect lanes or an independent
-observable trace; repeated assertions of the same field, discarded actions,
-predicted nonces, or models copied from implementation branches are invalid
-evidence.
-
-Prefer one module-level `use` over repeated fully qualified paths. In
-particular, do not scatter `crate::...` or `std::...` through signatures and
-function bodies; import the module or semantic names once. A single qualified
-use is acceptable when it resolves real ambiguity, but qualification must not
-become visual bookkeeping.
-
-Use short imperative commit subjects with a scope-like prefix. Keep commits
-focused and report the exact verification commands and results. Completion
-also requires a final PRD change record covering the complete tracked and
-untracked delta.
+1. **Pure Fold & `sans-IO` Boundary:** Inside a `Behavior` transition or any Layer 2a domain crate, compute state/values and return typed `Actions` or `#[must_use]` decisions; never perform I/O, touch clocks/channels/locks, or spawn tasks.
+2. **Authoritative-Fact Conservation:** Once Bombay obtains an authoritative typed outcome from Address, Communication, Observe, Timers, Driver, or a Port, no layer may erase or misclassify it (`map_err(|_| ...)` is banned by `keep-error-sources.yml`). Independent observers coexist; disconnect/timeout uncertainty is never reported as proven non-execution.
+3. **Macros Last:** Only the distilled `#[bombay::actor]` and `topology!` projections exist. Prototype plain functions, traits, and types first.
+4. **Strict Naming & Module-Scope Imports:** Keep all `use` statements at module scope (`no-inline-use.yml`). Never encode semantic state, policy, or authority in a `bool`. Vague/mechanic names (`Manager`, `Handler`, `Helper`, `Utils`, `Thing`, `Data`, `Process`, `Fold`, `Fact`, `Boundary`, `Installation`, `Incarnation`) are forbidden everywhere, including private and test code (`bombay-banned-names.yml`).
+5. **Pinned Nix Tooling & Defect Inversions:** Run every Cargo, Rust, format, Clippy, and gate command inside `nix develop` (`just gate`, `just architecture`). Never place mutations inside `assert!` / `debug_assert!`. Every new guard or regression test must fail when the guarded defect is simulated.

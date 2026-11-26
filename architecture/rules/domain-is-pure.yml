@@ -1,0 +1,22 @@
+id: domain-is-pure
+language: Rust
+severity: error
+message: Layer 2a domain crates must remain 100% sans-IO (no Tokio, std::fs/net, clock reads, locks, atomics, cells, or thread_local!).
+note: |-
+  Source: docs/adr/0001-layer-bombay-crates.md; Evans, DDD ch. 10; Sharvit, DOP ch. 4 & 6.
+  Fix: Accept time and external observations as values and return #[must_use] transition decisions to the Layer 2b runtime shell.
+files:
+  - crates/bombay-domain-*/src/**/*.rs
+rule:
+  any:
+    - pattern: tokio::$$$
+    - pattern: std::fs::$$$
+    - pattern: std::net::$$$
+    - pattern: std::thread::$$$
+    - pattern: Instant::now()
+    - pattern: SystemTime::now()
+    - pattern: thread_local! { $$$ }
+    - any:
+        - kind: type_identifier
+        - kind: scoped_type_identifier
+      regex: '(^|::)(Mutex|RwLock|AtomicBool|AtomicUsize|AtomicU64|AtomicU32|AtomicI64|RefCell|Cell|Rc)$'

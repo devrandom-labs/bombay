@@ -1,0 +1,18 @@
+id: keep-error-sources
+language: rust
+severity: error
+message: This discards the original error. Wrap it with #[source] or #[from].
+note: |
+  Source: project Rust rules "never discard the original error with |_|".
+  Fix: add a variant that keeps the cause. If the cause carries no information,
+  add `// ast-grep-ignore: keep-error-sources` with a comment that says why.
+files:
+  - crates/bombay-engine/src/**/*.rs
+  - crates/bombay-observe/src/**/*.rs
+  - crates/bombay-domain-*/src/**/*.rs
+  - crates/bombay-runtime/src/**/*.rs
+  - crates/bombay-zenoh/src/**/*.rs
+  - crates/bombay-axum/src/**/*.rs
+  - apps/server/src/**/*.rs
+rule:
+  pattern: $X.map_err(|_| $$$)

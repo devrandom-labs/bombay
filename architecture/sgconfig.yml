@@ -1,0 +1,5 @@
+# Architecture rules for `ast-grep scan`. Each rule names its source and fix.
+ruleDirs:
+  - rules
+testConfigs:
+  - testDir: tests

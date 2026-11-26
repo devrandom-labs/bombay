@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "command(*)",
+      "read_file(*)",
+      "write_file(*)",
+      "edit_file(*)"
+    ],
+    "deny": [
+      "command(sudo)",
+      "command(gh auth switch)",
+      "command(gh auth logout)",
+      "command(terraform apply)",
+      "command(terraform destroy)"
+    ]
+  }
+}

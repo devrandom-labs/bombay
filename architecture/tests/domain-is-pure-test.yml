@@ -1,0 +1,17 @@
+id: domain-is-pure
+valid:
+  - |
+    pub struct Epoch(u64);
+    impl Epoch {
+        #[must_use]
+        pub fn next(self) -> Self { Self(self.0 + 1) }
+    }
+invalid:
+  - |
+    fn now() {
+        let _ = Instant::now();
+    }
+  - |
+    struct Shared {
+        lock: Mutex<u64>,
+    }

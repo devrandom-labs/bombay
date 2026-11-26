@@ -1,0 +1,10 @@
+id: bombay-banned-names
+valid:
+  - struct StableProxy;
+  - enum WorkerAttempt { Ready }
+  - mod observation {}
+invalid:
+  - struct TaskManager;
+  - enum EventHandler { A }
+  - struct ActorIncarnation;
+  - mod helpers {}

@@ -1,0 +1,27 @@
+id: test-unreachable
+language: Rust
+severity: hint
+message: Found an unreachable macro call.
+rule:
+  any:
+    - kind: macro_invocation
+      has:
+        field: macro
+        any:
+          - {kind: identifier, regex: &unreachable '^(r#)?unreachable$'}
+          - {kind: scoped_identifier, has: {field: name, regex: *unreachable}}
+    # Macro arguments and expansion bodies expose calls as tokens.
+    - kind: identifier
+      regex: *unreachable
+      all:
+        - inside: {kind: 'token_tree, token_repetition'}
+        - inside:
+            any:
+              - kind: macro_invocation
+              - kind: token_tree
+                inside: {kind: macro_rule, field: right}
+            stopBy: {not: {kind: 'token_tree, token_repetition'}}
+        - precedes:
+            regex: '^!$'
+            stopBy: &next-token {not: {kind: 'line_comment, block_comment'}}
+            precedes: {kind: token_tree, stopBy: *next-token}

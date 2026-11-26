@@ -1,0 +1,9 @@
+id: one-name-per-type
+valid:
+  - 'use serde::de::Error as _;'
+  - 'use labcast_formats::Error as Rejection;'
+  - 'use crate::models::Error;'
+invalid:
+  - 'use crate::models::Error as ModelError;'
+  - 'use super::Error as Failure;'
+  - "#[schema(as = CreateEvent)] struct NewEvent {}"

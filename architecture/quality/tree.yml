@@ -1,0 +1,245 @@
+id: test
+language: Rust
+severity: hint
+rule:
+  kind: function_item
+  has: {kind: block, field: body}
+  follows:
+    kind: attribute_item
+    has:
+      kind: attribute
+      has:
+        nthChild: 1
+        any:
+          - kind: identifier
+            regex: '^(?:r#)?(?:test|rstest)$'
+          - kind: scoped_identifier
+            has:
+              field: name
+              regex: '^(?:r#)?(?:test|rstest)$'
+    stopBy:
+      not:
+        kind: 'attribute_item, line_comment, block_comment'
+---
+id: ignored
+language: Rust
+severity: hint
+rule:
+  kind: function_item
+  follows:
+    kind: attribute_item
+    has:
+      kind: attribute
+      all:
+        - has:
+            kind: identifier
+            nthChild: 1
+            regex: '^(?:r#)?ignore$'
+        - any:
+            - has:
+                field: value
+                kind: 'string_literal, raw_string_literal'
+                pattern: $REASON
+            - kind: attribute
+    stopBy:
+      not:
+        kind: 'attribute_item, line_comment, block_comment'
+---
+id: function
+language: Rust
+severity: hint
+rule:
+  kind: function_item
+  all:
+    - has: {kind: block, field: body}
+    - has: {field: name, pattern: $NAME}
+---
+id: reference
+language: Rust
+severity: hint
+utils:
+  callee:
+    any:
+      - inside: {kind: call_expression, field: function}
+      - inside:
+          kind: generic_function
+          field: function
+          inside: {kind: call_expression, field: function}
+  function-value:
+    any:
+      - matches: callee
+      - inside:
+          kind: arguments
+          inside: {kind: call_expression, field: arguments}
+rule:
+  kind: 'identifier, field_identifier'
+  all:
+    - pattern: $NAME
+    - any:
+        - all:
+            - pattern: $INVOKED
+            - any:
+                - inside: {kind: macro_invocation, field: macro}
+                - inside:
+                    kind: scoped_identifier
+                    field: name
+                    inside: {kind: macro_invocation, field: macro}
+        - all:
+            - kind: identifier
+            - any:
+                - matches: function-value
+                - inside:
+                    kind: scoped_identifier
+                    field: name
+                    matches: function-value
+        - all:
+            - kind: field_identifier
+            - inside:
+                kind: field_expression
+                field: field
+                matches: callee
+    - inside:
+        kind: block
+        inside:
+          kind: function_item
+          field: body
+          has: {field: name, pattern: $OWNER}
+        stopBy: {kind: function_item}
+---
+id: asserting
+language: Rust
+severity: hint
+utils:
+  helper:
+    any:
+      - kind: identifier
+        regex: &helper '^(?:r#)?(?:assert_|check_|expect_|verify_)\w*$'
+      - kind: scoped_identifier
+        has:
+          field: name
+          regex: *helper
+      - kind: field_expression
+        has:
+          field: field
+          regex: *helper
+rule:
+  kind: function_item
+  has:
+    kind: block
+    field: body
+    has:
+      stopBy: end
+      any:
+        - kind: macro_invocation
+          has:
+            field: macro
+            any:
+              - kind: identifier
+                regex: &macro '^(?:r#)?(?:(?:assert|debug_assert|prop_assert)\w*|panic|unreachable|matches)$'
+              - kind: scoped_identifier
+                has: {field: name, regex: *macro}
+        - kind: call_expression
+          has:
+            field: function
+            any:
+              - matches: helper
+              - kind: generic_function
+                has: {field: function, matches: helper}
+        - kind: call_expression
+          all:
+            - has:
+                field: function
+                kind: field_expression
+                has: {field: field, regex: '^(?:r#)?unwrap_err$'}
+            - has:
+                field: arguments
+                not:
+                  has:
+                    nthChild:
+                      position: 1
+                      ofRule:
+                        not: {kind: 'line_comment, block_comment'}
+---
+id: macro-helper
+language: Rust
+severity: hint
+rule:
+  kind: macro_definition
+  all:
+    - has: {field: name, pattern: $NAME}
+    - has:
+        kind: macro_rule
+        has:
+          field: right
+          has:
+            stopBy: end
+            kind: identifier
+            regex: '^(?:r#)?(?:(?:assert|debug_assert|prop_assert)\w*|panic|unreachable|matches)$'
+            precedes:
+              regex: '^!$'
+              stopBy: &comments
+                not: {kind: 'line_comment, block_comment'}
+              precedes:
+                kind: token_tree
+                stopBy: *comments
+---
+id: unseen-block
+language: Rust
+severity: hint
+rule:
+  kind: macro_invocation
+  all:
+    - has:
+        field: macro
+        any:
+          - kind: identifier
+            regex: &proptest '^(?:r#)?proptest$'
+          - kind: scoped_identifier
+            has: {field: name, regex: *proptest}
+    - has: {kind: token_tree, regex: '^\{'}
+---
+id: assertion
+language: Rust
+severity: hint
+rule:
+  kind: macro_invocation
+  all:
+    - has:
+        field: macro
+        any:
+          - kind: identifier
+            pattern: $MACRO
+            regex: &assertion '^(?:r#)?(?:assert|debug_assert|prop_assert)\w*$'
+          - kind: scoped_identifier
+            has: {field: name, pattern: $MACRO, regex: *assertion}
+    - has:
+        kind: token_tree
+        pattern: $ARGS
+---
+id: lint
+language: Rust
+severity: hint
+rule:
+  kind: attribute
+  regex: '^(?:allow|expect)\s*\('
+  inside:
+    kind: 'attribute_item, inner_attribute_item'
+---
+id: lint-reason
+language: Rust
+severity: hint
+rule:
+  kind: attribute
+  regex: '^allow\s*\('
+  inside:
+    kind: 'attribute_item, inner_attribute_item'
+  has:
+    field: arguments
+    kind: token_tree
+    has:
+      kind: identifier
+      regex: '^reason$'
+      precedes:
+        regex: '^=$'
+        stopBy:
+          not: {kind: 'line_comment, block_comment'}

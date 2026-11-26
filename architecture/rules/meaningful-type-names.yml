@@ -1,0 +1,26 @@
+id: meaningful-type-names
+language: rust
+severity: error
+message: Name the type by its domain noun; callers import it bare and lose the module.
+note: |
+  Source: Martin, Clean Code (2008), ch. 2: "Use Intention-Revealing Names",
+  "Pick One Word per Concept", "Class Names" (avoid Manager, Data, Info).
+  Fix: prefix the domain noun, e.g. Entry -> Publication, Changes -> EventEdit.
+files:
+  - crates/bombay-engine/src/**/*.rs
+  - crates/bombay-macros/src/**/*.rs
+  - crates/bombay-observe/src/**/*.rs
+  - crates/bombay-domain-*/src/**/*.rs
+  - crates/bombay-runtime/src/**/*.rs
+  - crates/bombay-zenoh/src/**/*.rs
+  - crates/bombay-axum/src/**/*.rs
+  - apps/server/src/**/*.rs
+ignores:
+  - apps/server/src/models/_entities/**
+rule:
+  any:
+    - kind: struct_item
+    - kind: enum_item
+  has:
+    field: name
+    regex: ^(Entry|Entries|Content|Data|Info|Item|Items|Object|Thing|Manager|Helper|Util|Utils|Handler|Processor|Change|Changes|Create|Edit|Save|Update|Type|Types|State|Status|Params|Request|Response|Result|Page|Members|Member|Summary|Details)$

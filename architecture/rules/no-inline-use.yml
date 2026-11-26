@@ -1,0 +1,24 @@
+id: no-inline-use
+language: Rust
+severity: error
+message: Keep every `use` import at module scope; inline `use` inside functions, blocks, closures, or test bodies is forbidden.
+note: |-
+  Source: AGENTS.md, Behavior engineering discipline.
+  Fix: Move the `use` declaration to the enclosing module scope.
+files:
+  - crates/bombay-engine/src/**/*.rs
+  - crates/bombay-macros/src/**/*.rs
+  - crates/bombay-observe/src/**/*.rs
+  - crates/bombay-domain-*/src/**/*.rs
+  - crates/bombay-runtime/src/**/*.rs
+  - crates/bombay-zenoh/src/**/*.rs
+  - crates/bombay-axum/src/**/*.rs
+rule:
+  kind: use_declaration
+  inside:
+    any:
+      - kind: block
+      - kind: closure_expression
+      - kind: match_arm
+    stopBy:
+      kind: mod_item

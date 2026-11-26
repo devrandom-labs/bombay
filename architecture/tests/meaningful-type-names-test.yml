@@ -1,0 +1,8 @@
+id: meaningful-type-names
+valid:
+  - 'pub struct PublicationSummary {}'
+  - 'pub enum MembershipState { Active }'
+invalid:
+  - 'pub struct Entry {}'
+  - 'pub(crate) struct Changes { name: String }'
+  - 'pub enum State { Active }'

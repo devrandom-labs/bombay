@@ -1,0 +1,46 @@
+{"data":{"organization":{"projectV2":{"items":{
+  "totalCount":3,"pageInfo":{"hasNextPage":true,"endCursor":"page-1"},"nodes":[
+    {
+      "id":"item-1",
+      "status":{"name":"Active"},"kind":{"name":"Task"},"phase":{"name":"Phase 1"},
+      "workstream":{"name":"Studio"},"risk":{"name":"High"},"priority":{"name":"P1"},
+      "stage":{"name":"Foundation"},"feature":{"text":"Read the board"},
+      "effort":{"number":0.0},"sequence":{"number":1.0},
+      "startDate":{"date":"2026-11-16"},"targetDate":{"date":"2026-11-17"},"taskId":{"text":"T1"},
+      "linked":{"pullRequests":{"nodes":[{"url":"https://github.com/labcast/labcast-server/pull/4"}]}},
+      "content":{
+        "__typename":"Issue","number":1,"title":"Full issue","body":"Body\nwith a second line.",
+        "url":"https://github.com/labcast/labcast-server/issues/1",
+        "repository":{"nameWithOwner":"labcast/labcast-server","url":"https://github.com/labcast/labcast-server"},
+        "milestone":{"title":"Pilot","description":"A milestone","dueOn":"2026-11-17T00:00:00Z"},
+        "labels":{"nodes":[{"name":"needs-joel"},{"name":"bug"}]},
+        "assignees":{"nodes":[{"login":"joeldsouzax"}]}
+      }
+    },
+    {
+      "id":"item-2",
+      "status":null,"kind":null,"phase":null,"workstream":null,"risk":null,"priority":null,
+      "stage":null,"feature":null,"effort":null,"sequence":null,"startDate":null,"targetDate":null,"taskId":null,"linked":null,
+      "content":{
+        "__typename":"Issue","number":2,"title":"Bare issue","body":"",
+        "url":"https://github.com/labcast/labcast-server/issues/2",
+        "repository":{"nameWithOwner":"labcast/labcast-server","url":"https://github.com/labcast/labcast-server"},
+        "milestone":null,"labels":{"nodes":[]},"assignees":{"nodes":[]}
+      }
+    }
+  ]
+}}}}}
+{"data":{"organization":{"projectV2":{"items":{
+  "totalCount":3,"pageInfo":{"hasNextPage":false,"endCursor":"page-2"},"nodes":[
+    {
+      "id":"item-3","status":null,"kind":{"name":"Task"},"feature":{"text":""},
+      "content":{
+        "__typename":"Issue","number":3,"title":"No status","body":"Still a task",
+        "url":"https://github.com/labcast/labcast-server/issues/3",
+        "repository":{"nameWithOwner":"labcast/labcast-server","url":"https://github.com/labcast/labcast-server"},
+        "milestone":{"title":"Later","description":"","dueOn":null},
+        "labels":{"nodes":[]},"assignees":{"nodes":[{"login":"joeldsouzax"}]}
+      }
+    }
+  ]
+}}}}}

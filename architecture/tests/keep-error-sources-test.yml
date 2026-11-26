@@ -1,0 +1,6 @@
+id: keep-error-sources
+valid:
+  - 'fn f() { x.map_err(Error::Read) }'
+  - 'fn f() { x.map_err(|cause| Error::stored("kind", cause)) }'
+invalid:
+  - 'fn f() { x.map_err(|_| Error::Busy) }'

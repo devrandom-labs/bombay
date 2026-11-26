@@ -1,0 +1,47 @@
+# The Rust grammar parses macro arguments as tokens. facts.sh feeds those
+# tokens back as Rust call arguments so the first expression can be matched.
+id: weak-condition
+language: Rust
+severity: hint
+utils:
+  first-argument:
+    nthChild:
+      position: 1
+      ofRule:
+        not: {kind: 'line_comment, block_comment'}
+    inside:
+      kind: arguments
+      inside:
+        kind: call_expression
+        has: {field: function, regex: '^quality_condition$'}
+        inside:
+          kind: expression_statement
+          inside:
+            kind: block
+            inside:
+              kind: function_item
+              inside: {kind: source_file}
+              has:
+                field: name
+                pattern: $ID
+                regex: '^quality_[0-9]+$'
+rule:
+  all:
+    - any:
+        - pattern: $IS_OK.is_ok()
+        - pattern: $IS_ERR.is_err()
+        - pattern: $IS_SOME.is_some()
+        - pattern: $IS_NONE.is_none()
+        - pattern: '!$NOT_EMPTY.is_empty()'
+        - pattern: $CONTAINS.contains($$$NEEDLE)
+        - pattern: $LEN_GT.len() > 0
+        - pattern: $LEN_GE.len() >= 1
+        - kind: boolean_literal
+          regex: '^true$'
+    - any:
+        - matches: first-argument
+        - inside:
+            kind: parenthesized_expression
+            matches: first-argument
+            stopBy:
+              not: {kind: parenthesized_expression}

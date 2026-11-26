@@ -1,0 +1,31 @@
+# Bash on macOS can crash after a temporary locale assignment in a subshell.
+# The scans filter disabled rules by severity to avoid an ast-grep 0.50 stdin panic.
+# The ownership test scans command prefixes in architecture and its helper.
+id: temporary-locale
+language: Bash
+severity: error
+message: Set the locale with env before running the command.
+rule:
+  kind: variable_assignment
+  regex: '^(LC_[[:alnum:]_]*|LANG|LANGUAGE)[+]?='
+  inside:
+    kind: command
+    has:
+      kind: command_name
+      regex: '.'
+---
+# The turn case checks only the start of a substitution in its supervisor.
+# Its scope includes assignments without a command, such as LC_ALL=C && printf.
+id: locale-substitution
+language: Bash
+severity: error
+message: Use env to set the locale for the command in this substitution.
+rule:
+  kind: command_substitution
+  # Check only the prefix of a parsed substitution. Keep the established
+  # distinction between punctuation attached to an assignment and a new token.
+  regex: |-
+    (?x)
+    ^ (?: \$\( | \x60 ) [[:space:]]*
+    (?: [[:alpha:]_] [[:alnum:]_]* = [^[:space:]]* [[:space:]]+ )*
+    (?: LANG | LC_[[:alnum:]_]+ ) =

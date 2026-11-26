@@ -1,0 +1,22 @@
+id: no-catch-all-modules
+language: rust
+severity: error
+message: A module must name a responsibility, not a bucket or an extra layer.
+note: |
+  Source: AGENTS.md "Do not add service, repository, store or utility layers";
+  Martin, Clean Code (2008), ch. 10 "Classes should be small ... single responsibility".
+  Fix: put the code in the module that owns its responsibility.
+files:
+  - crates/bombay-engine/src/**/*.rs
+  - crates/bombay-macros/src/**/*.rs
+  - crates/bombay-observe/src/**/*.rs
+  - crates/bombay-domain-*/src/**/*.rs
+  - crates/bombay-runtime/src/**/*.rs
+  - crates/bombay-zenoh/src/**/*.rs
+  - crates/bombay-axum/src/**/*.rs
+  - apps/server/src/**/*.rs
+rule:
+  kind: mod_item
+  has:
+    field: name
+    regex: ^(utils?|helpers?|common|misc|shared|services?|repositor(y|ies)|stores?|managers?)$

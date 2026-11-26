@@ -1,0 +1,36 @@
+{
+  "totalCount": 3,
+  "items": [
+    {
+      "id": "item-1", "title": "Full issue",
+      "content": {
+        "body": "Body\nwith a second line.", "number": 1, "repository": "labcast/labcast-server",
+        "title": "Full issue", "type": "Issue", "url": "https://github.com/labcast/labcast-server/issues/1"
+      },
+      "repository": "https://github.com/labcast/labcast-server",
+      "assignees": ["joeldsouzax"], "labels": ["needs-joel", "bug"],
+      "milestone": {"title": "Pilot", "description": "A milestone", "dueOn": "2026-11-17T00:00:00Z"},
+      "linked pull requests": ["https://github.com/labcast/labcast-server/pull/4"],
+      "status": "Active", "kind": "Task", "phase": "Phase 1", "workstream": "Studio",
+      "risk": "High", "priority": "P1", "stage": "Foundation", "feature": "Read the board",
+      "effort": 0, "sequence": 1, "start date": "2026-11-16", "target date": "2026-11-17", "task ID": "T1"
+    },
+    {
+      "id": "item-2", "title": "Bare issue",
+      "content": {
+        "body": "", "number": 2, "repository": "labcast/labcast-server",
+        "title": "Bare issue", "type": "Issue", "url": "https://github.com/labcast/labcast-server/issues/2"
+      },
+      "repository": "https://github.com/labcast/labcast-server"
+    },
+    {
+      "id": "item-3", "title": "No status",
+      "content": {
+        "body": "Still a task", "number": 3, "repository": "labcast/labcast-server",
+        "title": "No status", "type": "Issue", "url": "https://github.com/labcast/labcast-server/issues/3"
+      },
+      "repository": "https://github.com/labcast/labcast-server", "assignees": ["joeldsouzax"],
+      "milestone": {"title": "Later", "description": "", "dueOn": ""}, "kind": "Task", "feature": ""
+    }
+  ]
+}

@@ -744,19 +744,27 @@
           packages = with pkgs; [
             toolchain
             fenix.packages.${system}.rust-analyzer
+            ast-grep
             bacon
+            cargo-deny
             cargo-edit
             cargo-expand
             cargo-llvm-cov
             cargo-nextest
             cargo-mutants
             cowsay
+            fd
             figlet
             gh
             jq
+            just
             lolcat
             nixfmt
+            oxigraph
             perl
+            ripgrep
+            rust-code-analysis
+            shellcheck
             taplo
             tree
           ];

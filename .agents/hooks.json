@@ -1,0 +1,15 @@
+{
+  "owner-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"${HARNESS_OWNER_SESSION:-0}\" = 1 ]; then [ -n \"${CLAUDE_PROJECT_DIR:-}\" ] && out=$(bash \"${CLAUDE_PROJECT_DIR:-}/architecture/owner/guard.sh\" --agy 2>/dev/null) && [ -n \"$out\" ] && printf '%s\\n' \"$out\" || printf '{\"decision\":\"deny\",\"reason\":\"owner guard: hook execution failed\"}\\n'; else printf '{\"decision\":\"allow\"}\\n'; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

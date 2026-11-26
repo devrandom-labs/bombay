@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/DietrichGebert/ponytail",
+  "commit": "09c434ab73ca43761c5d8b0c5d341926c2fba710",
+  "version": "5.3.2",
+  "license": "MIT",
+  "mode": "adapted-instruction-only",
+  "upstream_files": {
+    "skills/ponytail/SKILL.md": "9badd22a32e19cb884e46dfa8d3aae82bb81dfa5484105b8b4f0262df823a509",
+    "LICENSE": "fb1bc6909ac3ef82d5c22106e32ef682b0cff66788fa915fb9b53b15c9d2f3ab"
+  },
+  "local_paths": {
+    "skills/ponytail/SKILL.md": "skills/ponytail/SKILL.md",
+    "LICENSE": "skills/ponytail/LICENSE.txt"
+  },
+  "unchanged": ["LICENSE"],
+  "modified": ["skills/ponytail/SKILL.md"],
+  "changes": [
+    "Frontmatter: description rewritten for discovery; argument-hint removed (not a supported Codex frontmatter key); levels named in the description.",
+    "Upstream rules, order of options, never-cut list and lite/full/ultra levels retained; off level and session-scoped state made explicit.",
+    "Added: levels never disable required proof, review, permissions or human gates; measured-optimization discipline; tiny edits do not become experiments.",
+    "Removed: slash-command switching syntax, since the installation offers no persistent mode file or guaranteed command."
+  ]
+}

@@ -1,0 +1,22 @@
+id: one-name-per-type
+language: rust
+severity: error
+message: Do not rename a type on import, and do not give an API schema a second name.
+note: |
+  Source: Martin, Clean Code (2008), ch. 2: "Avoid Disinformation", "Pick One Word
+  per Concept". The same type must read the same everywhere.
+  Fix: use the type's own name, or qualify it with its module (models::Error).
+files:
+  - crates/bombay-engine/src/**/*.rs
+  - crates/bombay-macros/src/**/*.rs
+  - crates/bombay-observe/src/**/*.rs
+  - crates/bombay-domain-*/src/**/*.rs
+  - crates/bombay-runtime/src/**/*.rs
+  - crates/bombay-zenoh/src/**/*.rs
+  - crates/bombay-axum/src/**/*.rs
+  - apps/server/src/**/*.rs
+rule:
+  any:
+    - kind: use_as_clause
+      regex: ^(crate|super|self)::\S*Error\s+as\s+[A-Za-z]
+    - pattern: '#[schema(as = $NAME)]'

@@ -1,0 +1,297 @@
+id: tuple-parameter-packing
+language: Rust
+severity: hint
+message: Group cohesive inputs in a named type or move the operation onto its owning type.
+rule:
+  kind: 'function_item, function_signature_item'
+  has: {field: name, pattern: $NAME}
+  all:
+    - has:
+        field: parameters
+        has: {kind: parameter, has: {field: pattern, kind: tuple_pattern}}
+    - not:
+        any:
+          - matches: from-tuple
+            has: {field: name, regex: '^(r#)?from$'}
+            inside: {kind: declaration_list, inside: {kind: impl_item, matches: from-impl}}
+          - matches: from-tuple
+            has: {field: name, regex: '^(r#)?try_from$'}
+            inside: {kind: declaration_list, inside: {kind: impl_item, matches: try-from-impl}}
+utils:
+  from-tuple:
+    has:
+      field: parameters
+      not:
+        has:
+          nthChild:
+            position: 2
+            ofRule: {not: {kind: 'attribute_item, line_comment, block_comment'}}
+  standard-root:
+    any:
+      - {kind: identifier, regex: '^(r#)?(core|std)$'}
+      - kind: scoped_identifier
+        all:
+          - has: {field: name, regex: '^(r#)?(core|std)$'}
+          - not: {has: {field: path, regex: '.'}}
+  standard-path:
+    kind: scoped_identifier
+    any:
+      - all:
+          - has: {field: name, regex: '^(r#)?convert$'}
+          - has: {field: path, matches: standard-root}
+      - all:
+          - has: {field: name, regex: '^(r#)?(v1|rust_(2015|2018|2021|2024))$'}
+          - has:
+              field: path
+              kind: scoped_identifier
+              all:
+                - has: {field: name, regex: '^(r#)?prelude$'}
+                - has: {field: path, matches: standard-root}
+  from-name:
+    any:
+      - {kind: 'type_identifier, identifier', regex: &from '^(r#)?From$'}
+      - kind: 'scoped_type_identifier, scoped_identifier'
+        all:
+          - has: {field: name, regex: *from}
+          - has: {field: path, matches: standard-path}
+  try-from-name:
+    any:
+      - {kind: 'type_identifier, identifier', regex: &try-from '^(r#)?TryFrom$'}
+      - kind: 'scoped_type_identifier, scoped_identifier'
+        all:
+          - has: {field: name, regex: *try-from}
+          - has: {field: path, matches: standard-path}
+  # With :: before the arguments the parser attaches the trait to the type.
+  conversion-turbofish:
+    kind: scoped_type_identifier
+    has: {kind: ERROR, has: {regex: '^for$'}}
+  from-turbofish:
+    all:
+      - matches: conversion-turbofish
+      - has:
+          field: path
+          any:
+            - matches: from-name
+            - {kind: generic_type, has: {field: type, matches: from-name}}
+  try-from-turbofish:
+    all:
+      - matches: conversion-turbofish
+      - has:
+          field: path
+          any:
+            - matches: try-from-name
+            - {kind: generic_type, has: {field: type, matches: try-from-name}}
+  from-impl:
+    any:
+      - has: {field: trait, kind: generic_type, has: {field: type, matches: from-name}}
+      - has:
+          field: type
+          any:
+            - matches: from-turbofish
+            - {kind: generic_type, has: {field: type, matches: from-turbofish}}
+  try-from-impl:
+    any:
+      - has: {field: trait, kind: generic_type, has: {field: type, matches: try-from-name}}
+      - has:
+          field: type
+          any:
+            - matches: try-from-turbofish
+            - {kind: generic_type, has: {field: type, matches: try-from-turbofish}}
+---
+# Match one value at a time. Each member of a packed tuple is a separate value.
+id: callback-soup
+language: Rust
+severity: hint
+message: Pass concrete domain values, move behavior onto its owner, or use an ADR-approved port.
+utils:
+  function:
+    kind: 'function_item, function_signature_item'
+    pattern: $ITEM
+    has: {field: name, pattern: $NAME}
+  arguments:
+    kind: parameters
+    inside: {field: parameters, matches: function}
+  slot:
+    all:
+      - not: {kind: 'tuple_type, line_comment, block_comment'}
+      - any:
+          - inside: {kind: parameter, field: type, inside: {matches: arguments}}
+          - inside:
+              kind: tuple_type
+              inside:
+                kind: parameter
+                field: type
+                stopBy: {not: {kind: tuple_type}}
+                inside: {matches: arguments}
+  callable-name:
+    any:
+      - {kind: type_identifier, regex: &callable '^(r#)?(Async)?Fn(Once|Mut)?$'}
+      - {kind: scoped_type_identifier, has: {field: name, regex: *callable}}
+  callable:
+    any:
+      - {kind: function_type, has: {field: trait, matches: callable-name}}
+      - {kind: generic_type, has: {field: type, matches: callable-name}}
+  parentheses:
+    kind: tuple_type
+    not: {has: {regex: '^,$'}}
+  bound:
+    has:
+      field: bounds
+      has:
+        matches: callable
+        stopBy:
+          not:
+            any:
+              - {kind: higher_ranked_trait_bound}
+              - {matches: parentheses}
+  bound-type:
+    any:
+      - pattern: $CALLBACK
+      - matches: parentheses
+        has:
+          pattern: $CALLBACK
+          stopBy: {not: {matches: parentheses}}
+  bounded-name:
+    kind: 'type_identifier, scoped_type_identifier, generic_type'
+    pattern: $CALLBACK
+    not:
+      inside: {kind: 'scoped_type_identifier, generic_type'}
+    inside:
+      kind: 'function_item, function_signature_item'
+      stopBy: {kind: 'function_item, function_signature_item'}
+      any:
+        - has:
+            field: type_parameters
+            has:
+              kind: type_parameter
+              has: {field: name, pattern: $CALLBACK}
+              matches: bound
+        - has:
+            kind: where_clause
+            has:
+              kind: where_predicate
+              all:
+                - has:
+                    field: left
+                    any:
+                      - matches: bound-type
+                      - kind: higher_ranked_trait_bound
+                        has: {field: type, matches: bound-type}
+                - matches: bound
+  wrapper:
+    kind: 'abstract_type, dynamic_type, bounded_type, reference_type, pointer_type, generic_type, type_arguments, tuple_type, array_type, higher_ranked_trait_bound'
+    not:
+      kind: generic_type
+      any:
+        - has:
+            field: type
+            any:
+              - {kind: type_identifier, regex: &marker '^(r#)?PhantomData$'}
+              - {kind: scoped_type_identifier, has: {field: name, regex: *marker}}
+        - inside:
+            kind: 'abstract_type, dynamic_type, bounded_type'
+            stopBy:
+              not:
+                any:
+                  - {matches: parentheses}
+                  - {kind: higher_ranked_trait_bound}
+rule:
+  kind: 'type_identifier, scoped_type_identifier, abstract_type, dynamic_type, bounded_type, reference_type, pointer_type, generic_type, array_type, function_type'
+  all:
+    - matches: slot
+    - any:
+        - matches: callable
+        - matches: bounded-name
+        - matches: wrapper
+          has:
+            any:
+              - matches: callable
+              - matches: bounded-name
+            stopBy: {not: {matches: wrapper}}
+---
+id: single-letter-generics
+language: Rust
+severity: hint
+message: Use concrete domain types or name each type parameter for the role it serves.
+rule:
+  kind: 'function_item, struct_item, enum_item, trait_item'
+  has: {field: name, pattern: $NAME}
+  all:
+    - has:
+        field: type_parameters
+        has:
+          nthChild:
+            position: 3
+            ofRule:
+              kind: type_parameter
+              has: {field: name, kind: type_identifier, regex: '^(r#)?[A-Z]$'}
+---
+id: pub-result-tuple
+language: Rust
+severity: hint
+message: Return a named type with fields that describe the result.
+utils:
+  # The Rust parser calls both grouping parentheses and tuples tuple_type.
+  parentheses:
+    kind: tuple_type
+    not: {has: {regex: '^,$'}}
+  many-fields:
+    kind: tuple_type
+    has:
+      nthChild:
+        position: 2
+        ofRule: {not: {kind: 'line_comment, block_comment'}}
+  result-name:
+    any:
+      - {kind: 'type_identifier, identifier', regex: &result '^(r#)?Result$'}
+      - {kind: 'scoped_type_identifier, scoped_identifier', has: {field: name, regex: *result}}
+  result-arguments:
+    kind: type_arguments
+    has:
+      nthChild:
+        position: 1
+        ofRule: {not: {kind: 'line_comment, block_comment'}}
+      any:
+        - matches: many-fields
+        - matches: parentheses
+          has:
+            matches: many-fields
+            stopBy: {not: {matches: parentheses}}
+  turbofish:
+    kind: generic_type_with_turbofish
+    all:
+      - has: {field: type, matches: result-name}
+      - has: {field: type_arguments, matches: result-arguments}
+  result-tuple:
+    any:
+      - kind: generic_type
+        all:
+          - has: {field: type, matches: result-name}
+          - has: {field: type_arguments, matches: result-arguments}
+      # This parser keeps Rust's optional :: before type arguments in an error node.
+      - matches: result-name
+        precedes:
+          kind: ERROR
+          regex: '^::'
+          has: {matches: result-arguments}
+          stopBy: {not: {kind: 'line_comment, block_comment'}}
+      - kind: unit_type
+        has: {kind: ERROR, has: {matches: turbofish}}
+rule:
+  kind: function_item
+  all:
+    - has: {field: name, pattern: $NAME}
+    - has: {kind: visibility_modifier, regex: '^pub$'}
+    - any:
+        - has:
+            field: return_type
+            any:
+              - matches: result-tuple
+              - matches: parentheses
+                has:
+                  matches: result-tuple
+                  stopBy: {not: {matches: parentheses}}
+        - has:
+            kind: ERROR
+            regex: '^->'
+            has: {matches: turbofish}
