@@ -1527,8 +1527,12 @@ and recovery for fresh work. Include a backing owner whose lifetime
 extends past link retirement. The implementation scope and concrete
 budget values remain subject to the resource gate below.
 
-The first SDK change has six existing production owners. This is a scope
-proposal, pending approval before an SDK production edit.
+Joel approved these six existing SDK production files. The first change is
+an opt-in limit for established unicast receive batches. The smallest
+witness holds a received TLS sample through link retirement and observes
+capacity return only after the last shared owner drops the sample. A
+separate native control refuses the next allocation at the configured
+limit. Existing acquired samples and their contents stay intact.
 
 | Owning source | Change to verify |
 | --- | --- |
@@ -1537,6 +1541,15 @@ proposal, pending approval before an SDK production edit.
 | `io/zenoh-transport/src/unicast/link.rs` and `unicast/universal/link.rs` | Admit backing before allocating it and retain its charge through the existing shared slice. Report capacity refusal at the native receive owner. |
 | `zenoh/src/api/info.rs` | Use the existing Session information surface to observe receive-budget pressure independently of link membership and application replies. The existing runtime already provides access to the budget's owning transport state. |
 
+Use Tokio's owned permits and native shared slices. Give each reserved or
+extra batch its own permit. The existing Flume dependency supplies the
+bounded reserve so a busy pool lock cannot be mistaken for an empty pool.
+Retain the prior pool for configurations with the limit disabled.
+Capacity refusal flows through normal native link retirement. Reject
+low-latency configuration when the bound is enabled because that path has
+its own receive owner. Two Session information accessors expose charged
+bytes and the refusal count independently of per-operation outcomes.
+
 Keep the existing SDK Session test owner and isolated lock for verification.
 The first bound covers established receive backing in the selected TLS
 profile. Connection setup buffers, other native owners and the full R14
@@ -1544,6 +1557,23 @@ deployment envelope remain separate terms. The ceiling must leave room for
 ordinary reads and reassembly in that profile before it can be selected for
 Bombay. Verify values against the focused witness before wiring the setting
 into the application.
+
+On the isolated SDK verification lock, the capacity and TLS tests passed
+in debug and optimized builds. The owner test covers two reserves, their
+shared budget, an extra allocation, typed refusal and reuse. The TLS test
+uses explicit 4 KiB offers and holds two causally distinct payloads
+through both Session closes. The charges fall from 8 KiB to 4 KiB to zero
+as the backing owners release them, and both payloads retain their exact
+contents. A separate test verifies the low-latency startup refusal.
+The first fixture assumed the native maximum was the negotiated batch
+size. The exact log is preserved. The final fixture sets both offers
+explicitly and derives the expected charge from that setting.
+
+The delivery checkout contains the six approved production files and the
+existing Session test file. Its SDK lock matches actual SDK main and
+excludes the earlier cleanup instrumentation. It still needs verification
+on that exact lock before SDK CI and delivery. Deployment-wide R14 and
+NET1 acceptance remain open.
 
 #### Registered capacity after normal close
 
