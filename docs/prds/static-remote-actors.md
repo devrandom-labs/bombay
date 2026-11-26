@@ -1457,6 +1457,23 @@ outside the registry, including retirement. Session link and transport
 snapshots provide registry counts. Allocations held by other owners need
 separate evidence before the deployment byte limit can be accepted.
 
+The locked SDK removes an individual link from the visible list before its
+close awaits notification and task shutdown. The close operation still owns
+that link. Session close takes declarations and queries out of its state and
+joins tracked tasks on the normal path. Bombay uses the ordinary Session
+close, with the SDK's separate callback wait disabled by default. A returned
+timeout leaves close completion unproved. Budget the retiring link through
+its close, and account for backing already handed to another owner until
+that owner's last reference is released.
+
+The TLS Client fixture inventories retained request and reply fields and
+pending originals after both successful Session closes. The separate Export
+fixture observes the native Query leave its row during drain while checked
+copies remain. These observations explain why registry removal, joined
+tasks and final backing release have different endpoints. The locked source
+and observation hashes are in
+`acceptance-current/r14-receive-backing/retirement-custody.json`.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
