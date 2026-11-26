@@ -1518,6 +1518,24 @@ and recovery for fresh work. Include a backing owner whose lifetime
 extends past link retirement. The implementation scope and concrete
 budget values remain subject to the resource gate below.
 
+The first SDK change has six existing production owners. This is a scope
+proposal, pending approval before an SDK production edit.
+
+| Owning source | Change to verify |
+| --- | --- |
+| `commons/zenoh-config/src/lib.rs` and `defaults.rs` | Add an explicit opt-in ceiling for established unicast receive backing. Keep `buffer_size` as a per-link reserve setting. |
+| `io/zenoh-transport/src/manager.rs` | Keep one budget across the session's active and retiring links. Include allocations in the reserve in the same accounting. |
+| `io/zenoh-transport/src/unicast/link.rs` and `unicast/universal/link.rs` | Admit backing before allocating it and retain its charge through the existing shared slice. Report capacity refusal at the native receive owner. |
+| `zenoh/src/api/info.rs` | Use the existing Session information surface to observe receive-budget pressure independently of link membership and application replies. The existing runtime already provides access to the budget's owning transport state. |
+
+Keep the existing SDK Session test owner and isolated lock for verification.
+The first bound covers established receive backing in the selected TLS
+profile. Connection setup buffers, other native owners and the full R14
+deployment envelope remain separate terms. The ceiling must leave room for
+ordinary reads and reassembly in that profile before it can be selected for
+Bombay. Verify values against the focused witness before wiring the setting
+into the application.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
