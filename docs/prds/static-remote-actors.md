@@ -1602,8 +1602,9 @@ shared dependency of this set and does not depend on Config. Its current
 archive stays in the verified dependency graph. The metadata is retained
 as `sdk-aff25-metadata.json` beside the failed CI log.
 
-The proposed scope adds 21 existing paths to the seven SDK paths in
-PR #15. The approval checkpoint is pending.
+Joel approved the 21 additional release paths for the seven-path SDK
+PR #15. The release change covers package versions, locks, existing
+verification and release controls, and package guidance.
 
 | Owner | Paths |
 | --- | --- |
@@ -1617,6 +1618,22 @@ The first required result is the published-dependency archive check passing
 with a verified candidate Config archive in the dependency graph. The SDK
 merge and Bombay adoption remain open. The whole-deployment resource limit
 and NET1 still require their own evidence.
+
+The approved release update is signed `f5406fe1` on SDK PR #15. Both
+locked metadata graphs and all six package-reader unit tests passed.
+Local Cargo packaging verified all six archives together and resolved the
+new Config in the transport package. The source CI selection now requires
+both independent TLS budget cases to pass by name. The result check
+accepted both saved profiles and refused a zero-case control. New required
+CI run `45897058716` is active on the updated head.
+
+The clean signed checkout repeated Cargo's six-archive dry run. The
+archive verifier passed nine archives and 29 controlled registry
+checksum edges. It checked the candidate source and VCS revisions and
+refused the intended checksum, identity, lock and feature controls.
+The selected archive cohort test passed. Evidence, archives and 11
+generated inputs are retained under `sdk-receive-budget`. The local
+package cache yielded 1,129,180 KiB net after preservation.
 
 #### Registered capacity after normal close
 
