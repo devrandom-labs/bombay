@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.6.0...bombay-rs-v0.6.1) - 2026-11-26
+
+### Other
+
+- *(remote)* account for retained TLS batches
+- verify recovery and drain expiry on one Node
+- verify bounded reply loss and recovery
+- verify saturated shutdown and SDK cleanup
+- verify rotation through provider loss
+- verify Stop permissions
+- verify initialization before export
+- verify process pressure and diagnostics
+- verify deployment and nesting boundaries
+- verify retained payload bytes
+- verify compatibility and reply pressure
+- verify bounded TLS query progress
+- verify reconnect and request custody
+- preserve joined remote startup failures
+- verify remote admission and joined retirement
+- integrate current release metadata
+- *(remote)* verify withdrawal and server trust
+- integrate delivered Core replies
+- retain concurrent Node retirement during close
+- observe ACL while native close is pending
+- witness absent-grant ACL during held callbacks
+- witness ACL progress during held callbacks
+- trace native access and callback progress
+- nest native close alternatives
+- preserve outcomes through native close timeouts
+- Merge remote-tracking branch 'origin/main' into codex/remote-actors-continuation
+- Exercise native close timeout
+
 ## [0.6.0](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.5.0...bombay-rs-v0.6.0) - 2026-11-20
 
 ### Changed
