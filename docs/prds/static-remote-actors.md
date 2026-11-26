@@ -1445,9 +1445,13 @@ was restored.
 
 The locked SDK reserves a recycling pool per link using
 `transport.link.rx.buffer_size`. A receive batch can outlive the read
-through shared payload and proof spans. If all reserved buffers are in
-use, the receive loop can allocate a new batch. The pool size alone
-therefore covers its reserve.
+through shared payload and proof spans. The pool checkout can miss when
+the reserve is empty or its lock is contended. The fallback allocates a
+batch outside the reserve and frees it when the final shared owner drops
+it. The pool size therefore covers its reserve only. The pool's blocking
+checkout waits on a condition variable. Substituting it in the async read
+would put that wait on the receive path, where progress can require more
+batches while earlier fragments still own theirs.
 
 The reassembly setting independently limits one logical receive message.
 The send queue bounds regular batches per priority. The session and
@@ -1459,9 +1463,13 @@ separate evidence before the deployment byte limit can be accepted.
 
 The locked SDK removes an individual link from the visible list before its
 close awaits notification and task shutdown. The close operation still owns
-that link. Session close takes declarations and queries out of its state and
-joins tracked tasks on the normal path. Bombay uses the ordinary Session
-close, with the SDK's separate callback wait disabled by default. A returned
+that link. The transport registry entry has a separate lifetime and normally
+survives until transport deletion. Link admission counts listed links, so
+the registry's transport count and inbound link limit alone do not bound
+links held in retirement. Session close takes declarations and queries out
+of its state and joins tracked tasks on the normal path. Bombay uses the
+ordinary Session close, with the SDK's separate callback wait disabled by
+default. A returned
 timeout leaves close completion unproved. Budget the retiring link through
 its close, and account for backing already handed to another owner until
 that owner's last reference is released.
@@ -1473,6 +1481,16 @@ copies remain. These observations explain why registry removal, joined
 tasks and final backing release have different endpoints. The locked source
 and observation hashes are in
 `acceptance-current/r14-receive-backing/retirement-custody.json`.
+
+The receive budget must account for allocations before read, carry the
+same charge through reassembly and delivery, and keep it until the backing
+is freed or reused under the same budget. Registry removal and task join
+cannot release that charge for backing retained by a consumer. The source
+for these checks matches the locked `bombay-zenoh-transport 1.10.4`,
+`zenoh-sync 1.10.1` and `zenoh-buffers 1.10.1` registry archives byte for byte
+for the unicast receive and retirement paths, the recycling pool and queue,
+and shared slices. The SDK production scope and receive-pressure policy
+remain open.
 
 #### Registered capacity after normal close
 
