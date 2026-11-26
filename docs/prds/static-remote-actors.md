@@ -1309,11 +1309,27 @@ Substituting a fixed session cap of two in the owning mapping fails the debug
 getter test and the live test. The Router reports both client identities where
 the original source retains one. Restoring the exact source and replaying the
 saved debug program passes all 14 cases. Formatting and strict release Clippy
-pass. Whole-workspace checks and reviewed delivery remain open.
+pass. See the delivery record below for the whole-workspace and hosted results.
 
 The retained Rust delta is 57 production lines added and four removed. The
 test delta is 174 added and nine removed. No public types or dependencies were
 added. Existing test literals preserve their previous native limits.
+
+#### Transport limits delivery (2026-11-26)
+
+[PR #450](https://github.com/devrandom-labs/bombay/pull/450) auto-merged at
+14:38:30 UTC as `47f6888b`. All eight checks passed on preview `cefad009`.
+The [Linux flake](https://github.com/devrandom-labs/bombay/actions/runs/45817244544/job/139900169029)
+reported 1,069 optimized workspace passes across 123 harnesses and seven
+controlled skips. Driver and Observe fuzz campaigns passed. Miri was skipped.
+The release scheduling job passed after its GitHub time limit increased from
+30 to 45 minutes. Test commands, assertions and watchdogs were unchanged.
+
+Release PR #446 landed while checks ran. The actual merge retains the tested
+Rust sources and adds four Runtime 0.6.1 metadata files from that PR.
+[Main CI](https://github.com/devrandom-labs/bombay/actions/runs/45841069131)
+verifies the combined tree separately. The whole-deployment resource bound
+and remaining NET1 witnesses stay open.
 
 #### Verified profiles and inspection limits
 
