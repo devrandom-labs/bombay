@@ -1570,10 +1570,18 @@ size. The exact log is preserved. The final fixture sets both offers
 explicitly and derives the expected charge from that setting.
 
 The delivery checkout contains the six approved production files and the
-existing Session test file. Its SDK lock matches actual SDK main and
-excludes the earlier cleanup instrumentation. It still needs verification
-on that exact lock before SDK CI and delivery. Deployment-wide R14 and
-NET1 acceptance remain open.
+existing Session test file. It adds 293 production lines and removes 27,
+and adds 242 test lines. Public types and dependencies have zero delta.
+The SDK main lock and standalone tests passed the same three cases in both
+profiles. A pure control that freed a returned reserve buffer failed the
+intended 12 KiB charge assertion in both profiles. The restored controls
+passed. The earlier cleanup instrumentation is preserved separately.
+
+SDK PR #15 is open at signed `aff25e5c` on `c34eb350`. Its required
+`Controlled TLS dependencies` check is running. Established receive
+backing still needs the SDK merge and adoption in Bombay. The full
+deployment limit and NET1 remain open.
+[SDK PR #15](https://github.com/devrandom-labs/bombay-zenoh/pull/15)
 
 #### Registered capacity after normal close
 
