@@ -1500,6 +1500,34 @@ Formatting and the two source reviews passed. The ingress test changed
 changes. The archived inputs and result logs are in
 `acceptance-current/r14-receive-backing/registered-capacity`.
 
+PR #452 merged normally on 2026-11-26 at 18:44 UTC as `12c7f008`.
+The tested preview and actual merge share tree `edf245b6`.
+All eight checks passed. The optimized workspace and coverage each
+recorded 1,069 passes in 123 harnesses, with seven controlled skips.
+Both ran the capacity test. The Driver campaign ran 2,048 inputs and
+the four Observe campaigns ran 1,024 each. Miri was skipped. The
+delivery receipt records the exact merge, terminal log and eight
+official archive digests.
+[Merged PR](https://github.com/devrandom-labs/bombay/pull/452)
+[Linux CI](https://github.com/devrandom-labs/bombay/actions/runs/45856510670/job/140036189960)
+
+#### Registered reassembly descriptor storage
+
+The locked reassembly buffer checks logical length before retaining a
+fragment and omits empty slices. Each state therefore holds up to 32,768
+descriptors. Clearing a state drops its fragment references and can retain
+the descriptor array. In the selected Rust implementation the array starts
+at two descriptors and doubles when full, up to the same 32,768 slots.
+
+The pinned compiler reports a 32-byte descriptor on Apple silicon macOS
+and on the x86-64 Linux target. The 64 registered states can therefore
+request up to 64 MiB of descriptor arrays. Charging the old array and the
+new array during each possible growth gives a 96 MiB allowance for this
+owner. This is separate from receive batch backing. Allocator overhead,
+transferred references and the number of coexisting retiring owners
+remain open. The exact SDK and compiler inputs and both layout results
+are preserved in `acceptance-current/r14-receive-backing`.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
