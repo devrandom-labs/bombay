@@ -1,3 +1,9 @@
+Remote Actors delivery (2026-11-26). PR #449 auto-merged as `525157fa` after
+all eight checks passed. The
+[delivery record](../prds/static-remote-actors.md#retained-tls-receive-batches-2026-11-26)
+records the Client receive-buffer test and passing Linux workspace. The full
+R14 deployment memory limit and NET1 remain open.
+
 Remote Actors delivery (2026-11-25). PR #447 auto-merged as `2128d83f` after
 all eight GitHub checks passed. The [delivery record](../prds/static-remote-actors.md#combined-remote-acceptance-delivery-2026-11-25)
 lists what shipped. Local AUTH1 is delivered and NET1 remains blocked.

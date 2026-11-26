@@ -4,7 +4,7 @@ use super::startup::NodeStartupRefusal;
 use serde::Deserialize;
 use serde_json::Value;
 use std::fmt;
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::PathBuf;
 use zenoh_config::qos::{CongestionControlConf, QosOverwriteMessage, QosOverwrites};
 use zenoh_config::{
@@ -13,12 +13,24 @@ use zenoh_config::{
 };
 use zenoh_protocol::core::{Locators, LocatorsStrategy};
 
-/// Explicit addresses, identities and query capacity for one Application.
+const MIN_BATCH_BYTES: u16 = 4_096;
+
+/// Explicit addresses, identities and native capacity for one Application.
 #[derive(Debug)]
 pub struct Network {
     pub layout: NetworkLayout,
     pub deployment_roots: CredentialSource,
     pub max_retained_queries: NonZeroUsize,
+    /// Maximum registered unicast transports in this Node's native session.
+    pub max_sessions: NonZeroUsize,
+    /// Independent maxima for queued incoming links and incoming establishments.
+    /// Startup refuses `usize::MAX`, following the SDK's pending-link range.
+    pub max_pending_links: NonZeroUsize,
+    /// The local batch size offer in bytes. Negotiation can select a smaller size.
+    /// Startup refuses local offers smaller than 4,096 bytes.
+    pub batch_bytes: NonZeroU16,
+    /// Maximum logical fragment bytes per receive reassembly buffer.
+    pub reassembly_bytes: NonZeroUsize,
 }
 
 /// The supported deployment layouts; routers are external infrastructure.
@@ -33,7 +45,7 @@ pub enum NetworkLayout {
     },
 }
 
-/// An all-of address list and the identity used for that connection direction.
+/// Explicit addresses and the identity used for one connection direction.
 #[derive(Debug)]
 pub struct ConnectionEndpoints {
     pub addresses: Vec<String>,
@@ -64,6 +76,16 @@ impl Network {
                 field: "connect/listen/endpoints",
             });
         }
+        if self.batch_bytes.get() < MIN_BATCH_BYTES {
+            return Err(NodeStartupRefusal::Unsupported {
+                field: "transport/link/tx/batch_size",
+            });
+        }
+        if self.max_pending_links.get() == usize::MAX {
+            return Err(NodeStartupRefusal::Unsupported {
+                field: "transport/unicast/accept_pending",
+            });
+        }
         let mut config = Config::default();
         config
             .set_id(None)
@@ -74,6 +96,33 @@ impl Network {
         config
             .set_queries_max_retained(Some(self.max_retained_queries))
             .map_err(|_| NodeStartupRefusal::QueryLimitExcessive)?;
+        let transport = &mut config.transport;
+        transport
+            .unicast
+            .set_max_sessions(self.max_sessions.get())
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/unicast/max_sessions",
+            })?;
+        transport
+            .unicast
+            .set_accept_pending(self.max_pending_links.get())
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/unicast/accept_pending",
+            })?;
+        transport
+            .link
+            .tx
+            .set_batch_size(self.batch_bytes.get())
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/link/tx/batch_size",
+            })?;
+        transport
+            .link
+            .rx
+            .set_max_message_size(self.reassembly_bytes.get())
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/link/rx/max_message_size",
+            })?;
         // This removes native refill waiting, not SDK locks or serialization.
         config
             .transport

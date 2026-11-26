@@ -1121,10 +1121,8 @@ cleanup must be detectable without changing transport behavior.
 
 This change uses the existing `remote/client/tests/limits.rs` owner and this
 record. It changes no production code, public types, dependencies or file
-owners. The allowance covers receive backing for those observed TLS values.
-Live Export custody, other transport buffers and the whole-Node resource
-contract still require their own evidence. This is a verification extension
-under the existing R14 requirement.
+owners. The allowance covers receive backing for the Client fixture's
+observed TLS fields.
 
 The fixture passed in pinned debug and optimized builds. At both observation
 points the receive-batch allowance was 393,210 bytes, based on six borrowed
@@ -1135,8 +1133,207 @@ found differences only in the new allowance. Exact-source restoration and
 both original healthy executable replays passed. Author and independent
 source reviews passed, as did strict optimized Clippy for the remote library
 and tests. The measured delta is 57 test lines added and 26 removed, with
-zero production or public API changes. The aggregate R14 requirement remains
-open.
+zero production or public API changes.
+
+PR #449 auto-merged at 04:40:28 UTC as `525157fa` after all eight checks
+passed. The merge and CI preview have tree `cc8cafd9`. The optimized Linux
+workspace passed 1,066 tests across 123 harnesses, with seven controlled
+ignored registrations. The Driver campaign ran 2,048 inputs and four Observe
+campaigns ran 1,024 inputs each. Miri was skipped. The aggregate R14
+requirement remains open.
+[Merged PR](https://github.com/devrandom-labs/bombay/pull/449)
+[Linux CI](https://github.com/devrandom-labs/bombay/actions/runs/45740542358/job/139644169584)
+
+#### Live Export custody and remaining resource limits
+
+The existing two-peer TLS Ledger test passed in debug and optimized builds
+with temporary read-only observation in the Export owner. At acquisition,
+the native payload and proof each occupied one borrowed receive slice.
+The copied pair held 739 bytes in debug and 738 bytes in the optimized
+run. In both, the native Query was gone at drain and the same copied pair
+remained. Charging the maximum receive batch per nonempty slice is a
+conservative 131,070-byte allowance for the two fields. Shared backing can
+make the actual allocation smaller. The debug command printed its complete
+passing result before its shell wrapper failed to save the exit code.
+The optimized command exited zero. The ordinary application assertions
+were unchanged, and no instrumentation is retained.
+
+Ten already merged cases cover the Export's row limit, exact original bytes
+and permit release. The eight-stage ownership record maps the actual waits
+from open through retirement to original values, consumers and cancellation.
+Each case retains its own verified scope. The finite Counter test provider
+enrolls six bounded pairs at a combined maximum of 49,344 bytes and shares
+its three existing grants through receipts.
+
+The locked native TLS release already verifies its incoming queue limit.
+Its six relevant cases pass in both build profiles on the exact published
+source. For pending capacity N and L listeners, account separately for N
+queued links, N links establishing native transports, one dispatcher
+handoff and one current TLS operation per listener. Established links,
+outgoing work and retained bytes have separate owners.
+
+Both optimized macOS arm64 fixtures completed 240 joined cycles in one
+process each. The direct-peer test measured 17,296 KiB for samples 201
+through 240. The co-located Router/client test exercised the same live
+actor through each ordinary Router replacement and measured 20,160 KiB
+for samples 226 through 240. The first 24-cycle peer observation still
+showed growth. These are finite resident-size plateaus after joined
+cleanup on this host. Peak allocation, socket storage, other hosts and
+the whole-deployment memory limit remain separate.
+
+The direct-peer profile configures two native Get reservations per Node.
+Its Export has four acquired-or-queued originals and four request rows.
+Its Bombay Client has four request rows and four charged responses per
+row, plus each row's separate first refusal. Both sides check up to
+8,192 input bytes and 64 proof bytes. This gives copied-field ceilings
+of 33,024 bytes at Export and 132,096 bytes at Client for those rows.
+
+The Router measurement uses a receiving Bombay Node with a two-row
+Export and a raw Zenoh Get caller. It includes the co-located Router.
+The two Export rows account for up to 16,512 copied field bytes.
+The caller uses the SDK's default FIFO. Its delivery can wait for a receiver,
+so account for waiting callbacks separately from queue slots.
+
+Regular transmit batches retain their allocation across queueing, send
+and drain. Each transmit priority also owns separate serialization
+storage for fragmentation. Outbound message sizes require their own limit.
+After decoding, native
+request and reply fields can still keep receive batches alive alongside
+the checked copies. Account for those native originals through drain
+and transfer before assigning a whole-deployment limit.
+
+The finite Counter's sole request producer emits at most one Increment,
+one Read and one Stop. Waiting sends own their original outside mailbox
+slots. The receiving Export can have one wait per acquired row. The outgoing
+Client uses one active request and handles its replies in sequence, retaining
+an exact Full result through any capacity wait. Configured slot storage and
+occupied values are separate terms.
+
+Each ordinary TLS link starts one tracked receive loop and one tracked
+transmit loop. Enabled expiration work and Session work have separate owners.
+During manager shutdown a drained connection remains in the shutdown vector
+or the current close. Charge its storage until that owner settles it. The
+existing measured SDK baseline covers its instrumented finite profile.
+
+Outbound encodings occupy request rows before checking. Client saves the
+encoding before acquiring its active-operation permit and keeps it even
+if protection or the later wire check refuses it. Export keeps reply
+encoding and proof in the original row and may copy them for publication.
+The finite Counter provider admits only enrolled byte and proof pairs.
+For that provider the retained encoding and proof boxes account for up
+to 187,488 bytes across three Export rows and 249,984 bytes across four
+Client rows. These figures use the maximum pre-protection encoding.
+Native publication copies, intermediate allocations and typed results
+remain separate. Other providers must bound their products before returning
+them if those allocations are to be covered by a deployment budget.
+
+A whole-deployment memory ceiling still needs explicit accounting for
+registered and pending links, all receive and transmit storage, live
+references and provider and operation results. The exact locked SDK has
+separate owners for received batches, reassembly and recycling. A pool
+size alone leaves charged batches alive with their borrowers. The original
+`Network` set the retained-query count and used SDK defaults for batch size,
+reassembly and connection counts. The change below gives those native limits
+explicit inputs. The supported deployment still needs a combined budget and
+verification at its limits. NET1 uses the selected deterministic providers.
+Production KERI integration is downstream.
+
+#### R14 transport limit change record
+
+The current `Network` supplies one native Get limit. The SDK separately owns
+registered transports, pending links, transmit batch size and receive
+reassembly size. Bombay's Client and Export limits act after native acquisition.
+
+Use named, nonzero settings on the existing `Network` input and map them to
+the locked SDK before `Application::open_node` opens the Session. Preserve the
+same TLS and identity policy. Named fields keep the unit next to each value.
+One `Network` remains the ordinary input. Reusing a query count for link or
+byte capacity would conflate unrelated owners. Hard-coded smaller defaults
+would prevent the application from choosing its budget. A second startup path
+would duplicate the existing owner.
+
+The negotiated batch size limits both the regular transmit batch and the
+backing of each established receive batch. The receive pool holds batches
+within its own byte allowance, with room for at least one full batch. Buffers
+still loaned to messages and allocations for active reads remain separate.
+Reassembly limits logical fragment bytes per receive state. Connection setup
+also needs its own allowance. The SDK setting has no checked functional lower
+bound for batch size. Establish the supported range with the finite TLS
+profile before exposing it to applications.
+
+Configured listener and connector addresses also contribute to the budget.
+The SDK can create a startup connector per configured peer address. A client
+retry operation waits for one timer per remaining address and makes one
+connection attempt at a time. The registered-session count alone leaves
+connector work outside the budget, especially during connection replacement.
+The verified Router fixture uses one address. The SDK can accept a reachable
+member of a longer client list, so startup alone cannot certify the entire list.
+
+The ordinary Counter roles each construct one root and open one Session. The
+server owns one Queryable. The client owns one Querier and one matching
+listener with a single status slot. Each export or client request stays in
+its bounded set of futures within application execution, with no new task per
+operation. Charge the root and its cleanup separately from SDK tasks. Each
+declaration stays charged through its own withdrawal result.
+
+The first regression is a `Network` with distinct settings for each owner.
+The original input has no fields for those settings. After introducing the
+fields, the mapping test must fail when that setting is omitted and observe
+the exact SDK field when it is present. The finite TLS capacity tests must
+verify the selected dispositions and normal joined cleanup. Provider, callback
+and Router limits remain separate from these transport fields.
+
+The expected change adds roughly 50 library lines for field documentation and
+mapping. It adds zero public types and dependencies. Existing struct literals
+must supply the new settings. The owner inventory has nine previously unused
+paths, including the existing network tests and example configuration. This
+would take the approved cumulative scope from 48 to 57. The exact owner list
+is in `acceptance-current/r14-receive-backing/transport-limit-change.json`.
+The user approved 57 cumulative files. The local batch offer ranges from
+4,096 bytes through `u16::MAX`. Each finite Counter role selects two registered
+sessions, two pending links per native stage, a 4 KiB offer and 32 KiB per
+receive reassembly buffer. A pending-link value of `usize::MAX` returns a typed
+startup refusal at mapping, following the SDK's queue representation limit.
+
+The original interface refused the mapping regression with six missing-field
+diagnostics. The new settings reach all four native owners. The mapping test
+checks the accepted 4,096-byte offer and the separate refusal at 4,095 bytes.
+It also checks the excessive pending-link refusal. All 14 focused network tests
+and the separate-process Counter exchange passed in debug and optimized builds.
+The live Router test holds one authenticated client at capacity, observes
+refusal of a second client and accepts a replacement after closure.
+The independent review checked the getter and live assertions against the
+locked SDK, including incoming-link scope and the actual closed registry.
+
+Substituting a fixed session cap of two in the owning mapping fails the debug
+getter test and the live test. The Router reports both client identities where
+the original source retains one. Restoring the exact source and replaying the
+saved debug program passes all 14 cases. Formatting and strict release Clippy
+pass. Whole-workspace checks and reviewed delivery remain open.
+
+The retained Rust delta is 57 production lines added and four removed. The
+test delta is 174 added and nine removed. No public types or dependencies were
+added. Existing test literals preserve their previous native limits.
+
+#### Verified profiles and inspection limits
+
+The tests below ran on the accepted tree of main `35050d89`. That tree
+builds Runtime 0.6.0, Engine 0.4.0 and Behavior/Actors 0.31.0 with the
+locked Zenoh 1.10.10 SDK and transport 1.10.4. The remote feature selects
+TLS and the SDK interfaces used to observe native retirement. Multicast
+and gossip are disabled by the supported Network setup.
+[Optimized Linux workspace results](https://github.com/devrandom-labs/bombay/actions/runs/45720675129/job/139577901752)
+
+| Profile | Verified scope | Outstanding limits |
+| --- | --- | --- |
+| Remote Counter, two Unix processes, localhost TLS peer | Separate applications exchange Increment, Read and Stop. The process suite verifies finite pressure and recovery, and caller uncertainty after independent processing with no publication. | The test identity and Unix assignment operator are part of this profile. Whole-deployment capacity and production identity are separate. |
+| Same Counter, published Runtime 0.5.0 fixture and current 0.6.0 source | All four caller and receiver pairs pass the complete exchange. Fixed-profile cases refuse unknown wire or schema versions, a different provider profile and required shared memory before admission. | The four pairs establish compatibility for the declared Counter protocol and profile. Other versions, transport modes and negotiation remain unverified. |
+| Controlled TLS Router with native caller and receiving Bombay Node | The receiver keeps the same actor through ordinary Router replacement and observes joined lifecycle and native outcomes. | The caller is an SDK Get consumer. Bombay Client pressure through a Router, external Router resource policy and cross-host restart remain open. |
+| Selected finite identity and post-join inspection | Production-required startup refuses the test provider before TLS or assignment. Command, authority scope and native causes have a bounded local inspection route. A failed write is exercised after cleanup. | The failed write belongs to a permission refusal. The separate lost-reply process verifies uncertainty and exit status. Inspection ends when the owning result is disposed of. |
+
+Source, both complete test logs, and the exact temporary measurement patch
+are preserved in `acceptance-current/r14-receive-backing`. The temporary
+build and worktree were removed after evidence preservation.
 
 ## Earlier scoped implementation and remaining acceptance (2026-11-20)
 
