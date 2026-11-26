@@ -1404,6 +1404,22 @@ observed custody at those points. The deployment subtotal still needs
 the remaining lifetime and allocation terms. The temporary fixture
 change was restored after both runs.
 
+#### Counter receive dispatch
+
+Each attached ordinary TLS link has one serial receive loop. It reads one
+batch and dispatches each completed message in order on that receive stack.
+Budget 16,384 bytes for the four current receive batches in the selected
+Counter configuration.
+
+Each current decoded message can contain up to 32,768 logical bytes through
+reassembly. A nonempty native payload or proof span can keep a whole 4,096-byte
+batch alive. Charging those spans independently gives a conservative
+512 MiB for native field backing during four simultaneous dispatches. The
+source estimate covers the receive stack. Transferred originals, local timeout
+callbacks, and links in setup or retirement have separate owners. The existing
+4 KiB retained-payload tests verify the small-message custody trace. A live
+aggregate allocation bound remains open.
+
 #### Counter outbound staging
 
 The finite Counter provider matches each emitted protected message to
