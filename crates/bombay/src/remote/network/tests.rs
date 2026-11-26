@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use std::error::Error;
 #[cfg(unix)]
 use std::ffi::OsString;
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 #[cfg(unix)]
 use std::os::unix::ffi::OsStringExt;
 use std::path::PathBuf;
@@ -39,7 +39,59 @@ fn peer() -> Network {
         },
         deployment_roots: CredentialSource::File("unopened-deployment-roots.pem".into()),
         max_retained_queries: NonZeroUsize::new(7).unwrap(),
+        max_sessions: NonZeroUsize::new(1_000).unwrap(),
+        max_pending_links: NonZeroUsize::new(100).unwrap(),
+        batch_bytes: NonZeroU16::MAX,
+        reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
+}
+
+#[test]
+fn transport_limits_reach_their_native_owners() {
+    let network = Network {
+        max_sessions: NonZeroUsize::new(11).unwrap(),
+        max_pending_links: NonZeroUsize::new(13).unwrap(),
+        batch_bytes: NonZeroU16::new(4_096).unwrap(),
+        reassembly_bytes: NonZeroUsize::new(32_768).unwrap(),
+        ..peer()
+    };
+    let config = network.to_configuration().unwrap();
+    let transport = config.transport();
+    assert_eq!(
+        (
+            *transport.unicast().max_sessions(),
+            *transport.unicast().accept_pending(),
+            *transport.link().tx().batch_size(),
+            *transport.link().rx().max_message_size(),
+        ),
+        (11, 13, 4_096, 32_768)
+    );
+}
+
+#[test]
+fn unsupported_transport_limits_refuse_before_opening() {
+    let undersized = Network {
+        batch_bytes: NonZeroU16::new(4_095).unwrap(),
+        ..peer()
+    };
+    let excessive = Network {
+        max_pending_links: NonZeroUsize::new(usize::MAX).unwrap(),
+        ..peer()
+    };
+    let undersized = undersized.to_configuration();
+    let excessive = excessive.to_configuration();
+    assert!(matches!(
+        undersized,
+        Err(NodeStartupRefusal::Unsupported {
+            field: "transport/link/tx/batch_size"
+        })
+    ));
+    assert!(matches!(
+        excessive,
+        Err(NodeStartupRefusal::Unsupported {
+            field: "transport/unicast/accept_pending"
+        })
+    ));
 }
 
 // Observe every original address/path/secret allocation without copying contents.

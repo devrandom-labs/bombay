@@ -2,7 +2,7 @@
 use super::super::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use crate::remote::{IngressError, try_retain};
 use std::net::TcpListener;
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -53,7 +53,84 @@ fn network(layout: NetworkLayout) -> Network {
             "../../docs/prds/static-remote-actors/transport-custody/certificates/root-ca.pem",
         )),
         max_retained_queries: NonZeroUsize::new(16).unwrap(),
+        max_sessions: NonZeroUsize::new(1_000).unwrap(),
+        max_pending_links: NonZeroUsize::new(100).unwrap(),
+        batch_bytes: NonZeroU16::MAX,
+        reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn registered_session_limit_refuses_an_extra_client_and_releases_capacity() {
+    tokio::time::timeout(Duration::from_secs(10), async {
+        let mut listening = network(NetworkLayout::Peer {
+            connect: None,
+            listen: Some(credentials("localhost:0".into(), "router")),
+        });
+        listening.max_sessions = NonZeroUsize::MIN;
+        listening.max_pending_links = NonZeroUsize::new(2).unwrap();
+        listening.batch_bytes = NonZeroU16::new(4_096).unwrap();
+        listening.reassembly_bytes = NonZeroUsize::new(32_768).unwrap();
+        let mut config = listening.to_configuration().unwrap();
+        config.set_mode(Some(WhatAmI::Router)).unwrap();
+        let router = zenoh::open(config).await.unwrap();
+        let [locator]: [_; 1] = router.info().locators().await.try_into().unwrap();
+        let connect = || {
+            let layout = NetworkLayout::RouterClient {
+                connect: credentials(locator.address().as_str().to_owned(), "caller"),
+            };
+            zenoh::open(network(layout).to_configuration().unwrap())
+        };
+
+        let client = connect().await.unwrap();
+        let original = client.zid();
+        let at_capacity: Vec<_> = router
+            .info()
+            .transports()
+            .await
+            .map(|peer| *peer.zid())
+            .collect();
+        let excess = connect().await;
+        let while_full: Vec<_> = router
+            .info()
+            .transports()
+            .await
+            .map(|peer| *peer.zid())
+            .collect();
+        let excess = match excess {
+            Ok(extra) => Ok(extra.close().await),
+            Err(cause) => Err(cause),
+        };
+
+        let client_closed = client.close().await;
+        while router.info().transports().await.next().is_some() {
+            tokio::task::yield_now().await;
+        }
+        let replacement = connect().await.unwrap();
+        let next = replacement.zid();
+        let after_release: Vec<_> = router
+            .info()
+            .transports()
+            .await
+            .map(|peer| *peer.zid())
+            .collect();
+        let replacement_closed = replacement.close().await;
+        let router_closed = router.close().await;
+
+        assert_eq!(at_capacity, [original]);
+        assert_eq!(while_full, [original]);
+        assert!(
+            excess.is_err(),
+            "the extra authenticated client must be refused"
+        );
+        assert_ne!(next, original);
+        assert_eq!(after_release, [next]);
+        client_closed.unwrap();
+        replacement_closed.unwrap();
+        router_closed.unwrap();
+    })
+    .await
+    .expect("the finite TLS session-limit check completes");
 }
 
 async fn submit_query(

@@ -1231,12 +1231,12 @@ A whole-deployment memory ceiling still needs explicit accounting for
 registered and pending links, all receive and transmit storage, live
 references and provider and operation results. The exact locked SDK has
 separate owners for received batches, reassembly and recycling. A pool
-size alone leaves charged batches alive with their borrowers. Bombay's
-`Network` currently sets retained query count and uses the SDK's separate
-defaults for batch size, reassembly and connection counts. Confirm the
-chosen values and refusal behavior in the supported deployment before
-crediting the aggregate. NET1 uses the selected deterministic providers;
-production KERI integration is downstream.
+size alone leaves charged batches alive with their borrowers. The original
+`Network` set the retained-query count and used SDK defaults for batch size,
+reassembly and connection counts. The change below gives those native limits
+explicit inputs. The supported deployment still needs a combined budget and
+verification at its limits. NET1 uses the selected deterministic providers.
+Production KERI integration is downstream.
 
 #### R14 transport limit change record
 
@@ -1289,7 +1289,31 @@ must supply the new settings. The owner inventory has nine previously unused
 paths, including the existing network tests and example configuration. This
 would take the approved cumulative scope from 48 to 57. The exact owner list
 is in `acceptance-current/r14-receive-backing/transport-limit-change.json`.
-Production edits await approval for that scope.
+The user approved 57 cumulative files. The local batch offer ranges from
+4,096 bytes through `u16::MAX`. Each finite Counter role selects two registered
+sessions, two pending links per native stage, a 4 KiB offer and 32 KiB per
+receive reassembly buffer. A pending-link value of `usize::MAX` returns a typed
+startup refusal at mapping, following the SDK's queue representation limit.
+
+The original interface refused the mapping regression with six missing-field
+diagnostics. The new settings reach all four native owners. The mapping test
+checks the accepted 4,096-byte offer and the separate refusal at 4,095 bytes.
+It also checks the excessive pending-link refusal. All 14 focused network tests
+and the separate-process Counter exchange passed in debug and optimized builds.
+The live Router test holds one authenticated client at capacity, observes
+refusal of a second client and accepts a replacement after closure.
+The independent review checked the getter and live assertions against the
+locked SDK, including incoming-link scope and the actual closed registry.
+
+Substituting a fixed session cap of two in the owning mapping fails the debug
+getter test and the live test. The Router reports both client identities where
+the original source retains one. Restoring the exact source and replaying the
+saved debug program passes all 14 cases. Formatting and strict release Clippy
+pass. Whole-workspace checks and reviewed delivery remain open.
+
+The retained Rust delta is 57 production lines added and four removed. The
+test delta is 174 added and nine removed. No public types or dependencies were
+added. Existing test literals preserve their previous native limits.
 
 #### Verified profiles and inspection limits
 

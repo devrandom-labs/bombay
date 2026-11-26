@@ -12,7 +12,7 @@ use bombay::remote::{
 };
 use bombay::{ActorFailureAssessment, Application, RetirementAssessment};
 use counter::{Counter, CounterMessage};
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
@@ -33,6 +33,10 @@ fn listening_network() -> Network {
         },
         deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
         max_retained_queries: NonZeroUsize::new(2).unwrap(),
+        max_sessions: NonZeroUsize::new(1_000).unwrap(),
+        max_pending_links: NonZeroUsize::new(100).unwrap(),
+        batch_bytes: NonZeroU16::MAX,
+        reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
 }
 
@@ -263,6 +267,10 @@ fn network_debug_omits_credential_files_and_values() {
     let network = Network {
         deployment_roots: CredentialSource::File(secrets[0].into()),
         max_retained_queries: NonZeroUsize::new(2).unwrap(),
+        max_sessions: NonZeroUsize::new(1_000).unwrap(),
+        max_pending_links: NonZeroUsize::new(100).unwrap(),
+        batch_bytes: NonZeroU16::MAX,
+        reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
         layout: NetworkLayout::Peer {
             connect: Some(connect),
             listen: Some(listen),

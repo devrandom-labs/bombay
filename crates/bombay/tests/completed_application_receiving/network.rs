@@ -15,7 +15,7 @@ use bombay::{
 use bombay_engine::Completion;
 use std::cell::Cell;
 use std::mem;
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -36,6 +36,10 @@ fn listening_network() -> Network {
         },
         deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
         max_retained_queries: NonZeroUsize::new(2).unwrap(),
+        max_sessions: NonZeroUsize::new(1_000).unwrap(),
+        max_pending_links: NonZeroUsize::new(100).unwrap(),
+        batch_bytes: NonZeroU16::MAX,
+        reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
 }
 

@@ -1,7 +1,7 @@
 //! Explicit TLS inputs; no networking implementation or discovery fallback.
 use super::deployment::Role;
 use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::Path;
 
 pub(crate) fn configuration(address: String, certificates: &Path, role: Role) -> Network {
@@ -28,5 +28,9 @@ pub(crate) fn configuration(address: String, certificates: &Path, role: Role) ->
         layout,
         deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
         max_retained_queries: NonZeroUsize::new(3).expect("three finite native operations"),
+        max_sessions: NonZeroUsize::new(2).expect("two registered transports"),
+        max_pending_links: NonZeroUsize::new(2).expect("two pending links per native stage"),
+        batch_bytes: NonZeroU16::new(4_096).expect("a four KiB batch offer"),
+        reassembly_bytes: NonZeroUsize::new(32_768).expect("a 32 KiB reassembly limit"),
     }
 }

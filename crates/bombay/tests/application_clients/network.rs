@@ -2,7 +2,7 @@
 use bombay::remote::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 #[cfg(test)]
 use std::net::TcpListener;
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::PathBuf;
 
 pub(crate) fn configuration(address: &str, role: &EndpointRole) -> Network {
@@ -36,6 +36,10 @@ pub(crate) fn configuration(address: &str, role: &EndpointRole) -> Network {
         layout,
         deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
         max_retained_queries: NonZeroUsize::new(2).unwrap(),
+        max_sessions: NonZeroUsize::new(1_000).unwrap(),
+        max_pending_links: NonZeroUsize::new(100).unwrap(),
+        batch_bytes: NonZeroU16::MAX,
+        reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
 }
 pub(crate) enum EndpointRole {

@@ -568,12 +568,17 @@ authenticates input nor grants actor access. Providers protect the exact origina
 transmitted bytes; deserializing and reserializing is not proof verification.
 
 The `remote` feature uses `application.open_node(network).await`. Supply Bombay's
-`remote::Network`: explicit deployment roots, native query capacity and
-`NetworkLayout`. Peer layout has independent connecting/listening directions;
+`remote::Network` with deployment roots, a `NetworkLayout`, and explicit limits
+for retained queries, registered sessions, pending links, batch size and
+reassembly. The pending-link limit applies separately to queued incoming links
+and incoming establishments. The local batch offer must be at least 4,096
+bytes. The negotiated size can be smaller. The reassembly limit applies to
+logical fragment bytes in each receive buffer. Peer layout has independent
+connecting and listening directions.
 `RouterClient` requires connecting endpoints. Each `ConnectionEndpoints` owns an
-all-of plain-address list, its certificate and private key. `CredentialSource`
-selects each file or base64 value independently. There are no implicit
-credentials, shared identities or query limits, and no public SDK Config input.
+explicit plain-address list, its certificate and private key. `CredentialSource`
+selects each file or base64 value independently. Bombay maps these inputs to its
+private TLS configuration.
 Build topology, children and Entity families with ordinary Application first. The returned
 `remote::Node` owns that declaration and one private fresh network connection.
 Await the complete application with

@@ -13,7 +13,7 @@ use futures_util::future::Either;
 use std::cell::{Cell, RefCell};
 use std::future::{Future, poll_fn, ready};
 use std::mem::size_of;
-use std::num::NonZeroUsize;
+use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::PathBuf;
 use std::pin::pin;
 use std::rc::Rc;
@@ -630,6 +630,10 @@ async fn held_replies(traffic: ReplyTraffic) {
                     layout,
                     deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
                     max_retained_queries: NonZeroUsize::new(3).unwrap(),
+                    max_sessions: NonZeroUsize::new(1_000).unwrap(),
+                    max_pending_links: NonZeroUsize::new(100).unwrap(),
+                    batch_bytes: NonZeroU16::MAX,
+                    reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
                 };
                 let receiving = zenoh::open(
                     network(NetworkLayout::Peer {
@@ -1480,6 +1484,10 @@ async fn retained_payloads() {
         layout,
         deployment_roots: CredentialSource::File(certificates.join("root-ca.pem")),
         max_retained_queries: NonZeroUsize::new(1).unwrap(),
+        max_sessions: NonZeroUsize::new(1_000).unwrap(),
+        max_pending_links: NonZeroUsize::new(100).unwrap(),
+        batch_bytes: NonZeroU16::MAX,
+        reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     };
     let peer = zenoh::open(
         network(NetworkLayout::Peer {
