@@ -29,6 +29,7 @@ use zenoh::handlers::FifoChannel;
 use zenoh::query::Reply as NativeReply;
 use zenoh::sample::Locality;
 use zenoh_config::{Config, ModeDependentValue, WhatAmI};
+use zenoh_protocol::transport::BatchSize;
 
 #[path = "../../../../../../examples/counter/src/counter.rs"]
 #[expect(
@@ -1395,6 +1396,7 @@ struct RetainedPayloads {
     queued_reply_allowance: usize,
     refused_reply: usize,
     arriving_reply_allowance: usize,
+    native_receive_allowance: usize,
     reply_wire: usize,
     target_allowance: usize,
     receipt_text: usize,
@@ -1419,11 +1421,29 @@ fn metadata_text_bytes(metadata: &Metadata) -> usize {
     .sum()
 }
 
-fn reply_payload_bytes(reply: &NativeReply) -> usize {
-    match reply.result() {
-        Ok(sample) => sample.payload().len() + sample.attachment().map_or(0, ZBytes::len),
-        Err(error) => error.payload().len(),
-    }
+fn payload_and_batch_allowance<'a>(slices: impl Iterator<Item = &'a [u8]>) -> (usize, usize) {
+    // Each nonempty slice of these native TLS values can keep a full receive
+    // batch alive. Charging shared backing separately gives an upper bound.
+    slices
+        .filter(|slice| !slice.is_empty())
+        .fold((0, 0), |(payload, allowance), slice| {
+            (
+                payload + slice.len(),
+                allowance + usize::from(BatchSize::MAX),
+            )
+        })
+}
+
+fn native_reply_sizes(reply: &NativeReply) -> (usize, usize) {
+    let (payload, proof) = match reply.result() {
+        Ok(sample) => (sample.payload(), sample.attachment()),
+        Err(error) => (error.payload(), None),
+    };
+    payload_and_batch_allowance(
+        payload
+            .slices()
+            .chain(proof.into_iter().flat_map(ZBytes::slices)),
+    )
 }
 
 #[test]
@@ -1540,6 +1560,8 @@ async fn retained_payloads() {
     };
     let proof_maximum = 2;
     let reply_maximum = reply_oracle.len() + proof_maximum;
+    // Each fixture reply has one payload and one proof in a single frame.
+    let reply_batch_allowance = 2 * usize::from(BatchSize::MAX);
     let oracle_bytes = source_oracles
         .iter()
         .map(|(_, bytes)| bytes.len())
@@ -1728,29 +1750,31 @@ async fn retained_payloads() {
             *client.visibility.borrow_mut() = Some(observed);
             let inventory = |request: &(ZBytes, ZBytes), server_frame: usize| {
                 let responses = first.replies.borrow();
-                let native_replies = responses
-                    .iter()
-                    .map(|response| {
-                        response.payload().map(<[u8]>::len).sum::<usize>()
-                            + response
-                                .proof()
-                                .map_or(0, |proof| proof.map(<[u8]>::len).sum())
-                    })
-                    .sum::<usize>();
-                let queued =
-                    first.incoming.borrow().as_ref().map_or(0, Receiver::len) * reply_maximum;
+                let (native_replies, reply_backing) =
+                    payload_and_batch_allowance(responses.iter().flat_map(|response| {
+                        response
+                            .payload()
+                            .chain(response.proof().into_iter().flatten())
+                    }));
+                let (native_request, request_backing) =
+                    payload_and_batch_allowance(request.0.slices().chain(request.1.slices()));
+                let queued_replies = first.incoming.borrow().as_ref().map_or(0, Receiver::len);
+                let queued = queued_replies * reply_maximum;
                 let refused = first
                     .callback_refusal
                     .lock()
                     .unwrap_or_else(PoisonError::into_inner);
-                let refused_reply = refused.as_ref().map_or(0, |refusal| match refusal {
-                    IngressError::Capacity { original, .. } => reply_payload_bytes(original),
-                    IngressError::Queue { cause } => match cause {
-                        TrySendError::Full((original, _)) | TrySendError::Closed((original, _)) => {
-                            reply_payload_bytes(original)
-                        }
-                    },
-                });
+                let (refused_reply, refused_backing) =
+                    refused.as_ref().map_or((0, 0), |refusal| match refusal {
+                        IngressError::Capacity { original, .. } => native_reply_sizes(original),
+                        IngressError::Queue { cause } => match cause {
+                            TrySendError::Full((original, _))
+                            | TrySendError::Closed((original, _)) => native_reply_sizes(original),
+                        },
+                    });
+                let arriving_replies = 2_usize.saturating_sub(
+                    responses.len() + queued_replies + usize::from(refused.is_some()),
+                );
                 let pending = |stage: Poll<Result<(), ()>>, length| {
                     if stage.is_pending() { length } else { 0 }
                 };
@@ -1793,12 +1817,16 @@ async fn retained_payloads() {
                     native_submission_allowance: request_maximum
                         + proof_maximum
                         + 2 * reply_maximum,
-                    native_request: request.0.len() + request.1.len(),
+                    native_request,
                     native_replies,
                     queued_reply_allowance: queued,
                     refused_reply,
                     arriving_reply_allowance: (2 * reply_maximum)
                         .saturating_sub(native_replies + queued + refused_reply),
+                    native_receive_allowance: request_backing
+                        + reply_backing
+                        + refused_backing
+                        + (queued_replies + arriving_replies) * reply_batch_allowance,
                     reply_wire: responses
                         .iter()
                         .map(|response| {
@@ -2023,6 +2051,7 @@ async fn retained_payloads() {
         queued_reply_allowance: 0,
         refused_reply: reply_maximum,
         arriving_reply_allowance: 0,
+        native_receive_allowance: 6 * usize::from(BatchSize::MAX),
         reply_wire: reply_maximum,
         target_allowance: size_of::<u64>(),
         receipt_text: declared_text,
@@ -2067,6 +2096,7 @@ async fn retained_payloads() {
             held_payloads.native_submission_allowance,
             held_payloads.native_request,
             held_payloads.native_replies,
+            held_payloads.native_receive_allowance,
         ),
         (
             held_payloads.reply_wire,
@@ -2167,7 +2197,8 @@ async fn retained_payloads() {
                         proof_maximum,
                         expected.native_submission_allowance,
                         source_oracles[0].1.len() + proof_maximum,
-                        reply_maximum
+                        reply_maximum,
+                        expected.native_receive_allowance
                     ),
                     (
                         reply_maximum,

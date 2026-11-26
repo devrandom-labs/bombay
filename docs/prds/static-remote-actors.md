@@ -1097,6 +1097,47 @@ source records; passing successors do not erase them. Full R14, conditional
 SDK resource evidence, remaining original requirements and final combined
 gates/minimization/CI/reviewed delivery remain open.
 
+### Retained TLS receive batches (2026-11-26)
+
+Start from merged `35050d89` with the unchanged registry lock. Behavior and
+Actors 0.31.0 own the pure command and action contracts. Address 0.3.0,
+Communication 0.1.7, in-tree Observe and Timers 0.2.0 keep the existing
+local delivery and lifecycle contracts. Client and the native transport own
+the receive storage. The selected SDK is Bombay Zenoh 1.10.10 with config
+1.10.2, transport 1.10.4 and protocol 1.10.1.
+
+The existing pressure test counts logical bytes, while a borrowed payload or
+proof slice can hold a full receive batch. Keep the same valid TLS request,
+two replies, held verifier, blocked senders and original refusal. Count one
+maximum transport batch for each nonempty borrowed native slice. Count the
+test's preserved request view, acquired replies and the first refused reply
+at the existing held and post-cleanup observations. Reserve the declared
+fixture allowance for queued or arriving replies whose slices cannot yet be
+borrowed. Payload and proof may share a batch, so the allowance can overcount.
+Compare with the allowance declared by the three fixture messages and two
+nonempty fields per message. Keep the original logical-byte and custody
+assertion intact. An observation-only omission of the refused reply after
+cleanup must be detectable without changing transport behavior.
+
+This change uses the existing `remote/client/tests/limits.rs` owner and this
+record. It changes no production code, public types, dependencies or file
+owners. The allowance covers receive backing for those observed TLS values.
+Live Export custody, other transport buffers and the whole-Node resource
+contract still require their own evidence. This is a verification extension
+under the existing R14 requirement.
+
+The fixture passed in pinned debug and optimized builds. At both observation
+points the receive-batch allowance was 393,210 bytes, based on six borrowed
+field charges or their reserved fixture equivalents. Omitting the refused
+reply charge from the test calculation reduced the completed allowance to
+262,140 bytes in both profiles. Comparison of the complete assertion outputs
+found differences only in the new allowance. Exact-source restoration and
+both original healthy executable replays passed. Author and independent
+source reviews passed, as did strict optimized Clippy for the remote library
+and tests. The measured delta is 57 test lines added and 26 removed, with
+zero production or public API changes. The aggregate R14 requirement remains
+open.
+
 ## Earlier scoped implementation and remaining acceptance (2026-11-20)
 
 The full R01–R25/AUTH1/NET1 scope remains active. Current main integration is
