@@ -1331,6 +1331,31 @@ Rust sources and adds four Runtime 0.6.1 metadata files from that PR.
 verifies the combined tree separately. The whole-deployment resource bound
 and remaining NET1 witnesses stay open.
 
+#### Counter resource subtotal
+
+The selected two-process TLS Counter uses one listening address and one
+connecting address. Each role allows two registered transports with a local
+batch offer of 4,096 bytes. A registered transport has eight receive
+priorities and two reliability states per priority. Each state can retain
+32,768 logical fragment bytes. Charging up to one whole receive batch per
+retained byte gives the following conservative backing terms.
+
+| Owner across both roles | Bytes |
+| --- | --- |
+| Registered receive reassembly backing | 8,589,934,592 |
+| Native request fields in three Export rows | 402,653,184 |
+| Native reply fields and first overflow in four Client rows | 1,073,741,824 |
+| Regular send batches and reserved receive pools for registered links | 524,284 |
+| Checked Export and Client field copies | 57,568 |
+| Subtotal | 10,066,911,452 |
+
+The calculation may charge the same backing allocation through several
+owners. It bounds the listed storage families from source. Whole-deployment
+acceptance also needs setup and retiring links, callback and send staging,
+transferred values, provider allocations, and TLS and runtime overhead.
+See `acceptance-current/r14-receive-backing/deployment-budget-subtotal.json`
+for the formulas and hashes of the locked inputs.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
