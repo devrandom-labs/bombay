@@ -1,6 +1,7 @@
 //! Finite native count/disposal controls; no actor, flood or stalled-egress claim.
 use super::super::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout};
 use crate::remote::{IngressError, try_retain};
+use std::collections::BTreeSet;
 use std::net::TcpListener;
 use std::num::{NonZeroU16, NonZeroUsize};
 use std::path::PathBuf;
@@ -62,75 +63,93 @@ fn network(layout: NetworkLayout) -> Network {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn registered_session_limit_refuses_an_extra_client_and_releases_capacity() {
-    tokio::time::timeout(Duration::from_secs(10), async {
-        let mut listening = network(NetworkLayout::Peer {
-            connect: None,
-            listen: Some(credentials("localhost:0".into(), "router")),
-        });
-        listening.max_sessions = NonZeroUsize::MIN;
-        listening.max_pending_links = NonZeroUsize::new(2).unwrap();
-        listening.batch_bytes = NonZeroU16::new(4_096).unwrap();
-        listening.reassembly_bytes = NonZeroUsize::new(32_768).unwrap();
-        let mut config = listening.to_configuration().unwrap();
-        config.set_mode(Some(WhatAmI::Router)).unwrap();
-        let router = zenoh::open(config).await.unwrap();
-        let [locator]: [_; 1] = router.info().locators().await.try_into().unwrap();
-        let connect = || {
-            let layout = NetworkLayout::RouterClient {
-                connect: credentials(locator.address().as_str().to_owned(), "caller"),
+    for limit in [1, 2] {
+        tokio::time::timeout(Duration::from_secs(10), async {
+            let mut listening = network(NetworkLayout::Peer {
+                connect: None,
+                listen: Some(credentials("localhost:0".into(), "router")),
+            });
+            listening.max_sessions = NonZeroUsize::new(limit).unwrap();
+            // Leave a pending slot for the attempt refused by the session limit.
+            listening.max_pending_links = NonZeroUsize::new(limit + 1).unwrap();
+            listening.batch_bytes = NonZeroU16::new(4_096).unwrap();
+            listening.reassembly_bytes = NonZeroUsize::new(32_768).unwrap();
+            let mut config = listening.to_configuration().unwrap();
+            config.set_mode(Some(WhatAmI::Router)).unwrap();
+            let router = zenoh::open(config).await.unwrap();
+            let [locator]: [_; 1] = router.info().locators().await.try_into().unwrap();
+            let connect = || {
+                let layout = NetworkLayout::RouterClient {
+                    connect: credentials(locator.address().as_str().to_owned(), "caller"),
+                };
+                zenoh::open(network(layout).to_configuration().unwrap())
             };
-            zenoh::open(network(layout).to_configuration().unwrap())
-        };
 
-        let client = connect().await.unwrap();
-        let original = client.zid();
-        let at_capacity: Vec<_> = router
-            .info()
-            .transports()
-            .await
-            .map(|peer| *peer.zid())
-            .collect();
-        let excess = connect().await;
-        let while_full: Vec<_> = router
-            .info()
-            .transports()
-            .await
-            .map(|peer| *peer.zid())
-            .collect();
-        let excess = match excess {
-            Ok(extra) => Ok(extra.close().await),
-            Err(cause) => Err(cause),
-        };
+            let transports = || async {
+                router
+                    .info()
+                    .transports()
+                    .await
+                    .map(|peer| *peer.zid())
+                    .collect::<BTreeSet<_>>()
+            };
+            let mut clients = Vec::with_capacity(limit);
+            for _ in 0..limit {
+                clients.push(connect().await.unwrap());
+            }
+            let client = clients.pop().unwrap();
+            let original = client.zid();
+            let other_peers: BTreeSet<_> = clients.iter().map(Session::zid).collect();
+            let mut initial_peers = other_peers.clone();
+            initial_peers.insert(original);
+            let at_capacity = transports().await;
+            let excess = connect().await;
+            let while_full = transports().await;
+            let excess = match excess {
+                Ok(extra) => Ok(extra.close().await),
+                Err(cause) => Err(cause),
+            };
 
-        let client_closed = client.close().await;
-        while router.info().transports().await.next().is_some() {
-            tokio::task::yield_now().await;
-        }
-        let replacement = connect().await.unwrap();
-        let next = replacement.zid();
-        let after_release: Vec<_> = router
-            .info()
-            .transports()
-            .await
-            .map(|peer| *peer.zid())
-            .collect();
-        let replacement_closed = replacement.close().await;
-        let router_closed = router.close().await;
+            let client_closed = client.close().await;
+            let after_close = loop {
+                let peers = transports().await;
+                if !peers.contains(&original) {
+                    break peers;
+                }
+                tokio::task::yield_now().await;
+            };
+            let replacement = connect().await.unwrap();
+            let next = replacement.zid();
+            let after_replacement = transports().await;
+            let replacement_closed = replacement.close().await;
+            let mut other_closes = Vec::new();
+            for client in clients {
+                other_closes.push(client.close().await);
+            }
+            let router_closed = router.close().await;
 
-        assert_eq!(at_capacity, [original]);
-        assert_eq!(while_full, [original]);
-        assert!(
-            excess.is_err(),
-            "the extra authenticated client must be refused"
-        );
-        assert_ne!(next, original);
-        assert_eq!(after_release, [next]);
-        client_closed.unwrap();
-        replacement_closed.unwrap();
-        router_closed.unwrap();
-    })
-    .await
-    .expect("the finite TLS session-limit check completes");
+            assert_eq!(initial_peers.len(), limit);
+            assert_eq!(at_capacity, initial_peers);
+            assert!(
+                excess.is_err(),
+                "the extra authenticated client must be refused"
+            );
+            assert_eq!(while_full, initial_peers);
+            assert_eq!(after_close, other_peers);
+            assert!(!initial_peers.contains(&next));
+            let mut replacement_peers = other_peers;
+            replacement_peers.insert(next);
+            assert_eq!(after_replacement, replacement_peers);
+            client_closed.unwrap();
+            replacement_closed.unwrap();
+            for outcome in other_closes {
+                outcome.unwrap();
+            }
+            router_closed.unwrap();
+        })
+        .await
+        .expect("the finite TLS session-limit check completes");
+    }
 }
 
 async fn submit_query(

@@ -1474,6 +1474,32 @@ tasks and final backing release have different endpoints. The locked source
 and observation hashes are in
 `acceptance-current/r14-receive-backing/retirement-custody.json`.
 
+#### Registered capacity after normal close
+
+The existing TLS Router test uses a one-session limit. Exercise the selected
+two-session limit as well. Keep the other admitted client connected while
+the first closes, then verify that one fresh client can occupy the released
+slot. Each capacity checks the actual peer identities before refusal, after
+refusal, after orderly release and after replacement. Allow one spare
+pending link in each case so the pending limit cannot mask the registered
+limit. The control raises only the fixture's two-session setting to three.
+The original oracle must reject the extra admission after cleanup.
+
+The expected edit is in the existing ingress test owner and this PRD.
+Production, public types and dependencies have zero delta. This witness
+qualifies registered-session reuse in the native TLS Router fixture.
+Retiring backing, application limits and any external deployment Router
+budget retain their own gates.
+
+Both cases passed in debug and optimized builds under pinned Nix. The
+temporary three-session setting failed the intended extra-client assertion
+in both profiles after all close calls. The source was restored byte for
+byte. Both previously saved passing executables then passed again.
+Formatting and the two source reviews passed. The ingress test changed
+84 added and 65 removed lines, with zero production, type or dependency
+changes. The archived inputs and result logs are in
+`acceptance-current/r14-receive-backing/registered-capacity`.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
