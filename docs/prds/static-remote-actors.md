@@ -1441,6 +1441,22 @@ case passed after a fresh compile. The cause of the uncertain result and
 progress for the larger messages remain open. The temporary test input
 was restored.
 
+#### SDK capacity boundaries
+
+The locked SDK reserves a recycling pool per link using
+`transport.link.rx.buffer_size`. A receive batch can outlive the read
+through shared payload and proof spans. If all reserved buffers are in
+use, the receive loop can allocate a new batch. The pool size alone
+therefore covers its reserve.
+
+The reassembly setting independently limits one logical receive message.
+The send queue bounds regular batches per priority. The session and
+pending-link settings count entries in their respective stages. Carry
+those charges through ownership transfer and account for active backing
+outside the registry, including retirement. Session link and transport
+snapshots provide registry counts. Allocations held by other owners need
+separate evidence before the deployment byte limit can be accepted.
+
 #### Verified profiles and inspection limits
 
 The tests below ran on the accepted tree of main `35050d89`. That tree
