@@ -1577,11 +1577,40 @@ profiles. A pure control that freed a returned reserve buffer failed the
 intended 12 KiB charge assertion in both profiles. The restored controls
 passed. The earlier cleanup instrumentation is preserved separately.
 
-SDK PR #15 is open at signed `aff25e5c` on `c34eb350`. Its required
-`Controlled TLS dependencies` check is running. Established receive
-backing still needs the SDK merge and adoption in Bombay. The full
-deployment limit and NET1 remain open.
+SDK PR #15 is open at signed `aff25e5c` on `c34eb350`. Required CI
+run `45885647131` stopped during package verification. The transport
+archive resolved published `bombay-zenoh-config 1.10.2`, which lacks the
+new `unicast_buffer_limit` getter. Both errors were E0599. The SDK's
+compiler-floor and Miri steps did not run. The full log is in
+`acceptance-current/r14-receive-backing/sdk-receive-budget/hosted-aff25-failure.log`.
 [SDK PR #15](https://github.com/devrandom-labs/bombay-zenoh/pull/15)
+
+##### Receive-budget SDK release scope
+
+The existing release path must package and verify all six exact-version
+owners that depend on the changed Config. Propose Config and plugin
+trait `1.10.3`, TLS link, link and transport `1.10.5`, and SDK `1.10.11`.
+The six proposed versions were absent from the public registry index
+when checked. Keep the existing archive verification and compiler floor.
+Preserve historical version maps and resume receipts. Add a receive-budget
+selection to the existing package workflow so Cargo verifies the new
+archives together before any merge or publication.
+
+The proposed scope adds 21 existing paths to the seven SDK paths in
+PR #15. The approval checkpoint is pending.
+
+| Owner | Paths |
+| --- | --- |
+| SDK package versions and lock | `Cargo.toml`, `Cargo.lock`, `commons/zenoh-config/Cargo.toml`, `plugins/zenoh-plugin-trait/Cargo.toml`, `io/zenoh-links/zenoh-link-tls/Cargo.toml`, `io/zenoh-link/Cargo.toml`, `io/zenoh-transport/Cargo.toml`, `zenoh/Cargo.toml` |
+| Configuration consumer | `ci/configuration-consumer/Cargo.toml`, `ci/configuration-consumer/Cargo.lock` |
+| Release selection | `.github/workflows/publish.yml`, `ci/verify-release.sh`, `ci/compiler-floor.sh`, `ci/publish-release.sh` |
+| Existing archive checks | `ci/verify_archives.py`, `ci/verify_packaged_queries.py`, `ci/verify_configuration_cohort_tests.py`, `ci/verify_packaged_queries_tests.py` |
+| Package guidance | `README.md`, `zenoh/README.md`, `docs/dependency-delivery.md` |
+
+The first required result is the published-dependency archive check passing
+with a verified candidate Config archive in the dependency graph. The SDK
+merge and Bombay adoption remain open. The whole-deployment resource limit
+and NET1 still require their own evidence.
 
 #### Registered capacity after normal close
 
