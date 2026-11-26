@@ -1635,6 +1635,15 @@ The selected archive cohort test passed. Evidence, archives and 11
 generated inputs are retained under `sdk-receive-budget`. The local
 package cache yielded 1,129,180 KiB net after preservation.
 
+SDK PR #15 merged to main as `229966a0` on 2026-11-26 at 22:30 UTC.
+The merge tree equals the accepted preview and signed head. The required
+CI passed the native cases in both profiles, nine archives and 29 lock
+checksum edges, Rust 1.88 and the two Miri cases. The six candidate
+archive checksums and source revisions match the official artifact.
+The source and merge are preserved, and the delivery worktree was removed.
+Publication requires the separate passing run on exact SDK main.
+[SDK main CI](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/45905176380)
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
