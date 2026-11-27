@@ -1,8 +1,16 @@
 Remote Actors TLS connection limit (2026-11-27). SDK PR #16 merged as
-`a0ed5ec9` and the six registry packages are verified. Bombay's mapping,
-native refusal and separate-process Counter passed local verification.
-[Bombay TLS adoption](../prds/static-remote-actors.md#bombay-adoption-scope)
-awaits hosted verification. Full R14 and NET1 remain open.
+`a0ed5ec9` and the six registry packages are verified. Bombay PR #496
+merged as `31f2aa0f` after all eight checks passed. The
+[delivery record](../prds/static-remote-actors.md#bombay-adoption-scope)
+records the TLS mapping, native refusal and separate-process Counter.
+The [transmit lifetime change](../prds/static-remote-actors.md#transmit-storage-through-tls-retirement--proposed-change-record)
+has passed local debug and release on signed SDK `15f94188`.
+SDK [PR #17](https://github.com/devrandom-labs/bombay-zenoh/pull/17)
+merged as `012e0293` after required hosted CI.
+SDK [release PR #18](https://github.com/devrandom-labs/bombay-zenoh/pull/18)
+merged as `8553439e`; transport `1.10.7` and SDK `1.10.13` are published
+and verified. Bombay adoption passed the local network and Counter cases.
+Full R14 and NET1 remain open.
 
 Remote Actors receive limit (2026-11-27). PR #495 merged as `494f8f6e` after
 all eight checks passed, following SDK adoption in PR #494. The

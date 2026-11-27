@@ -1974,7 +1974,130 @@ read, stop and cleanup using the two-slot setting. The 18-path change
 adds 7 production Rust lines and changes test Rust by +73/-1. It adds one
 field to `Network` and preserves the existing type set and dependency
 edges. Logs and hashes are in `tls-connection-lifetime/bombay-adoption`.
-Hosted verification and delivery remain open.
+PR [#496](https://github.com/devrandom-labs/bombay/pull/496) merged at
+14:37:49 UTC on 2026-11-27 as `31f2aa0f` after all eight hosted checks passed.
+The merged tree `4bf44827` matches the checked preview `bb554b45`. The
+TLS regression passed in Linux coverage, remote debug, remote release and
+the optimized workspace. Coverage and the optimized workspace each passed
+1,070 tests across 123 harnesses with seven controlled skips. Both remote
+profiles passed 593 tests across 12 harnesses. Driver ran 2,048 inputs and
+four Observe campaigns ran 1,024 each. Miri was skipped. The terminal log,
+tested source manifests and eight verified archive digests are retained
+with `bombay-adoption/hosted/delivery.json`.
+
+The separate run on actual main `31f2aa0f` passed all five jobs.
+Linux finished at 16:34:39 UTC and recorded the TLS case in all four
+selected check scopes, Driver 2,048 and four Observe 1,024 runs. The
+terminal log and verification manifest are under `hosted/main-31f2aa0f`.
+[Post-merge CI](https://github.com/devrandom-labs/bombay/actions/runs/46017658060)
+
+##### Transmit storage through TLS retirement — proposed change record
+
+The verified `bombay-zenoh-transport 1.10.6` from `a0ed5ec9` can keep the
+original transmit queue through a producer clone after releasing the TLS
+link. Ordinary sends, the optional blocking send path and transport close
+already clone that producer. The selected SDK keeps the slot in
+`LinkUnicastTls`. The `LinkUnicast` reference is shallow and carries the
+original owner's lifetime. The existing pipeline status already belongs to
+the producer, consumer partitions and current batches. In-flight writes
+carry the native link through the existing transmit task. The exact source
+and ownership edges are in `bombay-adoption/transmit-owner-selection.json`.
+
+Use the existing shared pipeline status to keep one reference to the
+original capped TLS link. Select the scope with the registered TLS limit
+and the link's actual `LinkAuthId::Tls` variant. Multicast and uncapped links
+carry no reference. Keep queue owners before their retained reference in
+drop order. Charging each sender independently would make the limit depend
+on every caller remembering a separate lifetime rule.
+
+The smallest regression holds an existing producer across ordinary close
+and release of the original TLS link. At the one-slot limit the original
+slot must remain occupied. After releasing the producer, a replacement
+must connect and retire normally. Run the missing-retention case and exact
+restoration in both profiles. Keep normal close outcomes and uncapped
+behavior observable. Reuse the native TLS fixture and existing pipeline
+test owner. The SDK change uses three paths under `io/zenoh-transport/`.
+`src/unicast/universal/link.rs` was already in the approved receive-budget
+change in `aff25e5`. The two new file owners are `src/common/pipeline.rs`
+and `src/multicast/link.rs`, approved by the user on 2026-11-27. Expect
+under 25 added production lines and zero new public types or dependencies.
+The outgoing fragment byte limit and the combined R14 deployment proof
+remain open.
+
+The original debug test queued a KeepAlive on an actual capped TLS link,
+consumed the universal link through close, and released the consumer before
+reading the slot count. It observed `[1, 0, 1, 1, 0, 1]` rather than
+`[1, 0, 0, 1, 0, 1]`. Both fixed profiles pass. Omitting only the link
+reference from the shared status produces the same failure in both profiles.
+After byte-exact restoration both pass again. The full transport library
+passed 33 tests per profile with one existing controlled skip. The native
+SDK warning-denied Clippy, formatting and no-TLS checks passed. Both source
+reviews confirm the queue drop order and default constructors. The test
+holds the actual producer and does not start transmit or receive tasks.
+
+Signed source `15f94188` adds 18 production lines and 146 test lines, with
+no removals, new public types or dependencies. Native SDK
+[PR #17](https://github.com/devrandom-labs/bombay-zenoh/pull/17) merged as
+`012e0293` at 16:11:54 UTC on 2026-11-27. The actual tree `6adb652b` matches
+the checked preview `c2f25fe5`. Required CI `46023153561` passed SDK tests,
+package checks, the minimum Rust version and the configuration Miri case.
+The hosted archive matches all three changed SDK files. Release and
+Bombay adoption follow in their owning steps. Exact evidence is retained in
+`acceptance-current/r14-receive-backing/transmit-retirement`.
+
+##### Transmit retirement SDK release
+
+The changed transport has one controlled normal dependent, the SDK. The
+root exact pins therefore require transport `1.10.7` and SDK `1.10.13`.
+Both versions were absent at registry preflight. The existing
+Config and plugin trait `1.10.4`, and link and TLS link `1.10.6`, keep
+their exact published archives from `a0ed5ec9`. The other immutable inputs
+retain their existing checksums. The separate configuration consumer lock
+follows only the two changed path packages.
+
+Use the existing controlled release workflow, compiler-floor gate and
+archive readers with a two-package selection. Preserve the old selections
+and all dependency, source, receipt and signature checks. The earlier
+approved 21 release paths cover these version, configuration, reader and
+guide owners. This step changes no Rust source, public types or dependency
+edges. Package compilation and registry validation remain distinct.
+
+Release [PR #18](https://github.com/devrandom-labs/bombay-zenoh/pull/18)
+merged as `8553439e` at 17:13:04 UTC on 2026-11-27. The merged tree
+`2dc0413b` matches the tested preview `e4eb9dfe`. Required run `46032839883`
+passed the SDK tests, compiler floor and configuration Miri. Hosted and
+local checks verified nine archives and 29 locked checksum edges. The
+hosted ZIP digest and exact two candidate archives were verified before
+merge. Main CI `46040063587` and the standard publisher must pass before
+registry adoption. Evidence is in `transmit-retirement/release`.
+
+The publisher `46046077060` on `8553439e` published transport `1.10.7`
+and SDK `1.10.13`. Both versions are non-yanked. The actual registry
+downloads match the publisher and exact-main archives byte for byte.
+All 223 Rust files and both original manifests match Git. The receipt is
+`transmit-retirement/release/publication/verified-publication.json`, SHA256
+`a4c864eb65a555356410c0175f6d41951ba9130eccfa45cc77908ed3fd75cc8d`.
+
+##### Bombay adopts transmit retirement
+
+Advance the existing exact SDK pins in Bombay and the protected transport
+consumer. Each lock changes only SDK `1.10.12` to `1.10.13` and transport
+`1.10.6` to `1.10.7`, with their verified registry checksums. The two
+manifests, two locks and existing records were already in the approved
+adoption scope. No Rust, public types, feature flags or other edges change.
+Check both locked graphs and the published payloads, then exercise the
+existing valid TLS cap and normal close in both profiles. The growth of
+the outbound fragment buffer and complete deployment test remain separate
+R14 obligations.
+
+Both locked graphs resolve the two published packages and select transport
+`1.10.7` for SDK `1.10.13`. Cargo's downloaded archives match the verified
+release checksums. The 15 network cases passed in each profile, including
+the TLS and registered-session limits. The optimized two-process Counter
+passed the held-reply pressure case. Independent review reproduced the
+exact four metadata edits and verified the two record owners. Evidence is
+in `transmit-retirement/bombay-adoption`. Hosted verification is required
+for delivery of the pins.
 
 #### Registered capacity after normal close
 
