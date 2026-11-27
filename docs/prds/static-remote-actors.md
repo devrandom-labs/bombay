@@ -1862,10 +1862,15 @@ contains signed release source `8d96611`, with no Rust changes after
 `7b91270`. The pinned six-package dry run passed and verified nine
 archives, including the three unchanged dependencies, and 29 controlled
 checksum edges. The existing reader's published-registry case was skipped
-because this was a dry run. Required Linux verification is running in
-`45977329983`. The source archive, package digests and test logs are
-retained under the existing `tls-connection-lifetime` evidence directory.
-The local build caches were removed after preserving that evidence.
+because this was a dry run. Linux run `45977329983` then passed the owning
+checks, exact compiler floor, configuration Miri case and archive upload.
+Its logs confirm all three connection-limit tests in both build profiles.
+PR #16 merged at 10:46:14 UTC as `a0ed5ec9` with the exact tested tree
+`a5095e19`. The publisher waits for required merge-commit CI in
+`45984894394`. Registry verification and Bombay adoption remain open.
+The source archive, package digests, 167 hosted files and test logs are
+retained under `tls-connection-lifetime`. The local build caches were
+removed after preserving the local evidence.
 
 The connection permit bounds TLS stream owners. The transmit producer has
 a separate lifetime. The ordinary send path clones it, releases the link
