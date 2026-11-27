@@ -1,7 +1,8 @@
-Remote Actors adoption (2026-11-27). PR #494 merged as `556b4d4b` after all
-eight checks passed. The [PRD record](../prds/static-remote-actors.md#apply-the-session-receive-limit)
-tracks enabling the published SDK limit in ordinary Network configuration.
-R14 deployment memory and NET1 remain open.
+Remote Actors receive limit (2026-11-27). PR #495 merged as `494f8f6e` after
+all eight checks passed, following SDK adoption in PR #494. The
+[current memory record](../prds/static-remote-actors.md#counter-memory-with-the-session-limit)
+counts the two session limits and the remaining deployment allowances.
+Full R14 and NET1 remain open.
 
 Remote Actors delivery (2026-11-26). PR #449 auto-merged as `525157fa` after
 all eight checks passed. The

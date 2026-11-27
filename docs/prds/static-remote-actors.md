@@ -1333,6 +1333,9 @@ and remaining NET1 witnesses stay open.
 
 #### Counter resource subtotal
 
+This is the pre-budget calculation. The merged receive limit replaces its
+receive terms in the [current subtotal](#counter-memory-with-the-session-limit).
+
 The selected two-process TLS Counter uses one listening address and one
 connecting address. Each role allows two registered transports with a local
 batch offer of 4,096 bytes. A registered transport has eight receive
@@ -1725,6 +1728,56 @@ controlled skips, including the restored mapping, live TLS and public Counter
 cases. The first Nextest command stopped before execution on duplicate
 options. The corrected command and all raw results are in
 `acceptance-current/r14-receive-backing/network-limit`.
+
+PR #495 merged as `494f8f6e` on 2026-11-27 after all eight checks passed.
+The merge tree matches the reviewed preview. Linux passed the flake,
+2,048 Driver fuzz inputs and four 1,024-input Observe campaigns. Miri was
+skipped. The six native and scheduling archives match the preview's inputs.
+[Receive-limit PR](https://github.com/devrandom-labs/bombay/pull/495)
+[Linux CI](https://github.com/devrandom-labs/bombay/actions/runs/45928194123/job/140274425006)
+
+##### Counter memory with the session limit
+
+The fixed deployment opens one session in each of its two roles. Each
+session charges up to 262,144 bytes of established receive backing. That
+same charge covers the reserved and active batches and their shared bytes
+in reassembly, dispatch, request and reply rows, and transferred values.
+Retiring links and downstream consumers keep the charge as long as they
+retain that backing. Count each allocation once through its originating
+session.
+
+| Backing across both roles | Ceiling in bytes |
+| --- | ---: |
+| Established receive batches, including retained backing | 524,288 |
+| Regular send batches for up to four listed links | 262,144 |
+| Checked Export and Client field copies | 57,568 |
+| Subtotal for these owners | 844,000 |
+
+The earlier allowance of 393,210 bytes for the native read/write batches
+in the three initial opens remains a separate setup term. The exact
+`bombay-zenoh-link-tls 1.10.5` Rust source matches 1.10.4. In the counted
+initial setup, up to six incoming and one outgoing TLS connection objects
+each own one Rustls receive deframer. Rustls limits the buffered input
+length of each to 65,535 bytes, giving up to 458,745 bytes of buffered
+input length across those setup owners.
+
+The two finite test providers retain up to 162,176 bytes of validated pair
+contents, grant strings and caller runtime strings. Each role constructs
+one provider and its receipts share validated grants. The existing
+assignment reader can hold 262,145 bytes before validation in each role.
+These are logical lengths with distinct startup and steady-state owners.
+The eight source inputs and the locked serializer match the prior
+provider analysis exactly.
+
+TLS allocation capacity, decoded state, resumption storage, outgoing
+queues and sockets need separate terms. A link removed from the listed
+set may still own TLS and transmit storage while closing. The new
+session limit continues charging its established receive backing. A
+deployment allowance still needs the number and size of those unlisted
+owners, intermediate provider and result backing, and runtime overhead.
+The combined capacity and one-beyond witness remains required for R14. Source and
+registry archive bindings are in
+`acceptance-current/r14-receive-backing/deployment-current`.
 
 #### Registered capacity after normal close
 
