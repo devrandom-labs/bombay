@@ -3,7 +3,7 @@ use super::super::{ConnectionEndpoints, CredentialSource, Network, NetworkLayout
 use crate::remote::{IngressError, try_retain};
 use std::collections::BTreeSet;
 use std::net::TcpListener;
-use std::num::{NonZeroU16, NonZeroUsize};
+use std::num::{NonZeroU16, NonZeroU32, NonZeroUsize};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -57,6 +57,7 @@ fn network(layout: NetworkLayout) -> Network {
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
         batch_bytes: NonZeroU16::MAX,
+        receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
 }
@@ -73,10 +74,13 @@ async fn registered_session_limit_refuses_an_extra_client_and_releases_capacity(
             // Leave a pending slot for the attempt refused by the session limit.
             listening.max_pending_links = NonZeroUsize::new(limit + 1).unwrap();
             listening.batch_bytes = NonZeroU16::new(4_096).unwrap();
+            let receive_buffer_bytes = NonZeroU32::new(256 * 1_024).unwrap();
+            listening.receive_buffer_bytes = receive_buffer_bytes;
             listening.reassembly_bytes = NonZeroUsize::new(32_768).unwrap();
             let mut config = listening.to_configuration().unwrap();
             config.set_mode(Some(WhatAmI::Router)).unwrap();
             let router = zenoh::open(config).await.unwrap();
+            let initial_receive_bytes = router.info().unicast_receive_bytes();
             let [locator]: [_; 1] = router.info().locators().await.try_into().unwrap();
             let connect = || {
                 let layout = NetworkLayout::RouterClient {
@@ -103,6 +107,15 @@ async fn registered_session_limit_refuses_an_extra_client_and_releases_capacity(
             let mut initial_peers = other_peers.clone();
             initial_peers.insert(original);
             let at_capacity = transports().await;
+            // The native 65,535-byte default reserves 15 whole 4 KiB batches per link.
+            let reserved_receive_bytes = 61_440 * u32::try_from(limit).unwrap();
+            let receive_bytes_at_capacity = loop {
+                let charged = router.info().unicast_receive_bytes();
+                if charged.is_none_or(|bytes| bytes >= reserved_receive_bytes) {
+                    break charged;
+                }
+                tokio::task::yield_now().await;
+            };
             let excess = connect().await;
             let while_full = transports().await;
             let excess = match excess {
@@ -128,6 +141,10 @@ async fn registered_session_limit_refuses_an_extra_client_and_releases_capacity(
             }
             let router_closed = router.close().await;
 
+            assert_eq!(initial_receive_bytes, Some(0));
+            assert!(receive_bytes_at_capacity.is_some_and(|bytes| {
+                (reserved_receive_bytes..=receive_buffer_bytes.get()).contains(&bytes)
+            }));
             assert_eq!(initial_peers.len(), limit);
             assert_eq!(at_capacity, initial_peers);
             assert!(

@@ -12,7 +12,7 @@ use bombay::remote::{
 };
 use bombay::{ActorFailureAssessment, Application, RetirementAssessment};
 use counter::{Counter, CounterMessage};
-use std::num::{NonZeroU16, NonZeroUsize};
+use std::num::{NonZeroU16, NonZeroU32, NonZeroUsize};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::time::Duration;
@@ -36,6 +36,7 @@ fn listening_network() -> Network {
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
         batch_bytes: NonZeroU16::MAX,
+        receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
 }
@@ -270,6 +271,7 @@ fn network_debug_omits_credential_files_and_values() {
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
         batch_bytes: NonZeroU16::MAX,
+        receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
         layout: NetworkLayout::Peer {
             connect: Some(connect),

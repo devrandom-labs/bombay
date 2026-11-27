@@ -1668,6 +1668,64 @@ This adoption changes zero production Rust lines, tests or public types.
 The application still needs a configured receive ceiling and an
 aggregate deployment bound for R14.
 
+PR #494 merged as `556b4d4b` on 2026-11-27. The merge matches the tested
+preview tree. All eight checks passed, including the Linux flake, 2,048
+Driver fuzz inputs and four 1,024-input Observe campaigns. Miri was skipped.
+[Adoption PR](https://github.com/devrandom-labs/bombay/pull/494)
+[Linux CI](https://github.com/devrandom-labs/bombay/actions/runs/45913095229/job/140225846552)
+
+##### Apply the session receive limit
+
+On main `556b4d4b`, the unpatched lock selects SDK 1.10.11, Config 1.10.3
+and transport 1.10.5. Behavior and Actors 0.31.0 own the command and action
+contracts. Address 0.3.0, Communication 0.1.7, in-tree Observe and
+Timers 0.2.0 retain the existing local delivery and lifecycle contracts.
+The private network mapping already owns the settings for the native
+session. The SDK alone charges its established unicast receive allocations.
+Its optional limit defaults to absent, so adopting the SDK leaves the
+ordinary Bombay configuration without this bound.
+
+Require `receive_buffer_bytes: NonZeroU32` on the existing `Network`.
+Pass the supplied bytes into the native limit used by Application startup.
+The existing mapping test supplies a distinct value and compares the exact
+SDK field. The old Network must reject that syntax, and an omitted mapping
+must fail the getter and live TLS observations. The established TLS test
+observes the attached budget while preserving its refusal, replacement and
+close checks. No observation API or allocator is introduced.
+
+Each Counter role selects 256 KiB. With two established links, their
+default reserves account for at most 128 KiB. Retiring reserves and
+retained batches also count against the same cap until allocation release.
+Connection setup, TLS and other deployment memory still need their own
+allowances. Existing finite test fixtures supply 1 MiB where they exercise
+a different limit.
+
+The change uses the existing network owner, its two test owners, eight
+remaining literal owners and the previously approved PRD, status and
+Counter guide. It adds about twelve production lines, including the
+example literal, and zero public types or dependency changes. No actor
+transition, interpreter, send behavior or wrapper composition changes.
+
+The old configuration failed the focused regression with E0560 for the
+absent field. The exact getter and native TLS test passed in debug and
+release with the limit applied. The TLS test observes at least 61,440
+bytes of reserved backing per registered link within its existing
+watchdog, checks the upper bound and acquires every close outcome.
+Omitting the native setting made both debug tests fail at the intended
+absent-budget assertions. The exact owner source was restored.
+Independent review caught the original zero-charge observation and
+accepted the reserve-floor correction. The PRD proof remains scoped to
+established receive batches. The retained Rust delta is +13/-2 production
+lines and +43/-10 test lines, with zero new public types and dependencies.
+
+The migrated source passed pinned formatting and strict workspace Clippy.
+The optimized public Counter ran separate programs through increment, read,
+stop and clean exit. Workspace Nextest passed 1,069 tests with seven
+controlled skips, including the restored mapping, live TLS and public Counter
+cases. The first Nextest command stopped before execution on duplicate
+options. The corrected command and all raw results are in
+`acceptance-current/r14-receive-backing/network-limit`.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected

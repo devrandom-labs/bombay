@@ -4,7 +4,7 @@ use super::startup::NodeStartupRefusal;
 use serde::Deserialize;
 use serde_json::Value;
 use std::fmt;
-use std::num::{NonZeroU16, NonZeroUsize};
+use std::num::{NonZeroU16, NonZeroU32, NonZeroUsize};
 use std::path::PathBuf;
 use zenoh_config::qos::{CongestionControlConf, QosOverwriteMessage, QosOverwrites};
 use zenoh_config::{
@@ -29,6 +29,9 @@ pub struct Network {
     /// The local batch size offer in bytes. Negotiation can select a smaller size.
     /// Startup refuses local offers smaller than 4,096 bytes.
     pub batch_bytes: NonZeroU16,
+    /// Maximum established unicast receive buffer bytes for this native session.
+    /// Includes reserved buffers and backing retained after link closure.
+    pub receive_buffer_bytes: NonZeroU32,
     /// Maximum logical fragment bytes per receive reassembly buffer.
     pub reassembly_bytes: NonZeroUsize,
 }
@@ -115,6 +118,13 @@ impl Network {
             .set_batch_size(self.batch_bytes.get())
             .map_err(|_| NodeStartupRefusal::Unsupported {
                 field: "transport/link/tx/batch_size",
+            })?;
+        transport
+            .link
+            .rx
+            .set_unicast_buffer_limit(Some(self.receive_buffer_bytes))
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/link/rx/unicast_buffer_limit",
             })?;
         transport
             .link

@@ -37,6 +37,10 @@ duration in seconds. The directory supplies
 `caller-certificate.pem` and `caller-private-key.pem`. The server listens;
 the customer connects. Use credentials issued for the configured DNS name.
 The assignment socket requires a Unix host.
+Each role supplies a 256 KiB session limit for established unicast receive
+buffers, including buffers still held after a link closes. The example's
+connection and reassembly limits remain separate inputs in its network config.
+
 Use `localhost:0` for an OS-selected server port. The server reports each actual
 bound address as `counter listening: HOST:PORT` on stderr; supply that address to
 `call`. This reports the listening socket; the assignment and explicit grants
