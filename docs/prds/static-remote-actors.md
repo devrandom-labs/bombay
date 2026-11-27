@@ -1866,8 +1866,11 @@ because this was a dry run. Linux run `45977329983` then passed the owning
 checks, exact compiler floor, configuration Miri case and archive upload.
 Its logs confirm all three connection-limit tests in both build profiles.
 PR #16 merged at 10:46:14 UTC as `a0ed5ec9` with the exact tested tree
-`a5095e19`. The publisher waits for required merge-commit CI in
-`45984894394`. Registry verification and Bombay adoption remain open.
+`a5095e19`. Required merge-commit CI `45984894394` passed and the controlled
+publisher `45991700440` succeeded. The six actual registry archives are
+non-yanked, match the publisher bytes and identify `a0ed5ec9` in their VCS
+metadata. The release evidence is in `registry/verified-publication.json`
+under `tls-connection-lifetime`.
 The source archive, package digests, 167 hosted files and test logs are
 retained under `tls-connection-lifetime`. The local build caches were
 removed after preserving the local evidence.
@@ -1931,8 +1934,8 @@ source digests. [Rust queue allocation source](https://github.com/rust-lang/rust
 
 ##### Bombay adoption scope
 
-After verified publication, adopt the six SDK versions in the existing
-Bombay and transport-custody lock owners. Add `max_tls_connections` as a
+The two pinned lock updates select the six verified SDK versions in the
+existing Bombay and transport-custody owners. Add `max_tls_connections` as a
 nonzero field on `Network`, alongside the separate registered and pending
 limits. Pass it to the TLS configuration and report an out-of-range value
 through the existing typed startup refusal. Existing `Network` literals
@@ -1952,8 +1955,8 @@ within the 18 existing paths used by PRs #494 and #495. Exact owner lists
 are in `tls-connection-lifetime/bombay-adoption-owners.txt` and
 `bombay-network-literals.txt`. Keep the dependency and mapping changes
 separately reviewable in one delivery. Expected production delta is under
-20 lines, with zero new public types or dependencies. Implementation waits
-for the verified registry source.
+20 lines, with zero new public types or dependencies. The mapping and
+runtime verification remain open.
 
 #### Registered capacity after normal close
 
