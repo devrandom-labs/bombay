@@ -41,6 +41,7 @@ fn peer() -> Network {
         max_retained_queries: NonZeroUsize::new(7).unwrap(),
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
+        max_tls_connections: NonZeroUsize::new(16).unwrap(),
         batch_bytes: NonZeroU16::MAX,
         receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
@@ -52,6 +53,7 @@ fn transport_limits_reach_their_native_owners() {
     let network = Network {
         max_sessions: NonZeroUsize::new(11).unwrap(),
         max_pending_links: NonZeroUsize::new(13).unwrap(),
+        max_tls_connections: NonZeroUsize::new(17).unwrap(),
         batch_bytes: NonZeroU16::new(4_096).unwrap(),
         receive_buffer_bytes: NonZeroU32::new(196_608).unwrap(),
         reassembly_bytes: NonZeroUsize::new(32_768).unwrap(),
@@ -63,6 +65,11 @@ fn transport_limits_reach_their_native_owners() {
         (
             *transport.unicast().max_sessions(),
             *transport.unicast().accept_pending(),
+            transport
+                .link()
+                .tls()
+                .max_connections()
+                .map(NonZeroUsize::get),
             *transport.link().tx().batch_size(),
             transport
                 .link()
@@ -71,7 +78,7 @@ fn transport_limits_reach_their_native_owners() {
                 .map(NonZeroU32::get),
             *transport.link().rx().max_message_size(),
         ),
-        (11, 13, 4_096, Some(196_608), 32_768)
+        (11, 13, Some(17), 4_096, Some(196_608), 32_768)
     );
 }
 
@@ -85,8 +92,13 @@ fn unsupported_transport_limits_refuse_before_opening() {
         max_pending_links: NonZeroUsize::new(usize::MAX).unwrap(),
         ..peer()
     };
+    let excessive_tls = Network {
+        max_tls_connections: NonZeroUsize::new(Semaphore::MAX_PERMITS + 1).unwrap(),
+        ..peer()
+    };
     let undersized = undersized.to_configuration();
     let excessive = excessive.to_configuration();
+    let excessive_tls = excessive_tls.to_configuration();
     assert!(matches!(
         undersized,
         Err(NodeStartupRefusal::Unsupported {
@@ -97,6 +109,12 @@ fn unsupported_transport_limits_refuse_before_opening() {
         excessive,
         Err(NodeStartupRefusal::Unsupported {
             field: "transport/unicast/accept_pending"
+        })
+    ));
+    assert!(matches!(
+        excessive_tls,
+        Err(NodeStartupRefusal::Unsupported {
+            field: "transport/link/tls/max_connections"
         })
     ));
 }

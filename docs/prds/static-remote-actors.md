@@ -1939,7 +1939,7 @@ existing Bombay and transport-custody owners. Add `max_tls_connections` as a
 nonzero field on `Network`, alongside the separate registered and pending
 limits. Pass it to the TLS configuration and report an out-of-range value
 through the existing typed startup refusal. Existing `Network` literals
-must supply the field. The ordinary Counter proposes two charged TLS slots
+must supply the field. The ordinary Counter sets two charged TLS slots
 per role, one for the active stream and one spare during replacement.
 With those caps, the two-role TLS receive-length allowance is 524,280 bytes.
 
@@ -1955,8 +1955,26 @@ within the 18 existing paths used by PRs #494 and #495. Exact owner lists
 are in `tls-connection-lifetime/bombay-adoption-owners.txt` and
 `bombay-network-literals.txt`. Keep the dependency and mapping changes
 separately reviewable in one delivery. Expected production delta is under
-20 lines, with zero new public types or dependencies. The mapping and
-runtime verification remain open.
+20 lines, with zero new public types or dependencies.
+
+The original mapper failed on `None` versus the expected TLS value `17`,
+with the five existing settings unchanged. The mapped source passed both
+configuration cases and the native TLS case in debug and optimized builds.
+The live case keeps the registered and pending limits at three so that the
+one-slot TLS cap alone refuses a second valid client. It compares the full
+original link record before and after the refusal, and acquires the normal
+close results before checking the trace. Raising only the TLS slot count
+to two caused the expected refusal assertion to fail in both profiles.
+Exact source restoration and replay of both saved healthy executables
+passed. Independent source review accepted the one-setting control and the
+registration order for the link snapshots. Workspace Clippy passed with
+warnings and both required supplementary lints denied. Formatting passed.
+The optimized public Counter ran two real processes through increment,
+read, stop and cleanup using the two-slot setting. The 18-path change
+adds 7 production Rust lines and changes test Rust by +73/-1. It adds one
+field to `Network` and preserves the existing type set and dependency
+edges. Logs and hashes are in `tls-connection-lifetime/bombay-adoption`.
+Hosted verification and delivery remain open.
 
 #### Registered capacity after normal close
 
