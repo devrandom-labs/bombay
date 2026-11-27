@@ -1333,6 +1333,9 @@ and remaining NET1 witnesses stay open.
 
 #### Counter resource subtotal
 
+This is the pre-budget calculation. The merged receive limit replaces its
+receive terms in the [current subtotal](#counter-memory-with-the-session-limit).
+
 The selected two-process TLS Counter uses one listening address and one
 connecting address. Each role allows two registered transports with a local
 batch offer of 4,096 bytes. A registered transport has eight receive
@@ -1725,6 +1728,253 @@ controlled skips, including the restored mapping, live TLS and public Counter
 cases. The first Nextest command stopped before execution on duplicate
 options. The corrected command and all raw results are in
 `acceptance-current/r14-receive-backing/network-limit`.
+
+PR #495 merged as `494f8f6e` on 2026-11-27 after all eight checks passed.
+The merge tree matches the reviewed preview. Linux passed the flake,
+2,048 Driver fuzz inputs and four 1,024-input Observe campaigns. Miri was
+skipped. The six native and scheduling archives match the preview's inputs.
+[Receive-limit PR](https://github.com/devrandom-labs/bombay/pull/495)
+[Linux CI](https://github.com/devrandom-labs/bombay/actions/runs/45928194123/job/140274425006)
+
+##### Counter memory with the session limit
+
+The fixed deployment opens one session in each of its two roles. Each
+session charges up to 262,144 bytes of established receive backing. That
+same charge covers the reserved and active batches and their shared bytes
+in reassembly, dispatch, request and reply rows, and transferred values.
+Retiring links and downstream consumers keep the charge as long as they
+retain that backing. Count each allocation once through its originating
+session.
+
+| Backing across both roles | Ceiling in bytes |
+| --- | ---: |
+| Established receive batches, including retained backing | 524,288 |
+| Regular send batches for up to four listed links | 262,144 |
+| Checked Export and Client field copies | 57,568 |
+| Subtotal for these owners | 844,000 |
+
+The earlier allowance of 393,210 bytes for the native read/write batches
+in the three initial opens remains a separate setup term. The exact
+`bombay-zenoh-link-tls 1.10.5` Rust source matches 1.10.4. In the counted
+initial setup, up to six incoming and one outgoing TLS connection objects
+each own one Rustls receive deframer. Rustls limits the buffered input
+length of each to 65,535 bytes, giving up to 458,745 bytes of buffered
+input length across those setup owners.
+
+The two finite test providers retain up to 162,176 bytes of validated pair
+contents, grant strings and caller runtime strings. Each role constructs
+one provider and its receipts share validated grants. The existing
+assignment reader can hold 262,145 bytes before validation in each role.
+These are logical lengths with distinct startup and steady-state owners.
+The eight source inputs and the locked serializer match the prior
+provider analysis exactly.
+
+TLS allocation capacity, decoded state, resumption storage, outgoing
+queues and sockets need separate terms. A link removed from the listed
+set may still own TLS and transmit storage while closing. The new
+session limit continues charging its established receive backing. A
+deployment allowance still needs the number and size of those unlisted
+owners, intermediate provider and result backing, and runtime overhead.
+The combined capacity and one-beyond witness remains required for R14. Source and
+registry archive bindings are in
+`acceptance-current/r14-receive-backing/deployment-current`.
+
+##### TLS connection lifetime — proposed change record
+
+The published SDK at `229966a0` still counts registered transports,
+pending links and established receive backing through different owners.
+The original TLS stream can retain its allocation after removal from
+the listed link set. The stream's read and write halves remain in
+`LinkUnicastTls` through close. A per-manager limit would also reset if
+the manager is removed and recreated while an original link remains.
+The selected 1.10.5 TLS link source and the 1.10.3 configuration resolve
+to the same published source. The local actor dependencies and ownership
+remain as recorded for the session receive limit.
+
+Use an optional positive `transport.link.tls.max_connections` in the
+SDK, backed by one existing Tokio semaphore per transport session. Acquire
+before starting outgoing TLS setup or before starting the TLS handshake
+on the accepted TCP socket. Move the original permit into the link that
+owns both halves of the TLS stream. A failed setup returns its permit
+when its owner releases the setup state. Closing the writer leaves the
+charge with the original link until its final owner releases the stream.
+Idle listeners and the short-lived bare accepted socket retain their own
+setup allowances. The declared scope is the selected TLS-only graph.
+
+The first regression uses one-slot and two-slot controls in the
+existing SDK Session test owner. The same valid peers connect through
+the same TLS configuration. At one slot, the original link, including
+both endpoints, remains while the additional peer is refused. At two
+slots, both distinct links are present. All successful session close
+results are acquired before the assertions. The owning TLS test must
+also verify that closing a writer preserves the slot while the stream
+is owned, and final release restores capacity. The connection count
+and established receive bytes have independent limits.
+
+Both versions of the compile-first regression failed solely with E0599
+on the absent native setter. Independent review accepted the final
+source's exact link identity and count-two control. The original and
+reviewed probes are preserved under
+`acceptance-current/r14-receive-backing/tls-connection-lifetime`.
+Runtime capacity and reuse require the selected implementation.
+
+Reuse `commons/zenoh-config/src/lib.rs` and
+`io/zenoh-transport/src/manager.rs`. The production scope needs
+three additional existing SDK paths:
+
+- `io/zenoh-transport/src/unicast/manager.rs` to supply the session's
+  shared capacity to its configured TLS manager.
+- `io/zenoh-links/zenoh-link-tls/src/unicast.rs` for acquisition and
+  original TLS stream ownership.
+- `io/zenoh-links/zenoh-link-tls/src/unicast/tests.rs` for the
+  lifetime and release regression.
+
+The scoped implementation is expected to add about 70 production lines
+and zero new public types or dependencies. Preserve the default native
+constructor for existing callers. Bombay adoption and SDK release
+metadata follow verification in their owning steps. The user approved
+the three additional SDK paths on 2026-11-27 before production edits.
+
+The six-path implementation is signed SDK commit `7b91270`. The owning
+TLS test tracks the slot in each direction over valid setup, writer
+close, original and final-owner release, and a replacement connection.
+It passes debug and optimized builds. Returning the permit before the
+link took ownership failed the intended slot trace in debug. Exact
+restoration and the saved healthy program passed. Both Session tests
+pass in both profiles. The direct-Serde oversized setting returns a
+startup error before semaphore construction. Failed handshakes return
+their permits before the existing throttle. Independent review closed
+both findings. Formatting, strict affected-owner Clippy and the SDK
+check without TLS passed. The retained delta is +79/-6 production and
++182/-6 test lines, with no added type declarations or dependencies.
+
+The release uses the exact six-package dependency closure already
+owned by the controlled SDK release. The candidate versions are Config
+and plugin trait `1.10.4`, TLS link, link and transport `1.10.6`, and
+SDK `1.10.12`. All six versions were absent from crates.io at preflight.
+Reuse the previously approved 21 release paths, preserve the older
+cohort choices and verify the named connection-lifetime tests and
+package archives in the existing gate. Bombay adoption follows a
+verified SDK publication.
+
+SDK [PR #16](https://github.com/devrandom-labs/bombay-zenoh/pull/16)
+contains signed release source `8d96611`, with no Rust changes after
+`7b91270`. The pinned six-package dry run passed and verified nine
+archives, including the three unchanged dependencies, and 29 controlled
+checksum edges. The existing reader's published-registry case was skipped
+because this was a dry run. Linux run `45977329983` then passed the owning
+checks, exact compiler floor, configuration Miri case and archive upload.
+Its logs confirm all three connection-limit tests in both build profiles.
+PR #16 merged at 10:46:14 UTC as `a0ed5ec9` with the exact tested tree
+`a5095e19`. Required merge-commit CI `45984894394` passed and the controlled
+publisher `45991700440` succeeded. The six actual registry archives are
+non-yanked, match the publisher bytes and identify `a0ed5ec9` in their VCS
+metadata. The release evidence is in `registry/verified-publication.json`
+under `tls-connection-lifetime`.
+The source archive, package digests, 167 hosted files and test logs are
+retained under `tls-connection-lifetime`. The local build caches were
+removed after preserving the local evidence.
+
+The connection permit bounds TLS stream owners. The transmit producer has
+a separate lifetime. The ordinary send path clones it, releases the link
+list guard and then writes through the clone. That clone can retain the
+priority queues after the original TLS stream is released. Include retained
+producer backing independently when adding the deployment terms. The four
+owning transmit sources match `229966a0`; their digests are in
+`tls-connection-lifetime/transmit-owner-sources.sha256`.
+
+The current and candidate locks both select Rustls `0.23.46` and
+Tokio Rustls `0.26.4`. Their verified archive sources establish a conservative
+read-side allowance of 131,070 logical bytes per occupied TLS slot:
+65,535 for deframer input and 65,535 for queued application plaintext.
+The selected adapter processes each bounded input read and waits for the
+plaintext queue to drain before reading again. TLS 1.3 decryption derives
+plaintext from those same input bytes. Apply the per-slot allowance to the
+sum of the adopted Session caps. Count TLS writes, certificates, resumption,
+and producer-owned transmit backing separately.
+Source and calculation evidence is in
+`tls-connection-lifetime/tls-read-owner-accounting.json`.
+
+On the selected 64-bit TLS 1.3 profile, the inspected standard libraries
+give a 294,907-byte retained allocation allowance per read side. That
+includes up to 131,068 bytes for the deframer vector, 65,535 for plaintext
+copies, and 98,304 for the queue's vector entries. One read can contribute
+at most 2,849 nonempty records, so the doubling queue holds at most 4,096
+entries. Use these capacities for heap accounting and the earlier lengths
+for the logical limits. Track growth overlap and allocator overhead
+separately. See `tls-connection-lifetime/tls-read-capacity-accounting.json`.
+
+After the handshake, Rustls applies the 65,536-byte remaining-output
+limit before encrypting more application data. Each append can produce up
+to four fragments with 22 extra bytes per fragment. Allow 65,624 unread
+application ciphertext bytes per stream, plus up to one 16,406-byte
+partially written front record whose consumed prefix still occupies memory.
+The retained application ciphertext buffers therefore need up to 82,030
+bytes. Handshake and control records, the shared queue's entry storage,
+allocator overhead and transient allocations have separate terms. See
+`tls-connection-lifetime/tls-write-capacity-accounting.json`.
+
+The Rustls listener also retains its own stateful resumption cache across
+connections. One listener configuration retains up to 256 entries after
+each cache operation. The selected TLS 1.3 serializer allows up to 66,073
+value bytes per entry, including the encoded client certificate list. The
+map and eviction queue each own a 32-byte key. Budget up to 16,931,072
+logical retained bytes per listener cache. Count encode and eviction
+overlap and storage capacity separately. The field
+calculation is in `tls-connection-lifetime/tls-listener-cache-accounting.json`.
+
+Each outgoing TLS attempt builds one client configuration for one server
+name. Its cache retains up to eight tickets on the inspected Rust 1.88,
+1.96 and 1.99 standard libraries. Allow 1,051,114 logical bytes per
+outgoing slot for the ticket payloads, ticket secrets, certificate chains and
+the two stored copies of the server name. The live connection certificate,
+transient insertion and allocation capacity have separate terms. See
+`tls-connection-lifetime/tls-client-cache-accounting.json` and the retained
+source digests. [Rust queue allocation source](https://github.com/rust-lang/rust/blob/1.99.0/library/alloc/src/raw_vec/mod.rs)
+
+##### Bombay adoption scope
+
+The two pinned lock updates select the six verified SDK versions in the
+existing Bombay and transport-custody owners. Add `max_tls_connections` as a
+nonzero field on `Network`, alongside the separate registered and pending
+limits. Pass it to the TLS configuration and report an out-of-range value
+through the existing typed startup refusal. Existing `Network` literals
+must supply the field. The ordinary Counter sets two charged TLS slots
+per role, one for the active stream and one spare during replacement.
+With those caps, the two-role TLS receive-length allowance is 524,280 bytes.
+
+First extend the existing configuration test with distinct registered,
+pending and TLS values. Then use the existing native ingress owner to
+observe a valid peer at the cap and a one-beyond refusal with competing
+registry and pending limits held above the TLS cap. Verify that the original
+peer remains admitted and acquire cleanup results before assertions. The
+SDK owning test covers slot release through final stream disposal.
+
+All affected `Network` literals and the dependency and guide owners fit
+within the 18 existing paths used by PRs #494 and #495. Exact owner lists
+are in `tls-connection-lifetime/bombay-adoption-owners.txt` and
+`bombay-network-literals.txt`. Keep the dependency and mapping changes
+separately reviewable in one delivery. Expected production delta is under
+20 lines, with zero new public types or dependencies.
+
+The original mapper failed on `None` versus the expected TLS value `17`,
+with the five existing settings unchanged. The mapped source passed both
+configuration cases and the native TLS case in debug and optimized builds.
+The live case keeps the registered and pending limits at three so that the
+one-slot TLS cap alone refuses a second valid client. It compares the full
+original link record before and after the refusal, and acquires the normal
+close results before checking the trace. Raising only the TLS slot count
+to two caused the expected refusal assertion to fail in both profiles.
+Exact source restoration and replay of both saved healthy executables
+passed. Independent source review accepted the one-setting control and the
+registration order for the link snapshots. Workspace Clippy passed with
+warnings and both required supplementary lints denied. Formatting passed.
+The optimized public Counter ran two real processes through increment,
+read, stop and cleanup using the two-slot setting. The 18-path change
+adds 7 production Rust lines and changes test Rust by +73/-1. It adds one
+field to `Network` and preserves the existing type set and dependency
+edges. Logs and hashes are in `tls-connection-lifetime/bombay-adoption`.
+Hosted verification and delivery remain open.
 
 #### Registered capacity after normal close
 

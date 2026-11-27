@@ -38,8 +38,9 @@ duration in seconds. The directory supplies
 the customer connects. Use credentials issued for the configured DNS name.
 The assignment socket requires a Unix host.
 Each role supplies a 256 KiB session limit for established unicast receive
-buffers, including buffers still held after a link closes. The example's
-connection and reassembly limits remain separate inputs in its network config.
+buffers, including buffers still held after a link closes. Each role also
+supplies two TLS connection slots. A connection keeps its slot from setup
+through final release. Both limits are explicit inputs in the network config.
 
 Use `localhost:0` for an OS-selected server port. The server reports each actual
 bound address as `counter listening: HOST:PORT` on stderr; supply that address to

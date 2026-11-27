@@ -498,9 +498,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh"
-version = "1.10.11"
+version = "1.10.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32447e572b3856c23d959466ecbb0ec2e4d8380f3eb11c2f982ea1950c151050"
+checksum = "3dbaa43da486c09cb2aa33000c98a863f5e828c7512c735ab8d020e804e4c48e"
 dependencies = [
  "ahash",
  "arc-swap",
@@ -549,9 +549,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-config"
-version = "1.10.3"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbeebf70552c4fc03cf72a71c162cb4a9554969538e2a6f27fc9a0c82ad09661"
+checksum = "97c0226fd7ec8cee51e91e9e590969166c49836c66b73e7e621ad1fe2736e284"
 dependencies = [
  "bombay-validated-struct",
  "json5",
@@ -576,9 +576,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-link"
-version = "1.10.5"
+version = "1.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74054aad9eb31ddb7535688a4ea777827ade2d9d03b0c6a58b610316b4b5dc0f"
+checksum = "9993c66190cc2f90971bfa4e67154c7a6168357d0edc70a1850fbb158e5ca99d"
 dependencies = [
  "bombay-zenoh-config",
  "bombay-zenoh-link-commons",
@@ -615,9 +615,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-link-tls"
-version = "1.10.5"
+version = "1.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "278638e795349ee955a50b77297def9c46e182c7b24f8fe590e8c46d6cabeade"
+checksum = "05bfee1a450b1a1c0993a249ab77037856c2e5faf1cbacd1c0196d1a3deb4e38"
 dependencies = [
  "async-trait",
  "base64",
@@ -643,9 +643,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-plugin-trait"
-version = "1.10.3"
+version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2fa0fad26a9a82a7d16c84e52a496d5862ceee1c872b677d549e0d2c9063475"
+checksum = "55b5b4838e1ec8f8bb2a6715694715d5d9ee3f53338022b5f124da3828c22d10"
 dependencies = [
  "bombay-zenoh-config",
  "git-version",
@@ -661,9 +661,9 @@ dependencies = [
 
 [[package]]
 name = "bombay-zenoh-transport"
-version = "1.10.5"
+version = "1.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5370dd294a456d4b9e3d291499620dca4cb5b441046196f213617203346cf6ff"
+checksum = "35969836fe5882ef6c120a1d015ea4275997a4a76b3ff8c84b34df1977c4d5a1"
 dependencies = [
  "async-trait",
  "bombay-zenoh-config",

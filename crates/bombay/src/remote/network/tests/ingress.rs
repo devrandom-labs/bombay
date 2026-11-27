@@ -56,6 +56,7 @@ fn network(layout: NetworkLayout) -> Network {
         max_retained_queries: NonZeroUsize::new(16).unwrap(),
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
+        max_tls_connections: NonZeroUsize::new(16).unwrap(),
         batch_bytes: NonZeroU16::MAX,
         receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
@@ -167,6 +168,50 @@ async fn registered_session_limit_refuses_an_extra_client_and_releases_capacity(
         .await
         .expect("the finite TLS session-limit check completes");
     }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn tls_connection_limit_refuses_an_extra_client_and_preserves_the_original_link() {
+    tokio::time::timeout(Duration::from_secs(10), async {
+        let mut listening = network(NetworkLayout::Peer {
+            connect: None,
+            listen: Some(credentials("localhost:0".into(), "router")),
+        });
+        listening.max_sessions = NonZeroUsize::new(3).unwrap();
+        listening.max_pending_links = NonZeroUsize::new(3).unwrap();
+        listening.max_tls_connections = NonZeroUsize::MIN;
+        let mut config = listening.to_configuration().unwrap();
+        config.set_mode(Some(WhatAmI::Router)).unwrap();
+        let router = zenoh::open(config).await.unwrap();
+        let [locator]: [_; 1] = router.info().locators().await.try_into().unwrap();
+        let connect = || {
+            let layout = NetworkLayout::RouterClient {
+                connect: credentials(locator.address().as_str().to_owned(), "caller"),
+            };
+            zenoh::open(network(layout).to_configuration().unwrap())
+        };
+
+        let client = connect().await.unwrap();
+        let original_peer = client.zid();
+        let before: Vec<_> = router.info().links().await.collect();
+        let extra = connect().await;
+        let after: Vec<_> = router.info().links().await.collect();
+        let extra = match extra {
+            Ok(extra) => Ok(extra.close().await),
+            Err(refusal) => Err(refusal),
+        };
+        let client_closed = client.close().await;
+        let router_closed = router.close().await;
+
+        client_closed.unwrap();
+        router_closed.unwrap();
+        assert!(extra.is_err(), "the extra TLS connection must be refused");
+        let [original]: [_; 1] = before.try_into().unwrap();
+        assert_eq!(*original.zid(), original_peer);
+        assert_eq!(after, [original]);
+    })
+    .await
+    .expect("the finite TLS connection-limit check completes");
 }
 
 async fn submit_query(

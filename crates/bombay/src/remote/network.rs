@@ -26,6 +26,8 @@ pub struct Network {
     /// Independent maxima for queued incoming links and incoming establishments.
     /// Startup refuses `usize::MAX`, following the SDK's pending-link range.
     pub max_pending_links: NonZeroUsize,
+    /// Maximum TLS connections in setup, use, or closing for this native session.
+    pub max_tls_connections: NonZeroUsize,
     /// The local batch size offer in bytes. Negotiation can select a smaller size.
     /// Startup refuses local offers smaller than 4,096 bytes.
     pub batch_bytes: NonZeroU16,
@@ -213,6 +215,10 @@ impl Network {
                 field: "transport/link/protocols",
             })?;
         let tls = &mut config.transport.link.tls;
+        tls.set_max_connections(Some(self.max_tls_connections))
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/link/tls/max_connections",
+            })?;
         tls.set_enable_mtls(Some(true))
             .map_err(|_| NodeStartupRefusal::Unsupported {
                 field: "enable_mtls",

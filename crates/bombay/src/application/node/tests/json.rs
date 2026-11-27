@@ -69,6 +69,7 @@ fn listening_configuration() -> Network {
         max_retained_queries: NonZeroUsize::new(2).unwrap(),
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
+        max_tls_connections: NonZeroUsize::new(16).unwrap(),
         batch_bytes: NonZeroU16::MAX,
         receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
