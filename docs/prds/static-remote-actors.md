@@ -1875,6 +1875,18 @@ producer backing independently when adding the deployment terms. The four
 owning transmit sources match `229966a0`; their digests are in
 `tls-connection-lifetime/transmit-owner-sources.sha256`.
 
+The current and candidate locks both select Rustls `0.23.46` and
+Tokio Rustls `0.26.4`. Their verified archive sources establish a conservative
+read-side allowance of 131,070 logical bytes per occupied TLS slot:
+65,535 for deframer input and 65,535 for queued application plaintext.
+The selected adapter processes each bounded input read and waits for the
+plaintext queue to drain before reading again. TLS 1.3 decryption derives
+plaintext from those same input bytes. Apply the per-slot allowance to the
+sum of the adopted Session caps. Count heap capacity, TLS writes,
+certificates, resumption, and producer-owned transmit backing separately.
+Source and calculation evidence is in
+`tls-connection-lifetime/tls-read-owner-accounting.json`.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
