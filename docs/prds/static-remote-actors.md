@@ -1887,6 +1887,32 @@ certificates, resumption, and producer-owned transmit backing separately.
 Source and calculation evidence is in
 `tls-connection-lifetime/tls-read-owner-accounting.json`.
 
+##### Bombay adoption scope
+
+After verified publication, adopt the six SDK versions in the existing
+Bombay and transport-custody lock owners. Add `max_tls_connections` as a
+nonzero field on `Network`, alongside the separate registered and pending
+limits. Pass it to the TLS configuration and report an out-of-range value
+through the existing typed startup refusal. Existing `Network` literals
+must supply the field. The ordinary Counter proposes two charged TLS slots
+per role, one for the active stream and one spare during replacement.
+With those caps, the two-role TLS receive-length allowance is 524,280 bytes.
+
+First extend the existing configuration test with distinct registered,
+pending and TLS values. Then use the existing native ingress owner to
+observe a valid peer at the cap and a one-beyond refusal with competing
+registry and pending limits held above the TLS cap. Verify that the original
+peer remains admitted and acquire cleanup results before assertions. The
+SDK owning test covers slot release through final stream disposal.
+
+All affected `Network` literals and the dependency and guide owners fit
+within the 18 existing paths used by PRs #494 and #495. Exact owner lists
+are in `tls-connection-lifetime/bombay-adoption-owners.txt` and
+`bombay-network-literals.txt`. Keep the dependency and mapping changes
+separately reviewable in one delivery. Expected production delta is under
+20 lines, with zero new public types or dependencies. Implementation waits
+for the verified registry source.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
