@@ -41,6 +41,8 @@ Each role supplies a 256 KiB session limit for established unicast receive
 buffers, including buffers still held after a link closes. Each role also
 supplies two TLS connection slots. A connection keeps its slot from setup
 through final release. Both limits are explicit inputs in the network config.
+The example offers 4 KiB batches, and Bombay's native Data queue holds
+up to five batches per link.
 
 Use `localhost:0` for an OS-selected server port. The server reports each actual
 bound address as `counter listening: HOST:PORT` on stderr; supply that address to

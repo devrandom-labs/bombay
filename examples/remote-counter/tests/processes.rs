@@ -65,6 +65,12 @@ enum ReplyProof {
     WrongRead,
 }
 
+#[derive(Clone, Copy)]
+enum AssignmentLength {
+    Ordinary,
+    Fragmented,
+}
+
 // The only extra owner is a native child guard. Its failure policy is kill AND
 // reap, including cancellation of the outer timeout or setup unwinding.
 struct Program {
@@ -209,10 +215,19 @@ async fn assignment(listener: &UnixListener) -> io::Result<(Binding, OwnedWriteH
 }
 
 fn provision(caller: &Binding, receiver: &Binding, proof: ReplyProof) -> io::Result<Vec<u8>> {
+    provision_with_length(caller, receiver, proof, AssignmentLength::Ordinary)
+}
+
+fn provision_with_length(
+    caller: &Binding,
+    receiver: &Binding,
+    proof: ReplyProof,
+    length: AssignmentLength,
+) -> io::Result<Vec<u8>> {
     let mut grants = Vec::new();
     let mut records = Vec::new();
     for operation in [Operation::Increment, Operation::Read, Operation::Stop] {
-        let grant = Metadata {
+        let mut grant = Metadata {
             wire_version: 1,
             schema_version: 1,
             provider_profile: "remote-counter-finite-pairs-v1".into(),
@@ -229,6 +244,14 @@ fn provision(caller: &Binding, receiver: &Binding, proof: ReplyProof) -> io::Res
             authority_generation: 1,
             request_sequence: protocol::sequence(operation),
         };
+        if let AssignmentLength::Fragmented = length {
+            grant.deployment = "d".repeat(768).into();
+            grant.caller = "u".repeat(768).into();
+            grant.controller = "c".repeat(768).into();
+            grant.actor = "a".repeat(768).into();
+            grant.host = "h".repeat(768).into();
+            grant.grant_issuer = "i".repeat(768).into();
+        }
         let request = protocol::request(&grant, operation).map_err(io::Error::other)?;
         let value = match operation {
             Operation::Increment => Value::Processed(protocol::sequence(operation)),
@@ -236,6 +259,10 @@ fn provision(caller: &Binding, receiver: &Binding, proof: ReplyProof) -> io::Res
             Operation::Stop => Value::Stopped,
         };
         let response = protocol::response(&grant, operation, value).map_err(io::Error::other)?;
+        if let AssignmentLength::Fragmented = length {
+            assert!((4_097..=8_192).contains(&request.len()));
+            assert!((4_097..=8_192).contains(&response.len()));
+        }
         records.push(json!({"protected":request.as_ref(), "proof":[operation as u8, 0]}));
         let reply_proof = match (proof, operation) {
             (ReplyProof::WrongRead, Operation::Read) => [operation as u8, 97],
@@ -265,7 +292,13 @@ fn provision(caller: &Binding, receiver: &Binding, proof: ReplyProof) -> io::Res
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn separate_programs_increment_read_and_stop_through_real_tls() {
     let current = Path::new(env!("CARGO_BIN_EXE_bombay-example-remote-counter"));
-    exchange(current, current).await;
+    exchange(current, current, AssignmentLength::Ordinary).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn separate_programs_increment_read_and_stop_with_fragmented_tls() {
+    let current = Path::new(env!("CARGO_BIN_EXE_bombay-example-remote-counter"));
+    exchange(current, current, AssignmentLength::Fragmented).await;
 }
 
 #[test]
@@ -297,7 +330,7 @@ fn published_runtime_pairs_increment_read_and_stop_through_real_tls() {
                     caller.display(),
                     receiver.display()
                 );
-                exchange(caller, receiver).await;
+                exchange(caller, receiver, AssignmentLength::Ordinary).await;
             }
         });
 }
@@ -306,7 +339,7 @@ fn published_runtime_pairs_increment_read_and_stop_through_real_tls() {
     clippy::too_many_lines,
     reason = "the complete two-program trace keeps real exits and cleanup before its independent domain oracles"
 )]
-async fn exchange(caller_executable: &Path, receiver_executable: &Path) {
+async fn exchange(caller_executable: &Path, receiver_executable: &Path, length: AssignmentLength) {
     let directory = Builder::new()
         .prefix("counter-")
         .permissions(Permissions::from_mode(0o700))
@@ -361,7 +394,12 @@ async fn exchange(caller_executable: &Path, receiver_executable: &Path) {
                 ));
             }
         }
-        let configuration = provision(&caller_binding, &receiver_binding, ReplyProof::Matching)?;
+        let configuration = provision_with_length(
+            &caller_binding,
+            &receiver_binding,
+            ReplyProof::Matching,
+            length,
+        )?;
         receiver_input.write_all(&configuration).await?;
         receiver_input.shutdown().await?;
         caller_input.write_all(&configuration).await?;

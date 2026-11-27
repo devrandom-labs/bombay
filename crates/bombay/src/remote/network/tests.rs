@@ -615,6 +615,28 @@ fn query_layouts() -> [NetworkLayout; 4] {
 }
 
 #[test]
+fn query_publication_sets_data_batch_capacity_in_every_layout() {
+    for layout in query_layouts() {
+        let network = Network { layout, ..peer() };
+        let config = network.to_configuration().unwrap();
+        let size = config.transport().link().tx().queue().size();
+        assert_eq!(*size.data(), 5);
+        assert_eq!(
+            [
+                *size.control(),
+                *size.real_time(),
+                *size.interactive_high(),
+                *size.interactive_low(),
+                *size.data_high(),
+                *size.data_low(),
+                *size.background(),
+            ],
+            [2; 7],
+        );
+    }
+}
+
+#[test]
 fn query_publication_disables_drop_queue_refill_wait_in_every_layout() {
     for layout in query_layouts() {
         let network = Network { layout, ..peer() };

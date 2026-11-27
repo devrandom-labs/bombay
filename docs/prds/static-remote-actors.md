@@ -2099,6 +2099,166 @@ exact four metadata edits and verified the two record owners. Evidence is
 in `transmit-retirement/bombay-adoption`. Hosted verification is required
 for delivery of the pins.
 
+[PR #497](https://github.com/devrandom-labs/bombay/pull/497) merged as
+`76d25afb` at 21:24:42 UTC on 2026-11-27. The merge has the same tree
+`116db51d` as the tested preview. All eight checks passed. Linux ran
+four TLS capacity cases, four process pressure cases, 2,048 Driver inputs
+and four 1,024-input Observe campaigns. The eight official archive digests
+were verified. Delivery receipt `transmit-retirement/bombay-adoption/hosted/delivery.json`
+has SHA256 `00d0e498ac938cf88572eaa6086af31e64e594db0da1b5749d2e2006abb50472`.
+
+##### Counter progress across a transmit batch
+
+On the merged locks, repeat the existing process exchange with the earlier
+reviewed finite assignments. The locked transport 1.10.7 still uses one
+expandable fragment buffer per active transmit priority. The declared
+4,096-byte batch offer and 32,768-byte receive reassembly cap have different
+owners. The encoded input and reply lengths were 5,025 to 5,054 bytes.
+The first debug run hit the unchanged 40-second watchdog. The original
+assignments passed after exact source restoration and a fresh test build.
+The separate run with bounded test-only observations recorded the caller's
+uncertain Read and exit 2. The parent reaped the server. The initial
+watchdog remains unexplained.
+
+For a diagnostic control, rerun the same assignments with only the example's
+batch offer temporarily raised to 8,192 bytes in both processes. This
+compares an alternate configuration while preserving the real operation
+outcomes, both exits, cleanup, input limits and timeouts. The temporary
+owners are the existing Counter process test and example network
+configuration. The 8,192-byte offer passed the exact business and exit
+assertions with the same frame lengths. Both sources were restored byte
+for byte. The transmit-memory ceiling and original profile acceptance
+remain open.
+
+Observe fragmentation at that original offer using a private copy of the
+verified 1.10.7 archive. Add only request/response IDs, fragment progress
+and dispositions to the existing pipeline owner. Capture the existing
+bounded child diagnostics in the process test. Preserve all send, wait
+and receive operations. The temporary root lock selects that exact
+instrumented package; all other origins, versions and edges stay fixed.
+Keep its trace separate from the registry runs. No retained production
+delta, public types or dependency changes are selected. Evidence is in
+`acceptance-current/r14-receive-backing/outbound-current`.
+
+One instrumented 4,096-byte run completed with six serialized messages
+of 5,041 to 5,114 bytes, two fragments each. A separate run reporting
+only existing send refusals returned uncertain Read without a matching
+refusal report. Preserve both results independently. The same private
+pipeline owner can subscribe to the SDK's existing receive diagnostics
+without changing the receive implementation.
+
+The receive-only observation did not report one of its four selected
+events. The following observation included the native final response.
+At 4,096 bytes the server's final response for native request 1 was
+refused after the existing send retry. The caller had processed the
+Increment reply and then returned uncertain Read. The locked Client
+holds its request permit until the callback ends. SDK final-response
+delivery normally removes that query and drops its callback.
+
+Compare the same two-program trace with three instead of two native
+Data batches, keeping the 4,096-byte offer, zero refill wait and all
+original operations. Temporarily use the existing SDK queue-size
+setter in Network and the previously reviewed process fixture. Only
+these two established source owners vary. Restore both exactly. This
+isolates capacity for this two-fragment reply and final response.
+It selects no retained setting, general send-memory bound or policy.
+
+The three-batch comparison passed debug and optimized with the published
+SDK and the same six frame lengths. Both programs exited normally in
+each profile. Both source changes were restored exactly. Derive the
+deployment allowance from the largest accepted message, concurrent
+completions and serialization backing. Preserve the existing
+nonwaiting send policy.
+
+##### Native queue capacity with the consumer held
+
+Use the released transport 1.10.7 pipeline and its existing test owner
+to control when batches return. Offer 4,096 bytes per streamed batch,
+keep Data replies droppable with zero refill wait, and schedule the
+reply and its final marker before polling the consumer. Test the observed
+reply size and the 8,192-byte field allowance plus 32 proof bytes. Compare
+the fragment count alone with that count plus one slot for the ordered
+final marker. Two small final markers can share that last batch. Offer
+a second full reply to require capacity beyond the occupied batches.
+Decode the actual drained batches and compare the original reply,
+marker order and correlation. Refill the same batches and verify that
+fresh work can use the returned capacity.
+
+The verified transport archive supplies all native code. The only
+temporary edit is the existing pipeline test module. The SDK owns queue
+refusal and batch reuse. Bombay owns the deployment limits and request
+permit lifetime. This probe observes the native capacity boundary for
+the two declared message shapes. Deployment-wide retention, application
+overflow custody and the selected shipping limit have separate gates.
+
+Both compiler profiles passed with the consumer held. The 5,054-byte
+payload and proof used two fragments. The 8,192-byte payload and proof
+used three. At each size, one extra batch preserved both final markers,
+the second full reply was refused, and the decoded first reply stayed
+intact. A capacity reduction failed at the unchanged completion oracle
+in each profile. Both original executables passed after exact restoration.
+
+The transmit loop can take a prior batch before returning it to the
+pool. Exercise that lifetime by holding one actual batch from the
+consumer while scheduling the same replies and completion markers.
+Keep its contents and backing through the new admission and overflow.
+Return both generations of batches before testing recovery.
+
+The expanded test passed eight configurations in debug and optimized.
+With an older batch held, the larger native shape required five slots.
+The held batch kept its original bytes while the four new batches held
+the three fragments and ordered final markers. Reducing the five-slot
+case to four failed the same completion assertion in both profiles.
+Exact restoration and the original executables then passed. The native
+test uses the released transport code and the runtime's Tokio 1.53.3
+pin in a separate verification lock.
+
+Five fixed 4,096-byte Data buffers charge 20,480 bytes per pipeline.
+Four retained ordinary TLS links would charge 81,920 bytes for Data.
+With two fixed batches for each of the other seven priorities, the
+regular batch allowance would be 311,296 bytes across those links.
+This is a conditional deployment allowance. Serialization, control
+and stop-fragment allocations and application custody remain separate.
+
+##### Set the native Data queue in Network
+
+The two-slot default can refuse the Increment final after accepting
+its fragmented reply. That leaves the one Client request permit waiting
+for native EOF. Use the measured five-slot Data queue in the existing
+private Network profile. The selected shape accounts for three reply
+fragments, one final batch and one earlier checked-out batch. Keep the
+seven other priorities, zero refill wait and receive limits unchanged.
+Use the SDK's validated queue setter and the existing startup refusal.
+
+First assert the Data and other queue sizes in all four Network layouts
+against the old mapping. Then execute a fragmented Counter exchange with
+the published SDK, keeping the same current program, valid enrolled
+request and reply bytes, timeouts, Increment, Read, Stop and joined exits.
+The existing ordinary-size and held-reply cases remain separate.
+
+Expected production change is one constant and one validated setting
+in `crates/bombay/src/remote/network.rs`, about ten lines. Reuse the
+Network configuration tests and the existing Counter process and guide
+owners. This PRD and the backlog record the result. Public types,
+dependency edges and example application sources each have zero delta.
+The five-slot setting covers the tested native shape; each deployment
+still needs a total memory budget and exact application overflow proof.
+
+The old mapping failed the new configuration test in debug and
+optimized with two Data slots against five. The revised mapping then
+passed all 16 native network tests per profile, including the
+unchanged zero-refill-wait test. The ordinary and fragmented Counter
+exchanges, the held-reply pressure case and all four current/published
+program pairs passed in both profiles. Formatting and strict lint passed.
+The exact tested Rust and Cargo inputs were rehashed after execution.
+
+The production delta is +11/-0, the test delta is +65/-5, and public
+types and dependency edges have zero delta. The ordinary Counter
+application source stays unchanged. Independent source review confirmed
+the queue setter, startup error field and unchanged test oracles.
+Evidence is in `outbound-current/ship-data-queue`. Hosted checks and
+reviewed merge remain required for delivery.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
