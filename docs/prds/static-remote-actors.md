@@ -1887,10 +1887,19 @@ read-side allowance of 131,070 logical bytes per occupied TLS slot:
 The selected adapter processes each bounded input read and waits for the
 plaintext queue to drain before reading again. TLS 1.3 decryption derives
 plaintext from those same input bytes. Apply the per-slot allowance to the
-sum of the adopted Session caps. Count heap capacity, TLS writes,
-certificates, resumption, and producer-owned transmit backing separately.
+sum of the adopted Session caps. Count TLS writes, certificates, resumption,
+and producer-owned transmit backing separately.
 Source and calculation evidence is in
 `tls-connection-lifetime/tls-read-owner-accounting.json`.
+
+On the selected 64-bit TLS 1.3 profile, the inspected standard libraries
+give a 294,907-byte retained allocation allowance per read side. That
+includes up to 131,068 bytes for the deframer vector, 65,535 for plaintext
+copies, and 98,304 for the queue's vector entries. One read can contribute
+at most 2,849 nonempty records, so the doubling queue holds at most 4,096
+entries. Use these capacities for heap accounting and the earlier lengths
+for the logical limits. Track growth overlap and allocator overhead
+separately. See `tls-connection-lifetime/tls-read-capacity-accounting.json`.
 
 The Rustls listener also retains its own stateful resumption cache across
 connections. One listener configuration retains up to 256 entries after
