@@ -1832,8 +1832,48 @@ three additional existing SDK paths:
 The scoped implementation is expected to add about 70 production lines
 and zero new public types or dependencies. Preserve the default native
 constructor for existing callers. Bombay adoption and SDK release
-metadata follow verification in their owning steps. The three new SDK
-paths require the file-scope checkpoint before production edits.
+metadata follow verification in their owning steps. The user approved
+the three additional SDK paths on 2026-11-27 before production edits.
+
+The six-path implementation is signed SDK commit `7b91270`. The owning
+TLS test tracks the slot in each direction over valid setup, writer
+close, original and final-owner release, and a replacement connection.
+It passes debug and optimized builds. Returning the permit before the
+link took ownership failed the intended slot trace in debug. Exact
+restoration and the saved healthy program passed. Both Session tests
+pass in both profiles. The direct-Serde oversized setting returns a
+startup error before semaphore construction. Failed handshakes return
+their permits before the existing throttle. Independent review closed
+both findings. Formatting, strict affected-owner Clippy and the SDK
+check without TLS passed. The retained delta is +79/-6 production and
++182/-6 test lines, with no added type declarations or dependencies.
+
+The release uses the exact six-package dependency closure already
+owned by the controlled SDK release. The candidate versions are Config
+and plugin trait `1.10.4`, TLS link, link and transport `1.10.6`, and
+SDK `1.10.12`. All six versions were absent from crates.io at preflight.
+Reuse the previously approved 21 release paths, preserve the older
+cohort choices and verify the named connection-lifetime tests and
+package archives in the existing gate. Bombay adoption follows a
+verified SDK publication.
+
+SDK [PR #16](https://github.com/devrandom-labs/bombay-zenoh/pull/16)
+contains signed release source `8d96611`, with no Rust changes after
+`7b91270`. The pinned six-package dry run passed and verified nine
+archives, including the three unchanged dependencies, and 29 controlled
+checksum edges. The existing reader's published-registry case was skipped
+because this was a dry run. Required Linux verification is running in
+`45977329983`. The source archive, package digests and test logs are
+retained under the existing `tls-connection-lifetime` evidence directory.
+The local build caches were removed after preserving that evidence.
+
+The connection permit bounds TLS stream owners. The transmit producer has
+a separate lifetime. The ordinary send path clones it, releases the link
+list guard and then writes through the clone. That clone can retain the
+priority queues after the original TLS stream is released. Include retained
+producer backing independently when adding the deployment terms. The four
+owning transmit sources match `229966a0`; their digests are in
+`tls-connection-lifetime/transmit-owner-sources.sha256`.
 
 #### Registered capacity after normal close
 
