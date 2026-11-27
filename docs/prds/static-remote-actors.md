@@ -1901,6 +1901,16 @@ entries. Use these capacities for heap accounting and the earlier lengths
 for the logical limits. Track growth overlap and allocator overhead
 separately. See `tls-connection-lifetime/tls-read-capacity-accounting.json`.
 
+After the handshake, Rustls applies the 65,536-byte remaining-output
+limit before encrypting more application data. Each append can produce up
+to four fragments with 22 extra bytes per fragment. Allow 65,624 unread
+application ciphertext bytes per stream, plus up to one 16,406-byte
+partially written front record whose consumed prefix still occupies memory.
+The retained application ciphertext buffers therefore need up to 82,030
+bytes. Handshake and control records, the shared queue's entry storage,
+allocator overhead and transient allocations have separate terms. See
+`tls-connection-lifetime/tls-write-capacity-accounting.json`.
+
 The Rustls listener also retains its own stateful resumption cache across
 connections. One listener configuration retains up to 256 entries after
 each cache operation. The selected TLS 1.3 serializer allows up to 66,073
