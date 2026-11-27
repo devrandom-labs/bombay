@@ -1779,6 +1779,62 @@ The combined capacity and one-beyond witness remains required for R14. Source an
 registry archive bindings are in
 `acceptance-current/r14-receive-backing/deployment-current`.
 
+##### TLS connection lifetime — proposed change record
+
+The published SDK at `229966a0` still counts registered transports,
+pending links and established receive backing through different owners.
+The original TLS stream can retain its allocation after removal from
+the listed link set. The stream's read and write halves remain in
+`LinkUnicastTls` through close. A per-manager limit would also reset if
+the manager is removed and recreated while an original link remains.
+The selected 1.10.5 TLS link source and the 1.10.3 configuration resolve
+to the same published source. The local actor dependencies and ownership
+remain as recorded for the session receive limit.
+
+Use an optional positive `transport.link.tls.max_connections` in the
+SDK, backed by one existing Tokio semaphore per transport session. Acquire
+before starting outgoing TLS setup or before starting the TLS handshake
+on the accepted TCP socket. Move the original permit into the link that
+owns both halves of the TLS stream. A failed setup returns its permit
+when its owner releases the setup state. Closing the writer leaves the
+charge with the original link until its final owner releases the stream.
+Idle listeners and the short-lived bare accepted socket retain their own
+setup allowances. The declared scope is the selected TLS-only graph.
+
+The first regression uses one-slot and two-slot controls in the
+existing SDK Session test owner. The same valid peers connect through
+the same TLS configuration. At one slot, the original link, including
+both endpoints, remains while the additional peer is refused. At two
+slots, both distinct links are present. All successful session close
+results are acquired before the assertions. The owning TLS test must
+also verify that closing a writer preserves the slot while the stream
+is owned, and final release restores capacity. The connection count
+and established receive bytes have independent limits.
+
+Both versions of the compile-first regression failed solely with E0599
+on the absent native setter. Independent review accepted the final
+source's exact link identity and count-two control. The original and
+reviewed probes are preserved under
+`acceptance-current/r14-receive-backing/tls-connection-lifetime`.
+Runtime capacity and reuse require the selected implementation.
+
+Reuse `commons/zenoh-config/src/lib.rs` and
+`io/zenoh-transport/src/manager.rs`. The production scope needs
+three additional existing SDK paths:
+
+- `io/zenoh-transport/src/unicast/manager.rs` to supply the session's
+  shared capacity to its configured TLS manager.
+- `io/zenoh-links/zenoh-link-tls/src/unicast.rs` for acquisition and
+  original TLS stream ownership.
+- `io/zenoh-links/zenoh-link-tls/src/unicast/tests.rs` for the
+  lifetime and release regression.
+
+The scoped implementation is expected to add about 70 production lines
+and zero new public types or dependencies. Preserve the default native
+constructor for existing callers. Bombay adoption and SDK release
+metadata follow verification in their owning steps. The three new SDK
+paths require the file-scope checkpoint before production edits.
+
 #### Registered capacity after normal close
 
 The existing TLS Router test uses a one-session limit. Exercise the selected
