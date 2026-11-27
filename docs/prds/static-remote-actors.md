@@ -1375,6 +1375,15 @@ deployment limit also has to bound credential inputs, parsing and TLS
 retention. The SDK reads the configured identity files in full, so the
 fixture lengths supply evidence only for the selected files.
 
+The locked TLS stack is `bombay-zenoh-link-tls 1.10.4`, `rustls 0.23.46`
+and `tokio-rustls 0.26.4`. Rustls limits its handshake reader separately
+from its application read and write queues. Its write buffer setting
+applies to outgoing plaintext and records. It does not cover handshake
+decoding, inbound storage, certificates, or the application batches that
+outlive read. The queue thresholds and handshake read limits therefore
+remain separate terms from allocated backing. The three archives matched
+the lock, and the inspected rustls and SDK source matched their archives.
+
 #### Counter transport retirement
 
 Keep charging each registered transport when the SDK moves it into the
@@ -1445,9 +1454,13 @@ was restored.
 
 The locked SDK reserves a recycling pool per link using
 `transport.link.rx.buffer_size`. A receive batch can outlive the read
-through shared payload and proof spans. If all reserved buffers are in
-use, the receive loop can allocate a new batch. The pool size alone
-therefore covers its reserve.
+through shared payload and proof spans. The pool checkout can miss when
+the reserve is empty or its lock is contended. The fallback allocates a
+batch outside the reserve and frees it when the final shared owner drops
+it. The pool size therefore covers its reserve only. The pool's blocking
+checkout waits on a condition variable. Substituting it in the async read
+would put that wait on the receive path, where progress can require more
+batches while earlier fragments still own theirs.
 
 The reassembly setting independently limits one logical receive message.
 The send queue bounds regular batches per priority. The session and
@@ -1459,9 +1472,13 @@ separate evidence before the deployment byte limit can be accepted.
 
 The locked SDK removes an individual link from the visible list before its
 close awaits notification and task shutdown. The close operation still owns
-that link. Session close takes declarations and queries out of its state and
-joins tracked tasks on the normal path. Bombay uses the ordinary Session
-close, with the SDK's separate callback wait disabled by default. A returned
+that link. The transport registry entry has a separate lifetime and normally
+survives until transport deletion. Link admission counts listed links, so
+the registry's transport count and inbound link limit alone do not bound
+links held in retirement. Session close takes declarations and queries out
+of its state and joins tracked tasks on the normal path. Bombay uses the
+ordinary Session close, with the SDK's separate callback wait disabled by
+default. A returned
 timeout leaves close completion unproved. Budget the retiring link through
 its close, and account for backing already handed to another owner until
 that owner's last reference is released.
@@ -1473,6 +1490,183 @@ copies remain. These observations explain why registry removal, joined
 tasks and final backing release have different endpoints. The locked source
 and observation hashes are in
 `acceptance-current/r14-receive-backing/retirement-custody.json`.
+
+The receive budget must account for allocations before read, carry the
+same charge through reassembly and delivery, and keep it until the backing
+is freed or reused under the same budget. Registry removal and task join
+cannot release that charge for backing retained by a consumer. The source
+for these checks matches the locked `bombay-zenoh-transport 1.10.4`,
+`zenoh-sync 1.10.1` and `zenoh-buffers 1.10.1` registry archives byte for byte
+for the unicast receive and retirement paths, the recycling pool and queue,
+and shared slices. The SDK production scope and receive-pressure policy
+remain open.
+
+#### Receive budget exhaustion and request custody
+
+The existing Client reply limit takes effect after native receive has
+produced a `Reply`. Its first overflow retains that exact original for the
+caller. Refusing an allocation before native read has no reply or request
+identity to put in that slot. The SDK's current receive-error path logs the
+cause and starts link retirement. Client records callback EOF separately
+from an acquired response. EOF alone conveys neither the receive cause
+nor whether any particular operation ran.
+
+Keep the native allocation refusal distinct from the Client's typed
+reply overflow. A budget needs a typed outcome at its native owner and
+an observation path for that outcome. Only an acquired authoritative
+reply can resolve work whose remote execution is otherwise uncertain.
+Previously acquired replies must stay with their existing owners and
+retain their backing charges. Budget exhaustion may not silently retry
+work or wait indefinitely for backing on the ordinary receive path.
+
+The first acceptance case should use a small explicit budget under a
+normal TLS configuration. Observe the budget at capacity, the typed
+disposition before any extra allocation, preservation of existing
+acquired outcomes, release after the final backing owner returns it,
+and recovery for fresh work. Include a backing owner whose lifetime
+extends past link retirement. The implementation scope and concrete
+budget values remain subject to the resource gate below.
+
+Joel approved these six existing SDK production files. The first change is
+an opt-in limit for established unicast receive batches. The smallest
+witness holds a received TLS sample through link retirement and observes
+capacity return only after the last shared owner drops the sample. A
+separate native control refuses the next allocation at the configured
+limit. Existing acquired samples and their contents stay intact.
+
+| Owning source | Change to verify |
+| --- | --- |
+| `commons/zenoh-config/src/lib.rs` and `defaults.rs` | Add an explicit opt-in ceiling for established unicast receive backing. Keep `buffer_size` as a per-link reserve setting. |
+| `io/zenoh-transport/src/manager.rs` | Keep one budget across the session's active and retiring links. Include allocations in the reserve in the same accounting. |
+| `io/zenoh-transport/src/unicast/link.rs` and `unicast/universal/link.rs` | Admit backing before allocating it and retain its charge through the existing shared slice. Report capacity refusal at the native receive owner. |
+| `zenoh/src/api/info.rs` | Use the existing Session information surface to observe receive-budget pressure independently of link membership and application replies. The existing runtime already provides access to the budget's owning transport state. |
+
+Use Tokio's owned permits and native shared slices. Give each reserved or
+extra batch its own permit. The existing Flume dependency supplies the
+bounded reserve so a busy pool lock cannot be mistaken for an empty pool.
+Retain the prior pool for configurations with the limit disabled.
+Capacity refusal flows through normal native link retirement. Reject
+low-latency configuration when the bound is enabled because that path has
+its own receive owner. Two Session information accessors expose charged
+bytes and the refusal count independently of per-operation outcomes.
+
+Keep the existing SDK Session test owner and isolated lock for verification.
+The first bound covers established receive backing in the selected TLS
+profile. Connection setup buffers, other native owners and the full R14
+deployment envelope remain separate terms. The ceiling must leave room for
+ordinary reads and reassembly in that profile before it can be selected for
+Bombay. Verify values against the focused witness before wiring the setting
+into the application.
+
+On the isolated SDK verification lock, the capacity and TLS tests passed
+in debug and optimized builds. The owner test covers two reserves, their
+shared budget, an extra allocation, typed refusal and reuse. The TLS test
+uses explicit 4 KiB offers and holds two causally distinct payloads
+through both Session closes. The charges fall from 8 KiB to 4 KiB to zero
+as the backing owners release them, and both payloads retain their exact
+contents. A separate test verifies the low-latency startup refusal.
+The first fixture assumed the native maximum was the negotiated batch
+size. The exact log is preserved. The final fixture sets both offers
+explicitly and derives the expected charge from that setting.
+
+The delivery checkout contains the six approved production files and the
+existing Session test file. It adds 293 production lines and removes 27,
+and adds 242 test lines. Public types and dependencies have zero delta.
+The SDK main lock and standalone tests passed the same three cases in both
+profiles. A pure control that freed a returned reserve buffer failed the
+intended 12 KiB charge assertion in both profiles. The restored controls
+passed. The earlier cleanup instrumentation is preserved separately.
+
+SDK PR #15 is open at signed `aff25e5c` on `c34eb350`. Required CI
+run `45885647131` stopped during package verification. The transport
+archive resolved published `bombay-zenoh-config 1.10.2`, which lacks the
+new `unicast_buffer_limit` getter. Both errors were E0599. The SDK's
+compiler-floor and Miri steps did not run. The full log is in
+`acceptance-current/r14-receive-backing/sdk-receive-budget/hosted-aff25-failure.log`.
+[SDK PR #15](https://github.com/devrandom-labs/bombay-zenoh/pull/15)
+
+##### Receive-budget SDK release scope
+
+The existing release path must package and verify all six exact-version
+owners that depend on the changed Config. Propose Config and plugin
+trait `1.10.3`, TLS link, link and transport `1.10.5`, and SDK `1.10.11`.
+The six proposed versions were absent from the public registry index
+when checked. Keep the existing archive verification and compiler floor.
+Preserve historical version maps and resume receipts. Add a receive-budget
+selection to the existing package workflow so Cargo verifies the new
+archives together before any merge or publication.
+
+Pinned Cargo metadata on the exact PR source confirms five exact Config
+pins, one from each of the other release candidates. Link commons is a
+shared dependency of this set and does not depend on Config. Its current
+archive stays in the verified dependency graph. The metadata is retained
+as `sdk-aff25-metadata.json` beside the failed CI log.
+
+Joel approved the 21 additional release paths for the seven-path SDK
+PR #15. The release change covers package versions, locks, existing
+verification and release controls, and package guidance.
+
+| Owner | Paths |
+| --- | --- |
+| SDK package versions and lock | `Cargo.toml`, `Cargo.lock`, `commons/zenoh-config/Cargo.toml`, `plugins/zenoh-plugin-trait/Cargo.toml`, `io/zenoh-links/zenoh-link-tls/Cargo.toml`, `io/zenoh-link/Cargo.toml`, `io/zenoh-transport/Cargo.toml`, `zenoh/Cargo.toml` |
+| Configuration consumer | `ci/configuration-consumer/Cargo.toml`, `ci/configuration-consumer/Cargo.lock` |
+| Release selection | `.github/workflows/publish.yml`, `ci/verify-release.sh`, `ci/compiler-floor.sh`, `ci/publish-release.sh` |
+| Existing archive checks | `ci/verify_archives.py`, `ci/verify_packaged_queries.py`, `ci/verify_configuration_cohort_tests.py`, `ci/verify_packaged_queries_tests.py` |
+| Package guidance | `README.md`, `zenoh/README.md`, `docs/dependency-delivery.md` |
+
+The first required result is the published-dependency archive check passing
+with a verified candidate Config archive in the dependency graph. The SDK
+merge and Bombay adoption remain open. The whole-deployment resource limit
+and NET1 still require their own evidence.
+
+The approved release update is signed `f5406fe1` on SDK PR #15. Both
+locked metadata graphs and all six package-reader unit tests passed.
+Local Cargo packaging verified all six archives together and resolved the
+new Config in the transport package. The source CI selection now requires
+both independent TLS budget cases to pass by name. The result check
+accepted both saved profiles and refused a zero-case control. New required
+CI run `45897058716` is active on the updated head.
+
+The clean signed checkout repeated Cargo's six-archive dry run. The
+archive verifier passed nine archives and 29 controlled registry
+checksum edges. It checked the candidate source and VCS revisions and
+refused the intended checksum, identity, lock and feature controls.
+The selected archive cohort test passed. Evidence, archives and 11
+generated inputs are retained under `sdk-receive-budget`. The local
+package cache yielded 1,129,180 KiB net after preservation.
+
+SDK PR #15 merged to main as `229966a0` on 2026-11-26 at 22:30 UTC.
+The merge tree equals the accepted preview and signed head. The required
+CI passed the native cases in both profiles, nine archives and 29 lock
+checksum edges, Rust 1.88 and the two Miri cases. The six candidate
+archive checksums and source revisions match the official artifact.
+The source and merge are preserved, and the delivery worktree was removed.
+Publication requires the separate passing run on exact SDK main.
+[SDK main CI](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/45905176380)
+
+##### Published SDK receive budget and adoption
+
+The SDK publisher completed on exact SDK main `229966a0`. All six
+registry downloads match the archive checksums tested on SDK main and
+identify `229966a0` in their VCS metadata. The release contains SDK
+`1.10.11`, Config/plugin trait `1.10.3` and TLS link/link/transport
+`1.10.5`. The verified cohort, receipts and downloaded packages are
+preserved under `sdk-receive-budget/sdk-registry`.
+[SDK publication](https://github.com/devrandom-labs/bombay-zenoh/actions/runs/45911136159)
+
+The adoption uses the two manifest and lock pairs from the
+previous SDK adoption `5fabf813`: `crates/bombay/Cargo.toml` with the
+root lock and the existing transport-custody manifest with its lock.
+Both locked metadata graphs resolve all six crates from the registry.
+The only lock changes are the six versions and checksums in each file,
+all equal to the publisher receipt. Under pinned Nix, the existing
+`registered_session_limit_refuses_an_extra_client_and_releases_capacity`
+test passed once in debug and once in release. It uses real TLS and
+checks capacity refusal, orderly close and replacement. The two raw
+test logs and locked graphs are preserved under `sdk-receive-budget`.
+This adoption changes zero production Rust lines, tests or public types.
+The application still needs a configured receive ceiling and an
+aggregate deployment bound for R14.
 
 #### Registered capacity after normal close
 
@@ -1499,6 +1693,40 @@ Formatting and the two source reviews passed. The ingress test changed
 84 added and 65 removed lines, with zero production, type or dependency
 changes. The archived inputs and result logs are in
 `acceptance-current/r14-receive-backing/registered-capacity`.
+
+PR #452 merged normally on 2026-11-26 at 18:44 UTC as `12c7f008`.
+The tested preview and actual merge share tree `edf245b6`.
+All eight checks passed. The optimized workspace and coverage each
+recorded 1,069 passes in 123 harnesses, with seven controlled skips.
+Both ran the capacity test. The Driver campaign ran 2,048 inputs and
+the four Observe campaigns ran 1,024 each. Miri was skipped. The
+delivery receipt records the exact merge, terminal log and eight
+official archive digests.
+
+The separate run on actual main `12c7f008` finished successfully at
+21:09 UTC. All five jobs passed, including Linux Flake Check, 2,048
+Driver inputs and four 1,024-input Observe campaigns. The run metadata
+and lossless Linux log are retained in `registered-capacity/hosted/main-12c7f008`.
+[Post-merge CI](https://github.com/devrandom-labs/bombay/actions/runs/45878268710)
+[Merged PR](https://github.com/devrandom-labs/bombay/pull/452)
+[Linux CI](https://github.com/devrandom-labs/bombay/actions/runs/45856510670/job/140036189960)
+
+#### Registered reassembly descriptor storage
+
+The locked reassembly buffer checks logical length before retaining a
+fragment and omits empty slices. Each state therefore holds up to 32,768
+descriptors. Clearing a state drops its fragment references and can retain
+the descriptor array. In the selected Rust implementation the array starts
+at two descriptors and doubles when full, up to the same 32,768 slots.
+
+The pinned compiler reports a 32-byte descriptor on Apple silicon macOS
+and on the x86-64 Linux target. The 64 registered states can therefore
+request up to 64 MiB of descriptor arrays. Charging the old array and the
+new array during each possible growth gives a 96 MiB allowance for this
+owner. This is separate from receive batch backing. Allocator overhead,
+transferred references and the number of coexisting retiring owners
+remain open. The exact SDK and compiler inputs and both layout results
+are preserved in `acceptance-current/r14-receive-backing`.
 
 #### Verified profiles and inspection limits
 

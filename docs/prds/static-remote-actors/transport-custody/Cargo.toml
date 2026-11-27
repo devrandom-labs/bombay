@@ -10,11 +10,11 @@ serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.151"
 thiserror = "=2.0.20"
 tokio = { version = "=1.53.3", features = ["rt-multi-thread", "time"] }
-zenoh = { package = "bombay-zenoh", version = "=1.10.10", default-features = false, features = [
+zenoh = { package = "bombay-zenoh", version = "=1.10.11", default-features = false, features = [
   "transport_tls",
 ] }
 
-zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.2", default-features = false }
+zenoh_config = { package = "bombay-zenoh-config", version = "=1.10.3", default-features = false }
 
 futures-util = { version = "=0.3.34", default-features = false, features = [
   "std",
