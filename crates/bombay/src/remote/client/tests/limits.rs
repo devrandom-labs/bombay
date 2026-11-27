@@ -13,7 +13,7 @@ use futures_util::future::Either;
 use std::cell::{Cell, RefCell};
 use std::future::{Future, poll_fn, ready};
 use std::mem::size_of;
-use std::num::{NonZeroU16, NonZeroUsize};
+use std::num::{NonZeroU16, NonZeroU32, NonZeroUsize};
 use std::path::PathBuf;
 use std::pin::pin;
 use std::rc::Rc;
@@ -633,6 +633,7 @@ async fn held_replies(traffic: ReplyTraffic) {
                     max_sessions: NonZeroUsize::new(1_000).unwrap(),
                     max_pending_links: NonZeroUsize::new(100).unwrap(),
                     batch_bytes: NonZeroU16::MAX,
+                    receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
                     reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
                 };
                 let receiving = zenoh::open(
@@ -1487,6 +1488,7 @@ async fn retained_payloads() {
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
         batch_bytes: NonZeroU16::MAX,
+        receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     };
     let peer = zenoh::open(

@@ -1,8 +1,7 @@
-Remote Actors adoption (2026-11-27). The published SDK receive budget is
-verified, and Bombay's updated locks and focused debug and release TLS checks
-pass locally. The [PRD record](../prds/static-remote-actors.md#published-sdk-receive-budget-and-adoption)
-tracks delivery and the remaining configured and deployment-wide limits.
-R14 and NET1 remain open.
+Remote Actors adoption (2026-11-27). PR #494 merged as `556b4d4b` after all
+eight checks passed. The [PRD record](../prds/static-remote-actors.md#apply-the-session-receive-limit)
+tracks enabling the published SDK limit in ordinary Network configuration.
+R14 deployment memory and NET1 remain open.
 
 Remote Actors delivery (2026-11-26). PR #449 auto-merged as `525157fa` after
 all eight checks passed. The

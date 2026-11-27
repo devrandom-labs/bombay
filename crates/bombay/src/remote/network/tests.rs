@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use std::error::Error;
 #[cfg(unix)]
 use std::ffi::OsString;
-use std::num::{NonZeroU16, NonZeroUsize};
+use std::num::{NonZeroU16, NonZeroU32, NonZeroUsize};
 #[cfg(unix)]
 use std::os::unix::ffi::OsStringExt;
 use std::path::PathBuf;
@@ -42,6 +42,7 @@ fn peer() -> Network {
         max_sessions: NonZeroUsize::new(1_000).unwrap(),
         max_pending_links: NonZeroUsize::new(100).unwrap(),
         batch_bytes: NonZeroU16::MAX,
+        receive_buffer_bytes: NonZeroU32::new(1 << 20).unwrap(),
         reassembly_bytes: NonZeroUsize::new(1 << 30).unwrap(),
     }
 }
@@ -52,6 +53,7 @@ fn transport_limits_reach_their_native_owners() {
         max_sessions: NonZeroUsize::new(11).unwrap(),
         max_pending_links: NonZeroUsize::new(13).unwrap(),
         batch_bytes: NonZeroU16::new(4_096).unwrap(),
+        receive_buffer_bytes: NonZeroU32::new(196_608).unwrap(),
         reassembly_bytes: NonZeroUsize::new(32_768).unwrap(),
         ..peer()
     };
@@ -62,9 +64,14 @@ fn transport_limits_reach_their_native_owners() {
             *transport.unicast().max_sessions(),
             *transport.unicast().accept_pending(),
             *transport.link().tx().batch_size(),
+            transport
+                .link()
+                .rx()
+                .unicast_buffer_limit()
+                .map(NonZeroU32::get),
             *transport.link().rx().max_message_size(),
         ),
-        (11, 13, 4_096, 32_768)
+        (11, 13, 4_096, Some(196_608), 32_768)
     );
 }
 
