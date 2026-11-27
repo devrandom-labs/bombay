@@ -1898,8 +1898,17 @@ each cache operation. The selected TLS 1.3 serializer allows up to 66,073
 value bytes per entry, including the encoded client certificate list. The
 map and eviction queue each own a 32-byte key. Budget up to 16,931,072
 logical retained bytes per listener cache. Count encode and eviction
-overlap, storage capacity, and client ticket storage separately. The field
+overlap and storage capacity separately. The field
 calculation is in `tls-connection-lifetime/tls-listener-cache-accounting.json`.
+
+Each outgoing TLS attempt builds one client configuration for one server
+name. Its cache retains up to eight tickets on the inspected Rust 1.88,
+1.96 and 1.99 standard libraries. Allow 1,051,114 logical bytes per
+outgoing slot for the ticket payloads, ticket secrets, certificate chains and
+the two stored copies of the server name. The live connection certificate,
+transient insertion and allocation capacity have separate terms. See
+`tls-connection-lifetime/tls-client-cache-accounting.json` and the retained
+source digests. [Rust queue allocation source](https://github.com/rust-lang/rust/blob/1.99.0/library/alloc/src/raw_vec/mod.rs)
 
 ##### Bombay adoption scope
 
