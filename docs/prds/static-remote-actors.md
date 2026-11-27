@@ -1892,6 +1892,15 @@ certificates, resumption, and producer-owned transmit backing separately.
 Source and calculation evidence is in
 `tls-connection-lifetime/tls-read-owner-accounting.json`.
 
+The Rustls listener also retains its own stateful resumption cache across
+connections. One listener configuration retains up to 256 entries after
+each cache operation. The selected TLS 1.3 serializer allows up to 66,073
+value bytes per entry, including the encoded client certificate list. The
+map and eviction queue each own a 32-byte key. Budget up to 16,931,072
+logical retained bytes per listener cache. Count encode and eviction
+overlap, storage capacity, and client ticket storage separately. The field
+calculation is in `tls-connection-lifetime/tls-listener-cache-accounting.json`.
+
 ##### Bombay adoption scope
 
 After verified publication, adopt the six SDK versions in the existing
