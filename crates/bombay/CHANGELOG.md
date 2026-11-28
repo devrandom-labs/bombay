@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.6.1...bombay-rs-v0.6.2) - 2026-11-28
+
+### Added
+
+- *(remote)* configure native transport limits
+
+### Other
+
+- keep room for fragmented reply completion
+- adopt SDK transmit retirement lifetime
+- configure TLS connection slots
+- adopt published TLS connection limit SDK
+- bound session receive buffers
+- adopt published SDK receive budget
+- verify TLS session capacity after client close
+- Merge pull request #450 from devrandom-labs/codex/remote-actor-resource-budget
+
 ## [0.6.1](https://github.com/devrandom-labs/bombay/compare/bombay-rs-v0.6.0...bombay-rs-v0.6.1) - 2026-11-26
 
 ### Other
