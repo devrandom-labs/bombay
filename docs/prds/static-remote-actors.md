@@ -2256,8 +2256,77 @@ The production delta is +11/-0, the test delta is +65/-5, and public
 types and dependency edges have zero delta. The ordinary Counter
 application source stays unchanged. Independent source review confirmed
 the queue setter, startup error field and unchanged test oracles.
-Evidence is in `outbound-current/ship-data-queue`. Hosted checks and
-reviewed merge remain required for delivery.
+[PR #498](https://github.com/devrandom-labs/bombay/pull/498) merged as
+`eb57ed90` on November 28 after all eight checks passed. The merge tree
+matches the tested preview. The Linux job ran the fragmented Counter,
+client-overlap checks, 2,048 Driver cases and four 1,024-case Observe
+campaigns. Eight hosted archives match their published checksums.
+Evidence is in `outbound-current/ship-data-queue/hosted/final`.
+
+##### Close the registered TLS listener by its bound socket
+
+The saved Counter journey returns three and both application cleanups,
+then the receiving Session times out when a hostname listener must wait
+for a blocking slot. With the slot held, using a numeric listener and
+the same authenticated caller hostname closes both Sessions. The
+SDK-level test also fails on the original listener deletion in debug
+and optimized builds. The earlier intermittent CI timeout has a
+different final trace and its exact cause remains open.
+
+Reuse the SDK listener registry and cancellation and join path. Remove
+one unique exact endpoint under the registry lock, then release the
+lock before cancelling and awaiting its accept loop. Return the actual
+close result. If the endpoint is unmatched or ambiguous, preserve the
+TLS call site's existing resolver path. This adds no retained state,
+public nominal type, timeout or Bombay API.
+
+Expected SDK scope is the approved listener owner, the existing TLS
+call site and its test owner. Expect about 20 net production lines.
+Reuse the existing fixture to prove that the original bound socket is
+released while its sibling stays bound, and preserve the original
+close error and resolver fallback semantics. The SDK source review,
+release and exact registry adoption remain separate delivery steps.
+
+The three-file repair at signed `d4ca72fd` passed 23 TLS cases in both
+profiles, formatting and strict owning Clippy. The tests verify actual
+socket release, a still-bound sibling, alias deletion, ambiguous
+lookup and the original accept-loop error. Production changed +24/-5
+lines and tests changed +163/-3 lines across three owners. The repair
+commit kept the SDK lock unchanged. The saved Counter case passed in
+both profiles with the blocking slot held through both Node closes. The two local package
+copies used the submitted owner sources, and the isolated lock changed
+only their two registry origins. The original caller hostname, TLS
+credentials, returned value and joined cleanups were preserved.
+
+The first required hosted check rejected the changed listener source
+under the published link commons `1.10.2` version. The approved metadata
+update prepared five exact-pinned successor packages in 20 existing
+paths. It changed no Rust source. [SDK PR #19](https://github.com/devrandom-labs/bombay-zenoh/pull/19)
+merged normally as `f0abe8f0` on November 28. All required checks passed
+on the identical preview tree, including both TLS profiles, nine archive
+checks, 29 checksum edges, the Rust 1.88 compiler floor and configuration
+Miri. The five candidate archives match the tested source. Evidence is
+in `postmerge/sdk-listener-repair/release-8418`. SDK main CI
+`46158184667` and publisher `46163031458` passed on `f0abe8f0`.
+The registry published link commons `1.10.3`, TLS link and link
+`1.10.7`, transport `1.10.8`, and SDK `1.10.14`. All five downloaded
+archives match the publisher and exact-main archives byte for byte.
+Publication receipt `release-8418/publication.json` has SHA256
+`7970f8b5708d242506294d05fecd320bf4c8ca987a5f4048b1fda56dc8d95afa`.
+
+##### Bombay adopts TLS listener retirement
+
+Use the two existing exact SDK pins and registry lockfiles in Bombay and
+the protected transport consumer. The five published versions and their
+checksums replace the previous versions of those same packages. No Rust,
+public types, features or other edges change. The SDK owns listener
+retirement. Both locked graphs resolve only the five verified registry
+versions for the changed packages, with every other lock byte conserved.
+The existing protected Counter test opened the configured TLS listener and
+verified its application result and joined Node cleanup in both profiles.
+The graph receipt under `release-8418/bombay-adoption` has SHA256
+`0264ab48ee679a8e1bb27ce28ff90a17335d426ba0d983030b69fc2bdcd99793`.
+Hosted delivery, the deployment-wide memory limit and NET1 remain open.
 
 #### Registered capacity after normal close
 

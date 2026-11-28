@@ -15,9 +15,12 @@ The [outbound comparison](../prds/static-remote-actors.md#counter-progress-acros
 recorded uncertain Read on valid larger messages and an ordinary-size control
 pass. The held-consumer test verified five native slots for the larger
 reply shape with an older batch held, including overflow and refill.
-The five-slot Network mapping passed native and fragmented Counter
-checks locally in both profiles. Hosted delivery, the deployment-wide
-memory limit and NET1 remain open.
+The five-slot Network mapping merged in
+[PR #498](https://github.com/devrandom-labs/bombay/pull/498) as `eb57ed90`
+after all eight checks passed. The [TLS listener repair](../prds/static-remote-actors.md#close-the-registered-tls-listener-by-its-bound-socket)
+merged in SDK PR #19 as `f0abe8f0`. SDK `1.10.14` and its four exact-pinned
+dependencies are verified on crates.io. Bombay's locked graphs and
+public Node test pass in both profiles. Hosted adoption remains open. The deployment-wide memory limit and NET1 remain open.
 
 Remote Actors receive limit (2026-11-27). PR #495 merged as `494f8f6e` after
 all eight checks passed, following SDK adoption in PR #494. The
