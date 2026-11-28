@@ -14,6 +14,8 @@ use zenoh_config::{
 use zenoh_protocol::core::{Locators, LocatorsStrategy};
 
 const MIN_BATCH_BYTES: u16 = 4_096;
+// Allow three reply fragments and their final marker behind a batch held by the writer.
+const DATA_BATCHES: usize = 5;
 
 /// Explicit addresses, identities and native capacity for one Application.
 #[derive(Debug)]
@@ -120,6 +122,15 @@ impl Network {
             .set_batch_size(self.batch_bytes.get())
             .map_err(|_| NodeStartupRefusal::Unsupported {
                 field: "transport/link/tx/batch_size",
+            })?;
+        transport
+            .link
+            .tx
+            .queue
+            .size
+            .set_data(DATA_BATCHES)
+            .map_err(|_| NodeStartupRefusal::Unsupported {
+                field: "transport/link/tx/queue/size/data",
             })?;
         transport
             .link
